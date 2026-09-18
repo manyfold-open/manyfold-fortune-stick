@@ -24,8 +24,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "manyfold-app-db",
-      "database_id": "8911dae0-a52a-4264-bf99-e44efdcd1fa3"
+      "database_name": "manyfold-fortune-stick-db",
+      "database_id": "2c33dce4-414e-4a5c-8da0-8d57f15c86df"
     }
   ],
   "vars": {
