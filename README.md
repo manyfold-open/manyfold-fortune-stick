@@ -13,7 +13,7 @@ it never claims to predict what will happen.
 Interpretations come from an [Manyfold](https://manyfold.ai) agent you connect once from the
 hidden settings page.
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/manyfold-open/cloudflare-worker-starter)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/manyfold-open/manyfold-fortune-stick)
 
 ```
 ┌──────────────┐    ┌───────────────┐    ┌────────────────────┐    ┌──────────────────┐
