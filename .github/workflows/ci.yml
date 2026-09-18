@@ -1,6 +1,6 @@
 # Checks only — this workflow never deploys and stores no Cloudflare credentials.
-# Deployment happens on Cloudflare's side: Workers Builds watches the repo and runs
-# `npm run build` + `npx wrangler deploy` on every push to main.
+# Nothing deploys on a push: this repo is not connected to Workers Builds, so shipping
+# is a deliberate `npm run deploy` from a machine that is logged in to Cloudflare.
 name: CI
 
 on:

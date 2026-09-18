@@ -75,7 +75,19 @@ AI 只负责解签，不负责抽签。AI 不可用时，页面显示这支签�
    构建命令填 `npm run build`，部署命令填 `npx wrangler deploy`。
 4. push 到 `main` —— Workers Builds 会完成部署。
 
-### 部署之后（两条路径通用）
+### 路径 C —— 不接 Git，手动部署
+
+Workers Builds 不是必需的。fork 之后按路径 B 建好数据库，然后：
+
+```bash
+npm install
+npm run deploy      # 先构建，再用你本地登录的 wrangler 部署
+```
+
+代价是：合并到 `main` 不再会让任何东西上线，只有跑了这条命令，线上才会动。值得清楚自己
+处在哪种模式 —— 一个看起来完工的 `main`，和一个落后它一周的线上站点，从外面看是一模一样的。
+
+### 部署之后（任意路径通用）
 
 URL 公开后强烈建议设置 —— 否则任何拿到 URL 的人都能用你的 agents 解签（消耗你的额度）：
 
@@ -105,7 +117,7 @@ npm run dev
 | `npm run dev` | 开发服务器（前端 + worker + 本地 D1） |
 | `npm run check` | 类型检查、构建、`wrangler deploy --dry-run` |
 | `npm test` | 单元测试（vitest） |
-| `npm run deploy` | 手动部署（通常由 Workers Builds 完成） |
+| `npm run deploy` | 先构建再部署。没接 Workers Builds 时，这是唯一的上线方式 |
 | `npm run smoke -- <url>` | 对部署运行冒烟测试 |
 
 ## 架构一览

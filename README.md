@@ -87,7 +87,20 @@ No secrets are required. Open the Worker URL and you are at step 2 of the diagra
    set build command `npm run build` and deploy command `npx wrangler deploy`.
 4. Push to `main` — Workers Builds deploys it.
 
-### After deploying (both paths)
+### Path C — no Git integration, deploy by hand
+
+Nothing requires Workers Builds. Fork, create the database as in Path B, then:
+
+```bash
+npm install
+npm run deploy      # builds, then deploys with your local wrangler login
+```
+
+The trade-off is that merging to `main` no longer ships anything — production moves only
+when someone runs that command. Worth knowing which mode you are in: a `main` that looks
+finished and a site that is a week behind it look identical from the outside.
+
+### After deploying (any path)
 
 Recommended once your URL is public — without a password anyone who finds the URL can draw
 sticks against (and bill) your agents:
@@ -120,7 +133,7 @@ first request, so there is no migration step, ever.
 | `npm run dev` | Dev server (app + worker + local D1) |
 | `npm run check` | Typecheck, build, `wrangler deploy --dry-run` |
 | `npm test` | Unit tests (vitest) |
-| `npm run deploy` | Manual deploy (Workers Builds normally does this) |
+| `npm run deploy` | Build, then deploy. Without Workers Builds this is the only way out |
 | `npm run smoke -- <url>` | Smoke-test a deployment |
 
 ## How it is put together

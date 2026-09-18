@@ -5,14 +5,19 @@ Rules for anyone — human or AI agent — iterating on it. These are the load-b
 
 ## How deployment works
 
-- **Workers Builds is the deploy path.** Every push to `main` runs `npm run build` and then
-  `npx wrangler deploy` on Cloudflare's side. CI (`.github/workflows/ci.yml`) only checks; it
-  never deploys and holds no credentials.
-- The build step is load-bearing: `wrangler deploy` deploys the output that
-  `vite build` writes to `dist/` (via the Cloudflare Vite plugin's deploy-config redirect).
-  Never deploy without building first, and never remove the `build` script.
-- After every push, verify the deployment: `GET /api/health` must return HTTP 200 JSON, or
+- **Deploys are manual.** This repository is *not* connected to Workers Builds, so merging to
+  `main` changes the repo and leaves production exactly where it was. Someone has to run
+  `npm run deploy`. Assume a green `main` is not live until you have checked.
+- CI (`.github/workflows/ci.yml`) only checks; it never deploys and holds no credentials.
+- The build step is load-bearing: `wrangler deploy` ships whatever is sitting in `dist/`
+  (via the Cloudflare Vite plugin's deploy-config redirect), and it does not build for you —
+  deploying a stale `dist/` silently ships the previous version. `npm run deploy` therefore
+  runs `build` first. Keep it that way, and never remove the `build` script.
+- After every deploy, verify it: `GET /api/health` must return HTTP 200 JSON, or
   run `npm run smoke -- <url>`.
+- If you connect Workers Builds later (README, Path B), come back and rewrite this section.
+  It is the only place that records which way round it is, and a wrong answer here is how
+  production quietly falls behind `main`.
 
 ## Invariants
 
