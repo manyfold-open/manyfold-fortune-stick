@@ -9,7 +9,7 @@
 
 解读由你连接的 [Manyfold](https://manyfold.ai) agent 生成，只需在隐藏的设置页里连一次。
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/manyfold-open/cloudflare-worker-starter)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/manyfold-open/manyfold-fortune-stick)
 
 ```
 ┌──────────────┐    ┌───────────────┐    ┌────────────────────┐    ┌──────────────────┐
