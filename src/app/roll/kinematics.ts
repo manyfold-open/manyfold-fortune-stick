@@ -192,18 +192,24 @@ export const createRibbonBuffers = (): RibbonBuffers => ({
   aS: new Float32Array(VERTS),
 });
 
-/** 三角形索引只在初始化时算一次，之后永不变动 —— 顶点数是死的。 */
+/**
+ * 三角形索引只在初始化时算一次，之后永不变动 —— 顶点数是死的。
+ *
+ * 绕序必须和 writeRibbon 写下的顶点法线同向（右手定则朝上）。反了的话：
+ * FrontSide 会把整条纸带剔除掉，DoubleSide 则会在可见的那一面把法线翻过来，
+ * 正好抵消掉剥离段的受光 —— 也就是把上一步刚修好的东西再毁一次。
+ */
 export const createRibbonIndices = (): Uint16Array => {
   const idx = new Uint16Array(MAX_SEG * 6);
   for (let i = 0; i < MAX_SEG; i += 1) {
     const a = i * 2;
     const o = i * 6;
     idx[o] = a;
-    idx[o + 1] = a + 2;
-    idx[o + 2] = a + 1;
+    idx[o + 1] = a + 1;
+    idx[o + 2] = a + 2;
     idx[o + 3] = a + 1;
-    idx[o + 4] = a + 2;
-    idx[o + 5] = a + 3;
+    idx[o + 4] = a + 3;
+    idx[o + 5] = a + 2;
   }
   return idx;
 };

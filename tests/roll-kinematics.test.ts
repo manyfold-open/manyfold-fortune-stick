@@ -198,6 +198,33 @@ describe('纸带网格：零每帧堆分配', () => {
     expect(lifted).toBeLessThanOrEqual(K.CURL_SEG + 1);
   });
 
+  it('三角形绕序和顶点法线同向 —— 反了纸带会被剔除或受光翻面', () => {
+    const buf = K.createRibbonBuffers();
+    const idx = K.createRibbonIndices();
+    const sNow = 22.0;
+    K.writeRibbon(buf, straight(sNow), 0, -sNow, 0, -1, sNow);
+    const at = (v: number) => [buf.position[v * 3], buf.position[v * 3 + 1], buf.position[v * 3 + 2]];
+    let checked = 0;
+    for (let tri = 0; tri < K.MAX_SEG * 2; tri += 37) {
+      const [i0, i1, i2] = [idx[tri * 3], idx[tri * 3 + 1], idx[tri * 3 + 2]];
+      const o = at(i0);
+      const e1 = at(i1).map((c, n) => c - o[n]);
+      const e2 = at(i2).map((c, n) => c - o[n]);
+      const face = [
+        e1[1] * e2[2] - e1[2] * e2[1],
+        e1[2] * e2[0] - e1[0] * e2[2],
+        e1[0] * e2[1] - e1[1] * e2[0],
+      ];
+      const area = Math.hypot(face[0], face[1], face[2]);
+      if (area < 1e-9) continue; // 尾端的退化三角形没有朝向可言
+      const vn = [buf.normal[i0 * 3], buf.normal[i0 * 3 + 1], buf.normal[i0 * 3 + 2]];
+      const dot = face[0] * vn[0] + face[1] * vn[1] + face[2] * vn[2];
+      expect(dot).toBeGreaterThan(0);
+      checked += 1;
+    }
+    expect(checked).toBeGreaterThan(10);
+  });
+
   it('法线沿纸带连续变化 —— 压印点那一排不能突然回正', () => {
     const buf = K.createRibbonBuffers();
     const sNow = 22.0;
