@@ -10,13 +10,15 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { ConnectSession, PollOutcome } from '../../shared/types';
-import { api } from '../api';
+import { api, errorMessage } from '../api';
+import { useT } from '../i18n';
 
 export default function ConnectPanel(props: {
   /** In-flight handshake recovered from /api/state, so a reload resumes it. */
   initialSession: ConnectSession | null;
   onConnected: () => Promise<void>;
 }) {
+  const t = useT();
   const [session, setSession] = useState<ConnectSession | null>(props.initialSession);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState('');
@@ -26,7 +28,7 @@ export default function ConnectPanel(props: {
   const openConsent = (url: string) => {
     popup.current = window.open(url, 'manyfold-connect', 'width=520,height=760,noopener,noreferrer');
     if (!popup.current) {
-      setError('The popup was blocked — use "重新打开授权页面" below.');
+      setError(t('connectPopupBlocked'));
     }
   };
 
@@ -39,7 +41,7 @@ export default function ConnectPanel(props: {
       setSession(started.connect);
       openConsent(started.connect.authUrl);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(errorMessage(cause, t));
     } finally {
       setStarting(false);
     }
@@ -74,7 +76,7 @@ export default function ConnectPanel(props: {
         if (poll.status === 'approved') await props.onConnected();
       } catch (cause) {
         if (stopped) return;
-        setError(cause instanceof Error ? cause.message : String(cause));
+        setError(errorMessage(cause, t));
         setSession(null);
       }
     };
@@ -89,53 +91,54 @@ export default function ConnectPanel(props: {
     <div className="connect-panel">
       {!session && (
         <button className="text-action strong" onClick={() => void start()} disabled={starting}>
-          {starting ? '打开中…' : '连接 Manyfold agent'}
+          {starting ? t('connectOpening') : t('connectStart')}
         </button>
       )}
 
       {session && (
         <div className="connect-waiting">
           <div className="connect-code">
-            <small>确认码</small>
+            <small>{t('connectCodeLabel')}</small>
             <strong>{session.userCode}</strong>
           </div>
-          <p className="muted">
-            批准前先确认 Manyfold 页面上显示的是同一个码 —— 这是确认你授权的是<em>这个</em>应用的唯一方式。
-          </p>
-          <p className="muted">等待你在 Manyfold 上批准…</p>
+          <p className="muted">{t('connectCodeNote')}</p>
+          <p className="muted">{t('connectWaiting')}</p>
           <div className="row">
             <button className="text-action" onClick={() => openConsent(session.authUrl)}>
-              重新打开授权页面
+              {t('connectReopen')}
             </button>
             <button className="text-action danger" onClick={() => void cancel()}>
-              取消
+              {t('connectCancel')}
             </button>
           </div>
         </div>
       )}
 
       {!session && !result && (
-        <p className="muted">
-          会弹出 Manyfold 的页面，在那里挑选要分享给这个应用的 agent。
-        </p>
+        <p className="muted">{t('connectIntro')}</p>
       )}
 
-      {result?.status === 'denied' && <div className="notice error">你在 Manyfold 上拒绝了这次请求。</div>}
+      {result?.status === 'denied' && (
+        <div className="notice error">{t('connectDenied')}</div>
+      )}
       {result?.status === 'expired' && (
-        <div className="notice error">这次授权已经过期，重新来一次。</div>
+        <div className="notice error">{t('connectExpired')}</div>
       )}
       {result?.status === 'approved' && (
         <div className="connect-result">
           <strong>
             {result.agents?.length
-              ? `已连接 ${result.agents.length} 个 agent`
-              : '已批准，但没有分享任何 agent'}
+              ? t('connectedCount', { count: result.agents.length })
+              : t('connectedNone')}
           </strong>
           {(result.agents ?? []).map((agent) => (
             <div className="connect-result-row" key={agent.agentId}>
               <span>✓ {agent.name}</span>
               {!agent.verified && (
-                <em className="warn">未验证{agent.warning ? ` — ${agent.warning}` : ''}</em>
+                <em className="warn">
+                  {t('settingsUnverified')}
+                  {agent.warning ? ` — ${agent.warning}` : ''}
+                </em>
               )}
             </div>
           ))}
