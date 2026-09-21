@@ -154,8 +154,10 @@ describe('剥离微卷曲与弹簧', () => {
     expect(K.curlLift(1.4)).toBe(0);
   });
 
-  it('尾端斜率归零 —— 纸躺平的时候不能带折角', () => {
+  it('尾端斜率归零 —— 纸躺平的时候不能带折角；压印点那一端反而要有坡度', () => {
     expect(K.curlSlope(1)).toBe(0);
+    // 纸是带着坡度离开压印点的。这里归零会在画面最显眼处留下一道光照硬缝。
+    expect(K.curlSlope(0)).toBeCloseTo(K.CURL_LIFT * 6.75, 12);
     expect(K.curlSlope(1 / 3)).toBeCloseTo(0, 12);
     expect(K.curlSlope(0.1)).toBeGreaterThan(0);
     expect(K.curlSlope(0.8)).toBeLessThan(0);
@@ -317,9 +319,15 @@ export const solveStopS = (sNow: number, slot: number): number => {
 export const curlLift = (q: number): number =>
   q <= 0 || q >= 1 ? 0 : CURL_LIFT * 6.75 * q * (1 - q) * (1 - q);
 
-/** dh/dq。躺平那一端斜率归零，纸尾才不会带出一道折角。 */
+/**
+ * dh/dq。躺平那一端斜率归零，纸尾才不会带出一道折角。
+ *
+ * q = 0 这一端**不**归零：纸是带着坡度离开压印点的，这就是「剥离」。
+ * 写成 q <= 0 会让压印点那一排顶点的法线突然回正，在整个画面最显眼的地方
+ * （纸刚从滚筒底下出来那一道）留下一道 14.7° 的光照硬缝。
+ */
 export const curlSlope = (q: number): number =>
-  q <= 0 || q >= 1 ? 0 : CURL_LIFT * 6.75 * (1 - q) * (1 - 3 * q);
+  q < 0 || q >= 1 ? 0 : CURL_LIFT * 6.75 * (1 - q) * (1 - 3 * q);
 ```
 
 - [ ] **Step 5: Run the test to verify it passes**
@@ -360,6 +368,31 @@ MSG
 **Interfaces:**
 - Consumes: everything Task 1 produced.
 - Produces: `interface Trail { x: Float32Array; z: Float32Array; s: Float32Array; head: number; count: number }`, `createTrail(): Trail`, `resetTrail(trail: Trail): void`, `pushTrail(trail: Trail, x: number, z: number, s: number): boolean`, `tailS(trail: Trail, sNow: number): number`, `interface RibbonBuffers { position: Float32Array; normal: Float32Array; uv: Float32Array; aS: Float32Array }`, `createRibbonBuffers(): RibbonBuffers`, `createRibbonIndices(): Uint16Array`, `writeRibbon(buf: RibbonBuffers, trail: Trail, nipX: number, nipZ: number, headX: number, headZ: number, sNow: number): void`.
+
+- [ ] **Step 0: Correct `curlSlope`'s guard at q = 0**
+
+Task 1 shipped `curlSlope` guarded as `q <= 0 || q >= 1`. That is wrong at the
+nip: the paper leaves the contact line *already rising* — that is what peeling
+is — so the true one-sided derivative at `q = 0` is `CURL_LIFT * 6.75 ≈ 0.304`,
+not 0. Returning 0 snaps the nip row's normal back to straight-up while its
+immediate neighbour sits at 14.7°, leaving a hard lighting seam exactly where
+the paper emerges from under the roller. Change the guard in
+`src/app/roll/kinematics.ts` and widen the existing Task 1 assertion:
+
+```ts
+export const curlSlope = (q: number): number =>
+  q < 0 || q >= 1 ? 0 : CURL_LIFT * 6.75 * (1 - q) * (1 - 3 * q);
+```
+
+and in `tests/roll-kinematics.test.ts`, inside the existing
+`it('尾端斜率归零 …')`, add after the `curlSlope(1)` assertion:
+
+```ts
+    expect(K.curlSlope(0)).toBeCloseTo(K.CURL_LIFT * 6.75, 12);
+```
+
+Run `npx vitest run tests/roll-kinematics.test.ts` and confirm it is green
+before continuing.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -457,6 +490,21 @@ describe('纸带网格：零每帧堆分配', () => {
     }
     expect(lifted).toBeGreaterThan(0);
     expect(lifted).toBeLessThanOrEqual(K.CURL_SEG + 1);
+  });
+
+  it('法线沿纸带连续变化 —— 压印点那一排不能突然回正', () => {
+    const buf = K.createRibbonBuffers();
+    const sNow = 22.0;
+    K.writeRibbon(buf, straight(sNow), 0, -sNow, 0, -1, sNow);
+    const tilt = (i: number) => {
+      const o = i * 2 * 3;
+      return Math.atan2(Math.hypot(buf.normal[o], buf.normal[o + 2]), buf.normal[o + 1]);
+    };
+    // 卷曲段内相邻两排的法线夹角不许出现硬缝（10° 已经很宽松了）
+    for (let i = 0; i < K.CURL_SEG; i += 1) {
+      expect(Math.abs(tilt(i + 1) - tilt(i))).toBeLessThan((10 * Math.PI) / 180);
+    }
+    expect(tilt(0)).toBeGreaterThan(0); // 纸带着坡度离开压印点
   });
 
   it('法线是单位向量，躺平段朝正上方', () => {
