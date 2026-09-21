@@ -1507,6 +1507,8 @@ EOF
 
 **Deviation from the spec, deliberate:** UI copy lives in `src/app/i18n/`, not `src/shared/i18n/`. The worker never renders UI copy once errors move to the browser, and `src/shared/` is reserved for what genuinely runs in both runtimes (AGENTS.md invariant 10).
 
+**Corrected during implementation:** the copy tables ended up in `src/shared/i18n/` after all, with only the React layer in `src/app/i18n.tsx`. `tests/` compiles under the worker project, which excludes `src/app`, and the checks most worth having on those tables — key parity, placeholder parity, no untranslated Han in the English — are only reachable from there. Plain string tables run in both runtimes, so this respects invariant 10 rather than bending it.
+
 **Type consistency.** `stickText(stick, language)` is used with the same signature in Tasks 2, 4, 5 and 8. `LEVEL_LABEL[language][level]` is consistent in Tasks 2, 5 and 8. `StickFace` takes `{ stick, language, size? }` from Task 5 onward, and Task 5 updates all three call sites. `Interpretation.language` is introduced in Task 4 and relied on in Tasks 7 and 9. `Reading.language` is introduced in Task 4 and consumed in Task 5. `Prefs.language` is introduced in Task 3 and read in Tasks 3, 6 and 11.
 
 **Ordering.** Every task leaves the build green: Task 2 is a pure refactor pinned by the existing assertions, and no task depends on a later one.

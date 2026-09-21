@@ -1351,12 +1351,25 @@ code {
   .ask-zone { padding: 20px 18px; }
 }
 
+/* 顶栏现在有三样东西（牌记、语言开关、记录），窄屏上挤不下就会折行 ——
+   「问一签」被拆成两行看起来像坏了。先收起装饰性的副标，再压小间距。 */
+@media (max-width: 480px) {
+  .topbar { gap: 10px; }
+  .topbar-actions { gap: 12px; }
+  .topbar-actions > * { white-space: nowrap; }
+  .brand-name { white-space: nowrap; }
+  .brand-sub { display: none; }
+}
+
 @media (max-width: 400px) {
   .shell { padding: 14px 16px 26px; }
   .ask-zone { --mark-len: 14px; padding: 16px 12px; }
   .slip { padding: 16px 12px 10px; }
   .slip-cell { padding: 10px; }
-  .slip-vertical { height: 186px; gap: 13px; }
+  /* 带上 .slip[data-lang] 是必须的：基础规则现在也带着它，
+     选择器权重比裸 .slip-vertical 高，不写就压不下去。 */
+  .slip[data-lang='zh'] .slip-vertical { height: 186px; gap: 13px; }
+  .slip[data-lang='en'] .slip-vertical { min-height: 186px; gap: 11px; }
   .footer { gap: 12px; }
   .footer-note { width: 100%; margin-left: 0; }
 }
