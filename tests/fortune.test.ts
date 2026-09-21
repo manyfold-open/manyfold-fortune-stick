@@ -6,6 +6,7 @@ import {
   fallbackInterpretation,
   normalizeQuestion,
   parseInterpretation,
+  unparseableError,
 } from '../src/worker/fortune';
 import { LEVEL_LABEL, STICKS, stickByNo, stickText } from '../src/shared/sticks';
 import { detectLanguage } from '../src/shared/lang';
@@ -348,5 +349,25 @@ describe('按问题的语言解签', () => {
     expect(prompt).toContain('does not draw a new stick');
     expect(prompt).toContain('Where do I start?');
     expect(prompt).not.toContain('不重新抽签');
+  });
+});
+
+describe('unparseableError', () => {
+  it('把 agent 原文的开头一起存下来 —— 只存「解析失败」的话，事后没人知道它到底回了什么', () => {
+    expect(unparseableError('好的，我来帮你看看这支签')).toBe(
+      'unparseable: 好的，我来帮你看看这支签',
+    );
+  });
+
+  it('原文是空的就只存码', () => {
+    expect(unparseableError('   ')).toBe('unparseable');
+  });
+
+  it('原文很长就截断 —— 这一条会进 D1，也会回到浏览器', () => {
+    expect(unparseableError('x'.repeat(2000)).length).toBeLessThanOrEqual(240);
+  });
+
+  it('原文照样过脱敏', () => {
+    expect(unparseableError('Bearer nca_secret_token')).not.toContain('nca_secret_token');
   });
 });
