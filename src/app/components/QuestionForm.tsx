@@ -6,10 +6,15 @@
  *  2. 没写字又没聚焦时，占位文字后面跟着一根会闪的光标。
  * 一聚焦，这两样都让位给真正的光标，版面立刻干净。
  *
+ * 三句可以点的例句不在这里，在机器**下方**（FortuneGame 里的 .suggestions）——
+ * 夹在提问和机器中间会把两者推开，它们本来该是挨着的一组。因为例句要往输入框里
+ * 填字、填完还要把光标交回来，textarea 的 ref 就归调用方持有（inputRef），
+ * 这个组件只管画。
+ *
  * 这里不提交任何东西：写完之后按打印机上的键才开始（校验也在那一步，错在屏上说）。
  */
 
-import { useRef, useState } from 'react';
+import { useState, type RefObject } from 'react';
 import { QUESTION_MAX } from '../constants';
 import { useT } from '../i18n';
 
@@ -18,13 +23,12 @@ export default function QuestionForm(props: {
   onChange: (value: string) => void;
   /** 写完直接回车，等同于按下机器上的键。 */
   onSubmit: () => void;
+  /** 输入框本体，由调用方持有 —— 机器下方的例句点完要把光标送回这里。 */
+  inputRef: RefObject<HTMLTextAreaElement | null>;
 }) {
   const t = useT();
-  // 例子跟着界面语言：它们是机器给的提示，不是已经印出来的纸。
-  // 点了哪一句就等于用那种语言提问，这一局的语言也就跟着定了。
-  const examples = [t('example1'), t('example2'), t('example3')];
   const [focused, setFocused] = useState(false);
-  const field = useRef<HTMLTextAreaElement | null>(null);
+  const field = props.inputRef;
   const length = [...props.value.trim()].length;
   const empty = props.value.length === 0;
 
@@ -64,25 +68,6 @@ export default function QuestionForm(props: {
         <p className={`ask-counter${length > QUESTION_MAX ? ' over' : ''}`}>
           {length} / {QUESTION_MAX}
         </p>
-      )}
-
-      {empty && (
-        <ul className="examples">
-          {examples.map((example) => (
-            <li key={example}>
-              <button
-                type="button"
-                className="text-action"
-                onClick={() => {
-                  props.onChange(example);
-                  field.current?.focus();
-                }}
-              >
-                {example}
-              </button>
-            </li>
-          ))}
-        </ul>
       )}
     </div>
   );
