@@ -35,7 +35,7 @@ export default function ReadingResult(props: {
       <p className="asked">{reading.question}</p>
 
       <div className="sheet-stack">
-        <StickFace stick={reading.stick} />
+        <StickFace stick={reading.stick} language={reading.language} />
 
         {!interpretation && (
           <div className="sheet-actions">

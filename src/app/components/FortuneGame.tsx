@@ -235,7 +235,7 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
           feeding={sheet !== null}
           onPress={() => void draw()}
         >
-          {sheet && <StickFace stick={sheet.stick} />}
+          {sheet && <StickFace stick={sheet.stick} language={sheet.language} />}
         </Printer>
       </div>
     </section>

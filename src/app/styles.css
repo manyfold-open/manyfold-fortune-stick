@@ -40,6 +40,7 @@
   /* 四个等级的底色。tone 用在纸上的字，ground 用在整页的底。 */
   --tone: #5b5750;
   --serif: 'Noto Serif SC', 'Songti SC', 'STSong', 'SimSun', serif;
+  --serif-en: 'Noto Serif', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
   --sans: system-ui, -apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
   --mono: ui-monospace, 'SF Mono', 'SFMono-Regular', Menlo, Consolas, monospace;
   color-scheme: light dark;
@@ -776,7 +777,8 @@ body {
   padding: 18px 14px 20px;
 }
 
-.slip-vertical {
+/* 直排只给中文的签纸：七言两句竖着读是对的，一句英文竖着读不是。 */
+.slip[data-lang='zh'] .slip-vertical {
   writing-mode: vertical-rl;
   display: flex;
   flex-direction: column;
@@ -784,6 +786,17 @@ body {
   justify-content: center;
   gap: 15px;
   height: 208px;
+}
+
+.slip[data-lang='en'] .slip-vertical {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+  min-height: 208px;
+  max-width: 38ch;
+  text-align: center;
 }
 
 .slip-vertical p { margin: 0; }
@@ -806,6 +819,43 @@ body {
   letter-spacing: 0.1em;
   color: var(--tone);
 }
+
+/* 英文签纸：拉开的字距会把词拆散，等级是一个词也不是一个字 —— 都得收回来。 */
+.slip[data-lang='en'] { font-family: var(--serif-en); }
+
+.slip[data-lang='en'] .slip-poem {
+  font-size: 14.5px;
+  letter-spacing: 0.01em;
+  line-height: 1.5;
+  /* 一句对句折行时别把最后一个词丢下 —— balance 让两行长度相当。 */
+  text-wrap: balance;
+}
+
+.slip[data-lang='en'] .slip-meaning {
+  font-size: 13px;
+  letter-spacing: 0;
+  line-height: 1.55;
+  text-wrap: balance;
+}
+
+.slip[data-lang='en'] .slip-lucky {
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+}
+
+.slip[data-lang='en'] .slip-title {
+  font-size: clamp(15px, 4.2vw, 19px);
+  letter-spacing: 0.06em;
+  text-indent: 0;
+}
+
+.slip[data-lang='en'] .slip-level {
+  font-size: clamp(18px, 5.2vw, 26px);
+  letter-spacing: 0.1em;
+  text-indent: 0.1em;
+}
+
+.slip-mini[data-lang='en'] .slip-mini-title { letter-spacing: 0.06em; }
 
 .slip-foot {
   margin-top: 12px;

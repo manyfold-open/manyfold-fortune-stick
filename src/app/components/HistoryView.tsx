@@ -4,6 +4,7 @@
  */
 
 import { useState } from 'react';
+import { detectLanguage } from '../../shared/lang';
 import { stickByNo } from '../../shared/sticks';
 import { api } from '../api';
 import { clearRecords, deleteRecord, listRecords, type LocalRecord } from '../storage';
@@ -75,7 +76,7 @@ export default function HistoryView() {
         return (
           <article className="history-item" key={record.id}>
             <button className="history-summary" onClick={() => setOpenId(open ? null : record.id)}>
-              <StickFace stick={stick} size="small" />
+              <StickFace stick={stick} language={detectLanguage(record.question)} size="small" />
               <span className="history-meta">
                 <span className="history-question">{record.question}</span>
                 <span className="muted small">{formatTime(record.createdAt)}</span>
