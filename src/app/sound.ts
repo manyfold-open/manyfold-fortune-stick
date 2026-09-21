@@ -645,3 +645,125 @@ export function stampSound(level?: StickLevel, gain = 0.22): void {
     jade.stop(start + 0.055);
   }
 }
+
+/**
+ * 滚印签纸机：沉重木滚筒碾过案几的低频隆隆 + 宣纸被压出来的连续沙沙。
+ * 返回一个停止函数，用法和 motor / bambooRattle 一样。
+ */
+export function paperRollRumble(ms: number): () => void {
+  const audio = ctx();
+  if (!audio) return () => undefined;
+  const start = audio.currentTime;
+  const seconds = ms / 1000;
+
+  // 1. 实木滚筒碾过案几的低频体震
+  const body = audio.createOscillator();
+  body.type = 'sine';
+  body.frequency.setValueAtTime(52, start);
+  body.frequency.linearRampToValueAtTime(63, start + seconds * 0.35);
+  body.frequency.linearRampToValueAtTime(46, start + seconds);
+  const bodyGain = audio.createGain();
+  bodyGain.gain.setValueAtTime(0.0001, start);
+  bodyGain.gain.exponentialRampToValueAtTime(0.07, start + 0.12);
+  bodyGain.gain.setValueAtTime(0.07, Math.max(start + 0.12, start + seconds - 0.18));
+  bodyGain.gain.exponentialRampToValueAtTime(0.0001, start + seconds);
+
+  // 2. 木轴与铜箍的摩擦嗡鸣
+  const axle = audio.createOscillator();
+  axle.type = 'sawtooth';
+  axle.frequency.setValueAtTime(122, start);
+  axle.frequency.linearRampToValueAtTime(138, start + seconds);
+  const axleFilter = audio.createBiquadFilter();
+  axleFilter.type = 'lowpass';
+  axleFilter.frequency.setValueAtTime(320, start);
+  axleFilter.Q.setValueAtTime(1.1, start);
+  const axleGain = audio.createGain();
+  axleGain.gain.setValueAtTime(0.0001, start);
+  axleGain.gain.exponentialRampToValueAtTime(0.026, start + 0.16);
+  axleGain.gain.setValueAtTime(0.026, Math.max(start + 0.16, start + seconds - 0.14));
+  axleGain.gain.exponentialRampToValueAtTime(0.0001, start + seconds);
+
+  // 3. 宣纸被碾出来的连续沙沙
+  const paper = audio.createBufferSource();
+  paper.buffer = noiseBuffer(audio, seconds, 0.2);
+  const paperFilter = audio.createBiquadFilter();
+  paperFilter.type = 'bandpass';
+  paperFilter.frequency.setValueAtTime(1900, start);
+  paperFilter.Q.setValueAtTime(0.75, start);
+  const paperGain = audio.createGain();
+  paperGain.gain.setValueAtTime(0.0001, start);
+  paperGain.gain.exponentialRampToValueAtTime(0.03, start + 0.2);
+  paperGain.gain.setValueAtTime(0.03, Math.max(start + 0.2, start + seconds - 0.12));
+  paperGain.gain.exponentialRampToValueAtTime(0.0001, start + seconds);
+
+  body.connect(bodyGain).connect(audio.destination);
+  axle.connect(axleFilter).connect(axleGain).connect(audio.destination);
+  paper.connect(paperFilter).connect(paperGain).connect(audio.destination);
+
+  body.start(start);
+  body.stop(start + seconds + 0.05);
+  axle.start(start);
+  axle.stop(start + seconds + 0.05);
+  paper.start(start);
+
+  return () => {
+    try {
+      body.stop();
+      axle.stop();
+      paper.stop();
+    } catch {
+      /* 已经停止 */
+    }
+  };
+}
+
+/** 长卷铺开：宣纸从滚筒底下舒展出去、落定在案几上的一声轻响。 */
+export function paperUnfurl(): void {
+  const audio = ctx();
+  if (!audio) return;
+  const start = audio.currentTime;
+
+  const noise = audio.createBufferSource();
+  noise.buffer = noiseBuffer(audio, 0.5, 0.9);
+  const filter = audio.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.setValueAtTime(900, start);
+  filter.frequency.exponentialRampToValueAtTime(2600, start + 0.34);
+  filter.Q.setValueAtTime(1.3, start);
+  const gain = audio.createGain();
+  gain.gain.setValueAtTime(0.0001, start);
+  gain.gain.linearRampToValueAtTime(0.045, start + 0.07);
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.46);
+  noise.connect(filter).connect(gain).connect(audio.destination);
+  noise.start(start);
+}
+
+/** 雕版落印：实木压上宣纸的一记闷实顿挫。 */
+export function woodblockPress(gain = 0.24): void {
+  const audio = ctx();
+  if (!audio) return;
+  const start = audio.currentTime;
+
+  const thud = audio.createOscillator();
+  thud.type = 'sine';
+  thud.frequency.setValueAtTime(128, start);
+  thud.frequency.exponentialRampToValueAtTime(41, start + 0.075);
+  const thudGain = audio.createGain();
+  thudGain.gain.setValueAtTime(gain, start);
+  thudGain.gain.exponentialRampToValueAtTime(0.0001, start + 0.085);
+  thud.connect(thudGain).connect(audio.destination);
+  thud.start(start);
+  thud.stop(start + 0.1);
+
+  const grain = audio.createBufferSource();
+  grain.buffer = noiseBuffer(audio, 0.05, 22);
+  const grainFilter = audio.createBiquadFilter();
+  grainFilter.type = 'bandpass';
+  grainFilter.frequency.setValueAtTime(1050, start);
+  grainFilter.Q.setValueAtTime(1.6, start);
+  const grainGain = audio.createGain();
+  grainGain.gain.setValueAtTime(gain * 0.55, start);
+  grainGain.gain.exponentialRampToValueAtTime(0.0001, start + 0.05);
+  grain.connect(grainFilter).connect(grainGain).connect(audio.destination);
+  grain.start(start);
+}
