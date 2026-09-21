@@ -81,6 +81,16 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
+  // <html lang> 决定读屏软件怎么念这一页，所以它得跟着界面语言走，不能钉死在 zh-CN。
+  // 标题和描述同理 —— 标签页上显示的是当前这个人看得懂的那个名字。
+  useEffect(() => {
+    document.documentElement.lang = language === 'en' ? 'en' : 'zh-CN';
+    document.title = t('documentTitle');
+    document
+      .querySelector('meta[name="description"]')
+      ?.setAttribute('content', t('documentDescription'));
+  }, [language, t]);
+
   if (loadError) {
     return (
       <main className="shell">
