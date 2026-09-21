@@ -127,6 +127,18 @@ body {
   margin-bottom: 8px;
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* 语言开关：和「求签记录」一样是一行字，不是一个按钮。 */
+.lang-switch {
+  font: 11px/1 var(--mono);
+  letter-spacing: 0.18em;
+}
+
 .brand {
   display: flex;
   align-items: center;

@@ -7,6 +7,10 @@
  *
  * 设置页只留 URL 入口（#settings），主界面上不放按钮 —— 它是部署者用的，
  * 不是玩家流程的一部分。
+ *
+ * 语言分两层，别混：右上角的开关换的是**界面**（这一层），签纸和解读的语言由
+ * 问题本身决定、印出来就定死（src/shared/lang.ts）。Shell 负责把界面语言
+ * 供给下面所有组件，除此之外不碰任何一张已经印好的签。
  */
 
 import { useCallback, useEffect, useState } from 'react';
@@ -16,6 +20,7 @@ import FortuneGame from './components/FortuneGame';
 import HistoryView from './components/HistoryView';
 import PasswordGate from './components/PasswordGate';
 import SettingsView from './components/SettingsView';
+import { LanguageProvider, useT, useUiLanguage } from './i18n';
 import { getPrefs, setPrefs, type Prefs } from './storage';
 
 type Route = 'game' | 'history' | 'settings';
@@ -28,11 +33,30 @@ const routeFromHash = (): Route => {
 };
 
 export default function App() {
+  const [prefs, setPrefsState] = useState<Prefs>(() => getPrefs());
+
+  const updatePrefs = (patch: Partial<Prefs>) => {
+    const next = { ...prefs, ...patch };
+    setPrefsState(next);
+    setPrefs(next);
+  };
+
+  // Shell 在 provider 里面，这样它自己也能用 useT —— 全站只有一条取文案的路径。
+  return (
+    <LanguageProvider language={prefs.language}>
+      <Shell prefs={prefs} updatePrefs={updatePrefs} />
+    </LanguageProvider>
+  );
+}
+
+function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => void }) {
+  const { prefs, updatePrefs } = props;
+  const t = useT();
+  const language = useUiLanguage();
   const [state, setState] = useState<AppState | null>(null);
   const [loadError, setLoadError] = useState('');
   const [route, setRoute] = useState<Route>(routeFromHash);
   const [gateOpen, setGateOpen] = useState(false);
-  const [prefs, setPrefsState] = useState<Prefs>(() => getPrefs());
 
   const refreshState = useCallback(async () => {
     try {
@@ -57,19 +81,13 @@ export default function App() {
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
-  const updatePrefs = (patch: Partial<Prefs>) => {
-    const next = { ...prefs, ...patch };
-    setPrefsState(next);
-    setPrefs(next);
-  };
-
   if (loadError) {
     return (
       <main className="shell">
         <p className="stage-loading">
-          连不上服务：{loadError}{' '}
+          {t('loadFailed', { detail: loadError })}{' '}
           <button type="button" className="text-action" onClick={() => void refreshState()}>
-            重试
+            {t('retry')}
           </button>
         </p>
       </main>
@@ -78,7 +96,7 @@ export default function App() {
   if (!state) {
     return (
       <main className="shell">
-        <p className="stage-loading">正在预热打印机…</p>
+        <p className="stage-loading">{t('loading')}</p>
       </main>
     );
   }
@@ -94,11 +112,22 @@ export default function App() {
             <i />
           </span>
           <span className="brand-name">问一签</span>
-          <span className="brand-sub">FORTUNE PRINTER</span>
+          <span className="brand-sub">{t('brandSub')}</span>
         </a>
-        <a className="text-action" href={route === 'game' ? '#history' : '#/'}>
-          {route === 'game' ? '求签记录' : '回到求签'}
-        </a>
+        <span className="topbar-actions">
+          {/* 只换界面。已经印出来的签一个字都不会动。 */}
+          <button
+            type="button"
+            className="text-action lang-switch"
+            aria-label={t('langSwitchLabel')}
+            onClick={() => updatePrefs({ language: language === 'zh' ? 'en' : 'zh' })}
+          >
+            {t('langSwitch')}
+          </button>
+          <a className="text-action" href={route === 'game' ? '#history' : '#/'}>
+            {route === 'game' ? t('navHistory') : t('navBackToGame')}
+          </a>
+        </span>
       </header>
 
       {route === 'settings' && (
@@ -114,10 +143,10 @@ export default function App() {
       )}
 
       <span className="rail rail-left" aria-hidden>
-        MODEL WY-36 · MADE IN CHINA
+        {t('railLeft')}
       </span>
       <span className="rail rail-right" aria-hidden>
-        三 十 六 签 · 一 问 一 答
+        {t('railRight')}
       </span>
 
       <footer className="footer">
@@ -127,7 +156,7 @@ export default function App() {
           aria-pressed={prefs.sound}
           onClick={() => updatePrefs({ sound: !prefs.sound })}
         >
-          声音{prefs.sound ? '开' : '关'}
+          {t('footerSound', { state: prefs.sound ? t('footerSoundOn') : t('footerSoundOff') })}
         </button>
         <button
           type="button"
@@ -135,9 +164,11 @@ export default function App() {
           aria-pressed={prefs.reducedMotion}
           onClick={() => updatePrefs({ reducedMotion: !prefs.reducedMotion })}
         >
-          动画{prefs.reducedMotion ? '已减少' : '正常'}
+          {t('footerMotion', {
+            state: prefs.reducedMotion ? t('footerMotionReduced') : t('footerMotionNormal'),
+          })}
         </button>
-        <span className="footer-note">签为参考，路要自己走</span>
+        <span className="footer-note">{t('footerNote')}</span>
       </footer>
 
       {gateOpen && <PasswordGate onSubmitted={refreshState} />}
