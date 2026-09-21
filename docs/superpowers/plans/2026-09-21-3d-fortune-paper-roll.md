@@ -680,6 +680,31 @@ export const createRibbonIndices = (): Uint16Array => {
   return idx;
 };
 
+/** 滚筒侧壁顶点在轴向上的位置。side 0 在 -X 端，side 1 在 +X 端。 */
+export const barrelVertexX = (side: number): number => (side - 0.5) * W;
+
+/**
+ * 滚筒侧壁的三角形索引。绕序要和朝外的顶点法线同向。
+ *
+ * 它和 createRibbonIndices 是**镜像**的，别照搬：纸带一排顶点是（左缘, 右缘），
+ * 滚筒一圈顶点是（-X 端, +X 端），两者手性相反，同一套写法在这里刚好是反的。
+ * 这个坑在本分支里踩过两次（先纸带、后滚筒），所以两边的绕序各有一条测试钉着。
+ */
+export const createBarrelIndices = (): Uint16Array => {
+  const idx = new Uint16Array(BARREL_SEGMENTS * 6);
+  for (let j = 0; j < BARREL_SEGMENTS; j += 1) {
+    const a = j * 2;
+    const o = j * 6;
+    idx[o] = a;
+    idx[o + 1] = a + 2;
+    idx[o + 2] = a + 1;
+    idx[o + 3] = a + 1;
+    idx[o + 4] = a + 2;
+    idx[o + 5] = a + 3;
+  }
+  return idx;
+};
+
 /* ── 中心线暂存：模块加载时分配一次，帧循环里只覆写，不再 new ── */
 
 const cX = new Float32Array(RING);
@@ -1463,6 +1488,8 @@ import {
   barrelRingZ,
   barrelPhi,
   barrelU,
+  barrelVertexX,
+  createBarrelIndices,
   createRibbonBuffers,
   createRibbonIndices,
   createTrail,
@@ -1499,7 +1526,9 @@ function buildBarrelGeometry(): THREE.BufferGeometry {
   const position = new Float32Array(rings * 2 * 3);
   const normal = new Float32Array(rings * 2 * 3);
   const uv = new Float32Array(rings * 2 * 2);
-  const index = new Uint16Array(BARREL_SEGMENTS * 6);
+  // 绕序不在这里手写 —— 它和纸带是镜像的，抄错过一次，现在由 kinematics 里那个
+  // 有测试钉着的 createBarrelIndices 出。
+  const index = createBarrelIndices();
 
   for (let j = 0; j < rings; j += 1) {
     const phi = barrelPhi(j);
@@ -1508,7 +1537,7 @@ function buildBarrelGeometry(): THREE.BufferGeometry {
     const u = barrelU(j);
     for (let side = 0; side < 2; side += 1) {
       const v = j * 2 + side;
-      position[v * 3] = (side - 0.5) * W;
+      position[v * 3] = barrelVertexX(side);
       position[v * 3 + 1] = y;
       position[v * 3 + 2] = z;
       normal[v * 3] = 0;
@@ -1518,17 +1547,6 @@ function buildBarrelGeometry(): THREE.BufferGeometry {
       uv[v * 2 + 1] = side;
     }
   }
-  for (let j = 0; j < BARREL_SEGMENTS; j += 1) {
-    const a = j * 2;
-    const o = j * 6;
-    index[o] = a;
-    index[o + 1] = a + 1;
-    index[o + 2] = a + 2;
-    index[o + 3] = a + 1;
-    index[o + 4] = a + 3;
-    index[o + 5] = a + 2;
-  }
-
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(position, 3));
   geo.setAttribute('normal', new THREE.BufferAttribute(normal, 3));
@@ -1636,6 +1654,7 @@ export function createRollScene(host: HTMLElement, language: Language): RollScen
 
   // ── 柔焦接触阴影 ──
   const blobTex = new THREE.CanvasTexture(createBlobCanvas());
+  blobTex.colorSpace = THREE.SRGBColorSpace;
   const blob = new THREE.Mesh(
     new THREE.PlaneGeometry(R * 4.4, R * 4.4),
     new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false, opacity: 0.85 }),
@@ -1677,8 +1696,11 @@ export function createRollScene(host: HTMLElement, language: Language): RollScen
         '#include <common>\nuniform float uTailS;\nuniform vec3 uTableColor;\nvarying float vS;',
       )
       .replace(
-        '#include <dithering_fragment>',
-        `#include <dithering_fragment>
+        '#include <tonemapping_fragment>',
+        `#include <tonemapping_fragment>
+        // 必须混在 <colorspace_fragment> 之前：uTableColor 是 THREE.Color 存的**线性**值，
+        // 而 colorspace_fragment 之后的 gl_FragColor 已经编码成 sRGB 了。挪到后面去混，
+        // 等于拿线性色去配编码色，尾端会溶成近黑（差约 7 倍），而不是案几的颜色。
         float tailMix = smoothstep(uTailS, uTailS + ${TAIL_FADE.toFixed(1)}, vS);
         gl_FragColor.rgb = mix(uTableColor, gl_FragColor.rgb, tailMix);`,
       );
