@@ -117,7 +117,10 @@ export default function Printer(props: {
     const shell = node.closest('.shell');
     const apply = () => {
       node.style.setProperty('--feed-h', `${Math.ceil(sheet.getBoundingClientRect().height)}px`);
-      const floor = shell ? shell.getBoundingClientRect().bottom : window_.innerHeight;
+      const floor = Math.min(
+        window_.innerHeight - 24,
+        shell ? shell.getBoundingClientRect().bottom : window_.innerHeight,
+      );
       const top = box.getBoundingClientRect().top;
       node.style.setProperty('--feed-max', `${Math.max(0, Math.ceil(floor - top))}px`);
     };

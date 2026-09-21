@@ -48,9 +48,150 @@ export default function ReadingResult(props: {
    */
   const sheet = copyFor(reading.language);
 
+  const actionsNav = (
+    <nav className="result-actions">
+      <button
+        type="button"
+        className="text-action"
+        onClick={() => {
+          setShowShare((open) => !open);
+          if (!showShare) setShowFollowUp(false);
+        }}
+      >
+        {showShare ? t('actionShareClose') : t('actionShare')}
+      </button>
+      <button
+        type="button"
+        className="text-action"
+        onClick={() => {
+          setShowFollowUp((open) => !open);
+          if (!showFollowUp) setShowShare(false);
+        }}
+      >
+        {showFollowUp ? t('actionFollowUpClose') : t('actionFollowUp')}
+      </button>
+      <button type="button" className="text-action strong" onClick={props.onRestart}>
+        {t('actionRestart')}
+      </button>
+    </nav>
+  );
+
+  const interpretationContent = (
+    <>
+      {isFallback && (
+        <p className="sheet-note">
+          {reading.error ? storedErrorText(reading.error, t) : t('fallbackNote')}{' '}
+          <button
+            type="button"
+            className="text-action"
+            onClick={props.onInterpret}
+            disabled={props.interpreting}
+          >
+            {props.interpreting ? t('retrying') : t('retryInterpret')}
+          </button>
+        </p>
+      )}
+
+      <section className="sheet-block sheet-block-lead">
+        <h3>{sheet.blockMeaning}</h3>
+        <p className="sheet-lead">{interpretation?.meaning}</p>
+      </section>
+
+      <section className="sheet-block sheet-block-answer">
+        <h3>{sheet.blockAnswer}</h3>
+        <p>{interpretation?.answer}</p>
+      </section>
+
+      {(interpretation?.notice || interpretation?.action) && (
+        <div className="sheet-pair">
+          {interpretation.notice && (
+            <section className="sheet-block sheet-block-notice">
+              <h3>{sheet.blockNotice}</h3>
+              <p>{interpretation.notice}</p>
+            </section>
+          )}
+          {interpretation.action && (
+            <section className="sheet-block sheet-block-action">
+              <h3>{sheet.blockAction}</h3>
+              <p>{interpretation.action}</p>
+            </section>
+          )}
+        </div>
+      )}
+
+      {props.interpreting && (
+        <div className="interpreting-header">
+          <span className="interpreting-spinner" aria-hidden="true" />
+          <p className="interpreting-status">
+            {t('reinterpreting')}
+            <span className="dots" aria-hidden />
+          </p>
+        </div>
+      )}
+
+      {actionsNav}
+
+      {showShare && interpretation && (
+        <SharePanel
+          stick={reading.stick}
+          language={reading.language}
+          interpretation={interpretation}
+          question={reading.question}
+          onClose={() => setShowShare(false)}
+        />
+      )}
+
+      {showFollowUp && (
+        <FollowUp
+          readingId={reading.id}
+          language={reading.language}
+          onMessages={props.onFollowUpMessages}
+        />
+      )}
+    </>
+  );
+
+  const loadingSkeleton = (
+    <article className="sheet sheet-loading" data-lang={reading.language}>
+      <div className="interpreting-header">
+        <span className="interpreting-spinner" aria-hidden="true" />
+        <p className="interpreting-status">
+          {t('interpreting')}
+          <span className="dots" aria-hidden />
+        </p>
+      </div>
+
+      <div className="skeleton-block">
+        <div className="skeleton-title" />
+        <div className="skeleton-line" style={{ width: '85%' }} />
+        <div className="skeleton-line" style={{ width: '60%' }} />
+      </div>
+
+      <div className="skeleton-block">
+        <div className="skeleton-title" />
+        <div className="skeleton-line" style={{ width: '94%' }} />
+        <div className="skeleton-line" style={{ width: '88%' }} />
+        <div className="skeleton-line" style={{ width: '70%' }} />
+      </div>
+
+      <div className="sheet-pair skeleton-pair">
+        <div className="skeleton-block">
+          <div className="skeleton-title" />
+          <div className="skeleton-line" style={{ width: '80%' }} />
+          <div className="skeleton-line" style={{ width: '62%' }} />
+        </div>
+        <div className="skeleton-block">
+          <div className="skeleton-title" />
+          <div className="skeleton-line" style={{ width: '75%' }} />
+          <div className="skeleton-line" style={{ width: '54%' }} />
+        </div>
+      </div>
+    </article>
+  );
+
   return (
     <section className="stage result" data-tone={LEVEL_TONE[reading.stick.level].key}>
-      <div className="result-deck">
+      <div className="result-deck mode-single">
         <div className="sheet-stack">
           {/* 所求之事：神諭紙卷抬頭 */}
           <div className="scroll-head" data-lang={reading.language}>
@@ -67,144 +208,20 @@ export default function ReadingResult(props: {
               <button type="button" className="text-action lead-action" onClick={props.onInterpret}>
                 {t('interpret')}
               </button>
+              <div className="sheet-sub-actions">
+                <button type="button" className="text-action" onClick={props.onRestart}>
+                  {t('actionRestart')}
+                </button>
+              </div>
               {props.error && <p className="fault">{props.error}</p>}
             </div>
           )}
 
-          {!interpretation && props.interpreting && (
-            <article className="sheet sheet-loading" data-lang={reading.language}>
-              <div className="interpreting-header">
-                <span className="interpreting-spinner" aria-hidden="true" />
-                <p className="interpreting-status">
-                  {t('interpreting')}
-                  <span className="dots" aria-hidden />
-                </p>
-              </div>
-
-              <div className="skeleton-block">
-                <div className="skeleton-title" />
-                <div className="skeleton-line" style={{ width: '85%' }} />
-                <div className="skeleton-line" style={{ width: '60%' }} />
-              </div>
-
-              <div className="skeleton-block">
-                <div className="skeleton-title" />
-                <div className="skeleton-line" style={{ width: '94%' }} />
-                <div className="skeleton-line" style={{ width: '88%' }} />
-                <div className="skeleton-line" style={{ width: '70%' }} />
-              </div>
-
-              <div className="sheet-pair skeleton-pair">
-                <div className="skeleton-block">
-                  <div className="skeleton-title" />
-                  <div className="skeleton-line" style={{ width: '80%' }} />
-                  <div className="skeleton-line" style={{ width: '62%' }} />
-                </div>
-                <div className="skeleton-block">
-                  <div className="skeleton-title" />
-                  <div className="skeleton-line" style={{ width: '75%' }} />
-                  <div className="skeleton-line" style={{ width: '54%' }} />
-                </div>
-              </div>
-            </article>
-          )}
+          {!interpretation && props.interpreting && loadingSkeleton}
 
           {interpretation && (
             <article className={`sheet${props.interpreting ? ' sheet-loading' : ''}`} data-lang={reading.language}>
-              {isFallback && (
-                <p className="sheet-note">
-                  {reading.error ? storedErrorText(reading.error, t) : t('fallbackNote')}{' '}
-                  <button
-                    type="button"
-                    className="text-action"
-                    onClick={props.onInterpret}
-                    disabled={props.interpreting}
-                  >
-                    {props.interpreting ? t('retrying') : t('retryInterpret')}
-                  </button>
-                </p>
-              )}
-
-              <section className="sheet-block sheet-block-lead">
-                <h3>{sheet.blockMeaning}</h3>
-                <p className="sheet-lead">{interpretation.meaning}</p>
-              </section>
-
-              <section className="sheet-block sheet-block-answer">
-                <h3>{sheet.blockAnswer}</h3>
-                <p>{interpretation.answer}</p>
-              </section>
-
-              {(interpretation.notice || interpretation.action) && (
-                <div className="sheet-pair">
-                  {interpretation.notice && (
-                    <section className="sheet-block sheet-block-notice">
-                      <h3>{sheet.blockNotice}</h3>
-                      <p>{interpretation.notice}</p>
-                    </section>
-                  )}
-                  {interpretation.action && (
-                    <section className="sheet-block sheet-block-action">
-                      <h3>{sheet.blockAction}</h3>
-                      <p>{interpretation.action}</p>
-                    </section>
-                  )}
-                </div>
-              )}
-
-              {props.interpreting && (
-                <div className="interpreting-header">
-                  <span className="interpreting-spinner" aria-hidden="true" />
-                  <p className="interpreting-status">
-                    {t('reinterpreting')}
-                    <span className="dots" aria-hidden />
-                  </p>
-                </div>
-              )}
-
-              <nav className="result-actions">
-                <button
-                  type="button"
-                  className="text-action"
-                  onClick={() => {
-                    setShowShare((open) => !open);
-                    if (!showShare) setShowFollowUp(false);
-                  }}
-                >
-                  {showShare ? t('actionShareClose') : t('actionShare')}
-                </button>
-                <button
-                  type="button"
-                  className="text-action"
-                  onClick={() => {
-                    setShowFollowUp((open) => !open);
-                    if (!showFollowUp) setShowShare(false);
-                  }}
-                >
-                  {showFollowUp ? t('actionFollowUpClose') : t('actionFollowUp')}
-                </button>
-                <button type="button" className="text-action strong" onClick={props.onRestart}>
-                  {t('actionRestart')}
-                </button>
-              </nav>
-
-              {showShare && (
-                <SharePanel
-                  stick={reading.stick}
-                  language={reading.language}
-                  interpretation={interpretation}
-                  question={reading.question}
-                  onClose={() => setShowShare(false)}
-                />
-              )}
-
-              {showFollowUp && (
-                <FollowUp
-                  readingId={reading.id}
-                  language={reading.language}
-                  onMessages={props.onFollowUpMessages}
-                />
-              )}
+              {interpretationContent}
             </article>
           )}
         </div>
