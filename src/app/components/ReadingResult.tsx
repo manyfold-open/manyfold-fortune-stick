@@ -11,21 +11,12 @@
 
 import { useState } from 'react';
 import type { FollowUpMessage, Reading } from '../../shared/types';
-import { errorMessage, ApiError } from '../api';
+import { storedErrorText } from '../api';
 import { LEVEL_TONE } from '../constants';
 import { copyFor, useT } from '../i18n';
 import FollowUp from './FollowUp';
 import SharePanel from './SharePanel';
 import StickFace from './StickFace';
-
-/**
- * readings.error 里存的：'unparseable'、一个 HttpError 的 code，或者 agent 那边
- * 抛回来的一段脱敏文字。前两种查表，第三种原样显示。
- */
-function storedErrorText(error: string, t: ReturnType<typeof useT>): string {
-  if (error === 'unparseable') return t('fallbackUnparseable');
-  return errorMessage(new ApiError(0, error, ''), t);
-}
 
 export default function ReadingResult(props: {
   reading: Reading;
