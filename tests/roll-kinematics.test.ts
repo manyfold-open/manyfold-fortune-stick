@@ -78,6 +78,7 @@ describe('剥离微卷曲与弹簧', () => {
 
   it('尾端斜率归零 —— 纸躺平的时候不能带折角', () => {
     expect(K.curlSlope(1)).toBe(0);
+    expect(K.curlSlope(0)).toBeCloseTo(K.CURL_LIFT * 6.75, 12);
     expect(K.curlSlope(1 / 3)).toBeCloseTo(0, 12);
     expect(K.curlSlope(0.1)).toBeGreaterThan(0);
     expect(K.curlSlope(0.8)).toBeLessThan(0);
@@ -101,5 +102,154 @@ describe('剥离微卷曲与弹簧', () => {
     expect(K.MAX_SEG).toBe(778);
     expect(K.VERTS).toBe((778 + 1) * 2);
     expect(K.VERTS).toBeLessThan(65536); // Uint16 索引装得下
+  });
+});
+
+describe('纸带网格：零每帧堆分配', () => {
+  const straight = (sNow: number) => {
+    // 沿 -Z 笔直走，压印点在 (0, -sNow)
+    const trail = K.createTrail();
+    for (let s = 0; s <= sNow; s += K.SEG_LEN) K.pushTrail(trail, 0, -s, s);
+    return trail;
+  };
+
+  it('索引只算一次，条数固定，装得进 Uint16', () => {
+    const idx = K.createRibbonIndices();
+    expect(idx).toBeInstanceOf(Uint16Array);
+    expect(idx.length).toBe(K.MAX_SEG * 6);
+    expect(Math.max(...idx)).toBe(K.VERTS - 1);
+  });
+
+  it('缓冲区长度写死，写多少帧都是同一批 TypedArray', () => {
+    const buf = K.createRibbonBuffers();
+    expect(buf.position.length).toBe(K.VERTS * 3);
+    expect(buf.normal.length).toBe(K.VERTS * 3);
+    expect(buf.uv.length).toBe(K.VERTS * 2);
+    expect(buf.aS.length).toBe(K.VERTS);
+
+    const before = [buf.position, buf.normal, buf.uv, buf.aS];
+    const trail = straight(30);
+    for (let f = 0; f < 200; f += 1) K.writeRibbon(buf, trail, 0, -30, 0, -1, 30);
+    expect([buf.position, buf.normal, buf.uv, buf.aS]).toEqual(before);
+    expect(buf.position.length).toBe(K.VERTS * 3);
+  });
+
+  it('pushTrail 走满一个 SEG_LEN 才落点', () => {
+    const trail = K.createTrail();
+    expect(K.pushTrail(trail, 0, 0, 0)).toBe(true);
+    expect(K.pushTrail(trail, 0, -0.01, 0.01)).toBe(false);
+    expect(trail.count).toBe(1);
+    expect(K.pushTrail(trail, 0, -K.SEG_LEN, K.SEG_LEN)).toBe(true);
+    expect(trail.count).toBe(2);
+  });
+
+  it('环形缓冲写满之后 count 封顶，不再增长', () => {
+    const trail = K.createTrail();
+    for (let i = 0; i < K.MAX_SEG * 3; i += 1) K.pushTrail(trail, 0, -i * K.SEG_LEN, i * K.SEG_LEN);
+    expect(trail.count).toBe(K.MAX_SEG + 1);
+  });
+
+  it('UV 锁死在弧长上：任何一个采样点的 u 都等于它自己的 s/(2πR)', () => {
+    const buf = K.createRibbonBuffers();
+    const sNow = 26.4;
+    K.writeRibbon(buf, straight(sNow), 0, -sNow, 0, -1, sNow);
+    for (let i = 0; i <= K.MAX_SEG; i += 37) {
+      const s = buf.aS[i * 2];
+      expect(buf.uv[i * 2 * 2]).toBeCloseTo(s / K.TWO_PI_R, 6);
+      expect(buf.aS[i * 2 + 1]).toBeCloseTo(s, 6);
+      // 左右两条边共用同一个 u，只有 v 不同
+      expect(buf.uv[(i * 2 + 1) * 2]).toBeCloseTo(buf.uv[i * 2 * 2], 6);
+      expect(buf.uv[i * 2 * 2 + 1]).toBe(0);
+      expect(buf.uv[(i * 2 + 1) * 2 + 1]).toBe(1);
+    }
+    // 压印点那一端的 u 就是 nipU
+    expect(buf.uv[0]).toBeCloseTo(K.nipU(sNow), 6);
+  });
+
+  it('纸带宽度恒为 W，弧长沿纸带只减不增', () => {
+    const buf = K.createRibbonBuffers();
+    const sNow = 18.0;
+    K.writeRibbon(buf, straight(sNow), 0, -sNow, 0, -1, sNow);
+    for (let i = 0; i <= K.MAX_SEG; i += 53) {
+      const ax = buf.position[i * 2 * 3];
+      const az = buf.position[i * 2 * 3 + 2];
+      const bx = buf.position[(i * 2 + 1) * 3];
+      const bz = buf.position[(i * 2 + 1) * 3 + 2];
+      expect(Math.hypot(ax - bx, az - bz)).toBeCloseTo(K.W, 5);
+    }
+    for (let i = 1; i <= K.MAX_SEG; i += 1) {
+      expect(buf.aS[i * 2]).toBeLessThanOrEqual(buf.aS[(i - 1) * 2] + 1e-6);
+    }
+  });
+
+  it('只有最靠近滚筒的 16 段被抬起来，其余全部躺在地面上', () => {
+    const buf = K.createRibbonBuffers();
+    const sNow = 22.0;
+    K.writeRibbon(buf, straight(sNow), 0, -sNow, 0, -1, sNow);
+    expect(buf.position[1]).toBeCloseTo(K.GROUND_Y, 6); // 压印点本身贴地
+    let lifted = 0;
+    for (let i = 0; i <= K.MAX_SEG; i += 1) {
+      const y = buf.position[i * 2 * 3 + 1];
+      expect(y).toBeGreaterThanOrEqual(K.GROUND_Y - 1e-9);
+      expect(y).toBeLessThanOrEqual(K.GROUND_Y + K.CURL_LIFT + 1e-9);
+      if (y > K.GROUND_Y + 1e-9) lifted += 1;
+    }
+    expect(lifted).toBeGreaterThan(0);
+    expect(lifted).toBeLessThanOrEqual(K.CURL_SEG + 1);
+  });
+
+  it('法线沿纸带连续变化 —— 压印点那一排不能突然回正', () => {
+    const buf = K.createRibbonBuffers();
+    const sNow = 22.0;
+    K.writeRibbon(buf, straight(sNow), 0, -sNow, 0, -1, sNow);
+    const tilt = (i: number) => {
+      const o = i * 2 * 3;
+      return Math.atan2(Math.hypot(buf.normal[o], buf.normal[o + 2]), buf.normal[o + 1]);
+    };
+    // 卷曲段内相邻两排的法线夹角不许出现硬缝（10° 已经很宽松了）
+    for (let i = 0; i < K.CURL_SEG; i += 1) {
+      expect(Math.abs(tilt(i + 1) - tilt(i))).toBeLessThan((10 * Math.PI) / 180);
+    }
+    expect(tilt(0)).toBeGreaterThan(0); // 纸带着坡度离开压印点
+  });
+
+  it('法线是单位向量，躺平段朝正上方', () => {
+    const buf = K.createRibbonBuffers();
+    const sNow = 22.0;
+    K.writeRibbon(buf, straight(sNow), 0, -sNow, 0, -1, sNow);
+    for (let i = 0; i <= K.MAX_SEG; i += 61) {
+      const o = i * 2 * 3;
+      expect(Math.hypot(buf.normal[o], buf.normal[o + 1], buf.normal[o + 2])).toBeCloseTo(1, 6);
+    }
+    const far = K.MAX_SEG * 2 * 3;
+    expect(buf.normal[far + 1]).toBeCloseTo(1, 6);
+  });
+
+  it('历史点不够时，多出来的顶点压在最老的那个点上（退化三角形，顶点数不变）', () => {
+    const buf = K.createRibbonBuffers();
+    const trail = K.createTrail();
+    K.pushTrail(trail, 0, 0, 0);
+    K.pushTrail(trail, 0, -K.SEG_LEN, K.SEG_LEN);
+    K.pushTrail(trail, 0, -2 * K.SEG_LEN, 2 * K.SEG_LEN);
+    K.writeRibbon(buf, trail, 0, -2 * K.SEG_LEN, 0, -1, 2 * K.SEG_LEN);
+    const lastZ = buf.position[K.MAX_SEG * 2 * 3 + 2];
+    const midZ = buf.position[400 * 2 * 3 + 2];
+    expect(midZ).toBeCloseTo(lastZ, 9);
+    expect(lastZ).toBeCloseTo(0, 9); // 最老的那个点就是起点
+    expect(buf.position.length).toBe(K.VERTS * 3);
+  });
+
+  it('tailS 指着最远端那个还活着的采样点，起步时指着合成出来的直尾巴', () => {
+    const empty = K.createTrail();
+    expect(K.tailS(empty, 0)).toBeCloseTo(-K.TRAIL_LEN, 9);
+    const trail = straight(40);
+    expect(K.tailS(trail, 40)).toBeCloseTo(trail.s[(trail.head - trail.count + 1 + (K.MAX_SEG + 1) * 2) % (K.MAX_SEG + 1)], 6);
+  });
+
+  it('resetTrail 把历史清干净', () => {
+    const trail = straight(10);
+    K.resetTrail(trail);
+    expect(trail.count).toBe(0);
+    expect(trail.head).toBe(0);
   });
 });
