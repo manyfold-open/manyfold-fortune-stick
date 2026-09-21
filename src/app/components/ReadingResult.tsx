@@ -12,6 +12,7 @@
 import { useState } from 'react';
 import type { FollowUpMessage, Reading } from '../../shared/types';
 import { LEVEL_TONE } from '../constants';
+import { useT } from '../i18n';
 import FollowUp from './FollowUp';
 import SharePanel from './SharePanel';
 import StickFace from './StickFace';
@@ -24,6 +25,7 @@ export default function ReadingResult(props: {
   onFollowUpMessages: (messages: FollowUpMessage[]) => void;
   onRestart: () => void;
 }) {
+  const t = useT();
   const [showShare, setShowShare] = useState(false);
   const [showFollowUp, setShowFollowUp] = useState(false);
   const { reading } = props;
@@ -41,11 +43,12 @@ export default function ReadingResult(props: {
           <div className="sheet-actions">
             {props.interpreting ? (
               <p className="working" role="status">
-                正在解签<span className="dots" aria-hidden />
+                {t('interpreting')}
+                <span className="dots" aria-hidden />
               </p>
             ) : (
               <button type="button" className="text-action lead-action" onClick={props.onInterpret}>
-                解 签
+                {t('interpret')}
               </button>
             )}
             {props.error && !props.interpreting && <p className="fault">{props.error}</p>}
@@ -56,40 +59,45 @@ export default function ReadingResult(props: {
           <article className="sheet">
             {isFallback && (
               <p className="sheet-note">
-                {reading.error ?? '这次没能结合你的问题解读。'}
+                {/* error 存的是码，文案在这边 —— 不认识的码原样显示，
+                    这样新加的错误不会被悄悄吞掉。 */}
+                {reading.error === 'unparseable'
+                  ? t('fallbackUnparseable')
+                  : (reading.error ?? t('fallbackNote'))}{' '}
                 <button
                   type="button"
                   className="text-action"
                   onClick={props.onInterpret}
                   disabled={props.interpreting}
                 >
-                  {props.interpreting ? '重试中…' : '重试解签'}
+                  {props.interpreting ? t('retrying') : t('retryInterpret')}
                 </button>
               </p>
             )}
 
             <section className="sheet-block">
-              <h3>一句话签意</h3>
+              <h3>{t('blockMeaning')}</h3>
               <p className="sheet-lead">{interpretation.meaning}</p>
             </section>
             <section className="sheet-block">
-              <h3>回应你的问题</h3>
+              <h3>{t('blockAnswer')}</h3>
               <p>{interpretation.answer}</p>
             </section>
             {interpretation.notice && (
               <section className="sheet-block">
-                <h3>值得留意</h3>
+                <h3>{t('blockNotice')}</h3>
                 <p>{interpretation.notice}</p>
               </section>
             )}
             <section className="sheet-block">
-              <h3>可以做的一件小事</h3>
+              <h3>{t('blockAction')}</h3>
               <p>{interpretation.action}</p>
             </section>
 
             {props.interpreting && (
               <p className="working" role="status">
-                正在重新解签<span className="dots" aria-hidden />
+                {t('reinterpreting')}
+                <span className="dots" aria-hidden />
               </p>
             )}
           </article>
@@ -100,17 +108,17 @@ export default function ReadingResult(props: {
         <>
           <nav className="result-actions">
             <button type="button" className="text-action" onClick={() => setShowShare((open) => !open)}>
-              {showShare ? '收起分享' : '分享结果'}
+              {showShare ? t('actionShareClose') : t('actionShare')}
             </button>
             <button
               type="button"
               className="text-action"
               onClick={() => setShowFollowUp((open) => !open)}
             >
-              {showFollowUp ? '收起追问' : '继续追问'}
+              {showFollowUp ? t('actionFollowUpClose') : t('actionFollowUp')}
             </button>
             <button type="button" className="text-action strong" onClick={props.onRestart}>
-              再求一签
+              {t('actionRestart')}
             </button>
           </nav>
 

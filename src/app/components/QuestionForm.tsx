@@ -11,12 +11,7 @@
 
 import { useRef, useState } from 'react';
 import { QUESTION_MAX } from '../constants';
-
-const EXAMPLES = [
-  '我该如何面对最近的工作变化？',
-  '这段关系还值得我继续投入吗？',
-  '现在是开始做那件想了很久的事的时候吗？',
-];
+import { useT } from '../i18n';
 
 export default function QuestionForm(props: {
   value: string;
@@ -24,6 +19,10 @@ export default function QuestionForm(props: {
   /** 写完直接回车，等同于按下机器上的键。 */
   onSubmit: () => void;
 }) {
+  const t = useT();
+  // 例子跟着界面语言：它们是机器给的提示，不是已经印出来的纸。
+  // 点了哪一句就等于用那种语言提问，这一局的语言也就跟着定了。
+  const examples = [t('example1'), t('example2'), t('example3')];
   const [focused, setFocused] = useState(false);
   const field = useRef<HTMLTextAreaElement | null>(null);
   const length = [...props.value.trim()].length;
@@ -50,11 +49,11 @@ export default function QuestionForm(props: {
             }}
             rows={1}
             maxLength={QUESTION_MAX + 40}
-            aria-label="你想问的事"
+            aria-label={t('askLabel')}
           />
           {empty && !focused && (
             <p className="ask-ghost" aria-hidden>
-              写下你心里的那件事
+              {t('askGhost')}
               <span className="ask-caret" />
             </p>
           )}
@@ -69,7 +68,7 @@ export default function QuestionForm(props: {
 
       {empty && (
         <ul className="examples">
-          {EXAMPLES.map((example) => (
+          {examples.map((example) => (
             <li key={example}>
               <button
                 type="button"

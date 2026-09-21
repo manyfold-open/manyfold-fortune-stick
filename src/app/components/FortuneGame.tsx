@@ -14,6 +14,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FollowUpMessage, Reading } from '../../shared/types';
 import { api, ApiError } from '../api';
 import { EJECT_MS, LEVEL_TONE, PRINT_MS, QUESTION_MIN, QUESTION_MAX } from '../constants';
+import { useT } from '../i18n';
 import { chime, motor, press as pressSound } from '../sound';
 import {
   getCurrentReadingId,
@@ -35,6 +36,7 @@ interface Fault {
 }
 
 export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boolean }) {
+  const t = useT();
   const [question, setQuestion] = useState('');
   const [phase, setPhase] = useState<Phase>('ask');
   const [reading, setReading] = useState<Reading | null>(null);
@@ -91,12 +93,12 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
     if (phase !== 'ask') return;
 
     const length = [...question.trim()].length;
-    if (length === 0) return setFault({ code: 'E-01', text: '先写下你想问的事' });
+    if (length === 0) return setFault({ code: 'E-01', text: t('faultEmpty') });
     if (length < QUESTION_MIN) {
-      return setFault({ code: 'E-02', text: `再多写几个字（至少 ${QUESTION_MIN} 字）` });
+      return setFault({ code: 'E-02', text: t('faultTooShort', { min: QUESTION_MIN }) });
     }
     if (length > QUESTION_MAX) {
-      return setFault({ code: 'E-03', text: `太长了，请收在 ${QUESTION_MAX} 字以内` });
+      return setFault({ code: 'E-03', text: t('faultTooLong', { max: QUESTION_MAX }) });
     }
 
     setFault(null);
@@ -139,7 +141,7 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
       setPhase('ask');
       setFault({ code: 'ERROR', text: cause instanceof Error ? cause.message : String(cause) });
     }
-  }, [phase, question, props.prefs.reducedMotion, props.prefs.sound]);
+  }, [phase, question, props.prefs.reducedMotion, props.prefs.sound, t]);
 
   const interpret = useCallback(async () => {
     if (!reading || interpreting) return;
@@ -186,7 +188,7 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
   if (restoring) {
     return (
       <section className="stage">
-        <p className="stage-loading">正在取回你的签…</p>
+        <p className="stage-loading">{t('restoring')}</p>
       </section>
     );
   }
@@ -209,12 +211,12 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
   const lcd = fault
     ? { code: fault.code, message: fault.text, alert: true }
     : printing
-      ? { code: 'PRINT', message: '正在打印…', alert: false }
+      ? { code: 'PRINT', message: t('lcdPrinting'), alert: false }
       : typed === 0
         ? props.interpreterReady
-          ? { code: 'READY', message: '写下你心里的事', alert: false }
-          : { code: 'WARN', message: '解签服务未连接', alert: true }
-        : { code: 'READY', message: '按下印键，开始打印', alert: false };
+          ? { code: 'READY', message: t('lcdWriteSomething'), alert: false }
+          : { code: 'WARN', message: t('lcdNoInterpreter'), alert: true }
+        : { code: 'READY', message: t('lcdPressKey'), alert: false };
 
   return (
     <section className="stage" data-tone={sheet ? LEVEL_TONE[sheet.stick.level].key : undefined}>

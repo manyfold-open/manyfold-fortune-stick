@@ -599,6 +599,12 @@ body {
   color: var(--accent);
 }
 
+/* 英文键帽是一个词，不是一个字：缩到无衬线小字，才装得进同一颗键。 */
+.print-key[data-lang='en'] .print-key-cap {
+  font: 700 clamp(10px, 2.4vw, 12px) / 1 var(--mono);
+  letter-spacing: 0.14em;
+}
+
 .print-key:active:not(:disabled) {
   transform: translateY(3px);
   box-shadow:
