@@ -153,6 +153,14 @@ describe('parseInterpretation', () => {
     );
     expect(parsed?.answer).toBe('先把最小的一步做出来。');
   });
+
+  it('串流重复多个 JSON 物件时仍取出有效解读', () => {
+    const raw = `${JSON.stringify(good)}${JSON.stringify(good)}`;
+    expect(parseInterpretation(raw, stick, 'zh')).toMatchObject({
+      answer: good.answer,
+      source: 'ai',
+    });
+  });
 });
 
 describe('fallbackInterpretation', () => {
