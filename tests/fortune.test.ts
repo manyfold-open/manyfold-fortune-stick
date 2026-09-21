@@ -7,7 +7,8 @@ import {
   normalizeQuestion,
   parseInterpretation,
 } from '../src/worker/fortune';
-import { STICKS, stickByNo } from '../src/shared/sticks';
+import { LEVEL_LABEL, STICKS, stickByNo, stickText } from '../src/shared/sticks';
+import { detectLanguage } from '../src/shared/lang';
 import type { Interpretation, Reading } from '../src/shared/types';
 
 const stick = stickByNo(7)!;
@@ -22,14 +23,15 @@ describe('签库', () => {
 
   it('每支签的六个字段都不为空，签诗是两句', () => {
     for (const entry of STICKS) {
-      expect(entry.title.length).toBeGreaterThan(0);
-      expect(entry.poem).toHaveLength(2);
-      expect(entry.poem[0].length).toBeGreaterThan(0);
-      expect(entry.poem[1].length).toBeGreaterThan(0);
-      expect(entry.meaning.length).toBeGreaterThan(0);
+      const text = stickText(entry, 'zh');
+      expect(text.title.length).toBeGreaterThan(0);
+      expect(text.poem).toHaveLength(2);
+      expect(text.poem[0].length).toBeGreaterThan(0);
+      expect(text.poem[1].length).toBeGreaterThan(0);
+      expect(text.meaning.length).toBeGreaterThan(0);
       // general / action 同时是 AI 不可用时的兜底，必须能独立成话。
-      expect(entry.general.length).toBeGreaterThan(20);
-      expect(entry.action.length).toBeGreaterThan(0);
+      expect(text.general.length).toBeGreaterThan(20);
+      expect(text.action.length).toBeGreaterThan(0);
     }
   });
 
@@ -41,7 +43,8 @@ describe('签库', () => {
   it('下签的文案不使用恐吓性说法', () => {
     const scary = ['大凶', '灾', '必败', '绝望', '完蛋', '死'];
     for (const entry of STICKS.filter((one) => one.level === '下签')) {
-      const text = `${entry.meaning}${entry.general}${entry.action}`;
+      const zh = stickText(entry, 'zh');
+      const text = `${zh.meaning}${zh.general}${zh.action}`;
       for (const word of scary) expect(text).not.toContain(word);
     }
   });
@@ -120,8 +123,8 @@ describe('parseInterpretation', () => {
 
   it('缺失的次要字段落回这支签预先写好的内容', () => {
     const parsed = parseInterpretation(JSON.stringify({ answer: good.answer }), stick);
-    expect(parsed?.meaning).toBe(stick.meaning);
-    expect(parsed?.action).toBe(stick.action);
+    expect(parsed?.meaning).toBe(stickText(stick, 'zh').meaning);
+    expect(parsed?.action).toBe(stickText(stick, 'zh').action);
     expect(parsed?.notice).toBe('');
   });
 
@@ -137,8 +140,8 @@ describe('parseInterpretation', () => {
 describe('fallbackInterpretation', () => {
   it('用这支签预先写好的通用解释和行动方向，并标明来源', () => {
     const fallback = fallbackInterpretation(stick);
-    expect(fallback.answer).toBe(stick.general);
-    expect(fallback.action).toBe(stick.action);
+    expect(fallback.answer).toBe(stickText(stick, 'zh').general);
+    expect(fallback.action).toBe(stickText(stick, 'zh').action);
     expect(fallback.source).toBe('fallback');
   });
 });
@@ -149,7 +152,7 @@ describe('提示词', () => {
     expect(prompt).toContain('我该不该换工作？');
     expect(prompt).toContain(`第 ${stick.no} 签`);
     expect(prompt).toContain(stick.level);
-    expect(prompt).toContain(stick.poem[0]);
+    expect(prompt).toContain(stickText(stick, 'zh').poem[0]);
     expect(prompt).toContain('由系统抽定，不可更改');
     expect(prompt).toContain('不预言必然发生的事');
   });
@@ -179,9 +182,65 @@ describe('提示词', () => {
     const prompt = buildFollowUpPrompt(reading, interpretation, '先从哪一步开始？');
     expect(prompt).toContain('我该不该换工作？');
     expect(prompt).toContain(`第 ${stick.no} 签`);
-    expect(prompt).toContain(stick.poem[1]);
+    expect(prompt).toContain(stickText(stick, 'zh').poem[1]);
     expect(prompt).toContain('回应');
     expect(prompt).toContain('不重新抽签');
     expect(prompt).toContain('先从哪一步开始？');
+  });
+});
+
+describe('英文签库', () => {
+  it('每支签都有 zh 和 en 两套文字，字段齐全，签诗都是两句', () => {
+    for (const entry of STICKS) {
+      for (const language of ['zh', 'en'] as const) {
+        const text = stickText(entry, language);
+        expect(text.title.length).toBeGreaterThan(0);
+        expect(text.poem).toHaveLength(2);
+        expect(text.poem[0].length).toBeGreaterThan(0);
+        expect(text.poem[1].length).toBeGreaterThan(0);
+        expect(text.meaning.length).toBeGreaterThan(0);
+        expect(text.action.length).toBeGreaterThan(0);
+      }
+      // general / action 同时是 AI 不可用时的兜底，必须能独立成话。
+      expect(stickText(entry, 'zh').general.length).toBeGreaterThan(20);
+      expect(stickText(entry, 'en').general.length).toBeGreaterThan(60);
+    }
+  });
+
+  it('英文那一套里没有汉字 —— 漏翻会被这条抓住', () => {
+    const han = /[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/;
+    for (const entry of STICKS) {
+      const text = stickText(entry, 'en');
+      const joined = `${text.title}${text.poem[0]}${text.poem[1]}${text.meaning}${text.general}${text.action}`;
+      expect(han.test(joined), `第 ${entry.no} 签的英文里还有汉字`).toBe(false);
+    }
+  });
+
+  it('英文那一套自己就能被认成英文', () => {
+    for (const entry of STICKS) {
+      expect(detectLanguage(stickText(entry, 'en').general)).toBe('en');
+    }
+  });
+
+  it('36 个英文签名互不重复', () => {
+    const titles = STICKS.map((entry) => stickText(entry, 'en').title);
+    expect(new Set(titles).size).toBe(36);
+  });
+
+  it('下签的英文文案同样不恐吓', () => {
+    const scary = ['disaster', 'doomed', 'ruin', 'catastrophe', 'death', 'fail utterly'];
+    for (const entry of STICKS.filter((one) => one.level === '下签')) {
+      const text = stickText(entry, 'en');
+      const joined = `${text.meaning} ${text.general} ${text.action}`.toLowerCase();
+      for (const word of scary) expect(joined).not.toContain(word);
+    }
+  });
+
+  it('四个等级都有英文名', () => {
+    expect(LEVEL_LABEL.en['上上签']).toBe('GREAT FORTUNE');
+    expect(LEVEL_LABEL.en['上签']).toBe('GOOD FORTUNE');
+    expect(LEVEL_LABEL.en['中签']).toBe('MIDDLING');
+    expect(LEVEL_LABEL.en['下签']).toBe('POOR FORTUNE');
+    expect(LEVEL_LABEL.zh['上上签']).toBe('上上签');
   });
 });

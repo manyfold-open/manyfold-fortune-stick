@@ -18,7 +18,7 @@ import type {
   Reading,
   ReadingStatus,
 } from '../shared/types';
-import { STICK_COUNT, stickByNo, type FortuneStick } from '../shared/sticks';
+import { STICK_COUNT, stickByNo, stickText, type FortuneStick } from '../shared/sticks';
 import { HttpError, type AgentCredential, type Env } from './types';
 import { A2AError, consumeA2AStream, safeErrorText } from './a2a';
 import { credentialFor, listConnectedAgents } from './connect';
@@ -141,11 +141,12 @@ export async function deleteReading(env: Env, id: string): Promise<void> {
 
 /** AI 不可用时显示的内容：这支签预先写好的通用解释，永远可用。 */
 export function fallbackInterpretation(stick: FortuneStick): Interpretation {
+  const text = stickText(stick, 'zh');
   return {
-    meaning: stick.meaning,
-    answer: stick.general,
+    meaning: text.meaning,
+    answer: text.general,
     notice: '这一份是这支签的通用解释，还没有结合你的问题。',
-    action: stick.action,
+    action: text.action,
     source: 'fallback',
   };
 }
@@ -164,6 +165,7 @@ const FIELD_LIMITS: Record<keyof Omit<Interpretation, 'source'>, number> = {
  * 再取第一个 `{` 到最后一个 `}`。任何一步失败都返回 null，由调用方落回通用解释。
  */
 export function parseInterpretation(raw: string, stick: FortuneStick): Interpretation | null {
+  const preset = stickText(stick, 'zh');
   const unfenced = raw.replace(/```(?:json)?/gi, '').trim();
   const start = unfenced.indexOf('{');
   const end = unfenced.lastIndexOf('}');
@@ -188,10 +190,10 @@ export function parseInterpretation(raw: string, stick: FortuneStick): Interpret
   if (!answer) return null;
 
   return {
-    meaning: pick('meaning') || stick.meaning,
+    meaning: pick('meaning') || preset.meaning,
     answer,
     notice: pick('notice') || '',
-    action: pick('action') || stick.action,
+    action: pick('action') || preset.action,
     source: 'ai',
   };
 }
@@ -199,11 +201,12 @@ export function parseInterpretation(raw: string, stick: FortuneStick): Interpret
 /* ───────── 提示词 ───────── */
 
 function stickBlock(stick: FortuneStick): string {
+  const text = stickText(stick, 'zh');
   return [
-    `第 ${stick.no} 签 · ${stick.level} · ${stick.title}`,
-    `签诗：${stick.poem[0]}，${stick.poem[1]}`,
-    `这支签的固定含义：${stick.meaning}`,
-    `这支签的通用解释：${stick.general}`,
+    `第 ${stick.no} 签 · ${stick.level} · ${text.title}`,
+    `签诗：${text.poem[0]}，${text.poem[1]}`,
+    `这支签的固定含义：${text.meaning}`,
+    `这支签的通用解释：${text.general}`,
   ].join('\n');
 }
 

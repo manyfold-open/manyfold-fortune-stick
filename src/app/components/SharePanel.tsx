@@ -4,7 +4,7 @@
  */
 
 import { useState } from 'react';
-import type { FortuneStick } from '../../shared/sticks';
+import { stickText, type FortuneStick } from '../../shared/sticks';
 import type { Interpretation } from '../../shared/types';
 import { renderShareImage, shareImage, shareText } from '../share';
 
@@ -34,7 +34,7 @@ export default function SharePanel(props: {
       setStatus(outcome === 'shared' ? '已经交给系统分享。' : '图片已保存到下载。');
     } catch {
       setStatus('图片这次没生成出来，可以先复制下面这段文字。');
-      setFallbackText(shareText(props.stick, props.interpretation?.meaning ?? props.stick.meaning));
+      setFallbackText(shareText(props.stick, props.interpretation?.meaning ?? stickText(props.stick, 'zh').meaning));
     } finally {
       setBusy(false);
     }

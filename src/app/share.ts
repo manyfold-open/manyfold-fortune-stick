@@ -8,7 +8,7 @@
  * 是有意的：分享图不该跟着看图的人是深色还是浅色模式变样，谁分享出去都是同一张。
  */
 
-import type { FortuneStick, StickLevel } from '../shared/sticks';
+import { stickText, type FortuneStick, type StickLevel } from '../shared/sticks';
 import type { Interpretation } from '../shared/types';
 import { LEVEL_TONE } from './constants';
 
@@ -239,6 +239,7 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
   if (!context) throw new Error('这个浏览器不支持生成图片。');
 
   const { stick } = input;
+  const text = stickText(stick, 'zh');
   const { tone, ground } = TONE[stick.level];
   const center = WIDTH / 2;
   const withQuestion = input.includeQuestion && Boolean(input.question.trim());
@@ -303,7 +304,7 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
   context.strokeRect(cellX, titleY, cellWidth, titleH);
   context.fillStyle = INK_2;
   context.font = `500 50px ${SERIF}`;
-  spaced(context, stick.title, center, titleY + titleH / 2 + 18, 26);
+  spaced(context, text.title, center, titleY + titleH / 2 + 18, 26);
 
   // 一格直排签诗与签意
   const bodyY = titleY + titleH;
@@ -312,15 +313,15 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
   drawVertical(
     context,
     [
-      { text: stick.poem[0], font: `500 44px ${SERIF}`, color: INK, step: 50 },
-      { text: stick.poem[1], font: `500 44px ${SERIF}`, color: INK, step: 50 },
+      { text: text.poem[0], font: `500 44px ${SERIF}`, color: INK, step: 50 },
+      { text: text.poem[1], font: `500 44px ${SERIF}`, color: INK, step: 50 },
       {
-        text: input.interpretation?.meaning ?? stick.meaning,
+        text: input.interpretation?.meaning ?? text.meaning,
         font: `400 33px ${SERIF}`,
         color: INK_2,
         step: 39,
       },
-      { text: `幸运色：${LEVEL_TONE[stick.level].luckyColor}`, font: `400 29px ${SERIF}`, color: tone, step: 35 },
+      { text: `幸运色：${LEVEL_TONE[stick.level].luckyColor.zh}`, font: `400 29px ${SERIF}`, color: tone, step: 35 },
     ],
     { centerX: center, top: bodyY + 44, height: bodyH - 88, gap: 22 },
   );
@@ -368,5 +369,7 @@ export async function shareImage(blob: Blob, stick: FortuneStick): Promise<Share
 }
 
 /** 分享全都失败时的最后一招：一段可以直接粘的短文字。 */
-export const shareText = (stick: FortuneStick, meaning: string): string =>
-  `问一签 · 第 ${stick.no} 签 · ${stick.level}\n${stick.poem[0]}，${stick.poem[1]}\n${meaning}`;
+export const shareText = (stick: FortuneStick, meaning: string): string => {
+  const text = stickText(stick, 'zh');
+  return `问一签 · 第 ${stick.no} 签 · ${stick.level}\n${text.poem[0]}，${text.poem[1]}\n${meaning}`;
+};

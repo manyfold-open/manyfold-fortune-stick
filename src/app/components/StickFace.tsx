@@ -7,7 +7,7 @@
  * small 版给求签记录用：同样的信息，压成一行，不排直排文字。
  */
 
-import type { FortuneStick } from '../../shared/sticks';
+import { stickText, type FortuneStick } from '../../shared/sticks';
 import { LEVEL_TONE } from '../constants';
 
 function Emblem() {
@@ -25,13 +25,14 @@ function Emblem() {
 export default function StickFace(props: { stick: FortuneStick; size?: 'large' | 'small' }) {
   const { stick } = props;
   const tone = LEVEL_TONE[stick.level];
+  const text = stickText(stick, 'zh');
 
   if (props.size === 'small') {
     return (
       <div className="slip-mini" data-tone={tone.key}>
         <span className="slip-mini-no">第 {stick.no} 签</span>
         <span className="slip-mini-level">{stick.level}</span>
-        <span className="slip-mini-title">{stick.title}</span>
+        <span className="slip-mini-title">{text.title}</span>
       </div>
     );
   }
@@ -51,15 +52,15 @@ export default function StickFace(props: { stick: FortuneStick; size?: 'large' |
       </div>
 
       <div className="slip-cell slip-cell-title">
-        <strong className="slip-title">{stick.title}</strong>
+        <strong className="slip-title">{text.title}</strong>
       </div>
 
       <div className="slip-cell slip-cell-body">
         <div className="slip-vertical">
-          <p className="slip-poem">{stick.poem[0]}</p>
-          <p className="slip-poem">{stick.poem[1]}</p>
-          <p className="slip-meaning">{stick.meaning}</p>
-          <p className="slip-lucky">幸运色：{tone.luckyColor}</p>
+          <p className="slip-poem">{text.poem[0]}</p>
+          <p className="slip-poem">{text.poem[1]}</p>
+          <p className="slip-meaning">{text.meaning}</p>
+          <p className="slip-lucky">幸运色：{tone.luckyColor.zh}</p>
         </div>
       </div>
 
