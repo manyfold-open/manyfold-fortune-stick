@@ -11,11 +11,21 @@
 
 import { useState } from 'react';
 import type { FollowUpMessage, Reading } from '../../shared/types';
+import { errorMessage, ApiError } from '../api';
 import { LEVEL_TONE } from '../constants';
-import { useT } from '../i18n';
+import { copyFor, useT } from '../i18n';
 import FollowUp from './FollowUp';
 import SharePanel from './SharePanel';
 import StickFace from './StickFace';
+
+/**
+ * readings.error 里存的：'unparseable'、一个 HttpError 的 code，或者 agent 那边
+ * 抛回来的一段脱敏文字。前两种查表，第三种原样显示。
+ */
+function storedErrorText(error: string, t: ReturnType<typeof useT>): string {
+  if (error === 'unparseable') return t('fallbackUnparseable');
+  return errorMessage(new ApiError(0, error, ''), t);
+}
 
 export default function ReadingResult(props: {
   reading: Reading;
@@ -31,6 +41,12 @@ export default function ReadingResult(props: {
   const { reading } = props;
   const { interpretation } = reading;
   const isFallback = interpretation?.source === 'fallback';
+  /**
+   * 那四个小标题跟**这一局**的语言走，不跟界面：它们标的是 agent 用那种语言写下的
+   * 文字，界面换成中文就把一段英文标成「一句话签意」，等于说错话。
+   * 按钮和错误提示是另一回事 —— 那是机器在说话，跟界面走。
+   */
+  const sheet = copyFor(reading.language);
 
   return (
     <section className="stage result" data-tone={LEVEL_TONE[reading.stick.level].key}>
@@ -61,9 +77,7 @@ export default function ReadingResult(props: {
               <p className="sheet-note">
                 {/* error 存的是码，文案在这边 —— 不认识的码原样显示，
                     这样新加的错误不会被悄悄吞掉。 */}
-                {reading.error === 'unparseable'
-                  ? t('fallbackUnparseable')
-                  : (reading.error ?? t('fallbackNote'))}{' '}
+                {reading.error ? storedErrorText(reading.error, t) : t('fallbackNote')}{' '}
                 <button
                   type="button"
                   className="text-action"
@@ -76,21 +90,21 @@ export default function ReadingResult(props: {
             )}
 
             <section className="sheet-block">
-              <h3>{t('blockMeaning')}</h3>
+              <h3>{sheet.blockMeaning}</h3>
               <p className="sheet-lead">{interpretation.meaning}</p>
             </section>
             <section className="sheet-block">
-              <h3>{t('blockAnswer')}</h3>
+              <h3>{sheet.blockAnswer}</h3>
               <p>{interpretation.answer}</p>
             </section>
             {interpretation.notice && (
               <section className="sheet-block">
-                <h3>{t('blockNotice')}</h3>
+                <h3>{sheet.blockNotice}</h3>
                 <p>{interpretation.notice}</p>
               </section>
             )}
             <section className="sheet-block">
-              <h3>{t('blockAction')}</h3>
+              <h3>{sheet.blockAction}</h3>
               <p>{interpretation.action}</p>
             </section>
 

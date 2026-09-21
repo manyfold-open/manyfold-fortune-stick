@@ -10,7 +10,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { FollowUpMessage } from '../../shared/types';
-import { api } from '../api';
+import { api, errorMessage } from '../api';
+import { FOLLOW_UP_MAX } from '../constants';
 import { copyFor, useT } from '../i18n';
 import { streamFollowUp } from '../sse';
 import type { Language } from '../../shared/lang';
@@ -64,7 +65,7 @@ export default function FollowUp(props: {
         if (event.type === 'error') setError(event.message);
       });
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(errorMessage(cause, t));
     } finally {
       setLive(null);
       // 以服务端存下的为准重新拉一次，看到的就是留下来的。
@@ -118,7 +119,7 @@ export default function FollowUp(props: {
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           placeholder={live !== null ? t('followUpAnswering') : t('followUpPlaceholder')}
-          maxLength={200}
+          maxLength={FOLLOW_UP_MAX}
           disabled={live !== null}
           aria-label={t('followUpLabel')}
         />

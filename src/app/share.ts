@@ -9,7 +9,13 @@
  */
 
 import type { Language } from '../shared/lang';
-import { LEVEL_LABEL, stickText, type FortuneStick, type StickLevel } from '../shared/sticks';
+import {
+  LEVEL_LABEL,
+  STICK_COUNT,
+  stickText,
+  type FortuneStick,
+  type StickLevel,
+} from '../shared/sticks';
 import type { Interpretation } from '../shared/types';
 import { LEVEL_TONE } from './constants';
 
@@ -372,7 +378,11 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
   context.textAlign = 'left';
   context.fillText(en ? `NO. ${stick.no}` : `第 ${stick.no} 签`, cellX + 34, levelY + levelH / 2 + 10);
   context.textAlign = 'right';
-  context.fillText(en ? 'FORTUNE' : '之 签 运', cellX + cellWidth - 34, levelY + levelH / 2 + 10);
+  context.fillText(
+    en ? `OF ${STICK_COUNT}` : '之 签 运',
+    cellX + cellWidth - 34,
+    levelY + levelH / 2 + 10,
+  );
   context.textAlign = 'center';
 
   // 英文等级是一个词：92px 配 20 的字距会直接顶出格子，所以收到 52 和 8。

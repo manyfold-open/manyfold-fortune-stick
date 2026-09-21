@@ -4,6 +4,8 @@ import type { StickLevel } from '../shared/sticks';
 /** 和服务端 src/worker/fortune.ts 里的校验保持一致。 */
 export const QUESTION_MIN = 5;
 export const QUESTION_MAX = 120;
+/** 一轮追问的上限，对应服务端的 FOLLOW_UP_MAX_CHARS。 */
+export const FOLLOW_UP_MAX = 200;
 
 /** 打印机走纸动画的时长：按下按钮到签纸完全吐出来。 */
 export const PRINT_MS = 1900;

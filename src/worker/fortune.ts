@@ -467,9 +467,11 @@ export async function interpretReading(env: Env, id: string): Promise<Reading> {
   } catch (cause) {
     interpretation = fallbackInterpretation(reading.stick, reading.language);
     status = 'failed';
+    // HttpError 有稳定的 code，存码；agent 那边抛回来的是真正动态的文字，
+    // 脱敏后原样存 —— 浏览器认不出来就直接显示它。
     error =
       cause instanceof HttpError
-        ? cause.message
+        ? cause.code
         : cause instanceof Error
           ? safeErrorText(cause.message)
           : safeErrorText(cause);

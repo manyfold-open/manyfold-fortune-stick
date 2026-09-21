@@ -163,7 +163,7 @@ export const en = {
   errReadingNotFound: 'This drawing cannot be found. It may already have been cleared.',
   errNotInterpreted: 'Read the stick first, then ask a follow-up.',
   errMessageRequired: 'Write something before sending.',
-  errMessageTooLong: 'Keep a follow-up under {max} characters.',
+  errMessageTooLong: 'Keep a follow-up under {followUpMax} characters.',
   errManyfoldUnavailable: 'The agent did not answer this time. Try again in a moment.',
   errManyfoldRejected: 'The agent refused this request.',
   errAdminPasswordInvalid: 'This deployment requires the admin password.',

@@ -12,7 +12,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FollowUpMessage, Reading } from '../../shared/types';
-import { api, ApiError } from '../api';
+import { api, ApiError, errorMessage } from '../api';
 import { EJECT_MS, LEVEL_TONE, PRINT_MS, QUESTION_MIN, QUESTION_MAX } from '../constants';
 import { useT } from '../i18n';
 import { chime, motor, press as pressSound } from '../sound';
@@ -139,7 +139,7 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
     } catch (cause) {
       stopMotor.current?.();
       setPhase('ask');
-      setFault({ code: 'ERROR', text: cause instanceof Error ? cause.message : String(cause) });
+      setFault({ code: 'ERROR', text: errorMessage(cause, t) });
     }
   }, [phase, question, props.prefs.reducedMotion, props.prefs.sound, t]);
 
@@ -155,11 +155,11 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
       setReading(body.reading);
       saveRecord(body.reading);
     } catch (cause) {
-      setFault({ code: 'ERROR', text: cause instanceof Error ? cause.message : String(cause) });
+      setFault({ code: 'ERROR', text: errorMessage(cause, t) });
     } finally {
       setInterpreting(false);
     }
-  }, [reading, interpreting]);
+  }, [reading, interpreting, t]);
 
   const onFollowUpMessages = useCallback(
     (messages: FollowUpMessage[]) => {

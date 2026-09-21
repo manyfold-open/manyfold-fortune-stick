@@ -160,7 +160,7 @@ export const zh = {
   errReadingNotFound: '找不到这次求签，可能已经被清除了。',
   errNotInterpreted: '先解签，再继续追问。',
   errMessageRequired: '写点什么再发送。',
-  errMessageTooLong: '追问请控制在 {max} 个字以内。',
+  errMessageTooLong: '追问请控制在 {followUpMax} 个字以内。',
   errManyfoldUnavailable: '解签的 agent 这次没能回应，过一会儿再试。',
   errManyfoldRejected: '解签的 agent 拒绝了这次请求。',
   errAdminPasswordInvalid: '这个部署需要管理密码。',

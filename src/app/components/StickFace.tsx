@@ -16,7 +16,7 @@
  */
 
 import type { Language } from '../../shared/lang';
-import { LEVEL_LABEL, stickText, type FortuneStick } from '../../shared/sticks';
+import { LEVEL_LABEL, STICK_COUNT, stickText, type FortuneStick } from '../../shared/sticks';
 import { LEVEL_TONE } from '../constants';
 
 function Emblem() {
@@ -64,7 +64,7 @@ export default function StickFace(props: {
       <div className="slip-cell slip-cell-level">
         <span className="slip-rail">{en ? `NO. ${stick.no}` : `第 ${stick.no} 签`}</span>
         <strong className="slip-level">{level}</strong>
-        <span className="slip-rail">{en ? 'FORTUNE' : '之 签 运'}</span>
+        <span className="slip-rail">{en ? `OF ${STICK_COUNT}` : '之 签 运'}</span>
       </div>
 
       <div className="slip-cell slip-cell-title">
