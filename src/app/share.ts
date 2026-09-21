@@ -22,7 +22,7 @@ import { LEVEL_TONE } from './constants';
 const WIDTH = 1080;
 const HEIGHT = 1350;
 const SERIF = '"Noto Serif SC", "Songti SC", "STSong", "SimSun", serif';
-const SERIF_EN = '"Noto Serif", "Iowan Old Style", Georgia, "Times New Roman", serif';
+const SERIF_EN = 'Charter, "Charter BT", Georgia, Palatino, "Noto Serif", "Iowan Old Style", "Times New Roman", serif';
 const MONO = 'ui-monospace, "SF Mono", Menlo, Consolas, monospace';
 
 const PAPER = '#fffefa';
