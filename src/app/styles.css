@@ -39,7 +39,7 @@
 
   /* 四个等级的底色。tone 用在纸上的字，ground 用在整页的底。 */
   --tone: #5b5750;
-  --serif: 'Noto Serif SC', 'Songti SC', 'STSong', 'SimSun', serif;
+  --serif: 'GenRyuMin', 'Noto Serif TC', 'Noto Serif SC', 'Songti SC', 'STSong', 'SimSun', serif;
   --serif-en: 'Noto Serif', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
   --sans: system-ui, -apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
   --mono: ui-monospace, 'SF Mono', 'SFMono-Regular', Menlo, Consolas, monospace;
@@ -668,6 +668,65 @@ body {
 
 @keyframes paper-up {
   to { transform: translateY(-34px) scale(1.05); }
+}
+
+/* ── 结果页双栏并排佈局（桌面大屏免上下滾動） ── */
+
+.result-deck {
+  width: 100%;
+  max-width: 980px;
+  margin: 10px auto 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+@media (min-width: 769px) {
+  .result-deck.has-interpretation {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 32px;
+  }
+}
+
+.result-col-slip {
+  width: 100%;
+  max-width: 440px;
+  flex: 0 0 auto;
+}
+
+@media (min-width: 769px) {
+  .result-deck.has-interpretation .result-col-slip {
+    width: 410px;
+    position: sticky;
+    top: 24px;
+  }
+}
+
+.result-col-side {
+  width: 100%;
+  max-width: 500px;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: sheet-in 0.5s ease both;
+}
+
+.result-col-side .sheet {
+  margin: 0;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.18);
+}
+
+.result-col-side .result-actions {
+  padding: 16px 0 4px;
+}
+
+.result-col-side .share-panel,
+.result-col-side .followup {
+  margin-top: 0;
 }
 
 /* ── 签纸 ── */
