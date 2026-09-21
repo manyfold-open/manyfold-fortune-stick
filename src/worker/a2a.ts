@@ -371,9 +371,52 @@ export async function consumeA2AStream(options: {
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
+  let bytes = 0;
   let received = false;
   let terminal: StreamSnapshot | null = null;
   let graceDeadline: number | null = null;
+
+  /**
+   * 把 buffer 里已经完整的事件块都消化掉。
+   *
+   * `flush` 是流关掉之后补的那一次：SSE 的最后一个事件允许不带收尾空行，对方写完
+   * 最后一行就关连接。不补这一手，那一块（往往就是整段解签）会一直留在 buffer 里
+   * 被丢掉，上游只看到「一个事件都没有」，agent 明明回了。
+   */
+  const drain = async (flush: boolean): Promise<StreamSnapshot | null> => {
+    let reached: StreamSnapshot | null = null;
+    if (flush && buffer.trim()) buffer += '\n\n';
+    let boundary = buffer.indexOf('\n\n');
+    while (boundary >= 0) {
+      const block = buffer.slice(0, boundary);
+      buffer = buffer.slice(boundary + 2);
+      const data = block
+        .split('\n')
+        .filter((line) => line.startsWith('data:'))
+        .map((line) => line.slice(5).trimStart())
+        .join('\n');
+      if (data && data !== '[DONE]') {
+        let envelope: Record<string, unknown>;
+        try {
+          envelope = JSON.parse(data) as Record<string, unknown>;
+        } catch {
+          throw new A2AError(`${cred.label} stream emitted invalid JSON.`, true);
+        }
+        if (envelope.error) throw jsonRpcError(envelope.error, cred.label);
+        applyA2AResult(accumulator, envelope.result);
+        received = true;
+        const snapshot = snapshotFrom(accumulator);
+        await options.onSnapshot?.(snapshot);
+        // 记下来但不一定马上返回：有的 agent（Manyfold 就是）把带原因的 JSON-RPC error
+        // 帧放在 final:true 之后。立刻 return 会把唯一一句说明失败原因的话丢掉
+        // （比如 "Codex model is required"），上游只能看到「没有文本」。
+        if (snapshot.terminal) reached = snapshot;
+      }
+      boundary = buffer.indexOf('\n\n');
+    }
+    return reached;
+  };
+
   try {
     while (true) {
       let chunk: ReadableStreamReadResult<Uint8Array>;
@@ -405,35 +448,9 @@ export async function consumeA2AStream(options: {
         throw error;
       }
       if (chunk.done) break;
+      bytes += chunk.value.byteLength;
       buffer += decoder.decode(chunk.value, { stream: true }).replace(/\r\n/g, '\n');
-      let boundary = buffer.indexOf('\n\n');
-      while (boundary >= 0) {
-        const block = buffer.slice(0, boundary);
-        buffer = buffer.slice(boundary + 2);
-        const data = block
-          .split('\n')
-          .filter((line) => line.startsWith('data:'))
-          .map((line) => line.slice(5).trimStart())
-          .join('\n');
-        if (data && data !== '[DONE]') {
-          let envelope: Record<string, unknown>;
-          try {
-            envelope = JSON.parse(data) as Record<string, unknown>;
-          } catch {
-            throw new A2AError(`${cred.label} stream emitted invalid JSON.`, true);
-          }
-          if (envelope.error) throw jsonRpcError(envelope.error, cred.label);
-          applyA2AResult(accumulator, envelope.result);
-          received = true;
-          const snapshot = snapshotFrom(accumulator);
-          await options.onSnapshot?.(snapshot);
-          // 记下来但不一定马上返回：有的 agent（Manyfold 就是）把带原因的 JSON-RPC error
-          // 帧放在 final:true 之后。立刻 return 会把唯一一句说明失败原因的话丢掉
-          // （比如 "Codex model is required"），上游只能看到「没有文本」。
-          if (snapshot.terminal) terminal = snapshot;
-        }
-        boundary = buffer.indexOf('\n\n');
-      }
+      terminal = (await drain(false)) ?? terminal;
       if (terminal) {
         // 正常收场（有内容，或者是 completed / input-required 这类状态）就直接返回，
         // 一秒都不多等。只有「失败且什么都没说」才值得再听一下原因，并且用 deadline
@@ -446,6 +463,12 @@ export async function consumeA2AStream(options: {
   } finally {
     reader.releaseLock();
   }
-  if (!received) throw new A2AError(`${cred.label} stream ended without events.`, true);
+  // 流关了，再把没有空行收尾的最后一块读出来。
+  await drain(true);
+  // 字节数是这里唯一能分开「agent 真的什么都没说」和「说了但我们没认出来」的线索，
+  // 它会跟着错误一路存进 readings.error，所以写进这句话里。
+  if (!received) {
+    throw new A2AError(`${cred.label} stream ended without events (${bytes} bytes).`, true);
+  }
   return snapshotFrom(accumulator);
 }

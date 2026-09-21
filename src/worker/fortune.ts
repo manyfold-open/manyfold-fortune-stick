@@ -26,6 +26,7 @@ import {
   stickText,
   type FortuneStick,
 } from '../shared/sticks';
+import { UNPARSEABLE } from '../shared/error-copy';
 import { HttpError, type AgentCredential, type Env } from './types';
 import { A2AError, consumeA2AStream, safeErrorText } from './a2a';
 import { credentialFor, listConnectedAgents } from './connect';
@@ -155,6 +156,21 @@ const FALLBACK_NOTICE: Record<Language, string> = {
   zh: '这一份是这支签的通用解释，还没有结合你的问题。',
   en: 'This is the stick\u2019s general reading. It has not been matched to your question yet.',
 };
+
+/** 存进 readings.error 的 agent 原文最多留这么长：够看出它回了什么，又不至于占满一行。 */
+const UNPARSEABLE_SNIPPET_CHARS = 200;
+
+/**
+ * 解析不出解读时存的那一条。
+ *
+ * 只存一个 `unparseable`，事后就只知道「没解析出来」，不知道 agent 到底回了什么 ——
+ * 是散文、是半截 JSON、还是一句「我没配模型」。所以把原文的开头一起存上（脱敏、截断）。
+ * 纸上不印这一段，浏览器认出这个前缀就只说人话（src/shared/error-copy.ts）。
+ */
+export function unparseableError(raw: string): string {
+  const snippet = safeErrorText(raw).trim().slice(0, UNPARSEABLE_SNIPPET_CHARS);
+  return snippet ? `${UNPARSEABLE}: ${snippet}` : UNPARSEABLE;
+}
 
 /** AI 不可用时显示的内容：这支签预先写好的通用解释，永远可用。 */
 export function fallbackInterpretation(stick: FortuneStick, language: Language): Interpretation {
@@ -544,7 +560,8 @@ export async function interpretReading(env: Env, id: string): Promise<Reading> {
       interpretation = fallbackInterpretation(reading.stick, reading.language);
       status = 'failed';
       // 存码不存句子：文案在浏览器那边，跟着界面语言走（src/shared/i18n）。
-      error = 'unparseable';
+      // 码后面跟着 agent 原文的开头，是留给排查的人的，纸上不印。
+      error = unparseableError(answer.text);
     }
   } catch (cause) {
     interpretation = fallbackInterpretation(reading.stick, reading.language);

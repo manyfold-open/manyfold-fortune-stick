@@ -67,7 +67,11 @@ Rules for anyone — human or AI agent — iterating on it. These are the load-b
    inside the `interpretation` JSON blob, which needs no schema.
 11. **Error copy lives in the browser, keyed by the API's `code`.** The worker's own message
    strings are a developer-readable fallback; `readings.error` stores a code. An unknown
-   code falls through to the server's sentence, so a new route's error is never swallowed.
+   code falls through to the server's sentence, so a new route's error is never swallowed —
+   that fall-through is the whole point, and it is what tells you an agent-side failure apart
+   from every other one. The map and both fall-throughs live in `src/shared/error-copy.ts`.
+   A failed parse stores `unparseable` followed by the start of what the agent actually said
+   (redacted, truncated); the paper shows only the copy, the raw text is for whoever debugs it.
 12. **Never commit secrets.** New secrets get a commented entry in `.dev.vars.example` and an
    instruction to run `npx wrangler secret put NAME`. `.dev.vars` is git-ignored; keep it so.
 13. **Respect the runtime split.** `src/worker/` runs in workerd only (no Node-built-ins),

@@ -1,5 +1,11 @@
-import { describe, expect, it } from 'vitest';
-import { A2AError, foldA2AResults, safeErrorText, validateA2AUrl } from '../src/worker/a2a';
+import { afterEach, describe, expect, it } from 'vitest';
+import {
+  A2AError,
+  consumeA2AStream,
+  foldA2AResults,
+  safeErrorText,
+  validateA2AUrl,
+} from '../src/worker/a2a';
 
 describe('foldA2AResults (stream accumulator)', () => {
   it('accumulates artifact appends and reaches a terminal state', () => {
@@ -130,5 +136,80 @@ describe('safeErrorText', () => {
   it('collapses whitespace and truncates', () => {
     expect(safeErrorText('a\n\n  b')).toBe('a b');
     expect(safeErrorText('x'.repeat(2000)).length).toBeLessThanOrEqual(600);
+  });
+});
+
+describe('consumeA2AStream（SSE 读取）', () => {
+  const cred = { rpcUrl: 'https://agent.example/rpc', token: 'tok', label: 'fortune-stick' };
+  const realFetch = globalThis.fetch;
+
+  afterEach(() => {
+    (globalThis as { fetch: typeof fetch }).fetch = realFetch;
+  });
+
+  /** 一帧 JSON-RPC：agent 把整段回覆放在一条 message 里。 */
+  const frame = (text: string): string =>
+    JSON.stringify({
+      jsonrpc: '2.0',
+      id: '1',
+      result: {
+        kind: 'message',
+        role: 'agent',
+        messageId: 'm1',
+        contextId: 'c1',
+        parts: [{ kind: 'text', text }],
+      },
+    });
+
+  const serve = (body: string): void => {
+    (globalThis as { fetch: typeof fetch }).fetch = (async () =>
+      new Response(body, {
+        status: 200,
+        headers: { 'content-type': 'text/event-stream' },
+      })) as unknown as typeof fetch;
+  };
+
+  const read = () =>
+    consumeA2AStream({ cred, params: {}, signal: new AbortController().signal });
+
+  it('最后一个事件没有空行收尾也要读出来 —— 少读这一块，整段解签就等于没回', async () => {
+    serve(`data: ${frame('这是解签')}\n`);
+    await expect(read()).resolves.toMatchObject({ text: '这是解签' });
+  });
+
+  it('真的一个事件都没有时，说清楚收到了多少字节，别让人以为 agent 没回', async () => {
+    serve(': ping\n\n');
+    await expect(read()).rejects.toThrow(/8 bytes/);
+  });
+
+  // 上面那一手是在流尾巴上补空行，别把正常收尾的流读串了。
+  it('正常收尾的多帧流照旧：分片累加，终态就收工', async () => {
+    const artifact = (text: string, append: boolean) =>
+      JSON.stringify({
+        jsonrpc: '2.0',
+        id: '1',
+        result: {
+          kind: 'artifact-update',
+          taskId: 't1',
+          contextId: 'c1',
+          append,
+          artifact: { artifactId: 'a', parts: [{ kind: 'text', text }] },
+        },
+      });
+    const done = JSON.stringify({
+      jsonrpc: '2.0',
+      id: '1',
+      result: { kind: 'status-update', status: { state: 'completed' }, final: true },
+    });
+    serve(
+      `data: ${artifact('前半段', false)}\n\n` +
+        `data: ${artifact('后半段', true)}\n\n` +
+        `data: ${done}\n\n`,
+    );
+    await expect(read()).resolves.toMatchObject({
+      text: '前半段后半段',
+      state: 'completed',
+      terminal: true,
+    });
   });
 });
