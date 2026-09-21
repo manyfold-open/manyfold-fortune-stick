@@ -15,7 +15,15 @@ import type { FollowUpMessage, Reading } from '../../shared/types';
 import { api, ApiError, errorMessage } from '../api';
 import { EJECT_MS, LEVEL_TONE, PRINT_MS, QUESTION_MIN, QUESTION_MAX } from '../constants';
 import { useT } from '../i18n';
-import { bambooRattle, chime, motor, press as pressSound, stampSound, typeTick } from '../sound';
+import {
+  bambooRattle,
+  chime,
+  motor,
+  paperRollRumble,
+  press as pressSound,
+  stampSound,
+  typeTick,
+} from '../sound';
 import {
   getCurrentReadingId,
   saveRecord,
@@ -24,6 +32,7 @@ import {
   type Prefs,
 } from '../storage';
 import FortuneCylinder from './FortuneCylinder';
+import FortunePaperRoll from './FortunePaperRoll';
 import Printer from './Printer';
 import QuestionForm from './QuestionForm';
 import ReadingResult from './ReadingResult';
@@ -35,6 +44,11 @@ interface Fault {
   code: string;
   text: string;
 }
+
+type Vessel = 'cylinder' | 'printer' | 'roll';
+
+const isVessel = (v: string | null): v is Vessel =>
+  v === 'cylinder' || v === 'printer' || v === 'roll';
 
 export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boolean }) {
   const t = useT();
@@ -82,19 +96,19 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
   const [interpreting, setInterpreting] = useState(false);
   const [fault, setFault] = useState<Fault | null>(null);
   const [restoring, setRestoring] = useState(true);
-  const [vessel, setVessel] = useState<'cylinder' | 'printer'>(() => {
+  const [vessel, setVessel] = useState<Vessel>(() => {
     try {
       const v = new URL(window.location.href).searchParams.get('vessel');
-      if (v === 'printer' || v === 'cylinder') return v;
+      if (isVessel(v)) return v;
       const saved = localStorage.getItem('wenyiqian.vessel');
-      if (saved === 'printer' || saved === 'cylinder') return saved;
+      if (isVessel(saved)) return saved;
     } catch {
       /* ignore */
     }
     return 'cylinder';
   });
 
-  const selectVessel = useCallback((v: 'cylinder' | 'printer') => {
+  const selectVessel = useCallback((v: Vessel) => {
     setVessel(v);
     try {
       localStorage.setItem('wenyiqian.vessel', v);
@@ -167,6 +181,8 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
     if (props.prefs.sound) {
       if (vessel === 'cylinder') {
         stopMotor.current = bambooRattle(PRINT_MS);
+      } else if (vessel === 'roll') {
+        stopMotor.current = paperRollRumble(PRINT_MS);
       } else {
         pressSound();
         if (!calm) stopMotor.current = motor(PRINT_MS);
@@ -189,7 +205,8 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
 
       // 纸开始往外走，走完再把画面交给结果页 —— 中间这段时间签已经定死了。
       setSheet(body.reading);
-      const ejectDuration = vessel === 'cylinder' ? 1200 : EJECT_MS;
+      // 滚印机要把签纸整张碾出来再停稳，比签筒多留一点时间。
+      const ejectDuration = vessel === 'roll' ? 2200 : vessel === 'cylinder' ? 1200 : EJECT_MS;
       timers.current.push(
         window.setTimeout(() => {
           if (props.prefs.sound) {
@@ -326,10 +343,41 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
             <span aria-hidden="true">🖨️</span>
             <span>{props.prefs.language === 'en' ? 'Retro Printer' : '復古印表機'}</span>
           </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={vessel === 'roll'}
+            className={`vessel-btn${vessel === 'roll' ? ' active' : ''}`}
+            onClick={() => selectVessel('roll')}
+            disabled={printing}
+          >
+            <span aria-hidden="true">📜</span>
+            <span>{props.prefs.language === 'en' ? 'Woodblock Press' : '木刻滾印'}</span>
+          </button>
         </div>
       </div>
 
-      {vessel === 'cylinder' ? (
+      {vessel === 'roll' ? (
+        <div className="roll-slot">
+          <FortunePaperRoll
+            state={
+              phase === 'printing'
+                ? 'shaking'
+                : phase === 'ejecting'
+                  ? 'ejecting'
+                  : typed > 0
+                    ? 'ready'
+                    : 'idle'
+            }
+            sheet={sheet}
+            fault={fault}
+            language={sheet ? sheet.language : props.prefs.language}
+            soundEnabled={props.prefs.sound}
+            onShake={() => void draw()}
+            disabled={printing}
+          />
+        </div>
+      ) : vessel === 'cylinder' ? (
         <div className="cylinder-slot">
           <FortuneCylinder
             state={
