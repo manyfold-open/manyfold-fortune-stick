@@ -1865,7 +1865,8 @@ body {
   }
 }
 
-.bubble::before {
+.bubble-role {
+  display: inline-block;
   font: 9px/1 var(--mono);
   letter-spacing: 0.16em;
   margin-right: 9px;
@@ -1877,8 +1878,6 @@ body {
   color: var(--ink-3);
 }
 
-.bubble.user::before { content: 'ASK'; }
-.bubble.agent::before { content: 'ANS'; }
 
 .quick-asks {
   display: flex;

@@ -180,19 +180,34 @@ export default function FollowUp(props: {
                 >
                   <span className="ticket-idx">{roundOrdinal(index + 1, props.language)}</span>
                   <span className="ticket-q-truncate">{round.user.content}</span>
-                  <span className="ticket-toggle-badge">{isExpanded ? '收起 ▴' : '展開 ▾'}</span>
+                  <span className="ticket-toggle-badge">
+                    {isExpanded ? `${t('historyCollapse')} ▴` : `${t('historyExpand')} ▾`}
+                  </span>
                 </button>
               ) : null}
 
               {isExpanded && (
                 <div className="followup-round-content">
-                  <div className="bubble user">{round.user.content}</div>
+                  <div className="bubble user">
+                    <span className="bubble-role" aria-hidden="true">
+                      {t('followUpRoleUser')}
+                    </span>
+                    {round.user.content}
+                  </div>
                   {round.agent ? (
                     <div className="bubble agent">
+                      <span className="bubble-role" aria-hidden="true">
+                        {t('followUpRoleAgent')}
+                      </span>
                       {round.agent.content || round.agent.error || ''}
                     </div>
                   ) : isStreamingThisRound ? (
-                    <div className="bubble agent streaming">{live || '…'}</div>
+                    <div className="bubble agent streaming">
+                      <span className="bubble-role" aria-hidden="true">
+                        {t('followUpRoleAgent')}
+                      </span>
+                      {live || '…'}
+                    </div>
                   ) : null}
                 </div>
               )}
