@@ -17,6 +17,7 @@
 import { useState, type RefObject } from 'react';
 import { QUESTION_MAX } from '../constants';
 import { useT } from '../i18n';
+import { typeTick } from '../sound';
 
 export default function QuestionForm(props: {
   value: string;
@@ -25,6 +26,7 @@ export default function QuestionForm(props: {
   onSubmit: () => void;
   /** 输入框本体，由调用方持有 —— 机器下方的例句点完要把光标送回这里。 */
   inputRef: RefObject<HTMLTextAreaElement | null>;
+  sound?: boolean;
 }) {
   const t = useT();
   const [focused, setFocused] = useState(false);
@@ -49,6 +51,8 @@ export default function QuestionForm(props: {
               if (event.key === 'Enter' && !event.shiftKey) {
                 event.preventDefault();
                 props.onSubmit();
+              } else if (props.sound && !event.ctrlKey && !event.metaKey && !event.altKey && event.key !== 'Shift') {
+                typeTick();
               }
             }}
             rows={1}

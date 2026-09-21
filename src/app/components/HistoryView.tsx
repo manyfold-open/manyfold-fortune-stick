@@ -121,6 +121,9 @@ export default function HistoryView() {
                     <h4>{t('historyFollowUps')}</h4>
                     {record.followUps.map((message, index) => (
                       <div key={index} className={`bubble ${message.role}`}>
+                        <span className="bubble-role" aria-hidden="true">
+                          {t(message.role === 'user' ? 'followUpRoleUser' : 'followUpRoleAgent')}
+                        </span>
                         {message.content}
                       </div>
                     ))}

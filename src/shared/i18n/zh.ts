@@ -79,6 +79,8 @@ export const zh = {
   followUpAnswering: '正在回答…',
   followUpLabel: '继续追问',
   followUpSend: '发送',
+  followUpRoleUser: '问',
+  followUpRoleAgent: '答',
 
   /* ── 分享 ── */
   shareTitle: '分享结果',

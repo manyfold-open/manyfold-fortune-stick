@@ -75,6 +75,8 @@ export const en = {
   followUpAnswering: 'Answering…',
   followUpLabel: 'Ask a follow-up',
   followUpSend: 'Send',
+  followUpRoleUser: 'ASK',
+  followUpRoleAgent: 'ANS',
 
   /* ── sharing ── */
   shareTitle: 'Share',

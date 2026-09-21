@@ -114,16 +114,6 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
   return (
     <main className={`shell${prefs.reducedMotion ? ' calm' : ''}`}>
       <header className="topbar">
-        <a className="brand" href="#/">
-          <span className="brand-chips" aria-hidden>
-            <i />
-            <i />
-            <i />
-            <i />
-          </span>
-          <span className="brand-name">问一签</span>
-          <span className="brand-sub">{t('brandSub')}</span>
-        </a>
         <span className="topbar-actions">
           {/* 只换界面。已经印出来的签一个字都不会动。 */}
           <button
@@ -153,24 +143,58 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
       )}
 
       <footer className="footer">
-        <button
-          type="button"
-          className="text-action tiny"
-          aria-pressed={prefs.sound}
-          onClick={() => updatePrefs({ sound: !prefs.sound })}
-        >
-          {t('footerSound', { state: prefs.sound ? t('footerSoundOn') : t('footerSoundOff') })}
-        </button>
-        <button
-          type="button"
-          className="text-action tiny"
-          aria-pressed={prefs.reducedMotion}
-          onClick={() => updatePrefs({ reducedMotion: !prefs.reducedMotion })}
-        >
-          {t('footerMotion', {
-            state: prefs.reducedMotion ? t('footerMotionReduced') : t('footerMotionNormal'),
-          })}
-        </button>
+        <div className="footer-prefs">
+          <button
+            type="button"
+            className="text-action tiny"
+            aria-pressed={prefs.sound}
+            onClick={() => updatePrefs({ sound: !prefs.sound })}
+          >
+            {t('footerSound', { state: prefs.sound ? t('footerSoundOn') : t('footerSoundOff') })}
+          </button>
+          <button
+            type="button"
+            className="text-action tiny"
+            aria-pressed={prefs.reducedMotion}
+            onClick={() => updatePrefs({ reducedMotion: !prefs.reducedMotion })}
+          >
+            {t('footerMotion', {
+              state: prefs.reducedMotion ? t('footerMotionReduced') : t('footerMotionNormal'),
+            })}
+          </button>
+        </div>
+
+        <div className="footer-credits">
+          <a
+            href="https://manyfold.ai/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="footer-credit-link"
+          >
+            <span>powered by</span>
+            <svg
+              className="manyfold-logo"
+              viewBox="8 14 116 68"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <polygon points="10,80 35,15 47.5,15 22.5,80" fill="currentColor" opacity="0.95" />
+              <polygon points="35,15 60,80 47.5,15 72.5,80" fill="currentColor" opacity="0.5" />
+              <polygon points="60,80 85,15 72.5,80 97.5,15" fill="currentColor" opacity="0.95" />
+              <polygon points="85,15 110,80 97.5,15 122.5,80" fill="currentColor" opacity="0.5" />
+            </svg>
+            <span className="manyfold-word">Manyfold</span>
+          </a>
+          <a
+            href="https://github.com/manyfold-open/manyfold-fortune-stick"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="footer-credit-link"
+          >
+            Open source · fork it on GitHub
+          </a>
+        </div>
+
         <span className="footer-note">{t('footerNote')}</span>
       </footer>
 

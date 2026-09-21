@@ -1,20 +1,33 @@
 /**
- * 继续追问：在结果页里就地展开的一小块对话。
+ * 继续追问：在结果页里就地展开的对话，采用【方案 A：附笺折叠·最新展开】。
  *
  * 追问永远基于同一支签 —— 这条规则由服务端保证（handleFollowUp 从 readings 行读回
- * 问题、签和解读，再拼进提示词），这里不做任何和签有关的判断，也没有重新抽签的入口。
+ * 问题、签和解读，再拼进提示词）。
  *
- * 语言分两处：输入框、发送键这些外壳跟界面走；三句快捷问句跟**这一局**走，
- * 因为点下去就是把那句话发给 agent，而 agent 回的是这一局锁定的那种语言。
+ * 历史多轮追问自动收纳为紧凑票签，避免纸卷无限拉长；
+ * 输入框升级为自适应高度 Textarea，支持多行长文本输入。
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import type { FollowUpMessage } from '../../shared/types';
 import { api, errorMessage } from '../api';
 import { FOLLOW_UP_MAX } from '../constants';
 import { copyFor, useT } from '../i18n';
 import { streamFollowUp } from '../sse';
 import type { Language } from '../../shared/lang';
+
+interface FollowUpRound {
+  id: string | number;
+  user: FollowUpMessage;
+  agent?: FollowUpMessage;
+}
+
+function roundOrdinal(num: number, lang: Language): string {
+  if (lang === 'en') return `Q${num}`;
+  const digits = ['零', '壹', '貳', '參', '肆', '伍', '陸', '柒', '捌', '玖', '拾'];
+  if (num <= 10) return digits[num];
+  return `第${num}問`;
+}
 
 export default function FollowUp(props: {
   readingId: string;
@@ -28,7 +41,9 @@ export default function FollowUp(props: {
   const [draft, setDraft] = useState('');
   const [live, setLive] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [expandedRounds, setExpandedRounds] = useState<Record<string | number, boolean>>({});
   const log = useRef<HTMLDivElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const { readingId, onMessages } = props;
 
   useEffect(() => {
@@ -49,14 +64,64 @@ export default function FollowUp(props: {
     log.current?.scrollTo({ top: log.current.scrollHeight });
   }, [messages, live]);
 
+  // 将消息配对为 [问, 答] 轮次
+  const rounds = useMemo(() => {
+    const list: FollowUpRound[] = [];
+    let current: FollowUpRound | null = null;
+    for (const msg of messages) {
+      if (msg.role === 'user') {
+        if (current) list.push(current);
+        current = { id: msg.id, user: msg };
+      } else if (msg.role === 'agent') {
+        if (current) {
+          current.agent = msg;
+          list.push(current);
+          current = null;
+        } else {
+          list.push({
+            id: msg.id,
+            user: {
+              id: -2,
+              role: 'user',
+              content: '···',
+              status: 'complete',
+              error: null,
+              createdAt: msg.createdAt,
+            },
+            agent: msg,
+          });
+        }
+      }
+    }
+    if (current) list.push(current);
+    return list;
+  }, [messages]);
+
+  const toggleRound = (id: string | number) => {
+    setExpandedRounds((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
   const ask = async (text: string) => {
     const question = text.trim();
     if (!question || live !== null) return;
     setDraft('');
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
     setError('');
     setMessages((current) => [
       ...current,
-      { id: -1, role: 'user', content: question, status: 'complete', error: null, createdAt: new Date().toISOString() },
+      {
+        id: -Date.now(),
+        role: 'user',
+        content: question,
+        status: 'complete',
+        error: null,
+        createdAt: new Date().toISOString(),
+      },
     ]);
     setLive('');
     try {
@@ -68,7 +133,7 @@ export default function FollowUp(props: {
       setError(errorMessage(cause, t));
     } finally {
       setLive(null);
-      // 以服务端存下的为准重新拉一次，看到的就是留下来的。
+      // 以服务端存下的为准重新拉一次
       await api<{ messages: FollowUpMessage[] }>(`/api/readings/${encodeURIComponent(readingId)}/messages`)
         .then((body) => {
           setMessages(body.messages);
@@ -78,18 +143,77 @@ export default function FollowUp(props: {
     }
   };
 
+  const handleDraftChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setDraft(event.target.value);
+    const el = textareaRef.current;
+    if (el) {
+      el.style.height = 'auto';
+      el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+    }
+  };
+
   return (
     <div className="followup">
       <div className="followup-log" ref={log}>
-        {messages.length === 0 && live === null && (
+        {rounds.length === 0 && live === null && (
           <p className="muted small">{t('followUpEmpty')}</p>
         )}
-        {messages.map((message, index) => (
-          <div key={`${message.id}-${index}`} className={`bubble ${message.role}`}>
-            {message.content || message.error || ''}
-          </div>
-        ))}
-        {live !== null && <div className="bubble agent">{live || '…'}</div>}
+
+        {rounds.map((round, index) => {
+          const isLatest = index === rounds.length - 1;
+          const isStreamingThisRound = isLatest && live !== null;
+          // 方案 A：除最后一轮默认展开外，早期历史默认折叠收纳
+          const isExpanded = isLatest || Boolean(expandedRounds[round.id]);
+
+          return (
+            <div
+              key={`${round.id}-${index}`}
+              className={`followup-round ${isExpanded ? 'is-expanded' : 'is-collapsed'}`}
+            >
+              {!isLatest ? (
+                // 历史折叠小票摘要条
+                <button
+                  type="button"
+                  className="followup-ticket-summary"
+                  onClick={() => toggleRound(round.id)}
+                  aria-expanded={isExpanded}
+                >
+                  <span className="ticket-idx">{roundOrdinal(index + 1, props.language)}</span>
+                  <span className="ticket-q-truncate">{round.user.content}</span>
+                  <span className="ticket-toggle-badge">
+                    {isExpanded ? `${t('historyCollapse')} ▴` : `${t('historyExpand')} ▾`}
+                  </span>
+                </button>
+              ) : null}
+
+              {isExpanded && (
+                <div className="followup-round-content">
+                  <div className="bubble user">
+                    <span className="bubble-role" aria-hidden="true">
+                      {t('followUpRoleUser')}
+                    </span>
+                    {round.user.content}
+                  </div>
+                  {round.agent ? (
+                    <div className="bubble agent">
+                      <span className="bubble-role" aria-hidden="true">
+                        {t('followUpRoleAgent')}
+                      </span>
+                      {round.agent.content || round.agent.error || ''}
+                    </div>
+                  ) : isStreamingThisRound ? (
+                    <div className="bubble agent streaming">
+                      <span className="bubble-role" aria-hidden="true">
+                        {t('followUpRoleAgent')}
+                      </span>
+                      {live || '…'}
+                    </div>
+                  ) : null}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {error && <p className="field-error">{error}</p>}
@@ -115,9 +239,17 @@ export default function FollowUp(props: {
           void ask(draft);
         }}
       >
-        <input
+        <textarea
+          ref={textareaRef}
           value={draft}
-          onChange={(event) => setDraft(event.target.value)}
+          rows={1}
+          onChange={handleDraftChange}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+              event.preventDefault();
+              void ask(draft);
+            }
+          }}
           placeholder={live !== null ? t('followUpAnswering') : t('followUpPlaceholder')}
           maxLength={FOLLOW_UP_MAX}
           disabled={live !== null}
