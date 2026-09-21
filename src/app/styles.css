@@ -637,7 +637,7 @@ body {
 .scroll-head {
   background: var(--paper);
   color: var(--ink);
-  padding: 16px 20px 14px;
+  padding: 13px 18px 11px;
   text-align: center;
   border-bottom: 1px dashed var(--hair);
   position: relative;
@@ -646,16 +646,16 @@ body {
 
 .scroll-head-label {
   display: inline-block;
-  font: 600 10px/1 var(--mono);
+  font: 600 9.5px/1 var(--mono);
   letter-spacing: 0.22em;
   color: var(--ink-3);
-  margin-bottom: 6px;
+  margin-bottom: 5px;
   text-transform: uppercase;
 }
 
 .scroll-head-text {
   margin: 0;
-  font: 500 clamp(15.5px, 2.6vw, 18px) / 1.55 var(--serif);
+  font: 500 clamp(14.5px, 2.2vw, 17px) / 1.5 var(--serif);
   letter-spacing: 0.04em;
   color: var(--ink);
   text-wrap: balance;
@@ -1019,7 +1019,12 @@ body {
   to { transform: translateY(-34px) scale(1.05); }
 }
 
-/* ── 结果页：典雅长卷合一，神谕纸卷居中铺展 ── */
+/* ── 结果页：大屏双栏对齐，小屏长卷合一 ── */
+
+.stage.result {
+  justify-content: center;
+  padding: 12px 0 24px;
+}
 
 .result-deck {
   width: 100%;
@@ -1027,6 +1032,12 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 0;
+}
+
+.result-col-slip,
+.result-col-side {
+  width: 100%;
+  max-width: 440px;
 }
 
 .sheet-stack {
@@ -1038,6 +1049,57 @@ body {
   position: relative;
   transform-origin: top center;
   animation: result-unroll 0.72s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* 窄屏（手机和平板竖屏）：左右两栏贴合成一卷无缝长纸 */
+@media (max-width: 819px) {
+  .result-deck.has-interpretation {
+    box-shadow: 0 3px 8px rgba(38, 26, 18, 0.08), 0 18px 42px rgba(38, 26, 18, 0.16);
+    background: var(--paper);
+    max-width: 440px;
+    margin: 0 auto;
+  }
+  .result-deck.has-interpretation .result-col-slip .sheet-stack,
+  .result-deck.has-interpretation .result-col-side .sheet-stack {
+    box-shadow: none;
+    max-width: 100%;
+  }
+}
+
+/* 宽屏与 MacBook 13 (820px+)：解签后左右双栏优雅并排，完美适配 13 寸 MacBook Pro 视窗 */
+@media (min-width: 820px) {
+  .result-col-slip {
+    max-width: 400px;
+  }
+  .result-col-side {
+    max-width: 480px;
+  }
+
+  .result-col-slip .sheet-stack,
+  .result-col-side .sheet-stack {
+    max-width: 100%;
+  }
+
+  .result-deck.has-interpretation {
+    display: grid;
+    grid-template-columns: minmax(340px, 400px) minmax(380px, 480px);
+    justify-content: center;
+    align-items: start;
+    gap: 28px;
+    max-width: 920px;
+    margin: 0 auto;
+  }
+
+  /* 签纸固定视线，右侧长解读与追问滚动时左侧依然可查 */
+  .result-deck.has-interpretation .result-col-slip {
+    position: sticky;
+    top: 20px;
+  }
+
+  /* 并排后右栏自成独立卷轴，隐藏上方撕线 */
+  .result-deck.has-interpretation .sheet::before {
+    display: none;
+  }
 }
 
 /* 結果頁像一卷剛從出紙口接住的紙：先落下，再完全攤平。 */
@@ -1509,7 +1571,7 @@ body {
     repeating-linear-gradient(0deg, rgba(120, 94, 58, 0.018) 0 1px, transparent 1px 4px),
     repeating-linear-gradient(90deg, rgba(120, 94, 58, 0.012) 0 1px, transparent 1px 7px);
   color: var(--ink);
-  padding: 18px 20px 22px;
+  padding: 16px 20px 18px;
   position: relative;
   animation: sheet-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
@@ -1533,7 +1595,7 @@ body {
   background-size: 10px 1px;
 }
 
-.sheet-block { margin-bottom: 14px; }
+.sheet-block { margin-bottom: 12px; }
 .sheet-block:last-child { margin-bottom: 0; }
 
 /* 解籤不是一次把整段文字丟出來，而是像墨水逐段顯影。 */
@@ -1569,35 +1631,35 @@ body {
 
 .sheet[data-lang='en'] .sheet-lead {
   font-family: var(--serif-en);
-  font-size: 16.5px !important;
-  line-height: 1.6 !important;
+  font-size: 16px !important;
+  line-height: 1.55 !important;
 }
 
 .sheet[data-lang='en'] .sheet-block p {
   font-family: var(--serif-en);
-  font-size: 14px;
-  line-height: 1.65;
+  font-size: 13.5px;
+  line-height: 1.6;
 }
 
 .sheet-block p {
   margin: 0;
-  font-size: 14px;
-  line-height: 1.7;
+  font-size: 13.5px;
+  line-height: 1.65;
   color: var(--ink-2);
 }
 
 .sheet-lead {
   font-family: var(--serif);
-  font-size: 17.5px !important;
-  line-height: 1.6 !important;
+  font-size: 16px !important;
+  line-height: 1.55 !important;
   color: var(--ink) !important;
 }
 
 .sheet-pair {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  margin-bottom: 14px;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
 @media (max-width: 440px) {
@@ -1800,10 +1862,10 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
   flex-wrap: wrap;
-  padding: 18px 0 2px;
-  margin-top: 20px;
+  padding: 14px 0 2px;
+  margin-top: 16px;
   border-top: 1px dashed var(--hair);
   animation: actions-in 0.38s 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
@@ -2329,13 +2391,21 @@ code {
 }
 
 @media (min-width: 1000px) {
-  .shell { padding: 24px 40px 26px; }
-  .printer-body { width: min(100%, 560px, 74vh); }
-  /* 和 .result-col-* 同一档。留着旧的 520 会把上面那条 400 盖掉，
-     签纸在宽屏上又变回横幅。 */
-  .sheet-stack,
-  .share-panel,
-  .followup { max-width: 420px; }
+  .shell { padding: 20px 40px 24px; }
+  .printer-body { width: min(100%, 520px, 70vh); }
+  .result-col-slip .sheet-stack { max-width: 400px; }
+  .result-col-side .sheet-stack { max-width: 480px; }
+  .result-col-side .share-panel,
+  .result-col-side .followup { max-width: 100%; }
+}
+
+/* 适配 13 寸 MacBook Pro 等笔电屏幕高（视窗通常在 650px - 820px 之间） */
+@media (max-height: 820px) {
+  .shell { padding-top: 14px; padding-bottom: 18px; }
+  .stage { padding: 0 0 20px; }
+  .stage.result { padding: 8px 0 16px; }
+  .ask-slot { min-height: 144px; }
+  .printer-body { width: min(100%, 480px, 60vh); }
 }
 
 @media (max-width: 720px) {

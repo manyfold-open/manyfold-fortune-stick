@@ -48,66 +48,74 @@ export default function ReadingResult(props: {
    */
   const sheet = copyFor(reading.language);
 
+  const hasSide = Boolean(interpretation || props.interpreting);
+
   return (
     <section className="stage result" data-tone={LEVEL_TONE[reading.stick.level].key}>
-      <div className="result-deck">
-        <div className="sheet-stack">
-          {/* 所求之事：神諭紙卷抬頭 */}
-          <div className="scroll-head" data-lang={reading.language}>
-            <span className="scroll-head-label">
-              {reading.language === 'en' ? 'QUESTION' : '所求之事'}
-            </span>
-            <p className="scroll-head-text">{reading.question}</p>
-          </div>
-
-          <StickFace stick={reading.stick} language={reading.language} />
-
-          {!interpretation && !props.interpreting && (
-            <div className="sheet-actions">
-              <button type="button" className="text-action lead-action" onClick={props.onInterpret}>
-                {t('interpret')}
-              </button>
-              {props.error && <p className="fault">{props.error}</p>}
+      <div className={`result-deck${hasSide ? ' has-interpretation' : ''}`}>
+        <div className="result-col-slip">
+          <div className="sheet-stack">
+            {/* 所求之事：神諭紙卷抬頭 */}
+            <div className="scroll-head" data-lang={reading.language}>
+              <span className="scroll-head-label">
+                {reading.language === 'en' ? 'QUESTION' : '所求之事'}
+              </span>
+              <p className="scroll-head-text">{reading.question}</p>
             </div>
-          )}
 
-          {!interpretation && props.interpreting && (
-            <article className="sheet sheet-loading" data-lang={reading.language}>
-              <div className="interpreting-header">
-                <span className="interpreting-spinner" aria-hidden="true" />
-                <p className="interpreting-status">
-                  {t('interpreting')}
-                  <span className="dots" aria-hidden />
-                </p>
-              </div>
+            <StickFace stick={reading.stick} language={reading.language} />
 
-              <div className="skeleton-block">
-                <div className="skeleton-title" />
-                <div className="skeleton-line" style={{ width: '85%' }} />
-                <div className="skeleton-line" style={{ width: '60%' }} />
+            {!interpretation && !props.interpreting && (
+              <div className="sheet-actions">
+                <button type="button" className="text-action lead-action" onClick={props.onInterpret}>
+                  {t('interpret')}
+                </button>
+                {props.error && <p className="fault">{props.error}</p>}
               </div>
+            )}
+          </div>
+        </div>
 
-              <div className="skeleton-block">
-                <div className="skeleton-title" />
-                <div className="skeleton-line" style={{ width: '94%' }} />
-                <div className="skeleton-line" style={{ width: '88%' }} />
-                <div className="skeleton-line" style={{ width: '70%' }} />
-              </div>
+        {hasSide && (
+          <div className="result-col-side">
+            <div className="sheet-stack sheet-stack-side">
+              {!interpretation && props.interpreting && (
+                <article className="sheet sheet-loading" data-lang={reading.language}>
+                  <div className="interpreting-header">
+                    <span className="interpreting-spinner" aria-hidden="true" />
+                    <p className="interpreting-status">
+                      {t('interpreting')}
+                      <span className="dots" aria-hidden />
+                    </p>
+                  </div>
 
-              <div className="sheet-pair skeleton-pair">
-                <div className="skeleton-block">
-                  <div className="skeleton-title" />
-                  <div className="skeleton-line" style={{ width: '80%' }} />
-                  <div className="skeleton-line" style={{ width: '62%' }} />
-                </div>
-                <div className="skeleton-block">
-                  <div className="skeleton-title" />
-                  <div className="skeleton-line" style={{ width: '75%' }} />
-                  <div className="skeleton-line" style={{ width: '54%' }} />
-                </div>
-              </div>
-            </article>
-          )}
+                  <div className="skeleton-block">
+                    <div className="skeleton-title" />
+                    <div className="skeleton-line" style={{ width: '85%' }} />
+                    <div className="skeleton-line" style={{ width: '60%' }} />
+                  </div>
+
+                  <div className="skeleton-block">
+                    <div className="skeleton-title" />
+                    <div className="skeleton-line" style={{ width: '94%' }} />
+                    <div className="skeleton-line" style={{ width: '88%' }} />
+                    <div className="skeleton-line" style={{ width: '70%' }} />
+                  </div>
+
+                  <div className="sheet-pair skeleton-pair">
+                    <div className="skeleton-block">
+                      <div className="skeleton-title" />
+                      <div className="skeleton-line" style={{ width: '80%' }} />
+                      <div className="skeleton-line" style={{ width: '62%' }} />
+                    </div>
+                    <div className="skeleton-block">
+                      <div className="skeleton-title" />
+                      <div className="skeleton-line" style={{ width: '75%' }} />
+                      <div className="skeleton-line" style={{ width: '54%' }} />
+                    </div>
+                  </div>
+                </article>
+              )}
 
           {interpretation && (
             <article className={`sheet${props.interpreting ? ' sheet-loading' : ''}`} data-lang={reading.language}>
@@ -206,8 +214,10 @@ export default function ReadingResult(props: {
                 />
               )}
             </article>
-          )}
-        </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );
