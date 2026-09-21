@@ -2776,6 +2776,100 @@ code {
   50% { transform: scale(1.04); }
 }
 
+/* 抽起试看操作面板（放回 / 确定） */
+.cylinder-inspect-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  animation: inspect-bar-pop 0.3s cubic-bezier(0.2, 1.3, 0.3, 1);
+}
+
+@keyframes inspect-bar-pop {
+  0% { transform: translateY(8px) scale(0.96); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* 放回签筒按钮（沉着木色） */
+.cylinder-putback-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: color-mix(in srgb, var(--ground) 84%, #000);
+  border: 1.5px solid color-mix(in srgb, #c89b3c 45%, var(--rule));
+  color: var(--on-ground);
+  padding: 9px 18px;
+  border-radius: 22px;
+  font: 600 13.5px/1.2 var(--serif);
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transition: all 0.2s cubic-bezier(0.2, 1, 0.3, 1);
+}
+
+.cylinder-putback-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ground) 76%, #c89b3c 15%);
+  border-color: #dfb552;
+  color: #fff2cc;
+  transform: translateY(-1.5px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35), 0 0 8px rgba(220, 175, 80, 0.25);
+}
+
+.cylinder-putback-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+/* 确定解此签按钮（朱砂描金主按键） */
+.cylinder-confirm-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: linear-gradient(180deg, #b92a2c 0%, #90191b 50%, #6a0f11 100%);
+  border: 1.5px solid #ffd770;
+  color: #fff8e8;
+  padding: 9.5px 22px;
+  border-radius: 22px;
+  font: 700 14px/1.2 var(--serif);
+  letter-spacing: 0.15em;
+  cursor: pointer;
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.4),
+    0 8px 20px rgba(160, 35, 38, 0.6),
+    0 0 16px rgba(255, 215, 120, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  animation: confirm-pulse 1.8s ease-in-out infinite;
+  transition: all 0.2s cubic-bezier(0.2, 1, 0.3, 1);
+}
+
+.cylinder-confirm-btn:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.025);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.45),
+    0 12px 28px rgba(180, 45, 48, 0.75),
+    0 0 22px rgba(255, 225, 130, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.cylinder-confirm-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+@keyframes confirm-pulse {
+  0%, 100% {
+    box-shadow:
+      0 2px 6px rgba(0, 0, 0, 0.4),
+      0 8px 20px rgba(160, 35, 38, 0.6),
+      0 0 14px rgba(255, 215, 120, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  }
+  50% {
+    box-shadow:
+      0 4px 10px rgba(0, 0, 0, 0.45),
+      0 12px 26px rgba(180, 45, 48, 0.7),
+      0 0 24px rgba(255, 225, 130, 0.85),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+}
+
 .cylinder-stir-prompt {
   display: inline-flex;
   align-items: center;
@@ -2792,12 +2886,29 @@ code {
   animation: stir-hint-breathe 2.5s ease-in-out infinite;
   user-select: none;
   cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.cylinder-stir-prompt.stirring {
+  background: color-mix(in srgb, var(--ground) 76%, #c89b3c 16%);
+  border-color: rgba(220, 180, 80, 0.8);
+  color: #fff2cc;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 0 12px rgba(220, 180, 80, 0.4);
 }
 
 .stir-hand-icon {
   font-size: 16px;
   display: inline-block;
   animation: hand-sway 1.8s ease-in-out infinite;
+}
+
+.stir-hand-icon.spinning {
+  animation: icon-swirl 0.8s linear infinite;
+}
+
+@keyframes icon-swirl {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 @keyframes hand-sway {

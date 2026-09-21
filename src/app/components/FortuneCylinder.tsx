@@ -16,7 +16,7 @@ import * as THREE from 'three';
 import type { Language } from '../../shared/lang';
 import type { Reading } from '../../shared/types';
 import { LEVEL_TONE } from '../constants';
-import { bambooDrawSound, bambooRustle } from '../sound';
+import { bambooDrawSound, bambooDropSound, bambooRustle } from '../sound';
 
 export interface FortuneCylinderProps {
   state: 'idle' | 'ready' | 'shaking' | 'ejecting';
@@ -296,7 +296,9 @@ export default function FortuneCylinder(props: FortuneCylinderProps) {
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [hoveredStickId, setHoveredStickId] = useState<number | null>(null);
+  const [inspectedStickId, setInspectedStickId] = useState<number | null>(null);
   const [chosenStickId, setChosenStickId] = useState<number | null>(null);
+  const [isStirring, setIsStirring] = useState(false);
 
   // Three.js 核心对象保存
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -304,20 +306,25 @@ export default function FortuneCylinder(props: FortuneCylinderProps) {
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sticksDataRef = useRef<Stick3DData[]>([]);
   const cylinderGroupRef = useRef<THREE.Group | null>(null);
+  const sticksBundleGroupRef = useRef<THREE.Group | null>(null);
   const raycasterRef = useRef(new THREE.Raycaster());
   const mousePosRef = useRef(new THREE.Vector2(-999, -999));
   const isPointerDownRef = useRef(false);
   const haloLightRef = useRef<THREE.PointLight | null>(null);
 
-  // 物理解算器（Spring-Damper，源自 paper-roll）
+  // 物理解算器（Spring-Damper + 涡流角速度）
   const pointerSpringRef = useRef({
     current: new THREE.Vector2(0, 0),
     target: new THREE.Vector2(0, 0),
     velocity: new THREE.Vector2(0, 0),
   });
+  const angularVelocityRef = useRef(0);
+  const pointerStartRef = useRef({ x: 0, y: 0, clientX: 0, clientY: 0 });
+  const prevPointerRef = useRef({ x: 0, y: 0 });
+  const hasDraggedRef = useRef(false);
   const lastRustleTimeRef = useRef(0);
 
-  const effectiveChosenId = chosenStickId ?? 18;
+  const effectiveChosenId = chosenStickId ?? inspectedStickId ?? 18;
 
   // 1. 初始化 Three.js 场景、材质与竹签群
   useEffect(() => {
@@ -379,6 +386,11 @@ export default function FortuneCylinder(props: FortuneCylinderProps) {
     cylinderGroup.position.set(0, -2.1, 0);
     scene.add(cylinderGroup);
     cylinderGroupRef.current = cylinderGroup;
+
+    // 内部竹签群独立旋转 Group（用于手势搅拌涡流）
+    const sticksBundleGroup = new THREE.Group();
+    cylinderGroup.add(sticksBundleGroup);
+    sticksBundleGroupRef.current = sticksBundleGroup;
 
     // ── 摄影棚柔焦接触阴影（Blob Shadow，纯净无锯齿） ──
     const blobGeo = new THREE.PlaneGeometry(8.6, 8.6);
@@ -507,7 +519,7 @@ export default function FortuneCylinder(props: FortuneCylinderProps) {
         stickGroup.rotation.set(rotX, rotY, rotZ);
         stickGroup.add(stickMesh);
 
-        cylinderGroup.add(stickGroup);
+        sticksBundleGroup.add(stickGroup);
 
         sticksList.push({
           group: stickGroup,
@@ -566,6 +578,28 @@ export default function FortuneCylinder(props: FortuneCylinderProps) {
         cylinderGroup.rotation.z *= 0.88;
         cylinderGroup.position.x *= 0.88;
 
+        // 竹签群涡流旋转物理（来自手势搅拌）
+        if (sticksBundleGroup) {
+          sticksBundleGroup.rotation.y += angularVelocityRef.current * dt;
+          angularVelocityRef.current *= Math.pow(0.86, dt * 60);
+
+          const spinSpeed = Math.abs(angularVelocityRef.current);
+          if (spinSpeed > 0.35) {
+            sticksList.forEach((st, idx) => {
+              const hop = Math.abs(Math.sin(elapsed * 26 + idx * 0.85)) * 0.06 * Math.min(1.5, spinSpeed * 0.25);
+              st.wobbleX += (Math.random() - 0.5) * 0.018 * spinSpeed;
+              st.wobbleZ += (Math.random() - 0.5) * 0.018 * spinSpeed;
+              st.group.position.y = st.currentY + hop;
+            });
+
+            const now = Date.now();
+            if (soundEnabled && now - lastRustleTimeRef.current > 55) {
+              lastRustleTimeRef.current = now;
+              bambooRustle(Math.min(1.0, spinSpeed * 0.2));
+            }
+          }
+        }
+
         // 3. 竹签受指针弹簧重力微拨弄与回弹
         const stirIntensity = ps.velocity.length();
         const px = ps.current.x * 2.2;
@@ -574,7 +608,9 @@ export default function FortuneCylinder(props: FortuneCylinderProps) {
         sticksList.forEach((st) => {
           // 柔和拔高趋向目标高度
           st.currentY += (st.targetY - st.currentY) * (1 - Math.exp(-14 * dt));
-          st.group.position.y = st.currentY;
+          if (Math.abs(angularVelocityRef.current) <= 0.35) {
+            st.group.position.y = st.currentY;
+          }
 
           // 物理排斥挤压（当手指拖曳经过时向外侧推挤）
           if (stirIntensity > 0.05) {
@@ -624,109 +660,204 @@ export default function FortuneCylinder(props: FortuneCylinderProps) {
     };
   }, []);
 
-  // 2. 状态驱动 3D 表现：挑签探头与神签拔高升空
+  // 2. 状态驱动 3D 表现：抽起试看、挑签探头与最终神签破筒升空
   useEffect(() => {
     const sticks = sticksDataRef.current;
     if (sticks.length === 0) return;
 
     sticks.forEach((st) => {
       const isChosen = st.id === effectiveChosenId;
+      const isInspected = st.id === inspectedStickId;
 
       if (ejecting && isChosen) {
-        // 🌟 神签拔高升空 2.2 个单位，微向前倾，金芒四射！
-        st.targetY = st.baseY + 2.2;
+        // 🌟 最终破筒升空：神签拔高 2.8 个单位，金芒四射！
+        st.targetY = st.baseY + 2.8;
         st.group.position.z = st.baseZ + 0.35;
-        if (haloLightRef.current) haloLightRef.current.intensity = 4.2;
-      } else if (hoveredStickId === st.id && state === 'ready' && !shaking && !ejecting) {
-        // 🖐️ 鼠标悬停挑签拔高探头 0.8 个单位
-        st.targetY = st.baseY + 0.8;
+        if (haloLightRef.current) haloLightRef.current.intensity = 4.5;
+      } else if (isInspected) {
+        // 🎋 抽起试看端详：拔高 2.2 个单位，微向前探，清晰露出吉凶与签号！
+        st.targetY = st.baseY + 2.2;
+        st.group.position.z = st.baseZ + 0.28;
+      } else if (
+        hoveredStickId === st.id &&
+        state === 'ready' &&
+        !shaking &&
+        !ejecting &&
+        inspectedStickId === null &&
+        !isStirring
+      ) {
+        // 🖐️ 未拔起试看时，鼠标滑过微浮 0.5 个单位引导挑签
+        st.targetY = st.baseY + 0.5;
+        st.group.position.z = st.baseZ;
       } else {
-        // 复位原高
+        // ↩ 筒内正常原位
         st.targetY = st.baseY;
+        st.group.position.z = st.baseZ;
       }
     });
-  }, [ejecting, hoveredStickId, effectiveChosenId, state, shaking, sheet]);
+  }, [ejecting, hoveredStickId, inspectedStickId, effectiveChosenId, state, shaking, isStirring]);
 
   // 3. 3D Raycasting 与物理搅拌交互
-  const updateRaycaster = (e: React.PointerEvent) => {
+  const getNormalizedPos = (e: React.PointerEvent) => {
     const container = containerRef.current;
-    const camera = cameraRef.current;
-    if (!container || !camera) return;
-
+    if (!container) return { x: 0, y: 0 };
     const rect = container.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-    const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    return {
+      x: ((e.clientX - rect.left) / rect.width) * 2 - 1,
+      y: -((e.clientY - rect.top) / rect.height) * 2 + 1,
+    };
+  };
+
+  const getIntersectedStick = (e: React.PointerEvent): number | null => {
+    const camera = cameraRef.current;
+    if (!camera) return null;
+    const { x, y } = getNormalizedPos(e);
     mousePosRef.current.set(x, y);
-
-    // 更新物理弹簧目标
-    pointerSpringRef.current.target.set(x, y);
-
     raycasterRef.current.setFromCamera(mousePosRef.current, camera);
     const meshes = sticksDataRef.current.map((st) => st.mesh);
     const intersects = raycasterRef.current.intersectObjects(meshes, false);
-
     if (intersects.length > 0) {
-      const hitStickId = intersects[0].object.userData.stickId as number;
-      if (hitStickId !== hoveredStickId) {
-        setHoveredStickId(hitStickId);
-
-        // 碰击微摇晃
-        const hitData = sticksDataRef.current[hitStickId];
-        if (hitData) {
-          hitData.wobbleX = (Math.random() - 0.5) * 0.08;
-          hitData.wobbleZ = (Math.random() - 0.5) * 0.08;
-        }
-
-        // 触发真实竹木微碰碰撞音效
-        const now = Date.now();
-        if (soundEnabled && now - lastRustleTimeRef.current > 45) {
-          lastRustleTimeRef.current = now;
-          bambooRustle(0.75);
-        }
-      }
-    } else {
-      if (!isPointerDownRef.current) setHoveredStickId(null);
+      return (intersects[0].object.userData.stickId as number) ?? null;
     }
+    return null;
   };
 
   const handlePointerDown = (e: React.PointerEvent) => {
+    if (disabled || shaking || ejecting) return;
+    const container = containerRef.current;
+    if (!container) return;
+
+    try {
+      container.setPointerCapture(e.pointerId);
+    } catch {}
+
+    const { x, y } = getNormalizedPos(e);
+    pointerStartRef.current = { x, y, clientX: e.clientX, clientY: e.clientY };
+    prevPointerRef.current = { x, y };
+    hasDraggedRef.current = false;
     isPointerDownRef.current = true;
-    updateRaycaster(e);
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
-    if (shaking || ejecting) return;
-    updateRaycaster(e);
+    if (disabled || shaking || ejecting) return;
+    const { x, y } = getNormalizedPos(e);
+    pointerSpringRef.current.target.set(x, y);
 
-    // 持续拖动搅拌：推动竹木群摩擦碰撞
     if (isPointerDownRef.current) {
-      const now = Date.now();
-      if (soundEnabled && now - lastRustleTimeRef.current > 50) {
-        lastRustleTimeRef.current = now;
-        bambooRustle(0.9);
+      const dist = Math.hypot(
+        e.clientX - pointerStartRef.current.clientX,
+        e.clientY - pointerStartRef.current.clientY
+      );
+
+      if (dist > 6) {
+        hasDraggedRef.current = true;
+        if (!isStirring) setIsStirring(true);
+
+        // 如果之前有抽出试看的签，在主动搅拌时顺滑滑回筒内
+        if (inspectedStickId !== null) {
+          setInspectedStickId(null);
+          if (soundEnabled) bambooDropSound();
+        }
+
+        // 计算围绕中心的切向旋转力矩
+        const prev = prevPointerRef.current;
+        const anglePrev = Math.atan2(prev.y, prev.x);
+        const angleCurr = Math.atan2(y, x);
+        let dTheta = angleCurr - anglePrev;
+        if (dTheta > Math.PI) dTheta -= Math.PI * 2;
+        if (dTheta < -Math.PI) dTheta += Math.PI * 2;
+
+        const dx = x - prev.x;
+        dTheta += dx * 0.7;
+
+        angularVelocityRef.current += dTheta * 16.0;
+        angularVelocityRef.current = Math.max(-12, Math.min(12, angularVelocityRef.current));
+        prevPointerRef.current = { x, y };
+      }
+    } else {
+      // 鼠标自由滑过，检测悬停
+      if (inspectedStickId === null) {
+        const hitStickId = getIntersectedStick(e);
+        if (hitStickId !== hoveredStickId) {
+          setHoveredStickId(hitStickId);
+          if (hitStickId !== null) {
+            const hitData = sticksDataRef.current[hitStickId];
+            if (hitData) {
+              hitData.wobbleX = (Math.random() - 0.5) * 0.08;
+              hitData.wobbleZ = (Math.random() - 0.5) * 0.08;
+            }
+            const now = Date.now();
+            if (soundEnabled && now - lastRustleTimeRef.current > 45) {
+              lastRustleTimeRef.current = now;
+              bambooRustle(0.75);
+            }
+          }
+        }
       }
     }
   };
 
-  const handlePointerUp = () => {
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (disabled || shaking || ejecting) return;
+    const container = containerRef.current;
+    if (container) {
+      try {
+        container.releasePointerCapture(e.pointerId);
+      } catch {}
+    }
+
     isPointerDownRef.current = false;
+    setIsStirring(false);
+
+    // 如果未产生拖曳，则是纯粹的点击 / 挑签
+    if (!hasDraggedRef.current) {
+      if (state === 'idle') {
+        onShake();
+        return;
+      }
+
+      const hitStickId = getIntersectedStick(e);
+
+      if (hitStickId !== null) {
+        if (hitStickId === inspectedStickId) {
+          // 点击当前拔起的签：放回筒内
+          setInspectedStickId(null);
+          if (soundEnabled) bambooDropSound();
+        } else {
+          // 抽出该支竹签试看端详！
+          setInspectedStickId(hitStickId);
+          if (soundEnabled) bambooDrawSound();
+        }
+      } else {
+        // 点击空白案几或筒身：若有抽出的签则放回
+        if (inspectedStickId !== null) {
+          setInspectedStickId(null);
+          if (soundEnabled) bambooDropSound();
+        }
+      }
+    }
   };
 
   const handlePointerLeave = () => {
     isPointerDownRef.current = false;
+    setIsStirring(false);
     setHoveredStickId(null);
   };
 
-  // 点击 3D 签筒抽取选中的那一支
-  const handleCanvasClick = () => {
+  // 放回签筒（换抽别支）
+  const handlePutBack = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (disabled || shaking || ejecting) return;
-    if (state === 'idle') {
-      onShake();
-      return;
-    }
+    setInspectedStickId(null);
+    if (soundEnabled) bambooDropSound();
+  };
 
-    const chosenId = hoveredStickId ?? Math.floor(Math.random() * 36);
-    setChosenStickId(chosenId);
+  // 心诚掷定 · 确定解此签
+  const handleConfirm = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (disabled || shaking || ejecting) return;
+    const finalId = inspectedStickId ?? hoveredStickId ?? Math.floor(Math.random() * 36);
+    setChosenStickId(finalId);
     if (soundEnabled) bambooDrawSound();
     onShake();
   };
@@ -746,7 +877,6 @@ export default function FortuneCylinder(props: FortuneCylinderProps) {
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerLeave}
-        onClick={handleCanvasClick}
         role="button"
         tabIndex={disabled ? -1 : 0}
         aria-label={en ? 'Interactive 3D Fortune Cylinder' : '3D 互動問籤筒'}
@@ -764,23 +894,45 @@ export default function FortuneCylinder(props: FortuneCylinderProps) {
             {en ? 'Write your thoughts above to consult' : '請先在上方虔心寫下所求之事'}
           </p>
         ) : state === 'ready' ? (
-          hoveredStickId !== null ? (
-            <button
-              type="button"
-              className="cylinder-shake-btn pick-active"
-              onClick={handleCanvasClick}
-              disabled={disabled}
-            >
-              <span className="shake-btn-icon" aria-hidden="true">✦</span>
-              <span className="shake-btn-text">
-                {en ? `Draw Chosen Stick #${hoveredStickId + 1}` : `心誠擇定 · 抽出此第 ${hoveredStickId + 1} 籤`}
+          inspectedStickId !== null ? (
+            <div className="cylinder-inspect-bar">
+              <button
+                type="button"
+                className="cylinder-putback-btn"
+                onClick={handlePutBack}
+                disabled={disabled}
+                aria-label={en ? 'Put stick back into cylinder' : '放回籤筒'}
+              >
+                <span aria-hidden="true">↩</span>
+                <span>{en ? 'Put Back / Reselect' : '放回籤筒 · 換抽別支'}</span>
+              </button>
+              <button
+                type="button"
+                className="cylinder-confirm-btn"
+                onClick={handleConfirm}
+                disabled={disabled}
+                aria-label={en ? `Confirm Stick #${inspectedStickId + 1}` : `確定解第 ${inspectedStickId + 1} 籤`}
+              >
+                <span aria-hidden="true">✦</span>
+                <span>
+                  {en
+                    ? `Confirm Stick #${inspectedStickId + 1}`
+                    : `心誠擲定 · 確定解第 ${inspectedStickId + 1} 籤`}
+                </span>
+              </button>
+            </div>
+          ) : isStirring ? (
+            <div className="cylinder-stir-prompt stirring">
+              <span className="stir-hand-icon spinning" aria-hidden="true">🎋</span>
+              <span className="stir-prompt-text">
+                {en ? 'Stirring the cylinder... tap any stick to draw' : '攪動籤筒中... 隨時點選竹籤抽起試看'}
               </span>
-            </button>
+            </div>
           ) : (
-            <div className="cylinder-stir-prompt" onClick={handleCanvasClick}>
+            <div className="cylinder-stir-prompt">
               <span className="stir-hand-icon" aria-hidden="true">🖐️</span>
               <span className="stir-prompt-text">
-                {en ? 'Stir in 3D & click any stick to draw' : '3D 攪動竹籤 · 隨心點選一籤抽出'}
+                {en ? 'Drag to stir sticks · Tap any stick to inspect' : '按住拖曳攪動竹籤 · 點選任意一籤抽起試看'}
               </span>
             </div>
           )

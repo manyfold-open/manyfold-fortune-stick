@@ -347,6 +347,54 @@ export function bambooDrawSound(): void {
   noise.start(start);
 }
 
+/**
+ * 放回竹签：竹签顺着竹群滑落入筒底，发出清脆沉稳的竹木落底轻敲声
+ */
+export function bambooDropSound(): void {
+  const audio = ctx();
+  if (!audio) return;
+  const start = audio.currentTime;
+
+  // 1. 竹竿向下滑动摩擦微音
+  const slide = audio.createOscillator();
+  slide.type = 'triangle';
+  slide.frequency.setValueAtTime(620, start);
+  slide.frequency.exponentialRampToValueAtTime(240, start + 0.12);
+
+  const sFilter = audio.createBiquadFilter();
+  sFilter.type = 'bandpass';
+  sFilter.frequency.setValueAtTime(900, start);
+  sFilter.Q.setValueAtTime(2.2, start);
+
+  const sGain = audio.createGain();
+  sGain.gain.setValueAtTime(0.0001, start);
+  sGain.gain.linearRampToValueAtTime(0.025, start + 0.03);
+  sGain.gain.exponentialRampToValueAtTime(0.0001, start + 0.13);
+
+  slide.connect(sFilter).connect(sGain).connect(audio.destination);
+  slide.start(start);
+  slide.stop(start + 0.15);
+
+  // 2. 落底敲击木击点
+  const tapTime = start + 0.11;
+  const knock = audio.createOscillator();
+  knock.type = 'sine';
+  knock.frequency.setValueAtTime(420, tapTime);
+  knock.frequency.exponentialRampToValueAtTime(95, tapTime + 0.07);
+
+  const kFilter = audio.createBiquadFilter();
+  kFilter.type = 'lowpass';
+  kFilter.frequency.setValueAtTime(800, tapTime);
+
+  const kGain = audio.createGain();
+  kGain.gain.setValueAtTime(0.06, tapTime);
+  kGain.gain.exponentialRampToValueAtTime(0.0001, tapTime + 0.08);
+
+  knock.connect(kFilter).connect(kGain).connect(audio.destination);
+  knock.start(tapTime);
+  knock.stop(tapTime + 0.09);
+}
+
 /** 打印完成/定签：按等级演绎不同的东方铜磬、颂钵与古寺晨钟 */
 export function chime(level?: StickLevel): void {
   const audio = ctx();
