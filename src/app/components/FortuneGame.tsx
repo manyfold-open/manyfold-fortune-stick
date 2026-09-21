@@ -15,7 +15,7 @@ import type { FollowUpMessage, Reading } from '../../shared/types';
 import { api, ApiError, errorMessage } from '../api';
 import { EJECT_MS, LEVEL_TONE, PRINT_MS, QUESTION_MIN, QUESTION_MAX } from '../constants';
 import { useT } from '../i18n';
-import { chime, motor, press as pressSound, stampSound, typeTick } from '../sound';
+import { bambooRattle, chime, motor, press as pressSound, stampSound, typeTick } from '../sound';
 import {
   getCurrentReadingId,
   saveRecord,
@@ -23,6 +23,7 @@ import {
   type LocalFollowUp,
   type Prefs,
 } from '../storage';
+import FortuneCylinder from './FortuneCylinder';
 import Printer from './Printer';
 import QuestionForm from './QuestionForm';
 import ReadingResult from './ReadingResult';
@@ -37,14 +38,71 @@ interface Fault {
 
 export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boolean }) {
   const t = useT();
-  const [question, setQuestion] = useState('');
-  const [phase, setPhase] = useState<Phase>('ask');
+  const [question, setQuestion] = useState(() => {
+    try {
+      return new URL(window.location.href).searchParams.get('q') || '';
+    } catch {
+      return '';
+    }
+  });
+  const [phase, setPhase] = useState<Phase>(() => {
+    try {
+      const p = new URL(window.location.href).searchParams.get('dev_phase');
+      if (p === 'printing' || p === 'ejecting') return p as Phase;
+    } catch {
+      /* ignore */
+    }
+    return 'ask';
+  });
   const [reading, setReading] = useState<Reading | null>(null);
-  /** 正在从出纸口吐出来的那一张，动画放完才变成 `reading`。 */
-  const [sheet, setSheet] = useState<Reading | null>(null);
+  const [sheet, setSheet] = useState<Reading | null>(() => {
+    try {
+      if (new URL(window.location.href).searchParams.get('dev_phase') === 'ejecting') {
+        return {
+          id: 'demo',
+          question: '今年我的事業運勢如何？',
+          language: 'zh',
+          status: 'revealed',
+          interpretation: null,
+          stick: {
+            no: 1,
+            level: '上上签',
+            title: '大吉',
+            poem: ['天開文運喜臨門', '萬事亨通福滿門'],
+            explanation: '萬事大吉',
+          },
+          createdAt: new Date().toISOString(),
+        } as unknown as Reading;
+      }
+    } catch {
+      /* ignore */
+    }
+    return null;
+  });
   const [interpreting, setInterpreting] = useState(false);
   const [fault, setFault] = useState<Fault | null>(null);
   const [restoring, setRestoring] = useState(true);
+  const [vessel, setVessel] = useState<'cylinder' | 'printer'>(() => {
+    try {
+      const v = new URL(window.location.href).searchParams.get('vessel');
+      if (v === 'printer' || v === 'cylinder') return v;
+      const saved = localStorage.getItem('wenyiqian.vessel');
+      if (saved === 'printer' || saved === 'cylinder') return saved;
+    } catch {
+      /* ignore */
+    }
+    return 'cylinder';
+  });
+
+  const selectVessel = useCallback((v: 'cylinder' | 'printer') => {
+    setVessel(v);
+    try {
+      localStorage.setItem('wenyiqian.vessel', v);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   const timers = useRef<number[]>([]);
   const stopMotor = useRef<(() => void) | null>(null);
   /** 输入框本体。例句在机器下方，填完字要把光标送回这里，所以 ref 归这一层。 */
@@ -107,8 +165,12 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
     setPhase('printing');
     const calm = props.prefs.reducedMotion;
     if (props.prefs.sound) {
-      pressSound();
-      if (!calm) stopMotor.current = motor(PRINT_MS);
+      if (vessel === 'cylinder') {
+        stopMotor.current = bambooRattle(PRINT_MS);
+      } else {
+        pressSound();
+        if (!calm) stopMotor.current = motor(PRINT_MS);
+      }
     }
 
     try {
@@ -127,6 +189,7 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
 
       // 纸开始往外走，走完再把画面交给结果页 —— 中间这段时间签已经定死了。
       setSheet(body.reading);
+      const ejectDuration = vessel === 'cylinder' ? 1200 : EJECT_MS;
       timers.current.push(
         window.setTimeout(() => {
           if (props.prefs.sound) {
@@ -139,14 +202,14 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
           setReading(body.reading);
           setSheet(null);
           setPhase('ask');
-        }, PRINT_MS + EJECT_MS),
+        }, PRINT_MS + ejectDuration),
       );
     } catch (cause) {
       stopMotor.current?.();
       setPhase('ask');
       setFault({ code: 'ERROR', text: errorMessage(cause, t) });
     }
-  }, [phase, question, props.prefs.reducedMotion, props.prefs.sound, t]);
+  }, [phase, question, props.prefs.reducedMotion, props.prefs.sound, t, vessel]);
 
   const interpret = useCallback(async () => {
     if (!reading || interpreting) return;
@@ -239,18 +302,66 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
         )}
       </div>
 
-      <div className={`printer-slot${phase === 'ejecting' ? ' ejecting' : ''}`}>
-        <Printer
-          state={printing ? 'printing' : typed > 0 ? 'ready' : 'idle'}
-          code={lcd.code}
-          message={lcd.message}
-          alert={lcd.alert}
-          feeding={sheet !== null}
-          onPress={() => void draw()}
-        >
-          {sheet && <StickFace stick={sheet.stick} language={sheet.language} />}
-        </Printer>
+      <div className="vessel-toggle-slot">
+        <div className="vessel-toggle-bar" role="tablist" aria-label="器具選擇">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={vessel === 'cylinder'}
+            className={`vessel-btn${vessel === 'cylinder' ? ' active' : ''}`}
+            onClick={() => selectVessel('cylinder')}
+            disabled={printing}
+          >
+            <span aria-hidden="true">🏮</span>
+            <span>{props.prefs.language === 'en' ? 'Temple Cylinder' : '宮廟籤筒'}</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={vessel === 'printer'}
+            className={`vessel-btn${vessel === 'printer' ? ' active' : ''}`}
+            onClick={() => selectVessel('printer')}
+            disabled={printing}
+          >
+            <span aria-hidden="true">🖨️</span>
+            <span>{props.prefs.language === 'en' ? 'Retro Printer' : '復古印表機'}</span>
+          </button>
+        </div>
       </div>
+
+      {vessel === 'cylinder' ? (
+        <div className="cylinder-slot">
+          <FortuneCylinder
+            state={
+              phase === 'printing'
+                ? 'shaking'
+                : phase === 'ejecting'
+                  ? 'ejecting'
+                  : typed > 0
+                    ? 'ready'
+                    : 'idle'
+            }
+            sheet={sheet}
+            fault={fault}
+            language={sheet ? sheet.language : props.prefs.language}
+            onShake={() => void draw()}
+            disabled={printing}
+          />
+        </div>
+      ) : (
+        <div className={`printer-slot${phase === 'ejecting' ? ' ejecting' : ''}`}>
+          <Printer
+            state={printing ? 'printing' : typed > 0 ? 'ready' : 'idle'}
+            code={lcd.code}
+            message={lcd.message}
+            alert={lcd.alert}
+            feeding={sheet !== null}
+            onPress={() => void draw()}
+          >
+            {sheet && <StickFace stick={sheet.stick} language={sheet.language} />}
+          </Printer>
+        </div>
+      )}
 
       {/* 例句：在机器下方，不在提问和机器中间 —— 夹在中间会把本该挨着的两样推开。
           点一句就把它填进输入框，光标跟着回到框里，接着改还是直接按印都行。

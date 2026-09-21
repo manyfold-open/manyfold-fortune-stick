@@ -2217,3 +2217,609 @@ code {
   .footer { gap: 12px; }
   .footer-note { width: 100%; margin-left: 0; }
 }
+
+/* ==========================================================================
+   🏮 正统宫庙 3D 红色生漆问签筒（Fortune Cylinder）
+   ========================================================================== */
+
+/* 器具切换胶囊 */
+.vessel-toggle-slot {
+  display: flex;
+  justify-content: center;
+  margin: 0 0 52px;
+  position: relative;
+  z-index: 10;
+}
+
+.vessel-toggle-bar {
+  display: inline-flex;
+  background: color-mix(in srgb, var(--ground) 85%, #000);
+  padding: 3px;
+  border-radius: 20px;
+  border: 1px solid color-mix(in srgb, var(--rule) 35%, transparent);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.vessel-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: var(--on-ground-2);
+  font: 500 13px/1.2 var(--serif);
+  padding: 6px 14px;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.vessel-btn:hover:not(:disabled) {
+  color: var(--on-ground);
+}
+
+.vessel-btn.active {
+  background: linear-gradient(180deg, #9a2829 0%, #78191a 100%);
+  color: #fffaf0;
+  box-shadow: 0 1.5px 4px rgba(120, 25, 26, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  font-weight: 600;
+}
+
+.vessel-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 签筒舞台 */
+.cylinder-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  min-height: 440px;
+  padding-top: 56px;
+  perspective: 1000px;
+}
+
+.cylinder-stage {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* 案几真实柔和双层投影 */
+.cylinder-ground-shadow {
+  position: absolute;
+  bottom: 74px;
+  width: 190px;
+  height: 28px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(15, 6, 4, 0.7) 0%, rgba(15, 6, 4, 0.35) 45%, transparent 75%);
+  filter: blur(4px);
+  pointer-events: none;
+  z-index: 1;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.cylinder-stage.shaking .cylinder-ground-shadow {
+  animation: shadow-shake 0.28s ease-in-out infinite alternate;
+}
+
+/* 签筒晃动包裹层 */
+.cylinder-wrapper {
+  position: relative;
+  width: 176px;
+  height: 300px;
+  z-index: 2;
+  transform-origin: 50% 90%;
+  transition: transform 0.3s cubic-bezier(0.2, 1, 0.3, 1);
+  user-select: none;
+}
+
+.cylinder-wrapper[role='button'] {
+  cursor: pointer;
+}
+
+.cylinder-wrapper[role='button']:hover {
+  transform: translateY(-4px) scale(1.02);
+}
+
+/* 筒口中空深邃景深椭圆（3D 景深后盖） */
+.cylinder-interior {
+  position: absolute;
+  top: 62px;
+  left: 6px;
+  right: 6px;
+  height: 24px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, #080101 0%, #160304 60%, #300608 100%);
+  border: 1.5px solid #4a0c0e;
+  box-shadow: inset 0 8px 16px rgba(0, 0, 0, 0.95);
+  z-index: 0;
+}
+
+/* 摇签动态 */
+.cylinder-stage.shaking .cylinder-wrapper {
+  animation: cylinder-sway 0.26s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite alternate;
+}
+
+@keyframes cylinder-sway {
+  0% { transform: rotate(-6.5deg) translateY(-2px); }
+  50% { transform: rotate(0deg) translateY(2px); }
+  100% { transform: rotate(6.5deg) translateY(-2px); }
+}
+
+@keyframes shadow-shake {
+  0% { transform: scaleX(0.92) translateX(-8px); opacity: 0.5; }
+  100% { transform: scaleX(1.08) translateX(8px); opacity: 0.75; }
+}
+
+/* 满筒红头竹签束 */
+.sticks-bundle {
+  position: absolute;
+  top: -96px;
+  left: 8px;
+  right: 8px;
+  bottom: 120px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.bundle-stick {
+  position: absolute;
+  bottom: 0;
+  width: 9px;
+  border-radius: 1.5px;
+  transform-origin: 50% 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 前中后三层景深与光暗差异 */
+.bundle-stick.tier-back {
+  filter: brightness(0.68) contrast(1.05);
+  z-index: 1;
+}
+.bundle-stick.tier-mid {
+  filter: brightness(0.85);
+  z-index: 2;
+}
+.bundle-stick.tier-front {
+  filter: brightness(1.04);
+  z-index: 3;
+}
+
+/* 红头朱砂签首 */
+.tally-head {
+  height: 44%;
+  background: linear-gradient(90deg,
+    #6d1314 0%,
+    #9e2224 25%,
+    #cb3537 55%,
+    #df484a 72%,
+    #7a1618 100%
+  );
+  border-radius: 1.5px 1.5px 0 0;
+  position: relative;
+  box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.45);
+}
+
+/* 宫庙传统签头倒梯形双侧刻槽（Notch） */
+.tally-notch-cut {
+  position: absolute;
+  top: 7px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: transparent;
+  border-top: 1px solid rgba(0, 0, 0, 0.45);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* 原木楠竹签身（展现饱满竹节木质纹理） */
+.tally-stem {
+  height: 56%;
+  background: linear-gradient(90deg,
+    #8d6332 0%,
+    #be9557 25%,
+    #dfb87c 50%,
+    #f2dbab 70%,
+    #ab8048 100%
+  );
+  box-shadow: inset 0 0.5px 0 rgba(0, 0, 0, 0.25);
+}
+
+/* 摇晃中竹签各异跳动 */
+.cylinder-stage.shaking .bundle-stick:nth-child(3n) {
+  animation: stick-bob-1 0.22s ease-in-out infinite alternate;
+}
+.cylinder-stage.shaking .bundle-stick:nth-child(3n+1) {
+  animation: stick-bob-2 0.26s ease-in-out infinite alternate 0.05s;
+}
+.cylinder-stage.shaking .bundle-stick:nth-child(3n+2) {
+  animation: stick-bob-3 0.2s ease-in-out infinite alternate 0.09s;
+}
+
+@keyframes stick-bob-1 {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-13px); }
+}
+@keyframes stick-bob-2 {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-8px); }
+}
+@keyframes stick-bob-3 {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-16px); }
+}
+
+/* 🌟 抽出的幸运灵签（Lucky Stick） */
+.lucky-stick {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  margin-left: -7.5px;
+  width: 15px;
+  height: 220px;
+  z-index: 10;
+  transform: translateY(0);
+  transition: transform 0.68s cubic-bezier(0.2, 1.35, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+.lucky-stick.risen {
+  transform: translateY(-48px) rotate(-2.8deg) scale(1.06);
+}
+
+.lucky-stick-body {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.lucky-stick-head {
+  height: 52%;
+  background: linear-gradient(90deg, #87191a 0%, #c43234 35%, #eb4e50 60%, #941c1e 100%);
+  border-radius: 2px 2px 0 0;
+  box-shadow: inset 0 1.5px 0.5px rgba(255, 255, 255, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
+  position: relative;
+}
+
+.lucky-notch-cut {
+  position: absolute;
+  top: 9px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  border-top: 1px solid rgba(0, 0, 0, 0.5);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.lucky-stick-inscription {
+  position: absolute;
+  top: 20px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  z-index: 2;
+}
+
+.lucky-stick-no {
+  writing-mode: vertical-rl;
+  font-family: "Kaiti SC", "STKaiti", "BiauKai", var(--serif);
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #fff4ca;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.85), 0 0 5px rgba(255, 220, 130, 0.85);
+}
+
+.lucky-stick-stem {
+  height: 48%;
+  background: linear-gradient(90deg, #9b723d 0%, #dfb87c 40%, #edd39e 65%, #a67c45 100%);
+}
+
+.lucky-stick-glow {
+  position: absolute;
+  inset: -12px;
+  border-radius: 14px;
+  background: radial-gradient(circle, rgba(255, 215, 120, 0.6) 0%, transparent 70%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+
+.lucky-stick.risen .lucky-stick-glow {
+  opacity: 1;
+  animation: pulse-aura 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes pulse-aura {
+  0% { transform: scale(0.92); opacity: 0.55; }
+  100% { transform: scale(1.18); opacity: 0.9; }
+}
+
+/* 经典朱砂生漆筒身（Cylinder Body） */
+.cylinder-body {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 226px;
+  display: flex;
+  flex-direction: column;
+  z-index: 5;
+}
+
+/* 筒口凸起环雕 */
+.cylinder-rim {
+  height: 25px;
+  background: linear-gradient(90deg, #280505 0%, #540c0e 16%, #87191b 45%, #b22628 58%, #6a1012 82%, #260404 100%);
+  border-radius: 12px 12px 0 0;
+  position: relative;
+  box-shadow: inset 0 2.5px 1.5px rgba(255, 255, 255, 0.4), 0 5px 10px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  padding: 3px 0;
+}
+
+.rim-groove-lip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.55) 0%, transparent 100%);
+}
+
+.rim-ring-band {
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, #1f0404 0%, #46090a 20%, #b22628 50%, #46090a 80%, #1f0404 100%);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+/* 筒肚主体（Barrel） */
+.cylinder-barrel {
+  flex: 1;
+  background: linear-gradient(90deg,
+    #2a0505 0%,
+    #530c0e 16%,
+    #7e1719 36%,
+    #a82528 52%,
+    #c43538 60%,
+    #7d1618 80%,
+    #260404 100%
+  );
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+/* 圆弧柱面高光漫射 */
+.cylinder-specular-sheen {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg,
+    transparent 42%,
+    rgba(255, 220, 200, 0.22) 52%,
+    rgba(255, 240, 220, 0.35) 55%,
+    rgba(255, 220, 200, 0.18) 60%,
+    transparent 72%
+  );
+  pointer-events: none;
+}
+
+/* 描金楷书大字「問 籤」 */
+.cylinder-gold-calligraphy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  z-index: 2;
+  margin-top: -6px;
+}
+
+.gold-char {
+  font-family: "Kaiti SC", "STKaiti", "BiauKai", "DFKai-SB", "KaiTi", var(--serif);
+  font-size: 42px;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: 0.16em;
+  text-indent: 0.16em;
+  background: linear-gradient(180deg,
+    #fffbf0 0%,
+    #fae8a7 22%,
+    #e2b850 55%,
+    #a6791d 85%,
+    #785310 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 2px rgba(20, 3, 3, 0.95)) drop-shadow(0 0 10px rgba(230, 185, 80, 0.45));
+}
+
+/* 如意祥云描金纹 */
+.cylinder-cloud-emblem {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.gold-ruyi-cloud {
+  width: 68px;
+  height: 22px;
+  filter: drop-shadow(0 1.5px 1px rgba(0, 0, 0, 0.7));
+}
+
+.cylinder-seal-stamp {
+  position: absolute;
+  bottom: -4px;
+  right: -8px;
+  background: #941c1e;
+  color: #fffaf0;
+  font: 700 8.5px/1 "Kaiti SC", "STKaiti", "BiauKai", var(--serif);
+  padding: 2.5px 3.5px;
+  border-radius: 1.5px;
+  box-shadow: 0 1.5px 3px rgba(0, 0, 0, 0.6);
+  border: 0.5px solid rgba(255, 255, 255, 0.35);
+  transform: rotate(-3deg);
+  letter-spacing: 0.05em;
+}
+
+/* 筒底（Base） */
+.cylinder-base {
+  height: 22px;
+  background: linear-gradient(90deg, #240404 0%, #4e0b0d 18%, #781617 45%, #9c2123 60%, #5d0f11 80%, #200303 100%);
+  border-radius: 0 0 6px 6px;
+  position: relative;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  padding: 3px 0;
+}
+
+.cylinder-foot-shadow {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+/* 底部交互指引与动作区 */
+.cylinder-action-area {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 48px;
+  position: relative;
+  z-index: 10;
+}
+
+.cylinder-hint {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 13.5px;
+  color: var(--on-ground-2);
+  letter-spacing: 0.1em;
+}
+
+.cylinder-hint.active {
+  color: #e5ba55;
+  animation: pulse-text 1s ease-in-out infinite alternate;
+}
+
+.cylinder-hint.highlight {
+  color: #ffd875;
+  font-weight: 700;
+  font-size: 14.5px;
+  letter-spacing: 0.12em;
+  text-shadow: 0 0 10px rgba(255, 215, 120, 0.6);
+}
+
+@keyframes pulse-text {
+  0% { opacity: 0.65; }
+  100% { opacity: 1; }
+}
+
+.cylinder-shake-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(180deg, #aa2425 0%, #87191a 50%, #681112 100%);
+  color: #fff8e8;
+  border: 1.5px solid #e0b04c;
+  padding: 10px 24px;
+  border-radius: 24px;
+  font: 700 15px/1.2 var(--serif);
+  letter-spacing: 0.18em;
+  text-indent: 0.18em;
+  cursor: pointer;
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.35),
+    0 8px 18px rgba(120, 25, 26, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  transition: all 0.25s cubic-bezier(0.2, 1, 0.3, 1);
+  animation: shake-btn-pulse 2s ease-in-out infinite;
+}
+
+.cylinder-shake-btn:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.4),
+    0 12px 24px rgba(140, 30, 32, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.cylinder-shake-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+@keyframes shake-btn-pulse {
+  0%, 100% { box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35), 0 8px 18px rgba(120, 25, 26, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.45); }
+  50% { box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4), 0 12px 28px rgba(180, 45, 48, 0.65), 0 0 12px rgba(240, 185, 75, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.6); }
+}
+
+.shake-btn-icon {
+  font-size: 16px;
+  text-indent: 0;
+}
+
+/* 校验警示标签 */
+.cylinder-fault-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  color: var(--accent);
+  padding: 6px 14px;
+  border-radius: 16px;
+  font-family: var(--serif);
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  animation: shake-alert 0.3s ease-in-out;
+}
+
+.fault-badge {
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-weight: 700;
+}
+
+.fault-text {
+  font-weight: 500;
+}
+
+@keyframes shake-alert {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+

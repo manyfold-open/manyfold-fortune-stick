@@ -186,6 +186,71 @@ export function motor(ms: number): () => void {
   };
 }
 
+/**
+ * 摇签筒：竹签在生漆木筒内相互撞击的真实「沙沙沙、嗒嗒嗒」竹木碰撞回声
+ */
+export function bambooRattle(ms: number): () => void {
+  const audio = ctx();
+  if (!audio) return () => undefined;
+  const start = audio.currentTime;
+  const seconds = ms / 1000;
+  let active = true;
+
+  // 1. 竹签密集细碎摩擦声（以白噪声经过窄带滤波调制）
+  const noise = audio.createBufferSource();
+  noise.buffer = noiseBuffer(audio, seconds, 0.35);
+  const noiseFilter = audio.createBiquadFilter();
+  noiseFilter.type = 'bandpass';
+  noiseFilter.frequency.setValueAtTime(1800, start);
+  noiseFilter.Q.setValueAtTime(2.2, start);
+
+  const noiseGain = audio.createGain();
+  noiseGain.gain.setValueAtTime(0.0001, start);
+  noiseGain.gain.linearRampToValueAtTime(0.042, start + 0.1);
+  noiseGain.gain.setValueAtTime(0.042, start + seconds - 0.15);
+  noiseGain.gain.exponentialRampToValueAtTime(0.0001, start + seconds);
+
+  noise.connect(noiseFilter).connect(noiseGain).connect(audio.destination);
+  noise.start(start);
+
+  // 2. 规律而有机的竹木碰撞微脉冲（敲击共鸣）
+  const clicks = Math.floor(ms / 60);
+  for (let i = 0; i < clicks; i++) {
+    const clickTime = start + (i * 60 + ((i * 17) % 25) - 12) / 1000;
+    if (clickTime >= start + seconds) break;
+
+    const osc = audio.createOscillator();
+    osc.type = 'sine';
+    const pitch = 650 + ((i * 31) % 400);
+    osc.frequency.setValueAtTime(pitch, clickTime);
+    osc.frequency.exponentialRampToValueAtTime(180, clickTime + 0.02);
+
+    const filter = audio.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(1200 + ((i * 43) % 600), clickTime);
+    filter.Q.setValueAtTime(5.0, clickTime);
+
+    const gain = audio.createGain();
+    const vol = 0.03 + ((i * 13) % 30) / 1000;
+    gain.gain.setValueAtTime(vol, clickTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, clickTime + 0.025);
+
+    osc.connect(filter).connect(gain).connect(audio.destination);
+    osc.start(clickTime);
+    osc.stop(clickTime + 0.03);
+  }
+
+  return () => {
+    if (!active) return;
+    active = false;
+    try {
+      noise.stop();
+    } catch {
+      /* ignore */
+    }
+  };
+}
+
 /** 打印完成/定签：按等级演绎不同的东方铜磬、颂钵与古寺晨钟 */
 export function chime(level?: StickLevel): void {
   const audio = ctx();
