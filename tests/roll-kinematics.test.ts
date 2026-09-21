@@ -281,6 +281,53 @@ describe('纸带网格：零每帧堆分配', () => {
   });
 });
 
+describe('滚筒网格', () => {
+  it('三角形绕序和顶点法线同向 —— 反了滚筒会被剔除或受光翻面', () => {
+    // 从 scene.ts 用的同一套 kinematics 函数重建滚筒顶点，别用它自己的独立实现，
+    // 不然测的是测试自己写的镜像逻辑，钉不住真正的 buildBarrelGeometry。
+    const idx = K.createBarrelIndices();
+    const rings = K.BARREL_SEGMENTS + 1;
+    const position = new Float32Array(rings * 2 * 3);
+    const normal = new Float32Array(rings * 2 * 3);
+    for (let j = 0; j < rings; j += 1) {
+      const phi = K.barrelPhi(j);
+      const y = K.barrelRingY(phi);
+      const z = K.barrelRingZ(phi);
+      for (let side = 0; side < 2; side += 1) {
+        const v = j * 2 + side;
+        position[v * 3] = K.barrelVertexX(side);
+        position[v * 3 + 1] = y;
+        position[v * 3 + 2] = z;
+        // 朝外的顶点法线：局部坐标里滚筒轴沿 X，法线只有 y / z 分量。
+        normal[v * 3] = 0;
+        normal[v * 3 + 1] = y / K.R;
+        normal[v * 3 + 2] = z / K.R;
+      }
+    }
+    const at = (v: number) => [position[v * 3], position[v * 3 + 1], position[v * 3 + 2]];
+    let checked = 0;
+    for (let tri = 0; tri < K.BARREL_SEGMENTS * 2; tri += 1) {
+      const [i0, i1, i2] = [idx[tri * 3], idx[tri * 3 + 1], idx[tri * 3 + 2]];
+      const o = at(i0);
+      const e1 = at(i1).map((c, n) => c - o[n]);
+      const e2 = at(i2).map((c, n) => c - o[n]);
+      const face = [
+        e1[1] * e2[2] - e1[2] * e2[1],
+        e1[2] * e2[0] - e1[0] * e2[2],
+        e1[0] * e2[1] - e1[1] * e2[0],
+      ];
+      const area = Math.hypot(face[0], face[1], face[2]);
+      if (area < 1e-9) continue; // 圆柱侧壁不该有退化三角形，但保持和纸带那份测试同构
+      const vn = [normal[i0 * 3], normal[i0 * 3 + 1], normal[i0 * 3 + 2]];
+      const dot = face[0] * vn[0] + face[1] * vn[1] + face[2] * vn[2];
+      expect(dot).toBeGreaterThan(0);
+      checked += 1;
+    }
+    // 滚筒是闭合圆柱，不该有任何退化三角形——每一个都该被数到。
+    expect(checked).toBe(K.BARREL_SEGMENTS * 2);
+  });
+});
+
 import * as TEX from '../src/app/roll/textures';
 import { STICKS } from '../src/shared/sticks';
 

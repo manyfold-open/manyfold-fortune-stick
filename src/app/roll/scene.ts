@@ -24,6 +24,8 @@ import {
   barrelRingZ,
   barrelPhi,
   barrelU,
+  barrelVertexX,
+  createBarrelIndices,
   createRibbonBuffers,
   createRibbonIndices,
   createTrail,
@@ -60,7 +62,6 @@ function buildBarrelGeometry(): THREE.BufferGeometry {
   const position = new Float32Array(rings * 2 * 3);
   const normal = new Float32Array(rings * 2 * 3);
   const uv = new Float32Array(rings * 2 * 2);
-  const index = new Uint16Array(BARREL_SEGMENTS * 6);
 
   for (let j = 0; j < rings; j += 1) {
     const phi = barrelPhi(j);
@@ -69,7 +70,7 @@ function buildBarrelGeometry(): THREE.BufferGeometry {
     const u = barrelU(j);
     for (let side = 0; side < 2; side += 1) {
       const v = j * 2 + side;
-      position[v * 3] = (side - 0.5) * W;
+      position[v * 3] = barrelVertexX(side);
       position[v * 3 + 1] = y;
       position[v * 3 + 2] = z;
       normal[v * 3] = 0;
@@ -79,22 +80,12 @@ function buildBarrelGeometry(): THREE.BufferGeometry {
       uv[v * 2 + 1] = side;
     }
   }
-  for (let j = 0; j < BARREL_SEGMENTS; j += 1) {
-    const a = j * 2;
-    const o = j * 6;
-    index[o] = a;
-    index[o + 1] = a + 1;
-    index[o + 2] = a + 2;
-    index[o + 3] = a + 1;
-    index[o + 4] = a + 3;
-    index[o + 5] = a + 2;
-  }
 
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(position, 3));
   geo.setAttribute('normal', new THREE.BufferAttribute(normal, 3));
   geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
-  geo.setIndex(new THREE.BufferAttribute(index, 1));
+  geo.setIndex(new THREE.BufferAttribute(createBarrelIndices(), 1));
   return geo;
 }
 
@@ -197,6 +188,7 @@ export function createRollScene(host: HTMLElement, language: Language): RollScen
 
   // ── 柔焦接触阴影 ──
   const blobTex = new THREE.CanvasTexture(createBlobCanvas());
+  blobTex.colorSpace = THREE.SRGBColorSpace;
   const blob = new THREE.Mesh(
     new THREE.PlaneGeometry(R * 4.4, R * 4.4),
     new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false, opacity: 0.85 }),
@@ -237,8 +229,12 @@ export function createRollScene(host: HTMLElement, language: Language): RollScen
         '#include <common>\nuniform float uTailS;\nuniform vec3 uTableColor;\nvarying float vS;',
       )
       .replace(
-        '#include <dithering_fragment>',
-        `#include <dithering_fragment>
+        '#include <tonemapping_fragment>',
+        `#include <tonemapping_fragment>
+        // 必须在 <colorspace_fragment> 之前混色：uTableColor 是 THREE.Color 存的线性值，
+        // 这时 gl_FragColor 也还没被 linearToOutputTexel 编码成 sRGB，两边单位一致才能混。
+        // 挪到 dithering_fragment 之后会拿线性色去混一个已经编码过的颜色，尾端会溶成
+        // 接近黑色而不是案几的颜色 —— 这条注释和它标注的位置别被"顺手"挪走。
         float tailMix = smoothstep(uTailS, uTailS + ${TAIL_FADE.toFixed(1)}, vS);
         gl_FragColor.rgb = mix(uTableColor, gl_FragColor.rgb, tailMix);`,
       );

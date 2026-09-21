@@ -214,6 +214,31 @@ export const createRibbonIndices = (): Uint16Array => {
   return idx;
 };
 
+/** 滚筒侧壁顶点在轴向上的位置。side 0 在 -X 端，side 1 在 +X 端。 */
+export const barrelVertexX = (side: number): number => (side - 0.5) * W;
+
+/**
+ * 滚筒侧壁的三角形索引。绕序要和朝外的顶点法线同向。
+ *
+ * 它和 createRibbonIndices 是**镜像**的，别照搬：纸带一排顶点是（左缘, 右缘），
+ * 滚筒一圈顶点是（-X 端, +X 端），两者手性相反，同一套写法在这里刚好是反的。
+ * 这个坑在本分支里已经踩过一次（纸带那次），所以这里的绕序有测试钉着。
+ */
+export const createBarrelIndices = (): Uint16Array => {
+  const idx = new Uint16Array(BARREL_SEGMENTS * 6);
+  for (let j = 0; j < BARREL_SEGMENTS; j += 1) {
+    const a = j * 2;
+    const o = j * 6;
+    idx[o] = a;
+    idx[o + 1] = a + 2;
+    idx[o + 2] = a + 1;
+    idx[o + 3] = a + 1;
+    idx[o + 4] = a + 2;
+    idx[o + 5] = a + 3;
+  }
+  return idx;
+};
+
 /* ── 中心线暂存：模块加载时分配一次，帧循环里只覆写，不再 new ── */
 
 const cX = new Float32Array(RING);
