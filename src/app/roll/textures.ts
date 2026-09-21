@@ -108,7 +108,9 @@ function paintEbony(g: CanvasRenderingContext2D, w: number, h: number, rand: () 
   // 松烟墨渍
   for (let i = 0; i < 26; i += 1) {
     const r = 12 + rand() * 46;
-    const blot = g.createRadialGradient(rand() * w, rand() * h, 0, rand() * w, rand() * h, r);
+    const bx = rand() * w;
+    const by = rand() * h;
+    const blot = g.createRadialGradient(bx, by, 0, bx, by, r);
     blot.addColorStop(0, 'rgba(5, 4, 4, 0.22)');
     blot.addColorStop(1, 'rgba(5, 4, 4, 0)');
     g.fillStyle = blot;
@@ -187,6 +189,66 @@ function paintVertical(
   }
 }
 
+/**
+ * 按空格折行，最多 maxLines 行；塞不下的尾巴用省略号收掉。
+ *
+ * 量宽度这件事由调用方注入（浏览器里传 measureText），于是折行逻辑本身是纯的，
+ * 能在 node 下被测到 —— 这个模块其余部分都没有自动测试可言。
+ */
+export function wrapText(
+  measure: (text: string) => number,
+  text: string,
+  maxWidth: number,
+  maxLines: number,
+): string[] {
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let line = '';
+  let overflow = false;
+  for (const word of words) {
+    const next = line ? `${line} ${word}` : word;
+    if (!line || measure(next) <= maxWidth) {
+      line = next;
+      continue;
+    }
+    if (lines.length + 1 === maxLines) {
+      overflow = true;
+      break;
+    }
+    lines.push(line);
+    line = word;
+  }
+  if (line) lines.push(line);
+  if (overflow && lines.length > 0) {
+    let last = lines[lines.length - 1];
+    while (last.length > 1 && measure(`${last}…`) > maxWidth) last = last.slice(0, -1);
+    lines[lines.length - 1] = `${last}…`;
+  }
+  return lines;
+}
+
+/**
+ * 把一行字压进给定宽度：从 basePx 按整数级往下缩，缩到 minPx 为止。
+ * 设置 g.font 作为副作用，返回最终用的字号。
+ */
+export function fitFont(
+  g: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+  basePx: number,
+  minPx: number,
+  weight: string,
+  family: string,
+): number {
+  let size = basePx;
+  g.font = `${weight} ${size}px ${family}`;
+  while (size > minPx && g.measureText(text).width > maxWidth) {
+    size -= 1;
+    g.font = `${weight} ${size}px ${family}`;
+  }
+  return size;
+}
+
 /* ── 一张卡片 ── */
 
 const SEAL_TEXTS = ['天后宮藏', '甲子元亨', '籤詩正印', '香火綿長', '有求必應', '風調雨順', '國泰民安', '心誠則靈'];
@@ -245,7 +307,7 @@ function paintCard(
     // 中部直排：签号等级大字 + 两行签诗 + 签意，共四列，自右向左
     g.fillStyle = ink;
     g.font = `800 34px ${SERIF}`;
-    paintVertical(g, `第${stick.no}籤`, 56, 64, 38, 6);
+    paintVertical(g, `第${stick.no}签`, 56, 64, 38, 6);
     g.font = `800 30px ${SERIF}`;
     g.fillStyle = paper ? 'rgba(146, 30, 26, 0.88)' : 'rgba(228, 196, 128, 0.9)';
     paintVertical(g, level, 56, 262, 34, 4);
@@ -263,20 +325,36 @@ function paintCard(
     g.font = `800 44px ${SERIF}`;
     g.fillText(text.title, rect.w / 2 + 10, rect.h - 96);
   } else {
+    const maxW = rect.w - 76;
+    const measure = (s: string) => g.measureText(s).width;
+
     g.font = `700 22px ${LATIN}`;
     g.fillText(`NO. ${stick.no}`, 88, 62);
     g.fillStyle = paper ? 'rgba(146, 30, 26, 0.88)' : 'rgba(228, 196, 128, 0.9)';
     g.font = `700 20px ${LATIN}`;
     g.fillText(level, 88, 92);
+
     g.fillStyle = ink;
-    g.font = `700 34px ${LATIN}`;
-    g.fillText(text.title, rect.w / 2, 160);
-    g.font = `italic 19px ${LATIN}`;
-    g.fillText(text.poem[0], rect.w / 2, 216);
-    g.fillText(text.poem[1], rect.w / 2, 244);
+    fitFont(g, text.title, maxW, 34, 22, '700', LATIN);
+    g.fillText(text.title, rect.w / 2, 158);
+
+    // 两句诗各自最多折两行，排完才知道签意从哪一行起 —— 所以先排诗再排签意。
+    g.font = `italic 17px ${LATIN}`;
+    let y = 200;
+    for (const line of [text.poem[0], text.poem[1]]) {
+      for (const part of wrapText(measure, line, maxW, 2)) {
+        g.fillText(part, rect.w / 2, y);
+        y += 23;
+      }
+    }
+
     g.fillStyle = faint;
-    g.font = `16px ${LATIN}`;
-    g.fillText(text.meaning.slice(0, 54), rect.w / 2, 296);
+    g.font = `15px ${LATIN}`;
+    y += 3;
+    for (const part of wrapText(measure, text.meaning, maxW, 3)) {
+      g.fillText(part, rect.w / 2, y);
+      y += 19;
+    }
   }
 
   paintWaveBorder(g, rect.w, rect.h - 62, faint);

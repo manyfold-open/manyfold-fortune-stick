@@ -327,4 +327,66 @@ describe('贴图版面（纯计算部分）', () => {
     expect(TEX.PAPER_FIBRES).toBe(2500);
     expect(TEX.MIRROR_BLOCK).toBe(true);
   });
+
+  // wrapText 的量宽度由调用方注入，这里假装是 17px Charter 味衬线体的平均步进宽度；
+  // maxWidth = 364 对应一张 440px 卡片的 rect.w - 76（英文卡实际的折行预算）。
+  const measure = (s: string) => s.length * 9;
+  const maxWidth = 364;
+
+  it('wrapText：短字符串塞得下一行，原样返回，不折行', () => {
+    const text = 'A short line';
+    expect(TEX.wrapText(measure, text, maxWidth, 3)).toEqual([text]);
+  });
+
+  it('wrapText：长字符串按词折成多行，且每一行都量得进 maxWidth', () => {
+    const text =
+      'The rain has stopped and the mud is deep and the road is still wet underfoot this morning';
+    const lines = TEX.wrapText(measure, text, maxWidth, 6);
+    expect(lines.length).toBeGreaterThan(1);
+    for (const line of lines) expect(measure(line)).toBeLessThanOrEqual(maxWidth);
+  });
+
+  it('wrapText：无论内容多长，输出行数都不会超过 maxLines', () => {
+    const text = Array.from({ length: 40 }, (_, i) => `word${i}`).join(' ');
+    for (const maxLines of [1, 2, 3, 5]) {
+      expect(TEX.wrapText(measure, text, maxWidth, maxLines).length).toBeLessThanOrEqual(maxLines);
+    }
+  });
+
+  it('wrapText：内容被截断时，最后一行以省略号收尾，而且仍然量得进 maxWidth', () => {
+    const text = Array.from({ length: 40 }, (_, i) => `word${i}`).join(' ');
+    const lines = TEX.wrapText(measure, text, maxWidth, 2);
+    expect(lines.length).toBe(2);
+    const last = lines[lines.length - 1];
+    expect(last.endsWith('…')).toBe(true);
+    expect(measure(last)).toBeLessThanOrEqual(maxWidth);
+  });
+
+  it('wrapText：单个比 maxWidth 还宽的词，也照样吐出来，不会被吞掉（!line 保底）', () => {
+    const hugeWord = 'x'.repeat(80); // 量出来 720，远超 364
+    expect(TEX.wrapText(measure, hugeWord, maxWidth, 3)).toEqual([hugeWord]);
+  });
+
+  it('wrapText：真实签诗——stick #7 那句 57 字符的英文签诗，在卡片实际预算下最多折两行', () => {
+    const stick7 = STICKS.find((s) => s.no === 7);
+    expect(stick7).toBeDefined();
+    const line = stick7!.en.poem[0];
+    expect(line.length).toBe(57);
+    const lines = TEX.wrapText(measure, line, maxWidth, 2);
+    expect(lines.length).toBeLessThanOrEqual(2);
+    for (const l of lines) expect(measure(l)).toBeLessThanOrEqual(maxWidth);
+  });
+
+  it('wrapText：STICKS 里每一支签的两句英文签诗，在卡片预算下都能在两行内塞完，不需要省略号', () => {
+    const overflowing: string[] = [];
+    for (const stick of STICKS) {
+      for (const poemLine of stick.en.poem) {
+        const lines = TEX.wrapText(measure, poemLine, maxWidth, 2);
+        expect(lines.length).toBeLessThanOrEqual(2);
+        for (const l of lines) expect(measure(l)).toBeLessThanOrEqual(maxWidth);
+        if (lines.some((l) => l.endsWith('…'))) overflowing.push(`#${stick.no}: "${poemLine}"`);
+      }
+    }
+    expect(overflowing).toEqual([]);
+  });
 });
