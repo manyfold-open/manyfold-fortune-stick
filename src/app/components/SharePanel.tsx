@@ -72,7 +72,11 @@ export default function SharePanel(props: {
       <button className="text-action strong" onClick={() => void go()} disabled={busy}>
         {busy ? t('shareBusy') : t('shareGo')}
       </button>
-      {status && <p className="muted small">{status}</p>}
+      {status && (
+        <p className="muted small share-status" role="status" aria-live="polite">
+          {status}
+        </p>
+      )}
       {fallbackText && <textarea className="share-fallback" readOnly rows={3} value={fallbackText} />}
     </div>
   );
