@@ -15,7 +15,7 @@ import type { FollowUpMessage, Reading } from '../../shared/types';
 import { api, ApiError, errorMessage } from '../api';
 import { EJECT_MS, LEVEL_TONE, PRINT_MS, QUESTION_MIN, QUESTION_MAX } from '../constants';
 import { useT } from '../i18n';
-import { chime, motor, press as pressSound } from '../sound';
+import { chime, motor, press as pressSound, stampSound, typeTick } from '../sound';
 import {
   getCurrentReadingId,
   saveRecord,
@@ -129,7 +129,10 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
       setSheet(body.reading);
       timers.current.push(
         window.setTimeout(() => {
-          if (props.prefs.sound) chime();
+          if (props.prefs.sound) {
+            chime(body.reading.stick.level);
+            stampSound(body.reading.stick.level);
+          }
           setPhase('ejecting');
         }, PRINT_MS),
         window.setTimeout(() => {
@@ -231,6 +234,7 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
             onChange={setQuestion}
             onSubmit={() => void draw()}
             inputRef={askField}
+            sound={props.prefs.sound}
           />
         )}
       </div>
@@ -266,6 +270,7 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
                 className="text-action"
                 disabled={typed !== 0}
                 onClick={() => {
+                  if (props.prefs.sound) typeTick(0.08);
                   setQuestion(example);
                   askField.current?.focus();
                 }}

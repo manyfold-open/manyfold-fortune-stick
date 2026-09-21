@@ -1,23 +1,16 @@
 /**
  * 一张签纸。揭晓、结果页和求签记录都用同一个组件，所以一支签在任何地方长得都一样。
  *
- * 版式照着老派的运势纸票：上面是牌记，中间一格大字等级，一格四字签名，下面
- * 一格直排的签诗与签意。等级只决定颜色（`data-tone`），不改变任何文字。
+ * 版式照着老派的运势纸票：上面是牌记与朱砂神印，中间一格金石大字等级，一格古籍四字签名，
+ * 下面一格正统「朱丝栏」直排签诗与签意。等级决定色彩（`data-tone`）与落印特效。
  *
  * 这张纸是照着「走纸时要整张露得出来」裁的：机身底下只有 260px 上下，原来的
- * 签有 530px，永远只能吐出一半。为此撤掉了三样纯装饰的东西 ——
- * 牌记下的菱形纹章（58px）、牌记下面那行 WEN YI QIAN 拉丁副标，以及页脚那句
- * 「签为参考，路要自己走」（它和整页页脚重复了一遍）。内容一个字没动。
+ * 签有 530px，永远只能吐出一半。保持整体高度紧凑的同时，赋予手工棉纸与雕版文武框质感。
  *
  * small 版给求签记录用：同样的信息，压成一行，不排直排文字。
  *
  * 语言是这张纸自己的，由问题推导、印出来就定死（src/shared/lang.ts），**不是**
- * 右上角那个界面开关。所以 language 是必填的 prop —— 每个调用方都得想清楚自己
- * 手上这张纸是哪种语言，没有一条路径能不小心继续印中文。
- *
- * 中文直排、英文横排，分界写在 styles.css 的 `.slip[data-lang]` 上：七言两句竖着
- * 读是对的，一句英文竖着读不是。牌记那行「问一签」两种语言都留着 —— 那是机器的
- * 厂牌，不是文案。
+ * 右上角那个界面开关。
  */
 
 import type { Language } from '../../shared/lang';
@@ -48,31 +41,64 @@ export default function StickFace(props: {
 
   return (
     <article className="slip" data-tone={tone.key} data-lang={language}>
-      <header className="slip-head">
-        <p className="slip-brand">问一签</p>
-      </header>
+      {/* 签纸古典回纹角饰 */}
+      <div className="slip-corner tc-left" aria-hidden="true" />
+      <div className="slip-corner tc-right" aria-hidden="true" />
+      <div className="slip-corner bc-left" aria-hidden="true" />
+      <div className="slip-corner bc-right" aria-hidden="true" />
 
+      {/* 等级印章核心格：金石印泥质感 + 专属四阶光晕 */}
       <div className="slip-cell slip-cell-level">
         <span className="slip-rail">{en ? `NO. ${stick.no}` : `第 ${stick.no} 签`}</span>
-        <strong className="slip-level">{level}</strong>
+        <div className="slip-level-box">
+          <strong className="slip-level">{level}</strong>
+          <div className="level-stamp-aura" aria-hidden="true" />
+        </div>
         <span className="slip-rail">{en ? `OF ${STICK_COUNT}` : '之 签 运'}</span>
       </div>
 
+      {/* 签名：中文用传统角括弧，英文用精致星芒 */}
       <div className="slip-cell slip-cell-title">
-        <strong className="slip-title">{text.title}</strong>
-      </div>
-
-      <div className="slip-cell slip-cell-body">
-        <div className="slip-vertical">
-          <p className="slip-poem">{text.poem[0]}</p>
-          <p className="slip-poem">{text.poem[1]}</p>
-          <p className="slip-meaning">{text.meaning}</p>
-          <p className="slip-lucky">
-            {en ? `Lucky colour: ${tone.luckyColor.en}` : `幸运色：${tone.luckyColor.zh}`}
-          </p>
+        <div className="slip-title-row">
+          <span className="slip-title-flourish" aria-hidden="true">{en ? '✦' : '「'}</span>
+          <strong className="slip-title">{text.title}</strong>
+          <span className="slip-title-flourish" aria-hidden="true">{en ? '✦' : '」'}</span>
         </div>
       </div>
 
+      {/* 签诗区：中文正统「朱丝栏」直排，英文西式古典活字印刷排版 */}
+      <div className="slip-cell slip-cell-body">
+        <div className="slip-vertical">
+          {language === 'zh' ? (
+            <div className="slip-grid-columns">
+              <div className="slip-column slip-col-poem">
+                <p className="slip-poem">{text.poem[0]}</p>
+              </div>
+              <div className="slip-column slip-col-poem">
+                <p className="slip-poem">{text.poem[1]}</p>
+              </div>
+              <div className="slip-column slip-col-meaning">
+                <p className="slip-meaning">{text.meaning}</p>
+              </div>
+            </div>
+          ) : (
+            <div className="slip-western-poem">
+              <div className="slip-poem-lines">
+                <p className="slip-poem">{text.poem[0]}</p>
+                <p className="slip-poem">{text.poem[1]}</p>
+              </div>
+              <p className="slip-meaning">{text.meaning}</p>
+            </div>
+          )}
+
+          <div className="slip-lucky-badge">
+            <span className="lucky-pip" aria-hidden="true" />
+            <p className="slip-lucky">
+              {en ? `Lucky tone · ${tone.luckyColor.en}` : `吉色 · ${tone.luckyColor.zh}`}
+            </p>
+          </div>
+        </div>
+      </div>
     </article>
   );
 }
