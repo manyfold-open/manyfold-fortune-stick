@@ -125,6 +125,7 @@ export default function ReadingResult(props: {
           {showShare && (
             <SharePanel
               stick={reading.stick}
+              language={reading.language}
               interpretation={interpretation}
               question={reading.question}
               onClose={() => setShowShare(false)}
@@ -132,7 +133,11 @@ export default function ReadingResult(props: {
           )}
 
           {showFollowUp && (
-            <FollowUp readingId={reading.id} onMessages={props.onFollowUpMessages} />
+            <FollowUp
+              readingId={reading.id}
+              language={reading.language}
+              onMessages={props.onFollowUpMessages}
+            />
           )}
         </>
       )}

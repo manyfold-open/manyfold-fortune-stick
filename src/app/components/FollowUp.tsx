@@ -3,19 +3,26 @@
  *
  * 追问永远基于同一支签 —— 这条规则由服务端保证（handleFollowUp 从 readings 行读回
  * 问题、签和解读，再拼进提示词），这里不做任何和签有关的判断，也没有重新抽签的入口。
+ *
+ * 语言分两处：输入框、发送键这些外壳跟界面走；三句快捷问句跟**这一局**走，
+ * 因为点下去就是把那句话发给 agent，而 agent 回的是这一局锁定的那种语言。
  */
 
 import { useEffect, useRef, useState } from 'react';
 import type { FollowUpMessage } from '../../shared/types';
 import { api } from '../api';
+import { copyFor, useT } from '../i18n';
 import { streamFollowUp } from '../sse';
-
-const QUICK = ['我现在最该注意什么？', '可以从哪一步开始？', '如果先不动会怎样？'];
+import type { Language } from '../../shared/lang';
 
 export default function FollowUp(props: {
   readingId: string;
+  /** 这一局的语言 —— 决定快捷问句用哪种语言发出去。 */
+  language: Language;
   onMessages: (messages: FollowUpMessage[]) => void;
 }) {
+  const t = useT();
+  const quick = copyFor(props.language);
   const [messages, setMessages] = useState<FollowUpMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [live, setLive] = useState<string | null>(null);
@@ -74,7 +81,7 @@ export default function FollowUp(props: {
     <div className="followup">
       <div className="followup-log" ref={log}>
         {messages.length === 0 && live === null && (
-          <p className="muted small">就着这支签往下问，签和解读都不会变。</p>
+          <p className="muted small">{t('followUpEmpty')}</p>
         )}
         {messages.map((message, index) => (
           <div key={`${message.id}-${index}`} className={`bubble ${message.role}`}>
@@ -87,7 +94,7 @@ export default function FollowUp(props: {
       {error && <p className="field-error">{error}</p>}
 
       <div className="quick-asks">
-        {QUICK.map((question) => (
+        {[quick.followUpQuick1, quick.followUpQuick2, quick.followUpQuick3].map((question) => (
           <button
             key={question}
             type="button"
@@ -110,13 +117,13 @@ export default function FollowUp(props: {
         <input
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
-          placeholder={live !== null ? '正在回答…' : '再问一句'}
+          placeholder={live !== null ? t('followUpAnswering') : t('followUpPlaceholder')}
           maxLength={200}
           disabled={live !== null}
-          aria-label="继续追问"
+          aria-label={t('followUpLabel')}
         />
         <button className="text-action" type="submit" disabled={!draft.trim() || live !== null}>
-          {live !== null ? '…' : '发送'}
+          {live !== null ? '…' : t('followUpSend')}
         </button>
       </form>
     </div>

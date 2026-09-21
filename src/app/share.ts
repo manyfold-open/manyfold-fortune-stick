@@ -8,13 +8,15 @@
  * 是有意的：分享图不该跟着看图的人是深色还是浅色模式变样，谁分享出去都是同一张。
  */
 
-import { stickText, type FortuneStick, type StickLevel } from '../shared/sticks';
+import type { Language } from '../shared/lang';
+import { LEVEL_LABEL, stickText, type FortuneStick, type StickLevel } from '../shared/sticks';
 import type { Interpretation } from '../shared/types';
 import { LEVEL_TONE } from './constants';
 
 const WIDTH = 1080;
 const HEIGHT = 1350;
 const SERIF = '"Noto Serif SC", "Songti SC", "STSong", "SimSun", serif';
+const SERIF_EN = '"Noto Serif", "Iowan Old Style", Georgia, "Times New Roman", serif';
 const MONO = 'ui-monospace, "SF Mono", Menlo, Consolas, monospace';
 
 const PAPER = '#fffefa';
@@ -32,13 +34,15 @@ const TONE: Record<StickLevel, { tone: string; ground: string }> = {
 
 export interface ShareInput {
   stick: FortuneStick;
+  /** 这一局的语言 —— 决定整张图印哪一套字、竖排还是横排。 */
+  language: Language;
   interpretation: Interpretation | null;
   question: string;
   includeQuestion: boolean;
 }
 
 /** 按宽度折行。中文逐字折，不需要考虑单词边界。 */
-function wrap(context: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+function wrapChars(context: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
   const lines: string[] = [];
   let line = '';
   for (const char of text) {
@@ -57,6 +61,36 @@ function wrap(context: CanvasRenderingContext2D, text: string, maxWidth: number)
   if (line) lines.push(line);
   return lines;
 }
+
+/**
+ * 按词折行。英文必须这样折 —— 逐字折会把单词劈成两半（「one joint a / t a time」）。
+ * 一个词自己就超过整行宽时，退回逐字折，否则它会顶出格子。
+ */
+function wrapWords(context: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+  const lines: string[] = [];
+  let line = '';
+  for (const word of text.split(/\s+/).filter(Boolean)) {
+    const candidate = line ? `${line} ${word}` : word;
+    if (context.measureText(candidate).width <= maxWidth || !line) {
+      if (context.measureText(candidate).width > maxWidth && !line) {
+        // 单个超长词：逐字切开，最后一段留着继续往下拼。
+        const pieces = wrapChars(context, word, maxWidth);
+        lines.push(...pieces.slice(0, -1));
+        line = pieces[pieces.length - 1] ?? '';
+        continue;
+      }
+      line = candidate;
+    } else {
+      lines.push(line);
+      line = word;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+/** 按语言选折行方式。中文逐字，英文按词。 */
+const wrapFor = (language: Language) => (language === 'en' ? wrapWords : wrapChars);
 
 /** 横排的字，字间加空。canvas 的 letterSpacing 支持还不齐，所以自己逐字排。 */
 function spaced(
@@ -125,6 +159,48 @@ function drawVertical(
       y += column.block.step;
     }
     x -= options.gap;
+  }
+}
+
+/**
+ * 横排的正文：同样四块内容，居中一行行往下排。
+ * 和 drawVertical 是兄弟而不是它的一个分支 —— 竖排那套规则（列宽、每列几个字、
+ * 从右往左）在英文里一条都不成立，塞进同一个函数会让两边都别扭。
+ */
+function drawHorizontal(
+  context: CanvasRenderingContext2D,
+  blocks: VerticalBlock[],
+  options: {
+    centerX: number;
+    top: number;
+    width: number;
+    height: number;
+    gap: number;
+    wrapText: (c: CanvasRenderingContext2D, t: string, w: number) => string[];
+  },
+): void {
+  type Line = { text: string; block: VerticalBlock };
+  const lines: Line[] = [];
+  for (const block of blocks) {
+    context.font = block.font;
+    for (const text of options.wrapText(context, block.text, options.width)) {
+      lines.push({ text, block });
+    }
+  }
+
+  const total =
+    lines.reduce((sum, line) => sum + line.block.step, 0) + options.gap * (blocks.length - 1);
+  // 整体在这一格里垂直居中，和竖排版本看起来占一样的位置。
+  let y = options.top + Math.max(0, (options.height - total) / 2);
+  context.textAlign = 'center';
+  let previous: VerticalBlock | null = null;
+  for (const line of lines) {
+    if (previous && previous !== line.block) y += options.gap;
+    context.font = line.block.font;
+    context.fillStyle = line.block.color;
+    y += line.block.step;
+    context.fillText(line.text, options.centerX, y - line.block.step * 0.22);
+    previous = line.block;
   }
 }
 
@@ -223,6 +299,9 @@ async function waitForFonts(): Promise<void> {
       document.fonts.load(`700 96px ${SERIF}`),
       document.fonts.load(`500 52px ${SERIF}`),
       document.fonts.load(`400 34px ${SERIF}`),
+      document.fonts.load(`700 56px ${SERIF_EN}`),
+      document.fonts.load(`500 40px ${SERIF_EN}`),
+      document.fonts.load(`400 30px ${SERIF_EN}`),
     ]);
     await document.fonts.ready;
   } catch {
@@ -238,8 +317,10 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
   const context = canvas.getContext('2d');
   if (!context) throw new Error('这个浏览器不支持生成图片。');
 
-  const { stick } = input;
-  const text = stickText(stick, 'zh');
+  const { stick, language } = input;
+  const en = language === 'en';
+  const face = en ? SERIF_EN : SERIF;
+  const text = stickText(stick, language);
   const { tone, ground } = TONE[stick.level];
   const center = WIDTH / 2;
   const withQuestion = input.includeQuestion && Boolean(input.question.trim());
@@ -250,9 +331,9 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
   // 问题印在纸的外面，和页面上一样 —— 纸是纸，问的事是问的事。
   if (withQuestion) {
     context.fillStyle = 'rgba(22,21,25,0.72)';
-    context.font = `500 34px ${SERIF}`;
+    context.font = `500 34px ${face}`;
     let y = 122;
-    for (const line of wrap(context, input.question, WIDTH - 260).slice(0, 3)) {
+    for (const line of wrapFor(language)(context, input.question, WIDTH - 260).slice(0, 3)) {
       context.fillText(line, center, y);
       y += 46;
     }
@@ -287,48 +368,98 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
   drawCorners(context, cellX, levelY, cellWidth, levelH, 18);
 
   context.fillStyle = INK_3;
-  context.font = `400 26px ${SERIF}`;
+  context.font = `400 26px ${face}`;
   context.textAlign = 'left';
-  context.fillText(`第 ${stick.no} 签`, cellX + 34, levelY + levelH / 2 + 10);
+  context.fillText(en ? `NO. ${stick.no}` : `第 ${stick.no} 签`, cellX + 34, levelY + levelH / 2 + 10);
   context.textAlign = 'right';
-  context.fillText('之 签 运', cellX + cellWidth - 34, levelY + levelH / 2 + 10);
+  context.fillText(en ? 'FORTUNE' : '之 签 运', cellX + cellWidth - 34, levelY + levelH / 2 + 10);
   context.textAlign = 'center';
 
+  // 英文等级是一个词：92px 配 20 的字距会直接顶出格子，所以收到 52 和 8。
   context.fillStyle = INK;
-  context.font = `700 92px ${SERIF}`;
-  spaced(context, stick.level, center, levelY + levelH / 2 + 34, 20);
+  context.font = en ? `700 52px ${face}` : `700 92px ${SERIF}`;
+  spaced(
+    context,
+    LEVEL_LABEL[language][stick.level],
+    center,
+    levelY + levelH / 2 + (en ? 20 : 34),
+    en ? 8 : 20,
+  );
 
   // 一格四字签名
   const titleY = levelY + levelH;
   const titleH = 100;
   context.strokeRect(cellX, titleY, cellWidth, titleH);
   context.fillStyle = INK_2;
-  context.font = `500 50px ${SERIF}`;
-  spaced(context, text.title, center, titleY + titleH / 2 + 18, 26);
+  if (en) {
+    // 英文签名是一个短语：先按一行试，撑不下就换小一号折两行。
+    context.font = `500 40px ${face}`;
+    if (context.measureText(text.title).width > cellWidth - 80) {
+      context.font = `500 32px ${face}`;
+      const lines = wrapWords(context, text.title, cellWidth - 80).slice(0, 2);
+      let y = titleY + titleH / 2 - (lines.length - 1) * 17 + 10;
+      for (const line of lines) {
+        context.fillText(line, center, y);
+        y += 34;
+      }
+    } else {
+      spaced(context, text.title, center, titleY + titleH / 2 + 15, 4);
+    }
+  } else {
+    context.font = `500 50px ${SERIF}`;
+    spaced(context, text.title, center, titleY + titleH / 2 + 18, 26);
+  }
 
   // 一格直排签诗与签意
   const bodyY = titleY + titleH;
   const bodyH = 458;
   context.strokeRect(cellX, bodyY, cellWidth, bodyH);
-  drawVertical(
-    context,
-    [
-      { text: text.poem[0], font: `500 44px ${SERIF}`, color: INK, step: 50 },
-      { text: text.poem[1], font: `500 44px ${SERIF}`, color: INK, step: 50 },
+  const lucky = LEVEL_TONE[stick.level].luckyColor;
+  if (en) {
+    drawHorizontal(
+      context,
+      [
+        { text: text.poem[0], font: `500 34px ${face}`, color: INK, step: 46 },
+        { text: text.poem[1], font: `500 34px ${face}`, color: INK, step: 46 },
+        { text: input.interpretation?.meaning ?? text.meaning, font: `400 27px ${face}`, color: INK_2, step: 38 },
+        { text: `Lucky colour: ${lucky.en}`, font: `400 24px ${face}`, color: tone, step: 34 },
+      ],
       {
-        text: input.interpretation?.meaning ?? text.meaning,
-        font: `400 33px ${SERIF}`,
-        color: INK_2,
-        step: 39,
+        centerX: center,
+        top: bodyY + 44,
+        width: cellWidth - 110,
+        height: bodyH - 88,
+        gap: 26,
+        wrapText: wrapWords,
       },
-      { text: `幸运色：${LEVEL_TONE[stick.level].luckyColor.zh}`, font: `400 29px ${SERIF}`, color: tone, step: 35 },
-    ],
-    { centerX: center, top: bodyY + 44, height: bodyH - 88, gap: 22 },
-  );
+    );
+  } else {
+    drawVertical(
+      context,
+      [
+        { text: text.poem[0], font: `500 44px ${SERIF}`, color: INK, step: 50 },
+        { text: text.poem[1], font: `500 44px ${SERIF}`, color: INK, step: 50 },
+        {
+          text: input.interpretation?.meaning ?? text.meaning,
+          font: `400 33px ${SERIF}`,
+          color: INK_2,
+          step: 39,
+        },
+        { text: `幸运色：${lucky.zh}`, font: `400 29px ${SERIF}`, color: tone, step: 35 },
+      ],
+      { centerX: center, top: bodyY + 44, height: bodyH - 88, gap: 22 },
+    );
+  }
 
   context.fillStyle = INK_3;
   context.font = `400 20px ${MONO}`;
-  spaced(context, '问一签 · 签为参考，路要自己走', center, cardTop + cardHeight - 30, 3);
+  spaced(
+    context,
+    en ? 'FORTUNE PRINTER · A REFERENCE, NOT A ROUTE' : '问一签 · 签为参考，路要自己走',
+    center,
+    cardTop + cardHeight - 30,
+    3,
+  );
 
   context.fillStyle = 'rgba(22,21,25,0.5)';
   context.font = `400 24px ${MONO}`;
@@ -345,9 +476,21 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
 export type ShareOutcome = 'shared' | 'downloaded';
 
 /** 能调系统分享就调；不能就下载。两条路都走不通时抛错，由调用方降级到复制文字。 */
-export async function shareImage(blob: Blob, stick: FortuneStick): Promise<ShareOutcome> {
-  const file = new File([blob], `问一签-第${stick.no}签.png`, { type: 'image/png' });
-  const shareData = { files: [file], title: '问一签', text: `第 ${stick.no} 签 · ${stick.level}` };
+export async function shareImage(
+  blob: Blob,
+  stick: FortuneStick,
+  language: Language,
+): Promise<ShareOutcome> {
+  const en = language === 'en';
+  const name = en ? `fortune-stick-${stick.no}.png` : `问一签-第${stick.no}签.png`;
+  const file = new File([blob], name, { type: 'image/png' });
+  const shareData = {
+    files: [file],
+    title: en ? 'Fortune Printer' : '问一签',
+    text: en
+      ? `No. ${stick.no} · ${LEVEL_LABEL.en[stick.level]}`
+      : `第 ${stick.no} 签 · ${stick.level}`,
+  };
   if (navigator.canShare?.(shareData)) {
     try {
       await navigator.share(shareData);
@@ -369,7 +512,10 @@ export async function shareImage(blob: Blob, stick: FortuneStick): Promise<Share
 }
 
 /** 分享全都失败时的最后一招：一段可以直接粘的短文字。 */
-export const shareText = (stick: FortuneStick, meaning: string): string => {
-  const text = stickText(stick, 'zh');
+export const shareText = (stick: FortuneStick, meaning: string, language: Language): string => {
+  const text = stickText(stick, language);
+  if (language === 'en') {
+    return `Fortune Printer · No. ${stick.no} · ${LEVEL_LABEL.en[stick.level]}\n${text.poem[0]} / ${text.poem[1]}\n${meaning}`;
+  }
   return `问一签 · 第 ${stick.no} 签 · ${stick.level}\n${text.poem[0]}，${text.poem[1]}\n${meaning}`;
 };
