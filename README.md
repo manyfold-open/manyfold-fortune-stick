@@ -25,13 +25,17 @@ hidden settings page.
 
 ## The game
 
-- **Ask** — one question, 5–120 characters, required. Three example questions for anyone who
-  does not know what to ask.
-- **Print** — press 印 on the machine. The motor runs, the slip feeds out of the slot, and the
-  whole page takes on the colour of the level you drew.
-- **Read the slip** — number, level (上上签 / 上签 / 中签 / 下签), the four-character name and a
-  two-line poem set vertically. Nothing else yet. You get to look at it and guess before you
-  reveal the rest.
+- **Ask, in either language** — one question, 5–120 characters, required. Three example
+  questions for anyone who does not know what to ask. The interface switches between 简体中文
+  and English from the top-right corner; whichever language you write the *question* in is the
+  language your slip and its reading come back in, and it is fixed the moment you press the
+  key. Switching afterwards moves the machine, never the paper.
+- **Print** — press the key on the machine (印 / PRINT). The motor runs, the slip feeds out of
+  the slot, and the whole page takes on the colour of the level you drew.
+- **Read the slip** — number, level, name and a two-line couplet. Nothing else yet. You get to
+  look at it and guess before you reveal the rest. The Chinese slip sets the couplet
+  vertically, right to left; the English one reads horizontally, because an English line does
+  not survive being stood on end.
 - **解签** — the four-part reading: what the stick means in one line, a response to your actual
   question, something worth noticing, and one small thing you can do today.
 - **Share / ask again / draw again** — a save-ready image, a follow-up conversation grounded in
@@ -158,7 +162,9 @@ Manyfold A2A (message/stream, tasks/get)   ← per-agent bearer token, decrypted
 | `src/worker/connect.ts` | The Manyfold handshake and connected-agent store |
 | `src/worker/a2a.ts` | A2A JSON-RPC + SSE stream consumer, SSRF guard, secret redaction |
 | `src/worker/fortune.ts` | Drawing, interpreting, follow-ups — the game's server half |
-| `src/shared/sticks.ts` | The 36 original sticks (shared by worker and browser) |
+| `src/shared/sticks.ts` | The 36 original sticks, in both languages (shared by worker and browser) |
+| `src/shared/lang.ts` | Which language a round is in — derived from the question, never stored |
+| `src/shared/i18n/` | Interface copy, one table per language |
 | `src/worker/crypto.ts` | AES-GCM seal/unseal, constant-time compare |
 | `src/worker/db.ts` | Schema (runtime-applied) and settings store |
 | `src/shared/types.ts` | API types shared by worker and browser |
@@ -173,8 +179,11 @@ This template is a starting point, not a framework. The intended loop:
 - **New table** — append a `CREATE TABLE IF NOT EXISTS …` to `SCHEMA` in `src/worker/db.ts`;
   it is created on the next request, locally and in production.
 - **New page** — add a component and a route in `src/app/App.tsx` (`location.hash`, no router).
-- **New sticks or new wording** — `src/shared/sticks.ts`. Keep every field filled: `general`
-  and `action` double as the fallback shown when the AI is unavailable.
+- **New sticks or new wording** — `src/shared/sticks.ts`. Keep every field filled in both
+  `zh` and `en`: `general` and `action` double as the fallback shown when the AI is
+  unavailable, and a test fails if the English still contains Han characters.
+- **New interface copy** — add the key to `src/shared/i18n/zh.ts` and `en.ts`. Missing one
+  fails the build; mismatched `{placeholders}` fail a test.
 - **Call your agent from server code** — `credentialFor(env, agentId)` in
   `src/worker/connect.ts` gives you `{ rpcUrl, token }` for any connected agent; see
   `askAgent` in `src/worker/fortune.ts` for a blocking turn and `handleFollowUp` for a
