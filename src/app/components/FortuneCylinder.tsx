@@ -1,13 +1,14 @@
 /**
- * 正统宫庙 True 3D 朱砂生漆问签筒（Three.js WebGL 拟真实现）。
+ * 正统东方宫庙 3D 拟真问签筒（基于 thebuggeddev/paper-roll 摄影棚光影与 Spring-Damper 物理架构）。
  *
- * 核心互动：
- * 1. 真实 3D 漆器圆柱立面（MeshPhysicalMaterial 生漆高光清漆、描金「问签」与如意金云）。
- * 2. 满筒 36 支 3D 楠竹木签（红漆雕口签首 + 原木竹纹）。
- * 3. 实时 3D 鼠标/触控交互：
- *    - 划过/拖拽竹签群：Raycaster 碰撞检测，竹签随指针物理起伏拨动、摇晃碰撞（发出 bambooRustle 撞击声）。
- *    - 自由挑签：靠近的竹签在 3D 空间中主动拔高探头（浮现「抽」字金色标籤），供求签者从容挑选。
- *    - 点选抽起：点击所选神签，该签破筒拔高升空，金光圣环激荡，浮现烫金签号（bambooDrawSound）。
+ * 核心设计特色：
+ * 1. 32° 长焦镜头 + 35° 俯视透视：清晰俯视筒口深邃景深与 36 支自然扇形错落的竹签束。
+ * 2. 纯代码程序化高精材质（Zero Assets）：
+ *    - 筒身：老紫檀黑茶色深沉木纹 + 嵌金楷书「問 籤」+ 祥云方印 + 黄铜拉丝金属箍环。
+ *    - 竹签：36 支扁平楠竹神签（天然竹节纤丝、硃砂红漆签首、小楷墨字签号）。
+ * 3. 双层柔焦接触阴影（Blob Shadow）+ 摄影棚柔和落影，彻底去除锯齿与塑料感。
+ * 4. Spring-Damper 物理运动阻尼解算器（源自 paper-roll）：手指/滑鼠拨动竹签时具有沉甸甸的跟手重量感与碰撞微回弹。
+ * 5. 心诚自主挑签：悬停时神签主动拔高探头，点击时神签破筒升空、金芒流转。
  */
 
 import { useEffect, useRef, useState } from 'react';
@@ -28,190 +29,263 @@ export interface FortuneCylinderProps {
 }
 
 interface Stick3DData {
+  group: THREE.Group;
   mesh: THREE.Mesh;
-  headMesh: THREE.Mesh;
-  stemMesh: THREE.Mesh;
-  inscriptionMesh?: THREE.Mesh;
   id: number;
   baseX: number;
   baseY: number;
   baseZ: number;
   baseRotX: number;
+  baseRotY: number;
   baseRotZ: number;
   currentY: number;
   targetY: number;
   wobbleX: number;
   wobbleZ: number;
-  isChosen: boolean;
+  vx: number;
+  vz: number;
+}
+
+// 伪随机数发生器（确定性噪点）
+function pseudoRandom(seed: number): () => number {
+  let s = seed % 2147483647;
+  if (s <= 0) s += 2147483646;
+  return () => {
+    s = (s * 16807) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
 }
 
 /**
- * 动态绘制筒身生漆描金「問 籤」高精度贴图
+ * 1. 摄影棚双层柔焦接触阴影贴图（Blob Contact Shadow，消弭锯齿）
  */
-function createCylinderTexture(): THREE.CanvasTexture {
-  const canvas = document.createElement('canvas');
-  canvas.width = 1024;
-  canvas.height = 1024;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return new THREE.CanvasTexture(canvas);
+function buildBlobTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const cv = document.createElement('canvas');
+  cv.width = S;
+  cv.height = S;
+  const g = cv.getContext('2d');
+  if (!g) return new THREE.CanvasTexture(cv);
 
-  // 1. 底层宫庙朱砂生漆质感渐变（极具温润光泽与深度）
-  const bgGrad = ctx.createLinearGradient(0, 0, canvas.width, 0);
-  bgGrad.addColorStop(0.0, '#42080a');
-  bgGrad.addColorStop(0.18, '#6b1114');
-  bgGrad.addColorStop(0.5, '#991c1f');
-  bgGrad.addColorStop(0.82, '#6b1114');
-  bgGrad.addColorStop(1.0, '#42080a');
-  ctx.fillStyle = bgGrad;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const cx = S / 2;
+  const gr = g.createRadialGradient(cx, cx, 24, cx, cx, S * 0.48);
+  gr.addColorStop(0.0, 'rgba(20, 14, 10, 0.65)');
+  gr.addColorStop(0.28, 'rgba(20, 14, 10, 0.42)');
+  gr.addColorStop(0.55, 'rgba(20, 14, 10, 0.16)');
+  gr.addColorStop(0.8, 'rgba(20, 14, 10, 0.04)');
+  gr.addColorStop(1.0, 'rgba(20, 14, 10, 0.0)');
+  g.fillStyle = gr;
+  g.fillRect(0, 0, S, S);
 
-  // 2. 细微金粉飞屑（生漆莳绘工法）
-  ctx.fillStyle = 'rgba(255, 235, 170, 0.15)';
-  for (let i = 0; i < 220; i++) {
-    const rx = Math.random() * canvas.width;
-    const ry = Math.random() * canvas.height;
-    ctx.fillRect(rx, ry, Math.random() * 2 + 1, Math.random() * 2 + 1);
-  }
-
-  // 3. 描金楷书大字「問 籤」
-  const cx = canvas.width / 2;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.font = '800 138px "Kaiti SC", "STKaiti", "BiauKai", "DFKai-SB", "Noto Serif TC", serif';
-
-  const goldGrad = ctx.createLinearGradient(0, 240, 0, 680);
-  goldGrad.addColorStop(0.0, '#ffffff');
-  goldGrad.addColorStop(0.2, '#fff4cb');
-  goldGrad.addColorStop(0.5, '#f5c64b');
-  goldGrad.addColorStop(0.8, '#b8821d');
-  goldGrad.addColorStop(1.0, '#754b08');
-
-  // 深邃漆刻阴影 + 描金浮雕层
-  ctx.shadowColor = 'rgba(10, 0, 0, 0.95)';
-  ctx.shadowBlur = 18;
-  ctx.shadowOffsetX = 3;
-  ctx.shadowOffsetY = 6;
-  ctx.fillStyle = goldGrad;
-  ctx.fillText('問', cx, 350);
-  ctx.fillText('籤', cx, 520);
-
-  // 浮雕亮金边勾勒
-  ctx.shadowColor = 'rgba(255, 225, 130, 0.8)';
-  ctx.shadowBlur = 8;
-  ctx.strokeStyle = 'rgba(255, 245, 200, 0.65)';
-  ctx.lineWidth = 2.5;
-  ctx.strokeText('問', cx, 350);
-  ctx.strokeText('籤', cx, 520);
-
-  // 4. 如意金祥云
-  ctx.shadowColor = 'rgba(10, 0, 0, 0.85)';
-  ctx.shadowBlur = 12;
-  ctx.shadowOffsetY = 4;
-  ctx.fillStyle = goldGrad;
-  const cy = 665;
-  ctx.beginPath();
-  ctx.arc(cx - 40, cy + 4, 18, 0, Math.PI * 2);
-  ctx.arc(cx - 15, cy - 8, 23, 0, Math.PI * 2);
-  ctx.arc(cx + 15, cy - 8, 23, 0, Math.PI * 2);
-  ctx.arc(cx + 40, cy + 4, 18, 0, Math.PI * 2);
-  ctx.fill();
-
-  // 5. 朱砂方印「問一」
-  ctx.shadowBlur = 8;
-  ctx.shadowOffsetX = 1;
-  ctx.shadowOffsetY = 3;
-  ctx.fillStyle = '#7a1214';
-  ctx.strokeStyle = '#e6ba50';
-  ctx.lineWidth = 2.5;
-  const sx = cx + 62;
-  const sy = cy - 6;
-  ctx.fillRect(sx, sy, 44, 44);
-  ctx.strokeRect(sx, sy, 44, 44);
-
-  ctx.fillStyle = '#fff6e0';
-  ctx.font = '700 22px "Kaiti SC", "STKaiti", serif';
-  ctx.fillText('問', sx + 22, sy + 14);
-  ctx.fillText('一', sx + 22, sy + 31);
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.needsUpdate = true;
-  return texture;
+  const tex = new THREE.CanvasTexture(cv);
+  return tex;
 }
 
 /**
- * 动态绘制竹签木纹与红漆签头贴图
+ * 2. 老紫檀木纹与阴刻描金「問 籤」筒身贴图
  */
-function createBambooStickTexture(isHead = false, stickNoText?: string): THREE.CanvasTexture {
-  const canvas = document.createElement('canvas');
-  canvas.width = 128;
-  canvas.height = 512;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return new THREE.CanvasTexture(canvas);
+function buildCylinderTexture(): THREE.CanvasTexture {
+  const W = 1024;
+  const H = 1024;
+  const cv = document.createElement('canvas');
+  cv.width = W;
+  cv.height = H;
+  const g = cv.getContext('2d');
+  if (!g) return new THREE.CanvasTexture(cv);
 
-  if (isHead) {
-    // 签头正统宫庙深红朱砂生漆
-    const grad = ctx.createLinearGradient(0, 0, canvas.width, 0);
-    grad.addColorStop(0.0, '#420b0d');
-    grad.addColorStop(0.2, '#6f1416');
-    grad.addColorStop(0.5, '#9a1d20');
-    grad.addColorStop(0.8, '#6f1416');
-    grad.addColorStop(1.0, '#420b0d');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const rand = pseudoRandom(42);
 
-    // 金漆签头顶端金箔倒角
-    ctx.fillStyle = '#f5c64b';
-    ctx.fillRect(0, 0, canvas.width, 8);
+  // 1. 老紫檀基底（微渐变温润深褐红）
+  const baseGrad = g.createLinearGradient(0, 0, 0, H);
+  baseGrad.addColorStop(0.0, '#22140f');
+  baseGrad.addColorStop(0.4, '#361d15');
+  baseGrad.addColorStop(0.7, '#2a1711');
+  baseGrad.addColorStop(1.0, '#1c0f0a');
+  g.fillStyle = baseGrad;
+  g.fillRect(0, 0, W, H);
 
-    // 宫庙传统双侧阴刻倒梯形刻槽
-    ctx.fillStyle = 'rgba(15, 0, 0, 0.7)';
-    ctx.fillRect(0, 52, canvas.width, 7);
-    ctx.fillStyle = 'rgba(255, 235, 175, 0.45)';
-    ctx.fillRect(0, 59, canvas.width, 2.5);
-
-    // 如果有铭文（如第 1 签）
-    if (stickNoText) {
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = '#fff6db';
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-      ctx.shadowBlur = 8;
-      ctx.font = '800 36px "Kaiti SC", "STKaiti", serif';
-      const chars = stickNoText.split('');
-      const startY = 120;
-      chars.forEach((char, idx) => {
-        ctx.fillText(char, canvas.width / 2, startY + idx * 44);
-      });
-    }
-  } else {
-    // 楠竹陈年竹木原色（质朴温润，竹节分明）
-    const grad = ctx.createLinearGradient(0, 0, canvas.width, 0);
-    grad.addColorStop(0.0, '#754a1d');
-    grad.addColorStop(0.25, '#a4743b');
-    grad.addColorStop(0.5, '#c59a58');
-    grad.addColorStop(0.75, '#b58747');
-    grad.addColorStop(1.0, '#754a1d');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // 竹节阴阳线 (Bamboo nodes)
-    ctx.fillStyle = 'rgba(40, 20, 5, 0.35)';
-    ctx.fillRect(0, 160, canvas.width, 5);
-    ctx.fillRect(0, 340, canvas.width, 5);
-    ctx.fillStyle = 'rgba(255, 235, 180, 0.25)';
-    ctx.fillRect(0, 165, canvas.width, 2);
-    ctx.fillRect(0, 345, canvas.width, 2);
-
-    // 细微竹纤维条纹
-    ctx.fillStyle = 'rgba(55, 30, 10, 0.18)';
-    for (let i = 0; i < 45; i++) {
-      ctx.fillRect(Math.random() * canvas.width, 0, Math.random() * 2 + 0.5, canvas.height);
-    }
+  // 2. 天然原木纵向细密棕眼与导管（数百条有机纤维微纹理）
+  for (let i = 0; i < 420; i++) {
+    const a = 0.03 + rand() * 0.07;
+    g.fillStyle = `rgba(10, 4, 2, ${a.toFixed(3)})`;
+    const x = rand() * W;
+    const w = 1 + rand() * 2;
+    g.fillRect(x, 0, w, H);
   }
 
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.needsUpdate = true;
-  return texture;
+  // 木质暖调反光纤维
+  for (let i = 0; i < 180; i++) {
+    const a = 0.02 + rand() * 0.04;
+    g.fillStyle = `rgba(180, 120, 80, ${a.toFixed(3)})`;
+    const x = rand() * W;
+    g.fillRect(x, 0, 1, H);
+  }
+
+  // 3. 筒口与底座沉香黄铜箍金线
+  g.strokeStyle = 'rgba(220, 175, 80, 0.35)';
+  g.lineWidth = 3;
+  g.strokeRect(0, 40, W, 1);
+  g.strokeRect(0, H - 40, W, 1);
+
+  // 4. 正面阴刻描金大字「問 籤」
+  const cx = W / 2;
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.font = '800 136px "Kaiti SC", "STKaiti", "BiauKai", "DFKai-SB", "Noto Serif TC", serif';
+
+  const gold = g.createLinearGradient(0, 220, 0, 680);
+  gold.addColorStop(0.0, '#ffffff');
+  gold.addColorStop(0.25, '#fff6d5');
+  gold.addColorStop(0.55, '#f4ca5b');
+  gold.addColorStop(0.85, '#b98822');
+  gold.addColorStop(1.0, '#7a510c');
+
+  // 刻痕阴影（雕刻凹凸深邃感）
+  g.shadowColor = 'rgba(5, 2, 1, 0.95)';
+  g.shadowBlur = 16;
+  g.shadowOffsetX = 2;
+  g.shadowOffsetY = 5;
+  g.fillStyle = gold;
+  g.fillText('問', cx, 340);
+  g.fillText('籤', cx, 510);
+
+  // 描金高光金边
+  g.shadowColor = 'rgba(255, 225, 120, 0.7)';
+  g.shadowBlur = 6;
+  g.strokeStyle = 'rgba(255, 245, 200, 0.6)';
+  g.lineWidth = 2;
+  g.strokeText('問', cx, 340);
+  g.strokeText('籤', cx, 510);
+
+  // 5. 祥云与方印「問一」
+  g.shadowColor = 'rgba(5, 2, 1, 0.85)';
+  g.shadowBlur = 10;
+  g.shadowOffsetY = 3;
+  g.fillStyle = gold;
+  const cy = 655;
+  g.beginPath();
+  g.arc(cx - 36, cy + 3, 16, 0, Math.PI * 2);
+  g.arc(cx, cy - 2, 22, 0, Math.PI * 2);
+  g.arc(cx + 36, cy + 3, 16, 0, Math.PI * 2);
+  g.fill();
+
+  // 朱红吉印
+  g.shadowColor = 'transparent';
+  g.shadowBlur = 0;
+  g.fillStyle = '#9b1b1b';
+  g.fillRect(cx + 42, cy - 10, 24, 24);
+  g.fillStyle = '#fff4db';
+  g.font = '700 13px serif';
+  g.fillText('問', cx + 54, cy + 2);
+
+  const tex = new THREE.CanvasTexture(cv);
+  tex.anisotropy = 4;
+  return tex;
+}
+
+/**
+ * 3. 36 支独立楠竹神签纹理 Atlas（单张大图，极高性能，真实竹节、朱砂漆头、墨字签号）
+ */
+function buildStickAtlasTexture(totalSticks: number): THREE.CanvasTexture {
+  const CELL_W = 128;
+  const CELL_H = 1024;
+  const cv = document.createElement('canvas');
+  cv.width = CELL_W * totalSticks;
+  cv.height = CELL_H;
+  const g = cv.getContext('2d');
+  if (!g) return new THREE.CanvasTexture(cv);
+
+  const rand = pseudoRandom(108);
+
+  for (let i = 0; i < totalSticks; i++) {
+    const ox = i * CELL_W;
+
+    // 1. 天然楠竹木底色（竹黄色至温润茶竹色微差异）
+    const tone = 0.92 + rand() * 0.16;
+    const r1 = Math.round(180 * tone);
+    const g1 = Math.round(145 * tone);
+    const b1 = Math.round(90 * tone);
+    const r2 = Math.round(218 * tone);
+    const g2 = Math.round(185 * tone);
+    const b2 = Math.round(128 * tone);
+
+    const bg = g.createLinearGradient(ox, 0, ox + CELL_W, 0);
+    bg.addColorStop(0.0, `rgb(${r1},${g1},${b1})`);
+    bg.addColorStop(0.3, `rgb(${r2},${g2},${b2})`);
+    bg.addColorStop(0.7, `rgb(${r2},${g2},${b2})`);
+    bg.addColorStop(1.0, `rgb(${r1},${g1},${b1})`);
+    g.fillStyle = bg;
+    g.fillRect(ox, 0, CELL_W, CELL_H);
+
+    // 2. 纵向细密竹纤维
+    for (let f = 0; f < 55; f++) {
+      const a = 0.04 + rand() * 0.09;
+      g.fillStyle = `rgba(80, 48, 15, ${a.toFixed(3)})`;
+      const fx = ox + rand() * CELL_W;
+      g.fillRect(fx, 0, 1 + rand(), CELL_H);
+    }
+
+    // 4. 签首硃砂红漆浸染（顶部 ~14%，露出温润黄金楠竹身）
+    const headH = CELL_H * 0.14;
+    const headGrad = g.createLinearGradient(ox, 0, ox + CELL_W, 0);
+    headGrad.addColorStop(0.0, '#551113');
+    headGrad.addColorStop(0.2, '#7a191b');
+    headGrad.addColorStop(0.5, '#a42326');
+    headGrad.addColorStop(0.8, '#7a191b');
+    headGrad.addColorStop(1.0, '#551113');
+    g.fillStyle = headGrad;
+    g.fillRect(ox, 0, CELL_W, headH);
+
+    // 签头顶端描金边
+    g.fillStyle = '#f2c85b';
+    g.fillRect(ox, 0, CELL_W, 6);
+
+    // 硃砂头与竹身接界金线
+    g.fillStyle = '#e5b84c';
+    g.fillRect(ox, headH - 3, CELL_W, 3);
+
+    // 5. 传统手书签号与吉凶墨字（竖排）
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+
+    // 签头金印：签次 (如「第21籤」)
+    g.font = '800 22px "Kaiti SC", "STKaiti", "BiauKai", serif';
+    g.fillStyle = '#fff4ca';
+    g.shadowColor = 'rgba(0,0,0,0.85)';
+    g.shadowBlur = 3;
+    const stickNo = i + 1;
+    g.fillText(`第${stickNo}籤`, ox + CELL_W / 2, headH * 0.52);
+
+    // 竹节 1
+    const nodeY1 = headH + 20;
+    g.shadowColor = 'transparent';
+    g.shadowBlur = 0;
+    g.fillStyle = 'rgba(60, 32, 10, 0.28)';
+    g.fillRect(ox, nodeY1, CELL_W, 4);
+    g.fillStyle = 'rgba(255, 240, 200, 0.22)';
+    g.fillRect(ox, nodeY1 + 4, CELL_W, 2);
+
+    // 竹身黑墨：吉凶小楷 (如「大吉」、「上吉」、「上上」)
+    g.font = '800 25px "Kaiti SC", "STKaiti", "BiauKai", serif';
+    g.fillStyle = 'rgba(30, 18, 10, 0.9)';
+    const sampleTones = ['上吉', '大吉', '上上', '中吉', '中平', '上上'];
+    const toneText = sampleTones[i % sampleTones.length];
+    g.fillText(toneText, ox + CELL_W / 2, headH + 62);
+
+    // 竹身下方印记
+    g.font = '600 16px serif';
+    g.fillStyle = 'rgba(80, 50, 30, 0.7)';
+    g.fillText('靈籤', ox + CELL_W / 2, headH + 105);
+
+    const nodeY2 = headH + 200;
+    g.fillStyle = 'rgba(60, 32, 10, 0.25)';
+    g.fillRect(ox, nodeY2, CELL_W, 4);
+  }
+
+  const tex = new THREE.CanvasTexture(cv);
+  tex.anisotropy = 4;
+  tex.needsUpdate = true;
+  return tex;
 }
 
 export default function FortuneCylinder(props: FortuneCylinderProps) {
@@ -233,9 +307,15 @@ export default function FortuneCylinder(props: FortuneCylinderProps) {
   const raycasterRef = useRef(new THREE.Raycaster());
   const mousePosRef = useRef(new THREE.Vector2(-999, -999));
   const isPointerDownRef = useRef(false);
-  const lastMouseXRef = useRef(0);
-  const lastRustleTimeRef = useRef(0);
   const haloLightRef = useRef<THREE.PointLight | null>(null);
+
+  // 物理解算器（Spring-Damper，源自 paper-roll）
+  const pointerSpringRef = useRef({
+    current: new THREE.Vector2(0, 0),
+    target: new THREE.Vector2(0, 0),
+    velocity: new THREE.Vector2(0, 0),
+  });
+  const lastRustleTimeRef = useRef(0);
 
   const effectiveChosenId = chosenStickId ?? 18;
 
@@ -247,14 +327,13 @@ export default function FortuneCylinder(props: FortuneCylinderProps) {
     const width = container.clientWidth;
     const height = container.clientHeight;
 
-    // 场景与透视相机
+    // 场景与 32° 长焦透视相机（35° 俯视透视，消除广角变形）
     const scene = new THREE.Scene();
     sceneRef.current = scene;
 
-    const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 1000);
-    // 聚焦大型拟真 3D 签筒与满束神签
-    camera.position.set(0, 2.3, 12.8);
-    camera.lookAt(0, 2.0, 0);
+    const camera = new THREE.PerspectiveCamera(32, width / height, 0.5, 100);
+    camera.position.set(0, 5.0, 13.0);
+    camera.lookAt(0, 0.85, 0);
     cameraRef.current = camera;
 
     // WebGL 渲染器
@@ -267,54 +346,64 @@ export default function FortuneCylinder(props: FortuneCylinderProps) {
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
-    // 灯光体系：暖调东方庙堂光影（温润内敛，杜绝过曝）
-    const ambientLight = new THREE.AmbientLight(0xffedd8, 0.95);
-    scene.add(ambientLight);
+    // ── 摄影棚级柔和光影（借鉴 paper-roll） ──
+    const hemiLight = new THREE.HemisphereLight(0xfff7ea, 0xd4cebd, 0.95);
+    scene.add(hemiLight);
 
-    const dirLight = new THREE.DirectionalLight(0xfff6e4, 1.75);
-    dirLight.position.set(5, 13, 9);
-    dirLight.castShadow = true;
-    dirLight.shadow.mapSize.width = 2048;
-    dirLight.shadow.mapSize.height = 2048;
-    dirLight.shadow.camera.near = 1;
-    dirLight.shadow.camera.far = 28;
-    dirLight.shadow.camera.left = -5;
-    dirLight.shadow.camera.right = 5;
-    dirLight.shadow.camera.top = 5;
-    dirLight.shadow.camera.bottom = -5;
-    dirLight.shadow.bias = -0.0008;
-    scene.add(dirLight);
+    const sunLight = new THREE.DirectionalLight(0xfff8ee, 1.2);
+    sunLight.position.set(3.5, 16, 6);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.set(2048, 2048);
+    sunLight.shadow.camera.left = -4.5;
+    sunLight.shadow.camera.right = 4.5;
+    sunLight.shadow.camera.top = 4.5;
+    sunLight.shadow.camera.bottom = -4.5;
+    sunLight.shadow.camera.near = 1;
+    sunLight.shadow.camera.far = 28;
+    sunLight.shadow.bias = -0.0004;
+    sunLight.shadow.normalBias = 0.02;
+    scene.add(sunLight);
 
-    const rimLight = new THREE.PointLight(0xffa855, 1.5, 20);
-    rimLight.position.set(-6, 4, 6);
-    scene.add(rimLight);
+    const fillLight = new THREE.DirectionalLight(0xffedd4, 0.35);
+    fillLight.position.set(-6, 4, -6);
+    scene.add(fillLight);
 
-    // 神签探出时的金光圣环光源
+    // 神签拔出时的金光圣环光源
     const haloLight = new THREE.PointLight(0xffd700, 0, 16);
-    haloLight.position.set(0, 5.2, 2.2);
+    haloLight.position.set(0, 4.6, 2.5);
     scene.add(haloLight);
     haloLightRef.current = haloLight;
 
-    // 签筒主体 Group（底部置于 -2.2）
+    // ── 签筒主体 Group（底部置于 y = -2.1） ──
     const cylinderGroup = new THREE.Group();
-    cylinderGroup.position.set(0, -2.2, 0);
+    cylinderGroup.position.set(0, -2.1, 0);
     scene.add(cylinderGroup);
     cylinderGroupRef.current = cylinderGroup;
 
-    // ── 制作 3D 朱砂生漆外筒（更大更雄伟） ──
-    const cylRadiusTop = 2.65;
-    const cylRadiusBottom = 2.45;
-    const cylHeight = 5.2;
+    // ── 摄影棚柔焦接触阴影（Blob Shadow，纯净无锯齿） ──
+    const blobGeo = new THREE.PlaneGeometry(8.6, 8.6);
+    const blobMat = new THREE.MeshBasicMaterial({
+      map: buildBlobTexture(),
+      transparent: true,
+      depthWrite: false,
+      opacity: 0.95,
+    });
+    const blobMesh = new THREE.Mesh(blobGeo, blobMat);
+    blobMesh.rotation.x = -Math.PI / 2;
+    blobMesh.position.y = -2.09;
+    scene.add(blobMesh);
+
+    // ── 制作 3D 老紫檀铜箍外筒 ──
+    const cylRadiusTop = 2.4;
+    const cylRadiusBottom = 2.22;
+    const cylHeight = 4.8;
     const cylSegments = 64;
 
-    const cylinderTexture = createCylinderTexture();
-    const cylMat = new THREE.MeshPhysicalMaterial({
-      map: cylinderTexture,
-      color: 0xffffff,
-      roughness: 0.20,
-      metalness: 0.05,
-      clearcoat: 0.95,
-      clearcoatRoughness: 0.1,
+    const cylTexture = buildCylinderTexture();
+    const cylMat = new THREE.MeshStandardMaterial({
+      map: cylTexture,
+      roughness: 0.32,
+      metalness: 0.08,
     });
 
     const cylGeo = new THREE.CylinderGeometry(cylRadiusTop, cylRadiusBottom, cylHeight, cylSegments, 1, false);
@@ -326,65 +415,50 @@ export default function FortuneCylinder(props: FortuneCylinderProps) {
     cylinderMesh.receiveShadow = true;
     cylinderGroup.add(cylinderMesh);
 
-    // 筒内空腔深渊（Dark Interior）
-    const innerMat = new THREE.MeshBasicMaterial({ color: 0x120203, side: THREE.BackSide });
+    // 筒内深邃暗影空腔
+    const innerMat = new THREE.MeshBasicMaterial({ color: 0x110906, side: THREE.BackSide });
     const innerGeo = new THREE.CylinderGeometry(cylRadiusTop - 0.12, cylRadiusBottom - 0.12, cylHeight - 0.1, 48, 1, true);
     const innerMesh = new THREE.Mesh(innerGeo, innerMat);
     innerMesh.position.y = cylHeight / 2 + 0.05;
     cylinderGroup.add(innerMesh);
 
-    // 筒口凸雕实木箍环
-    const bandMat = new THREE.MeshStandardMaterial({ color: 0x480a0c, roughness: 0.35, metalness: 0.2 });
-    const topBand1 = new THREE.Mesh(new THREE.TorusGeometry(cylRadiusTop + 0.04, 0.065, 16, 64), bandMat);
+    // 沉香黄铜箍环材质（拉丝金属质感）
+    const brassMat = new THREE.MeshStandardMaterial({
+      color: 0xc89b3c,
+      roughness: 0.38,
+      metalness: 0.68,
+    });
+
+    // 筒口上铜箍
+    const topBand1 = new THREE.Mesh(new THREE.TorusGeometry(cylRadiusTop + 0.03, 0.05, 16, 64), brassMat);
     topBand1.rotation.x = Math.PI / 2;
     topBand1.position.y = cylHeight - 0.12;
     cylinderGroup.add(topBand1);
 
-    const topBand2 = new THREE.Mesh(new THREE.TorusGeometry(cylRadiusTop + 0.02, 0.05, 16, 64), bandMat);
+    const topBand2 = new THREE.Mesh(new THREE.TorusGeometry(cylRadiusTop + 0.015, 0.035, 16, 64), brassMat);
     topBand2.rotation.x = Math.PI / 2;
-    topBand2.position.y = cylHeight - 0.36;
+    topBand2.position.y = cylHeight - 0.35;
     cylinderGroup.add(topBand2);
 
-    // 筒底实木基座箍环
-    const bottomBand = new THREE.Mesh(new THREE.CylinderGeometry(cylRadiusBottom + 0.12, cylRadiusBottom + 0.15, 0.38, 48), bandMat);
-    bottomBand.position.y = 0.19;
+    // 筒底沉香木与铜箍基座
+    const bottomBand = new THREE.Mesh(new THREE.CylinderGeometry(cylRadiusBottom + 0.1, cylRadiusBottom + 0.12, 0.32, 48), brassMat);
+    bottomBand.position.y = 0.16;
     cylinderGroup.add(bottomBand);
 
-    // 案几地面柔和落影接收面
-    const groundGeo = new THREE.PlaneGeometry(28, 28);
-    const shadowMat = new THREE.ShadowMaterial({ opacity: 0.38 });
-    const groundMesh = new THREE.Mesh(groundGeo, shadowMat);
-    groundMesh.rotation.x = -Math.PI / 2;
-    groundMesh.position.y = -2.21;
-    groundMesh.receiveShadow = true;
-    scene.add(groundMesh);
-
-    // ── 制作 36 支 3D 楠竹木签群 ──
-    const sticksList: Stick3DData[] = [];
-    const stickStemMat = new THREE.MeshStandardMaterial({
-      map: createBambooStickTexture(false),
-      roughness: 0.55,
-      metalness: 0.05,
-    });
-    const stickHeadMat = new THREE.MeshStandardMaterial({
-      map: createBambooStickTexture(true),
-      roughness: 0.25,
-      metalness: 0.1,
-    });
-
+    // ── 制作 36 支 3D 楠竹扁平神签群 ──
     const totalSticks = 36;
-    const stickW = 0.28;
-    const stickH = 7.2;
-    const stickD = 0.08;
+    const stickAtlasTex = buildStickAtlasTexture(totalSticks);
+    const sticksList: Stick3DData[] = [];
 
-    // 按照 3 圈同心圆科学散布，确保绝不穿出筒壁（筒口半径 2.65）
-    // Ring 0: 6 支 (r = 0.56)
-    // Ring 1: 12 支 (r = 1.18)
-    // Ring 2: 18 支 (r = 1.78)
+    const stickW = 0.34; // 扁平竹签宽度
+    const stickH = 6.0; // 竹签高度
+    const stickD = 0.048; // 扁平厚度
+
+    // 3 圈同心螺旋散布（最大半径 1.62，远小于筒口半径 2.4）
     const ringConfig = [
-      { count: 6, radius: 0.56 },
-      { count: 12, radius: 1.18 },
-      { count: 18, radius: 1.78 },
+      { count: 6, radius: 0.52 },
+      { count: 12, radius: 1.08 },
+      { count: 18, radius: 1.62 },
     ];
 
     let stickIndex = 0;
@@ -392,102 +466,133 @@ export default function FortuneCylinder(props: FortuneCylinderProps) {
       for (let j = 0; j < ring.count; j++) {
         const i = stickIndex++;
         const p = j / ring.count;
-        const angle = p * Math.PI * 2 + ringIdx * 0.45;
-        // 椭圆微调整增加自然散漫感
-        const rJitter = ring.radius + ((i * 7) % 5) * 0.03 - 0.06;
-        const x = Math.cos(angle) * rJitter * 1.05;
-        const z = Math.sin(angle) * rJitter * 0.92;
+        const angle = p * Math.PI * 2 + ringIdx * 0.42;
 
-        // 顶部自然穹顶微凸起伏（中心稍高，边缘稍低）
-        const domeArch = (1 - ring.radius / 2.0) * 0.35;
-        const jitter = ((i * 13) % 7) * 0.04 - 0.12;
-        // 根部置于筒底上方 0.6
-        const y = 0.6 + domeArch + jitter;
+        // 椭圆微调增加散漫真实度
+        const rJitter = ring.radius + ((i * 7) % 5) * 0.025 - 0.05;
+        const x = Math.cos(angle) * rJitter * 1.04;
+        const z = Math.sin(angle) * rJitter * 0.94;
 
-        // 扇形向外自然微倾（3° ~ 7°，根据距筒心距离自然倾斜）
-        const tiltFactor = (ring.radius / 1.8) * 0.09;
-        const rotZ = -Math.cos(angle) * tiltFactor + ((i % 3) - 1) * 0.015;
-        const rotX = Math.sin(angle) * tiltFactor + (((i * 3) % 5) - 2) * 0.01;
+        // 顶部自然穹顶起伏
+        const dome = (1 - ring.radius / 1.8) * 0.28;
+        const jitter = ((i * 13) % 7) * 0.03 - 0.08;
+        const y = 0.52 + dome + jitter;
 
-        // 组合：木签主干 + 红漆签头
+        // 向外自然微倾（3° ~ 6°）
+        const tilt = (ring.radius / 1.7) * 0.08;
+        const rotZ = -Math.cos(angle) * tilt + ((i % 3) - 1) * 0.015;
+        const rotX = Math.sin(angle) * tilt + (((i * 3) % 5) - 2) * 0.01;
+        const rotY = ((i * 11) % 9 - 4) * 0.04;
+
+        // 制作该签专属 UV 贴图材质（从 Atlas 中切片）
+        const stickMat = new THREE.MeshStandardMaterial({
+          map: stickAtlasTex.clone(),
+          roughness: 0.45,
+          metalness: 0.04,
+        });
+        stickMat.map!.repeat.set(1 / totalSticks, 1);
+        stickMat.map!.offset.set(i / totalSticks, 0);
+        stickMat.map!.needsUpdate = true;
+
+        // 扁平竹签几何体
+        const stickGeo = new THREE.BoxGeometry(stickW, stickH, stickD);
+        const stickMesh = new THREE.Mesh(stickGeo, stickMat);
+        stickMesh.position.y = stickH / 2;
+        stickMesh.castShadow = false;
+        stickMesh.receiveShadow = true;
+        stickMesh.userData = { stickId: i };
+
         const stickGroup = new THREE.Group();
         stickGroup.position.set(x, y, z);
-        stickGroup.rotation.x = rotX;
-        stickGroup.rotation.z = rotZ;
-
-        // 下段原木竹身
-        const stemHeight = stickH * 0.58;
-        const stemGeo = new THREE.BoxGeometry(stickW, stemHeight, stickD);
-        const stemMesh = new THREE.Mesh(stemGeo, stickStemMat);
-        stemMesh.position.y = stemHeight / 2;
-        stemMesh.castShadow = true;
-        stemMesh.userData = { stickId: i };
-        stickGroup.add(stemMesh);
-
-        // 上段红漆雕口签头
-        const headHeight = stickH * 0.42;
-        const headGeo = new THREE.BoxGeometry(stickW, headHeight, stickD);
-        const headMesh = new THREE.Mesh(headGeo, stickHeadMat);
-        headMesh.position.y = stemHeight + headHeight / 2;
-        headMesh.castShadow = true;
-        headMesh.userData = { stickId: i };
-        stickGroup.add(headMesh);
+        stickGroup.rotation.set(rotX, rotY, rotZ);
+        stickGroup.add(stickMesh);
 
         cylinderGroup.add(stickGroup);
 
         sticksList.push({
-          mesh: stickGroup as unknown as THREE.Mesh,
-          headMesh,
-          stemMesh,
+          group: stickGroup,
+          mesh: stickMesh,
           id: i,
           baseX: x,
           baseY: y,
           baseZ: z,
           baseRotX: rotX,
+          baseRotY: rotY,
           baseRotZ: rotZ,
           currentY: y,
           targetY: y,
           wobbleX: 0,
           wobbleZ: 0,
-          isChosen: false,
+          vx: 0,
+          vz: 0,
         });
       }
     });
 
     sticksDataRef.current = sticksList;
 
-    // ── 动画主循环 ──
+    // ── 动画主循环与 Spring-Damper 物理运动 ──
     let animId: number;
+    let lastTime = performance.now();
     let startTime = performance.now();
 
     const animate = () => {
       animId = requestAnimationFrame(animate);
-      const elapsed = (performance.now() - startTime) * 0.001;
+      const now = performance.now();
+      const dt = Math.min((now - lastTime) * 0.001, 0.05);
+      lastTime = now;
+      const elapsed = (now - startTime) * 0.001;
 
-      // 摇晃状态（Shaking）
+      // 1. 物理阻尼弹簧指针追踪（Spring = 18.0, Damp = 5.2）
+      const ps = pointerSpringRef.current;
+      const accX = (ps.target.x - ps.current.x) * 18.0 - ps.velocity.x * 5.2;
+      const accY = (ps.target.y - ps.current.y) * 18.0 - ps.velocity.y * 5.2;
+      ps.velocity.x += accX * dt;
+      ps.velocity.y += accY * dt;
+      ps.current.x += ps.velocity.x * dt;
+      ps.current.y += ps.velocity.y * dt;
+
+      // 2. 状态分支逻辑
       if (props.state === 'shaking') {
-        const shakeSway = Math.sin(elapsed * 24) * 0.12;
+        const shakeSway = Math.sin(elapsed * 24) * 0.09;
         cylinderGroup.rotation.z = shakeSway;
-        cylinderGroup.position.x = Math.cos(elapsed * 20) * 0.08;
+        cylinderGroup.position.x = Math.cos(elapsed * 20) * 0.06;
 
-        // 竹签密集起伏跳动
         sticksList.forEach((st, idx) => {
-          const hop = Math.abs(Math.sin(elapsed * 18 + idx * 0.7)) * 0.35;
-          st.mesh.position.y = st.baseY + hop;
+          const hop = Math.abs(Math.sin(elapsed * 18 + idx * 0.7)) * 0.32;
+          st.group.position.y = st.baseY + hop;
         });
       } else {
-        cylinderGroup.rotation.z *= 0.85;
-        cylinderGroup.position.x *= 0.85;
+        cylinderGroup.rotation.z *= 0.88;
+        cylinderGroup.position.x *= 0.88;
 
-        // 平常/挑签/探出状态下的弹簧插值
+        // 3. 竹签受指针弹簧重力微拨弄与回弹
+        const stirIntensity = ps.velocity.length();
+        const px = ps.current.x * 2.2;
+        const pz = ps.current.y * 1.5;
+
         sticksList.forEach((st) => {
-          // 柔和弹簧趋向 targetY
-          st.currentY += (st.targetY - st.currentY) * 0.16;
-          st.mesh.position.y = st.currentY;
+          // 柔和拔高趋向目标高度
+          st.currentY += (st.targetY - st.currentY) * (1 - Math.exp(-14 * dt));
+          st.group.position.y = st.currentY;
 
-          // 微动弹性阻尼恢复
+          // 物理排斥挤压（当手指拖曳经过时向外侧推挤）
+          if (stirIntensity > 0.05) {
+            const dx = st.baseX - px;
+            const dz = st.baseZ - pz;
+            const distSq = dx * dx + dz * dz;
+            if (distSq < 1.8) {
+              const force = (1.8 - distSq) * 0.025;
+              st.wobbleX += dx * force;
+              st.wobbleZ += dz * force;
+            }
+          }
+
+          // 弹性阻尼回弹至基准旋转
+          st.wobbleX *= 0.88;
           st.wobbleZ *= 0.88;
-          st.mesh.rotation.z = st.baseRotZ + st.wobbleZ;
+          st.group.rotation.x = st.baseRotX + st.wobbleZ;
+          st.group.rotation.z = st.baseRotZ + st.wobbleX;
         });
       }
 
@@ -513,13 +618,13 @@ export default function FortuneCylinder(props: FortuneCylinderProps) {
       renderer.dispose();
       cylGeo.dispose();
       cylMat.dispose();
-      cylinderTexture.dispose();
-      stickStemMat.dispose();
-      stickHeadMat.dispose();
+      cylTexture.dispose();
+      blobGeo.dispose();
+      blobMat.dispose();
     };
   }, []);
 
-  // 2. 状态驱动 3D 表现：挑签探头与神签拔高
+  // 2. 状态驱动 3D 表现：挑签探头与神签拔高升空
   useEffect(() => {
     const sticks = sticksDataRef.current;
     if (sticks.length === 0) return;
@@ -528,29 +633,21 @@ export default function FortuneCylinder(props: FortuneCylinderProps) {
       const isChosen = st.id === effectiveChosenId;
 
       if (ejecting && isChosen) {
-        // 🌟 神签拔高升空 2.2 个单位！破筒而出！
-        st.targetY = st.baseY + 2.4;
-        st.mesh.position.z = st.baseZ + 0.3; // 向前突出
-        // 打开金光照射
-        if (haloLightRef.current) haloLightRef.current.intensity = 3.5;
-
-        // 替换签头贴图为带铭文贴图
-        if (sheet) {
-          const inscribedTex = createBambooStickTexture(true, en ? `NO.${sheet.stick.no}` : `第${sheet.stick.no}籤`);
-          (st.headMesh.material as THREE.MeshStandardMaterial).map = inscribedTex;
-          (st.headMesh.material as THREE.MeshStandardMaterial).needsUpdate = true;
-        }
+        // 🌟 神签拔高升空 2.2 个单位，微向前倾，金芒四射！
+        st.targetY = st.baseY + 2.2;
+        st.group.position.z = st.baseZ + 0.35;
+        if (haloLightRef.current) haloLightRef.current.intensity = 4.2;
       } else if (hoveredStickId === st.id && state === 'ready' && !shaking && !ejecting) {
-        // 🖐️ 鼠标悬停挑签探头 0.7 个单位
-        st.targetY = st.baseY + 0.75;
+        // 🖐️ 鼠标悬停挑签拔高探头 0.8 个单位
+        st.targetY = st.baseY + 0.8;
       } else {
         // 复位原高
         st.targetY = st.baseY;
       }
     });
-  }, [ejecting, hoveredStickId, effectiveChosenId, state, shaking, sheet, en]);
+  }, [ejecting, hoveredStickId, effectiveChosenId, state, shaking, sheet]);
 
-  // 3. 3D Raycasting 鼠标/触控交互（搅拌与点选）
+  // 3. 3D Raycasting 与物理搅拌交互
   const updateRaycaster = (e: React.PointerEvent) => {
     const container = containerRef.current;
     const camera = cameraRef.current;
@@ -561,27 +658,30 @@ export default function FortuneCylinder(props: FortuneCylinderProps) {
     const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
     mousePosRef.current.set(x, y);
 
+    // 更新物理弹簧目标
+    pointerSpringRef.current.target.set(x, y);
+
     raycasterRef.current.setFromCamera(mousePosRef.current, camera);
-    const candidateMeshes: THREE.Mesh[] = [];
-    sticksDataRef.current.forEach((st) => {
-      candidateMeshes.push(st.headMesh, st.stemMesh);
-    });
-    const intersects = raycasterRef.current.intersectObjects(candidateMeshes, false);
+    const meshes = sticksDataRef.current.map((st) => st.mesh);
+    const intersects = raycasterRef.current.intersectObjects(meshes, false);
 
     if (intersects.length > 0) {
       const hitStickId = intersects[0].object.userData.stickId as number;
       if (hitStickId !== hoveredStickId) {
         setHoveredStickId(hitStickId);
 
-        // 拨弄竹签微晃动弹簧物理
+        // 碰击微摇晃
         const hitData = sticksDataRef.current[hitStickId];
-        if (hitData) hitData.wobbleZ = (Math.random() - 0.5) * 0.12;
+        if (hitData) {
+          hitData.wobbleX = (Math.random() - 0.5) * 0.08;
+          hitData.wobbleZ = (Math.random() - 0.5) * 0.08;
+        }
 
-        // 真实竹木碰撞音效
+        // 触发真实竹木微碰碰撞音效
         const now = Date.now();
-        if (soundEnabled && now - lastRustleTimeRef.current > 48) {
+        if (soundEnabled && now - lastRustleTimeRef.current > 45) {
           lastRustleTimeRef.current = now;
-          bambooRustle(0.7);
+          bambooRustle(0.75);
         }
       }
     } else {
@@ -591,7 +691,6 @@ export default function FortuneCylinder(props: FortuneCylinderProps) {
 
   const handlePointerDown = (e: React.PointerEvent) => {
     isPointerDownRef.current = true;
-    lastMouseXRef.current = e.clientX;
     updateRaycaster(e);
   };
 
@@ -599,20 +698,12 @@ export default function FortuneCylinder(props: FortuneCylinderProps) {
     if (shaking || ejecting) return;
     updateRaycaster(e);
 
-    // 拖动搅拌：推动竹签群体碰撞
+    // 持续拖动搅拌：推动竹木群摩擦碰撞
     if (isPointerDownRef.current) {
-      const deltaX = e.clientX - lastMouseXRef.current;
-      lastMouseXRef.current = e.clientX;
-
-      if (Math.abs(deltaX) > 2) {
-        sticksDataRef.current.forEach((st) => {
-          st.wobbleZ += deltaX * 0.003;
-        });
-        const now = Date.now();
-        if (soundEnabled && now - lastRustleTimeRef.current > 55) {
-          lastRustleTimeRef.current = now;
-          bambooRustle(0.85);
-        }
+      const now = Date.now();
+      if (soundEnabled && now - lastRustleTimeRef.current > 50) {
+        lastRustleTimeRef.current = now;
+        bambooRustle(0.9);
       }
     }
   };
@@ -634,7 +725,6 @@ export default function FortuneCylinder(props: FortuneCylinderProps) {
       return;
     }
 
-    // 确定挑中的竹签
     const chosenId = hoveredStickId ?? Math.floor(Math.random() * 36);
     setChosenStickId(chosenId);
     if (soundEnabled) bambooDrawSound();
@@ -648,7 +738,7 @@ export default function FortuneCylinder(props: FortuneCylinderProps) {
       className={`cylinder-stage${shaking ? ' shaking' : ''}${ejecting ? ' ejecting' : ''}`}
       data-tone={toneKey}
     >
-      {/* 3D WebGL 画布容器（大幅扩大尺寸） */}
+      {/* 3D WebGL 画布容器（摄影棚舞台） */}
       <div
         className="cylinder-3d-canvas-wrapper"
         ref={containerRef}
