@@ -4,16 +4,21 @@
  */
 
 import { useState } from 'react';
-import type { FortuneStick } from '../../shared/sticks';
+import { stickText, type FortuneStick } from '../../shared/sticks';
 import type { Interpretation } from '../../shared/types';
+import { useT } from '../i18n';
 import { renderShareImage, shareImage, shareText } from '../share';
+import type { Language } from '../../shared/lang';
 
 export default function SharePanel(props: {
   stick: FortuneStick;
+  /** 这一局的语言 —— 决定分享图上印哪一套字。 */
+  language: Language;
   interpretation: Interpretation | null;
   question: string;
   onClose: () => void;
 }) {
+  const t = useT();
   const [includeQuestion, setIncludeQuestion] = useState(false);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState('');
@@ -29,12 +34,19 @@ export default function SharePanel(props: {
         interpretation: props.interpretation,
         question: props.question,
         includeQuestion,
+        language: props.language,
       });
-      const outcome = await shareImage(blob, props.stick);
-      setStatus(outcome === 'shared' ? '已经交给系统分享。' : '图片已保存到下载。');
+      const outcome = await shareImage(blob, props.stick, props.language);
+      setStatus(outcome === 'shared' ? t('shareShared') : t('shareDownloaded'));
     } catch {
-      setStatus('图片这次没生成出来，可以先复制下面这段文字。');
-      setFallbackText(shareText(props.stick, props.interpretation?.meaning ?? props.stick.meaning));
+      setStatus(t('shareFailed'));
+      setFallbackText(
+        shareText(
+          props.stick,
+          props.interpretation?.meaning ?? stickText(props.stick, props.language).meaning,
+          props.language,
+        ),
+      );
     } finally {
       setBusy(false);
     }
@@ -43,22 +55,22 @@ export default function SharePanel(props: {
   return (
     <div className="share-panel">
       <div className="share-head">
-        <strong>分享结果</strong>
+        <strong>{t('shareTitle')}</strong>
         <button type="button" className="text-action tiny" onClick={props.onClose}>
-          收起
+          {t('shareClose')}
         </button>
       </div>
-      <p className="muted small">图片里只有签号、等级、签诗和一句话签意，不包含你的解读和追问。</p>
+      <p className="muted small">{t('shareNote')}</p>
       <label className="check">
         <input
           type="checkbox"
           checked={includeQuestion}
           onChange={(event) => setIncludeQuestion(event.target.checked)}
         />
-        在图片中显示我的问题
+        {t('shareIncludeQuestion')}
       </label>
       <button className="text-action strong" onClick={() => void go()} disabled={busy}>
-        {busy ? '生成中…' : '生成并分享'}
+        {busy ? t('shareBusy') : t('shareGo')}
       </button>
       {status && <p className="muted small">{status}</p>}
       {fallbackText && <textarea className="share-fallback" readOnly rows={3} value={fallbackText} />}

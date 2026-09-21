@@ -40,6 +40,7 @@
   /* 四个等级的底色。tone 用在纸上的字，ground 用在整页的底。 */
   --tone: #5b5750;
   --serif: 'Noto Serif SC', 'Songti SC', 'STSong', 'SimSun', serif;
+  --serif-en: 'Noto Serif', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
   --sans: system-ui, -apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
   --mono: ui-monospace, 'SF Mono', 'SFMono-Regular', Menlo, Consolas, monospace;
   color-scheme: light dark;
@@ -125,6 +126,18 @@ body {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 8px;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* 语言开关：和「求签记录」一样是一行字，不是一个按钮。 */
+.lang-switch {
+  font: 11px/1 var(--mono);
+  letter-spacing: 0.18em;
 }
 
 .brand {
@@ -586,6 +599,12 @@ body {
   color: var(--accent);
 }
 
+/* 英文键帽是一个词，不是一个字：缩到无衬线小字，才装得进同一颗键。 */
+.print-key[data-lang='en'] .print-key-cap {
+  font: 700 clamp(10px, 2.4vw, 12px) / 1 var(--mono);
+  letter-spacing: 0.14em;
+}
+
 .print-key:active:not(:disabled) {
   transform: translateY(3px);
   box-shadow:
@@ -764,7 +783,8 @@ body {
   padding: 18px 14px 20px;
 }
 
-.slip-vertical {
+/* 直排只给中文的签纸：七言两句竖着读是对的，一句英文竖着读不是。 */
+.slip[data-lang='zh'] .slip-vertical {
   writing-mode: vertical-rl;
   display: flex;
   flex-direction: column;
@@ -772,6 +792,17 @@ body {
   justify-content: center;
   gap: 15px;
   height: 208px;
+}
+
+.slip[data-lang='en'] .slip-vertical {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+  min-height: 208px;
+  max-width: 38ch;
+  text-align: center;
 }
 
 .slip-vertical p { margin: 0; }
@@ -794,6 +825,43 @@ body {
   letter-spacing: 0.1em;
   color: var(--tone);
 }
+
+/* 英文签纸：拉开的字距会把词拆散，等级是一个词也不是一个字 —— 都得收回来。 */
+.slip[data-lang='en'] { font-family: var(--serif-en); }
+
+.slip[data-lang='en'] .slip-poem {
+  font-size: 14.5px;
+  letter-spacing: 0.01em;
+  line-height: 1.5;
+  /* 一句对句折行时别把最后一个词丢下 —— balance 让两行长度相当。 */
+  text-wrap: balance;
+}
+
+.slip[data-lang='en'] .slip-meaning {
+  font-size: 13px;
+  letter-spacing: 0;
+  line-height: 1.55;
+  text-wrap: balance;
+}
+
+.slip[data-lang='en'] .slip-lucky {
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+}
+
+.slip[data-lang='en'] .slip-title {
+  font-size: clamp(15px, 4.2vw, 19px);
+  letter-spacing: 0.06em;
+  text-indent: 0;
+}
+
+.slip[data-lang='en'] .slip-level {
+  font-size: clamp(18px, 5.2vw, 26px);
+  letter-spacing: 0.1em;
+  text-indent: 0.1em;
+}
+
+.slip-mini[data-lang='en'] .slip-mini-title { letter-spacing: 0.06em; }
 
 .slip-foot {
   margin-top: 12px;
@@ -1283,12 +1351,25 @@ code {
   .ask-zone { padding: 20px 18px; }
 }
 
+/* 顶栏现在有三样东西（牌记、语言开关、记录），窄屏上挤不下就会折行 ——
+   「问一签」被拆成两行看起来像坏了。先收起装饰性的副标，再压小间距。 */
+@media (max-width: 480px) {
+  .topbar { gap: 10px; }
+  .topbar-actions { gap: 12px; }
+  .topbar-actions > * { white-space: nowrap; }
+  .brand-name { white-space: nowrap; }
+  .brand-sub { display: none; }
+}
+
 @media (max-width: 400px) {
   .shell { padding: 14px 16px 26px; }
   .ask-zone { --mark-len: 14px; padding: 16px 12px; }
   .slip { padding: 16px 12px 10px; }
   .slip-cell { padding: 10px; }
-  .slip-vertical { height: 186px; gap: 13px; }
+  /* 带上 .slip[data-lang] 是必须的：基础规则现在也带着它，
+     选择器权重比裸 .slip-vertical 高，不写就压不下去。 */
+  .slip[data-lang='zh'] .slip-vertical { height: 186px; gap: 13px; }
+  .slip[data-lang='en'] .slip-vertical { min-height: 186px; gap: 11px; }
   .footer { gap: 12px; }
   .footer-note { width: 100%; margin-left: 0; }
 }

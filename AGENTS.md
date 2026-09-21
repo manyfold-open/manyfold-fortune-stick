@@ -52,11 +52,27 @@ Rules for anyone — human or AI agent — iterating on it. These are the load-b
 8. **Two ink scales, and they are not interchangeable.** `--ink*` is for text on paper (the
    slip, the continuation sheet, record cards); `--on-ground*` is for text printed straight
    onto the background. They invert in dark mode — mixing them is what makes text vanish.
-9. **Never commit secrets.** New secrets get a commented entry in `.dev.vars.example` and an
+9. **The machine speaks the interface language, the paper speaks the question's language.**
+   The switch in the top-right corner sets the interface language (default 简体中文, kept in
+   `localStorage`). It moves the LCD, the actions, errors, history chrome and settings — and
+   nothing else. A round's language comes from the question and is fixed when the print key
+   is pressed: the slip, the interpretation, the four headings over it and every follow-up
+   stay in it no matter what the switch does afterwards. Switching language must never
+   re-interpret, re-draw or re-bill. `StickFace` takes a required `language` prop so no call
+   site can quietly keep printing Chinese.
+10. **A round's language is derived, never stored.** `detectLanguage(question)` in
+   `src/shared/lang.ts` is a pure function of a column that already exists and never
+   changes, which is what lets this work without a migration step (see invariant 3). Do not
+   add a `language` column — recompute it. The language the AI actually wrote in is recorded
+   inside the `interpretation` JSON blob, which needs no schema.
+11. **Error copy lives in the browser, keyed by the API's `code`.** The worker's own message
+   strings are a developer-readable fallback; `readings.error` stores a code. An unknown
+   code falls through to the server's sentence, so a new route's error is never swallowed.
+12. **Never commit secrets.** New secrets get a commented entry in `.dev.vars.example` and an
    instruction to run `npx wrangler secret put NAME`. `.dev.vars` is git-ignored; keep it so.
-10. **Respect the runtime split.** `src/worker/` runs in workerd only (no Node-built-ins),
+13. **Respect the runtime split.** `src/worker/` runs in workerd only (no Node-built-ins),
    `src/app/` runs in the browser only, `src/shared/` must run in both.
-11. **Preserve the credential-security invariants:**
+14. **Preserve the credential-security invariants:**
    - the Manyfold device code and agent bearer tokens never appear in an API response, a log
      line, or the browser — they are AES-GCM sealed in D1 (`seal`/`unseal` in
      `src/worker/crypto.ts`);
@@ -66,7 +82,7 @@ Rules for anyone — human or AI agent — iterating on it. These are the load-b
    - error strings pass through `safeErrorText` before leaving the worker;
    - A2A `messageId`s are derived from stored rows, not random, so retries cannot
      double-bill (`src/worker/fortune.ts`).
-12. **Keep new routes behind the admin gate.** Any route added under `/api/` is protected by
+15. **Keep new routes behind the admin gate.** Any route added under `/api/` is protected by
    the `ADMIN_PASSWORD` middleware automatically — do not add exceptions beyond `/api/health`
    and `/api/state` without a reason as good as theirs.
 
@@ -87,8 +103,9 @@ npm run smoke -- https://your-app.workers.dev
 
 ## What is safe to change
 
-Everything else. The stick texts in `src/shared/sticks.ts` (keep every field filled — `general`
-and `action` double as the AI-unavailable fallback), the styles, the page structure, extra
-tables, extra routes, extra pages. Keep the connect flow (`src/worker/connect.ts`,
+Everything else. The stick texts in `src/shared/sticks.ts` (keep every field filled in **both**
+`zh` and `en` — `general` and `action` double as the AI-unavailable fallback), the interface
+copy in `src/shared/i18n/` (both tables, or the build fails), the styles, the page structure,
+extra tables, extra routes, extra pages. Keep the connect flow (`src/worker/connect.ts`,
 `src/worker/a2a.ts`, `src/worker/crypto.ts`) as long as interpretations come from a Manyfold
 agent.

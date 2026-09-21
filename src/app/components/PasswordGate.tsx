@@ -6,8 +6,10 @@
 
 import { useState } from 'react';
 import { setStoredPassword } from '../api';
+import { useT } from '../i18n';
 
 export default function PasswordGate(props: { onSubmitted: () => Promise<void> }) {
+  const t = useT();
   const [value, setValue] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [touched, setTouched] = useState(false);
@@ -24,21 +26,19 @@ export default function PasswordGate(props: { onSubmitted: () => Promise<void> }
   return (
     <div className="overlay">
       <form className="dialog" onSubmit={(event) => void submit(event)}>
-        <h2>需要管理密码</h2>
-        <p className="muted">
-          这个部署设置了 <code>ADMIN_PASSWORD</code>，输入后才能继续。
-        </p>
+        <h2>{t('gateTitle')}</h2>
+        <p className="muted">{t('gateBody')}</p>
         <input
           type="password"
           autoFocus
           value={value}
           onChange={(event) => setValue(event.target.value)}
-          placeholder="管理密码"
-          aria-label="管理密码"
+          placeholder={t('gateLabel')}
+          aria-label={t('gateLabel')}
         />
-        {touched && <div className="notice error">密码不对。</div>}
+        {touched && <div className="notice error">{t('gateWrong')}</div>}
         <button className="text-action strong" type="submit" disabled={submitting || !value.trim()}>
-          {submitting ? '检查中…' : '解锁'}
+          {submitting ? t('gateChecking') : t('gateSubmit')}
         </button>
       </form>
     </div>

@@ -21,11 +21,13 @@
 
 ## 游戏流程
 
-- **提问** —— 一个问题，5–120 字，必填。不知道问什么的话，页面给了三个可点的示例。
-- **打印** —— 按下机器面板上的「印」键。马达转起来，签纸从出纸口吐出来，整页的底色也换成
-  这一签的等级色。
-- **看签** —— 签号、等级（上上签／上签／中签／下签）、四字签名和直排的两句签诗。让你先看、
-  先猜，再自己决定什么时候揭晓。
+- **提问，中英文都行** —— 一个问题，5–120 字，必填。不知道问什么的话，页面给了三个可点的
+  示例。右上角可以在简体中文和 English 之间切换界面；而**用哪种语言写问题，签纸和解读就
+  用哪种语言回来**，按下印键那一刻定死。之后再切语言，换的只是机器，不是已经印出来的纸。
+- **打印** —— 按下机器面板上的印键（印／PRINT）。马达转起来，签纸从出纸口吐出来，整页的
+  底色也换成这一签的等级色。
+- **看签** —— 签号、等级、签名和两句签诗。让你先看、先猜，再自己决定什么时候揭晓。中文签纸
+  的签诗直排、从右往左；英文签纸横排 —— 一句英文竖着排是读不通的。
 - **解签** —— 四段式解读：一句话签意、回应你的问题、值得留意、可以做的一件小事。
 - **分享／继续追问／再求一签** —— 一张可保存转发的图，一段基于同一支签的追问，或者新的一轮。
 - **求签记录** —— 每一轮都留在**你自己的浏览器**里，可以删除单条或清空全部。
@@ -142,7 +144,9 @@ Manyfold A2A（message/stream、tasks/get）   ← 每个 agent 独立的 bearer
 | `src/worker/connect.ts` | Manyfold 授权握手与已连接 agent 的存储 |
 | `src/worker/a2a.ts` | A2A JSON-RPC + SSE 流消费器、SSRF 防护、密钥脱敏 |
 | `src/worker/fortune.ts` | 抽签、解签、追问 —— 游戏的服务端那一半 |
-| `src/shared/sticks.ts` | 36 支原创签（worker 和浏览器共用） |
+| `src/shared/sticks.ts` | 36 支原创签，中英两套（worker 和浏览器共用） |
+| `src/shared/lang.ts` | 一局用哪种语言 —— 由问题推导，不落库 |
+| `src/shared/i18n/` | 界面文案，每种语言一张表 |
 | `src/worker/crypto.ts` | AES-GCM 加解密、常量时间比较 |
 | `src/worker/db.ts` | schema（运行时自动应用）与设置存储 |
 | `src/shared/types.ts` | worker 与浏览器共享的 API 类型 |
@@ -157,8 +161,10 @@ Manyfold A2A（message/stream、tasks/get）   ← 每个 agent 独立的 bearer
 - **加数据表** —— 在 `src/worker/db.ts` 的 `SCHEMA` 里追加
   `CREATE TABLE IF NOT EXISTS …`；下一个请求就会创建，本地和线上都一样。
 - **加页面** —— 在 `src/app/App.tsx` 里加组件和路由（用 `location.hash`，没有 router 依赖）。
-- **改签或加签** —— `src/shared/sticks.ts`。每个字段都要填满：`general` 和 `action` 同时
-  是 AI 不可用时的兜底文案。
+- **改签或加签** —— `src/shared/sticks.ts`。`zh` 和 `en` 两套的每个字段都要填满：`general`
+  和 `action` 同时是 AI 不可用时的兜底文案，而且英文里残留汉字会被测试挡下来。
+- **加界面文案** —— 同时写进 `src/shared/i18n/zh.ts` 和 `en.ts`。漏一个键编译不过，
+  `{占位符}` 对不上会有测试失败。
 - **在服务端代码里调用你的 agent** —— `src/worker/connect.ts` 的
   `credentialFor(env, agentId)` 会返回任意已连接 agent 的 `{ rpcUrl, token }`；阻塞式的一轮
   见 `src/worker/fortune.ts` 里的 `askAgent`，流式的见 `handleFollowUp`。

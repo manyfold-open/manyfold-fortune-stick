@@ -9,6 +9,7 @@
  * localStorage 直接抛错，那种情况下游戏应当照常能玩，只是记不住历史。
  */
 
+import type { Language } from '../shared/lang';
 import type { Interpretation, Reading } from '../shared/types';
 
 const RECORDS_KEY = 'wenyiqian.records';
@@ -35,6 +36,14 @@ export interface Prefs {
   sound: boolean;
   /** 减少动画。默认跟随系统的 prefers-reduced-motion。 */
   reducedMotion: boolean;
+  /**
+   * 界面语言。所有人进来都是简体中文 —— 不猜浏览器语言：这个游戏的默认读者
+   * 是中文读者，猜错一次的代价比多按一下右上角的开关大。
+   *
+   * 注意这只管界面。签纸和解读的语言由问题本身决定（src/shared/lang.ts），
+   * 改这个值不会动到任何一张已经印出来的签。
+   */
+  language: Language;
 }
 
 function read<T>(key: string, fallback: T): T {
@@ -131,6 +140,7 @@ export function getPrefs(): Prefs {
   return {
     sound: stored.sound ?? true,
     reducedMotion: stored.reducedMotion ?? systemReducedMotion(),
+    language: stored.language === 'en' ? 'en' : 'zh',
   };
 }
 

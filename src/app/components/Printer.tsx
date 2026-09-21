@@ -16,6 +16,7 @@
  */
 
 import type { ReactNode } from 'react';
+import { useT, useUiLanguage } from '../i18n';
 
 export type PrinterState = 'idle' | 'ready' | 'printing';
 
@@ -28,7 +29,7 @@ export default function Printer(props: {
   state: PrinterState;
   /** 屏上左边那截状态码，例如 READY / PRINT / E-02。 */
   code: string;
-  /** 屏上右边那句中文，就是这一步的说明。 */
+  /** 屏上右边那句话，就是这一步的说明。调用方已经按界面语言取好了。 */
   message: string;
   /** 屏的颜色：正常绿，提醒琥珀。 */
   alert?: boolean;
@@ -37,6 +38,8 @@ export default function Printer(props: {
   onPress: () => void;
   children?: ReactNode;
 }) {
+  const t = useT();
+  const language = useUiLanguage();
   const { state, code, message, alert = false, feeding = false } = props;
 
   return (
@@ -165,9 +168,10 @@ export default function Printer(props: {
           className="print-key"
           onClick={props.onPress}
           disabled={state === 'printing'}
-          aria-label={state === 'printing' ? '正在打印' : '按下按钮，打印这一签'}
+          aria-label={state === 'printing' ? t('printKeyBusy') : t('printKeyIdle')}
+          data-lang={language}
         >
-          <span className="print-key-cap">印</span>
+          <span className="print-key-cap">{t('printKeyCap')}</span>
         </button>
       </div>
 

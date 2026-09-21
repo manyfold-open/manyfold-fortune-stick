@@ -18,7 +18,14 @@ import type {
   Reading,
   ReadingStatus,
 } from '../shared/types';
-import { STICK_COUNT, stickByNo, type FortuneStick } from '../shared/sticks';
+import { detectLanguage, type Language } from '../shared/lang';
+import {
+  LEVEL_LABEL,
+  STICK_COUNT,
+  stickByNo,
+  stickText,
+  type FortuneStick,
+} from '../shared/sticks';
 import { HttpError, type AgentCredential, type Env } from './types';
 import { A2AError, consumeA2AStream, safeErrorText } from './a2a';
 import { credentialFor, listConnectedAgents } from './connect';
@@ -69,6 +76,9 @@ const READING_COLUMNS =
 function toReading(row: ReadingRow): Reading {
   const stick = stickByNo(row.stick_no);
   if (!stick) throw new HttpError(500, 'unknown_stick', '这条求签记录指向了一支不存在的签。');
+  // 语言由问题推导，不落库：question 写进去之后就不再改，所以这里算出来的
+  // 永远是当初印出来的那张纸的语言。这个库没有迁移步骤，能不加列就不加列。
+  const language = detectLanguage(row.question);
   let interpretation: Interpretation | null = null;
   if (row.interpretation) {
     try {
@@ -84,6 +94,7 @@ function toReading(row: ReadingRow): Reading {
     status: (row.status as ReadingStatus) ?? 'drawn',
     interpretation,
     error: row.error,
+    language,
     createdAt: row.created_at,
   };
 }
@@ -139,18 +150,26 @@ export async function deleteReading(env: Env, id: string): Promise<void> {
 
 /* ───────── 解读的兜底与解析 ───────── */
 
+/** 兜底那一行「这还没结合你的问题」。存进 D1，所以跟着这一局的语言，不跟界面。 */
+const FALLBACK_NOTICE: Record<Language, string> = {
+  zh: '这一份是这支签的通用解释，还没有结合你的问题。',
+  en: 'This is the stick\u2019s general reading. It has not been matched to your question yet.',
+};
+
 /** AI 不可用时显示的内容：这支签预先写好的通用解释，永远可用。 */
-export function fallbackInterpretation(stick: FortuneStick): Interpretation {
+export function fallbackInterpretation(stick: FortuneStick, language: Language): Interpretation {
+  const text = stickText(stick, language);
   return {
-    meaning: stick.meaning,
-    answer: stick.general,
-    notice: '这一份是这支签的通用解释，还没有结合你的问题。',
-    action: stick.action,
+    meaning: text.meaning,
+    answer: text.general,
+    notice: FALLBACK_NOTICE[language],
+    action: text.action,
     source: 'fallback',
+    language,
   };
 }
 
-const FIELD_LIMITS: Record<keyof Omit<Interpretation, 'source'>, number> = {
+const FIELD_LIMITS: Record<keyof Omit<Interpretation, 'source' | 'language'>, number> = {
   meaning: 120,
   answer: 600,
   notice: 200,
@@ -163,7 +182,12 @@ const FIELD_LIMITS: Record<keyof Omit<Interpretation, 'source'>, number> = {
  * agent 不一定听话：可能包 ```json 代码块、可能前后带客套话。所以先剥代码块，
  * 再取第一个 `{` 到最后一个 `}`。任何一步失败都返回 null，由调用方落回通用解释。
  */
-export function parseInterpretation(raw: string, stick: FortuneStick): Interpretation | null {
+export function parseInterpretation(
+  raw: string,
+  stick: FortuneStick,
+  language: Language,
+): Interpretation | null {
+  const preset = stickText(stick, language);
   const unfenced = raw.replace(/```(?:json)?/gi, '').trim();
   const start = unfenced.indexOf('{');
   const end = unfenced.lastIndexOf('}');
@@ -188,45 +212,93 @@ export function parseInterpretation(raw: string, stick: FortuneStick): Interpret
   if (!answer) return null;
 
   return {
-    meaning: pick('meaning') || stick.meaning,
+    meaning: pick('meaning') || preset.meaning,
     answer,
     notice: pick('notice') || '',
-    action: pick('action') || stick.action,
+    action: pick('action') || preset.action,
     source: 'ai',
+    language,
   };
 }
 
 /* ───────── 提示词 ───────── */
 
-function stickBlock(stick: FortuneStick): string {
+function stickBlock(stick: FortuneStick, language: Language): string {
+  const text = stickText(stick, language);
+  const level = LEVEL_LABEL[language][stick.level];
+  if (language === 'en') {
+    return [
+      `No. ${stick.no} · ${level} · ${text.title}`,
+      `Couplet: ${text.poem[0]} / ${text.poem[1]}`,
+      `What this stick fixedly means: ${text.meaning}`,
+      `This stick's general reading: ${text.general}`,
+    ].join('\n');
+  }
   return [
-    `第 ${stick.no} 签 · ${stick.level} · ${stick.title}`,
-    `签诗：${stick.poem[0]}，${stick.poem[1]}`,
-    `这支签的固定含义：${stick.meaning}`,
-    `这支签的通用解释：${stick.general}`,
+    `第 ${stick.no} 签 · ${level} · ${text.title}`,
+    `签诗：${text.poem[0]}，${text.poem[1]}`,
+    `这支签的固定含义：${text.meaning}`,
+    `这支签的通用解释：${text.general}`,
   ].join('\n');
 }
 
-const TONE_BY_LEVEL: Record<FortuneStick['level'], string> = {
-  上上签: '这是上上签，可以谈机会、谈顺势而为，同时提醒他别因为顺利而松掉原来的习惯。',
-  上签: '这是上签，基调偏正面，谈可以往前推一步的地方，但不要许诺结果。',
-  中签: '这是中签，基调中性，谈节奏、条件和需要先弄清楚的事。',
-  下签: '这是下签，谈放慢脚步、观察和调整。绝对不要使用吓人的说法，不要预言坏结果。',
+const TONE_BY_LEVEL: Record<Language, Record<FortuneStick['level'], string>> = {
+  zh: {
+    上上签: '这是上上签，可以谈机会、谈顺势而为，同时提醒他别因为顺利而松掉原来的习惯。',
+    上签: '这是上签，基调偏正面，谈可以往前推一步的地方，但不要许诺结果。',
+    中签: '这是中签，基调中性，谈节奏、条件和需要先弄清楚的事。',
+    下签: '这是下签，谈放慢脚步、观察和调整。绝对不要使用吓人的说法，不要预言坏结果。',
+  },
+  en: {
+    上上签:
+      'This is the best level. You may talk about opportunity and about moving with the current, while reminding them not to drop the habits that got them here just because things got easier.',
+    上签:
+      'This is a good level. Keep the tone positive and talk about where they can push one step further, but promise no outcome.',
+    中签:
+      'This is a middling level. Keep the tone neutral and talk about pacing, conditions, and what needs establishing first.',
+    下签:
+      'This is the lowest level. Talk about slowing down, observing and adjusting. Stay warm and never frightening: no alarming language, and no predicting a bad outcome.',
+  },
 };
 
-export function buildInterpretPrompt(question: string, stick: FortuneStick): string {
+export function buildInterpretPrompt(
+  question: string,
+  stick: FortuneStick,
+  language: Language,
+): string {
+  if (language === 'en') {
+    return `You are the stick-reader for Fortune Printer. Someone has just drawn a stick. Write them a reading that answers the question they actually asked.
+
+[Their question]
+${question}
+
+[The stick they drew] (fixed by the machine, not changeable, and do not quote the couplet back at them)
+${stickBlock(stick, 'en')}
+
+[How to write it]
+1. Warm, specific and conversational, like a friend who understands their situation. No mystical register, no fortune-teller voice.
+2. Do not predict that anything will certainly happen. Never write "you will definitely", "inevitably" or "it is fated". What you give is a way of seeing the question and advice they can act on.
+3. ${TONE_BY_LEVEL.en[stick.level]}
+4. If the question touches health, money or legal decisions, help them see which conditions matter rather than ruling on it, and suggest a professional where that is the honest answer.
+5. Reply in English throughout. No markdown headings and no bullet characters.
+
+[Output format]
+Output one JSON object and nothing else. Do not wrap it in a code block:
+{"meaning":"one sentence on what this stick means for their question, plain words, under 30 words","answer":"written against their actual question, 60 to 110 words","notice":"one angle they may be overlooking, under 30 words","action":"one concrete thing they can do today, under 20 words"}`;
+  }
+
   return `你是「问一签」的解签人。用户刚刚求得一支签，请结合他的问题写一份解读。
 
 【用户的问题】
 ${question}
 
 【抽中的签】（由系统抽定，不可更改，也不要在回答里重复签诗原文）
-${stickBlock(stick)}
+${stickBlock(stick, 'zh')}
 
 【写作要求】
 1. 语气温和、具体、口语化，像一个了解他处境的朋友，不要文言腔。
 2. 不预言必然发生的事。不要出现「你一定会」「必然」「注定」这类说法；给的是看问题的角度和能执行的建议。
-3. ${TONE_BY_LEVEL[stick.level]}
+3. ${TONE_BY_LEVEL.zh[stick.level]}
 4. 如果问题涉及健康、财务、法律等重要决定，帮他梳理该考虑哪些条件，不下武断结论，必要时建议咨询专业人士。
 5. 全部用中文，不要使用 markdown 标题或列表符号。
 
@@ -239,12 +311,33 @@ export function buildFollowUpPrompt(
   reading: Reading,
   interpretation: Interpretation,
   question: string,
+  language: Language,
 ): string {
+  if (language === 'en') {
+    return `You are answering a follow-up about the same stick, inside Fortune Printer.
+
+[Background, always refer to this]
+Their original question: ${reading.question}
+The stick they drew: ${stickBlock(reading.stick, 'en')}
+The reading you already gave:
+- Meaning: ${interpretation.meaning}
+- On their question: ${interpretation.answer}
+- Worth noticing: ${interpretation.notice}
+- Suggested: ${interpretation.action}
+
+[Rules]
+This turn is a follow-up. It does not draw a new stick, and it does not change this stick's level or the reading above. Keep talking about the same stick.
+Keep the answer under 120 words. Say it directly, do not restate the above, no JSON, no markdown. Reply in English.
+
+[Their follow-up]
+${question}`;
+  }
+
   return `你正在「问一签」里回答用户对同一支签的追问。
 
 【背景，请始终参考】
 他最初的问题：${reading.question}
-他抽到的签：${stickBlock(reading.stick)}
+他抽到的签：${stickBlock(reading.stick, 'zh')}
 你已经给出的解读：
 · 签意：${interpretation.meaning}
 · 回应：${interpretation.answer}
@@ -355,27 +448,30 @@ export async function interpretReading(env: Env, id: string): Promise<Reading> {
       cred,
       // 由存储行推导，不用随机值：重试同一次求签不会被当成新的一轮计费。
       `qianyi-${reading.id}-interpret`,
-      buildInterpretPrompt(reading.question, reading.stick),
+      buildInterpretPrompt(reading.question, reading.stick, reading.language),
       { contextId, taskId: null },
       INTERPRET_TIMEOUT_MS,
     );
     contextId = answer.contextId ?? contextId;
     taskId = null;
-    const parsed = parseInterpretation(answer.text, reading.stick);
+    const parsed = parseInterpretation(answer.text, reading.stick, reading.language);
     if (parsed) {
       interpretation = parsed;
       status = 'interpreted';
     } else {
-      interpretation = fallbackInterpretation(reading.stick);
+      interpretation = fallbackInterpretation(reading.stick, reading.language);
       status = 'failed';
-      error = '解签内容没有按预期返回，先给你这支签的通用解释。';
+      // 存码不存句子：文案在浏览器那边，跟着界面语言走（src/shared/i18n）。
+      error = 'unparseable';
     }
   } catch (cause) {
-    interpretation = fallbackInterpretation(reading.stick);
+    interpretation = fallbackInterpretation(reading.stick, reading.language);
     status = 'failed';
+    // HttpError 有稳定的 code，存码；agent 那边抛回来的是真正动态的文字，
+    // 脱敏后原样存 —— 浏览器认不出来就直接显示它。
     error =
       cause instanceof HttpError
-        ? cause.message
+        ? cause.code
         : cause instanceof Error
           ? safeErrorText(cause.message)
           : safeErrorText(cause);
@@ -446,7 +542,7 @@ export async function handleFollowUp(options: {
   // 会失败的事都放在开始流式之前，这样错误还能以正常的 JSON 状态码返回。
   const cred = await pickInterpreter(env);
   const userMessageId = await insertFollowUp(env, readingId, { role: 'user', content: message });
-  const prompt = buildFollowUpPrompt(reading, reading.interpretation, message);
+  const prompt = buildFollowUpPrompt(reading, reading.interpretation, message, reading.language);
 
   const { readable, writable } = new TransformStream();
   const writer = writable.getWriter();
