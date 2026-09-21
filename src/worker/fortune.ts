@@ -188,34 +188,93 @@ export function parseInterpretation(
   language: Language,
 ): Interpretation | null {
   const preset = stickText(stick, language);
-  const unfenced = raw.replace(/```(?:json)?/gi, '').trim();
+  // Manyfold agents are plain-text A2A agents. The prompt asks for JSON, but the
+  // agent may still return a perfectly useful prose answer (or JSON with a
+  // slightly different envelope). Prefer the structured form, then degrade
+  // gracefully to the text the agent actually returned instead of throwing away
+  // a valid reading and showing the generic fallback.
+  const unfenced = raw.replace(/```(?:json|text|plain)?/gi, '').replace(/```/g, '').trim();
   const start = unfenced.indexOf('{');
   const end = unfenced.lastIndexOf('}');
-  if (start < 0 || end <= start) return null;
 
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(unfenced.slice(start, end + 1));
-  } catch {
-    return null;
+  let parsed: unknown = null;
+  if (start >= 0 && end > start) {
+    try {
+      parsed = JSON.parse(unfenced.slice(start, end + 1));
+    } catch {
+      // Some models emit typographic JSON quotes. This is deliberately a small
+      // compatibility pass; arbitrary repair would risk changing the answer.
+      try {
+        parsed = JSON.parse(
+          unfenced
+            .slice(start, end + 1)
+            .replace(/[“”]/g, '"')
+            .replace(/[‘’]/g, "'"),
+        );
+      } catch {
+        parsed = null;
+      }
+    }
   }
-  if (!parsed || typeof parsed !== 'object') return null;
-  const value = parsed as Record<string, unknown>;
 
-  const pick = (key: keyof typeof FIELD_LIMITS): string => {
-    const text = typeof value[key] === 'string' ? (value[key] as string).trim() : '';
-    return text.slice(0, FIELD_LIMITS[key]);
+  const findObject = (value: unknown): Record<string, unknown> | null => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+    const object = value as Record<string, unknown>;
+    if (
+      Object.keys(object).some((key) => ['answer', 'response', 'content', 'text'].includes(key))
+    ) {
+      return object;
+    }
+    for (const key of ['data', 'result', 'output']) {
+      const nested = findObject(object[key]);
+      if (nested) return nested;
+    }
+    return null;
   };
 
-  const answer = pick('answer');
-  // answer 是这一页的主体，它空了就等于没解签 —— 宁可落回通用解释。
-  if (!answer) return null;
+  const value = findObject(parsed);
 
+  const pick = (source: Record<string, unknown> | null, keys: string[], limit: number): string => {
+    if (!source) return '';
+    const text = keys
+      .map((key) => source[key])
+      .find((candidate): candidate is string => typeof candidate === 'string' && candidate.trim().length > 0);
+    const trimmed = text?.trim() ?? '';
+    return trimmed.slice(0, limit);
+  };
+
+  const answer = pick(value, ['answer', 'response', 'content', 'text'], FIELD_LIMITS.answer);
+  if (answer) {
+    return {
+      meaning: pick(value, ['meaning', 'summary'], FIELD_LIMITS.meaning) || preset.meaning,
+      answer,
+      notice: pick(value, ['notice', 'caveat', 'insight'], FIELD_LIMITS.notice),
+      action:
+        pick(value, ['action', 'suggestion', 'nextStep'], FIELD_LIMITS.action) || preset.action,
+      source: 'ai',
+      language,
+    };
+  }
+
+  // A parsed JSON object that explicitly lacks a usable answer is not prose;
+  // keep the old safety behaviour and let the caller show the preset reading.
+  if (value) return null;
+
+  // A response containing a JSON-looking brace pair but invalid JSON is also
+  // more likely a malformed structured response than an intentional prose one.
+  if (start >= 0 || end >= 0) return null;
+
+  // Last resort: a normal prose answer is still an AI reading. Keep the fixed
+  // meaning/action and place the agent's response in the main answer field.
+  const prose = unfenced.trim();
+  if (!prose) return null;
+  const text = prose.slice(0, FIELD_LIMITS.answer);
+  if (!text) return null;
   return {
-    meaning: pick('meaning') || preset.meaning,
-    answer,
-    notice: pick('notice') || '',
-    action: pick('action') || preset.action,
+    meaning: preset.meaning,
+    answer: text,
+    notice: '',
+    action: preset.action,
     source: 'ai',
     language,
   };
