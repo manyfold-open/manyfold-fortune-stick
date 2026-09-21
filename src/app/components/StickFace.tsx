@@ -1,8 +1,13 @@
 /**
  * 一张签纸。揭晓、结果页和求签记录都用同一个组件，所以一支签在任何地方长得都一样。
  *
- * 版式照着老派的运势纸票：上面是牌记和纹章，中间一格大字等级，一格四字签名，
- * 下面一格直排的签诗与签意。等级只决定颜色（`data-tone`），不改变任何文字。
+ * 版式照着老派的运势纸票：上面是牌记，中间一格大字等级，一格四字签名，下面
+ * 一格直排的签诗与签意。等级只决定颜色（`data-tone`），不改变任何文字。
+ *
+ * 这张纸是照着「走纸时要整张露得出来」裁的：机身底下只有 260px 上下，原来的
+ * 签有 530px，永远只能吐出一半。为此撤掉了三样纯装饰的东西 ——
+ * 牌记下的菱形纹章（58px）、牌记下面那行 WEN YI QIAN 拉丁副标，以及页脚那句
+ * 「签为参考，路要自己走」（它和整页页脚重复了一遍）。内容一个字没动。
  *
  * small 版给求签记录用：同样的信息，压成一行，不排直排文字。
  *
@@ -18,18 +23,6 @@
 import type { Language } from '../../shared/lang';
 import { LEVEL_LABEL, STICK_COUNT, stickText, type FortuneStick } from '../../shared/sticks';
 import { LEVEL_TONE } from '../constants';
-
-function Emblem() {
-  return (
-    <svg className="slip-emblem" viewBox="0 0 64 64" aria-hidden focusable="false">
-      <path d="M32 2 62 32 32 62 2 32Z" className="slip-emblem-field" />
-      <path d="M32 9 55 32 32 55 9 32Z" className="slip-emblem-line" />
-      <path d="M32 16 48 32 32 48 16 32Z" className="slip-emblem-line" />
-      <rect x="24" y="24" width="16" height="16" rx="2" className="slip-emblem-core" />
-      <path d="M32 0 32 12M32 52 32 64M0 32 12 32M52 32 64 32" className="slip-emblem-ray" />
-    </svg>
-  );
-}
 
 export default function StickFace(props: {
   stick: FortuneStick;
@@ -57,8 +50,6 @@ export default function StickFace(props: {
     <article className="slip" data-tone={tone.key} data-lang={language}>
       <header className="slip-head">
         <p className="slip-brand">问一签</p>
-        <p className="slip-brand-sub">WEN YI QIAN · FORTUNE PRINTER</p>
-        <Emblem />
       </header>
 
       <div className="slip-cell slip-cell-level">
@@ -82,9 +73,6 @@ export default function StickFace(props: {
         </div>
       </div>
 
-      <footer className="slip-foot">
-        {en ? 'FORTUNE PRINTER · A REFERENCE, NOT A ROUTE' : '问一签 · 签为参考，路要自己走'}
-      </footer>
     </article>
   );
 }

@@ -47,6 +47,8 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
   const [restoring, setRestoring] = useState(true);
   const timers = useRef<number[]>([]);
   const stopMotor = useRef<(() => void) | null>(null);
+  /** 输入框本体。例句在机器下方，填完字要把光标送回这里，所以 ref 归这一层。 */
+  const askField = useRef<HTMLTextAreaElement | null>(null);
 
   const clearTimers = useCallback(() => {
     timers.current.forEach((id) => window.clearTimeout(id));
@@ -224,7 +226,12 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
         {printing ? (
           <p className="asked">{question}</p>
         ) : (
-          <QuestionForm value={question} onChange={setQuestion} onSubmit={() => void draw()} />
+          <QuestionForm
+            value={question}
+            onChange={setQuestion}
+            onSubmit={() => void draw()}
+            inputRef={askField}
+          />
         )}
       </div>
 
@@ -239,6 +246,35 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
         >
           {sheet && <StickFace stick={sheet.stick} language={sheet.language} />}
         </Printer>
+      </div>
+
+      {/* 例句：在机器下方，不在提问和机器中间 —— 夹在中间会把本该挨着的两样推开。
+          点一句就把它填进输入框，光标跟着回到框里，接着改还是直接按印都行。
+          例句跟着界面语言：它们是机器给的提示，不是已经印出来的纸；点了哪一句
+          就等于用那种语言提问，这一局的语言也就跟着定了（detectLanguage）。
+
+          写了字就让它们退场，但**不卸载** —— 卸载的话这一块高度归零，整台机器会
+          往下跳。给容器写死一个 min-height 是猜不准的：三句话在窄屏上会换行，
+          高度跟着视口变。留在原地淡出，高度就永远是它自己那么高。
+          退场时按钮要一起 disabled，否则看不见却还能被 Tab 选中。 */}
+      <div className="suggest-slot">
+        <ul className={`suggestions${typed === 0 ? '' : ' spent'}`} aria-hidden={typed !== 0}>
+          {[t('example1'), t('example2'), t('example3')].map((example) => (
+            <li key={example}>
+              <button
+                type="button"
+                className="text-action"
+                disabled={typed !== 0}
+                onClick={() => {
+                  setQuestion(example);
+                  askField.current?.focus();
+                }}
+              >
+                {example}
+              </button>
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   );

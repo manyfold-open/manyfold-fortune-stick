@@ -2,8 +2,8 @@
  * 外壳：加载一次 /api/state，用 location.hash 在三个页面之间切换（没有 router 依赖），
  * 并在部署设了密码而本浏览器还没给出时升起密码门。
  *
- * 外壳自己几乎不占地方 —— 一行牌记、一行页脚，中间全是机器和纸。宽屏上两侧再立
- * 两条竖排的铭牌，把版面撑开，免得所有东西挤在中间一小条里（窄屏不显示）。
+ * 外壳自己几乎不占地方 —— 一行牌记、一行页脚，中间全是机器和纸。两侧曾经立过
+ * 两条竖排的装饰铭牌，撤掉了：它们把视线往外拉，而这一屏要看的只有中间那台机器。
  *
  * 设置页只留 URL 入口（#settings），主界面上不放按钮 —— 它是部署者用的，
  * 不是玩家流程的一部分。
@@ -151,13 +151,6 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
       {route === 'game' && (
         <FortuneGame prefs={prefs} interpreterReady={state.interpreterReady} />
       )}
-
-      <span className="rail rail-left" aria-hidden>
-        {t('railLeft')}
-      </span>
-      <span className="rail rail-right" aria-hidden>
-        {t('railRight')}
-      </span>
 
       <footer className="footer">
         <button

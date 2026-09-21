@@ -105,27 +105,6 @@ body {
   flex-direction: column;
 }
 
-/* 两侧的竖排铭牌：宽屏上把版面撑到两边，窄屏没有它们的位置。 */
-.rail {
-  position: absolute;
-  top: 132px;
-  bottom: 96px;
-  display: none;
-  text-align: center;
-  writing-mode: vertical-rl;
-  font: 10px/1 var(--mono);
-  letter-spacing: 0.42em;
-  color: var(--on-ground-3);
-  pointer-events: none;
-}
-
-.rail-left { left: 10px; }
-.rail-right { right: 10px; }
-
-@media (min-width: 1000px) {
-  .rail { display: block; }
-}
-
 /* ── 牌记与页脚 ── */
 
 .topbar {
@@ -283,6 +262,18 @@ body {
 
 /* ── 舞台：整页的底色和纹样都挂在这里 ── */
 
+/* 上下不等的内边距是在配平视觉留白。要平的不是内容盒，是**看得见的东西**之间
+   的距离：上边第一眼看到的是裁切线（.ask-zone，它上面还压着 .ask-slot 预留的
+   空高），下边是那三句例句。两头都不是内容盒的边，所以光靠 center 平不了。
+
+   内容盒的顶在 T+上、高 H−上−下，内容再在里面居中，于是
+   内容顶 = T + 上 + (H − 上 − 下 − C) / 2。对上求导是 +1/2、对下是 −1/2：
+   **加 padding-bottom 内容往上，加 padding-top 内容往下。**
+   （反过来用的话两边的差会翻倍而不是归零 —— 这里连着翻过两次车，别再推了，
+   要改就照这个导数算，或者直接量 gapAbove / gapBelow。）
+
+   上多下少 = 内容坐低了，要往上。量出来上 72.6 / 下 29.6，差 43，往上推 21.5
+   就平 —— 内容顶要减 43，所以 padding-bottom 加 43，从 24 到 67。 */
 .stage {
   flex: 1;
   display: flex;
@@ -290,7 +281,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  padding: 4px 0 10px;
+  padding: 0 0 67px;
 }
 
 .stage::before {
@@ -311,9 +302,18 @@ body {
   z-index: -1;
   pointer-events: none;
   opacity: 0;
-  animation: pattern-in 1.2s ease forwards;
+  /* 淡入一次，然后永远极慢地爬。位移正好是一个图案周期（76px），
+     所以循环处接得上；动的是 background-position 而不是元素本身，
+     元素是 position:fixed 铺满屏的，移动它会把边露出来。 */
+  animation:
+    pattern-in 1.2s ease forwards,
+    pattern-drift 150s linear infinite;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='76' height='76' viewBox='0 0 76 76'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='.42' stroke-width='1'%3E%3Cpath d='M38 3 73 38 38 73 3 38Z'/%3E%3Ccircle cx='38' cy='38' r='13'/%3E%3Crect x='31' y='31' width='14' height='14'/%3E%3Cpath d='M0 0 9 9M76 0 67 9M0 76 9 67M76 76 67 67'/%3E%3C/g%3E%3C/svg%3E");
   background-size: 76px 76px;
+}
+
+@keyframes pattern-drift {
+  to { background-position: 76px 76px; }
 }
 
 @keyframes pattern-in {
@@ -329,13 +329,18 @@ body {
 
 /* ── 提问：只有字，没有框 ── */
 
+/* 高度按**两行**问题预留（实测：一行 128、两行 172）。
+   按一行收的话，问题一折行这块就长 44px，舞台是居中的，机器跟着往下掉 22px ——
+   点下面任何一句例句都会看到这一跳，第三句本来就是两行。
+   printed 态要和它同高 —— 不同高的话，按下印键的瞬间机器也会跳。
+   超过两行还是会长，但那是自己打出来的长句，不是点一下就撞上的。 */
 .ask-slot {
   width: 100%;
-  min-height: 208px;
+  min-height: 172px;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  padding: 8px 0 22px;
+  padding: 8px 0 18px;
 }
 
 .ask {
@@ -436,21 +441,54 @@ body {
 
 .ask-counter.over { color: var(--accent); }
 
-.examples {
+/* ── 机器下方的三句例句 ── */
+
+/* 例句写了字就退场，但它一直在这儿占着位置（见下面的 .spent）—— 所以这里
+   不需要猜一个 min-height。猜也猜不准：三句话在窄屏上会换行。 */
+.suggest-slot {
+  width: 100%;
+  padding-top: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.suggestions {
   list-style: none;
-  margin: 10px 0 0;
+  margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0;
+  animation: suggest-in 0.4s ease both;
 }
 
-.examples .text-action {
+.suggestions .text-action {
   font-size: 13px;
-  line-height: 1.6;
+  line-height: 1.7;
   padding: 2px 0;
-  opacity: 0.58;
+  opacity: 0.5;
+}
+
+.suggestions .text-action:hover:not(:disabled),
+.suggestions .text-action:focus-visible {
+  opacity: 0.92;
+}
+
+@keyframes suggest-in {
+  from { opacity: 0; transform: translateY(4px); }
+}
+
+/* 退场：淡掉但继续占位。用 visibility/display 会把高度收掉，机器就会跳。 */
+.suggestions.spent {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+@media (max-width: 720px) {
+  .suggest-slot { padding-top: 16px; }
 }
 
 .asked {
@@ -463,7 +501,7 @@ body {
   margin-inline: auto;
 }
 
-.ask-slot.printed { min-height: 208px; }
+.ask-slot.printed { min-height: 172px; }
 
 /* ── 打印机 ── */
 
@@ -471,20 +509,34 @@ body {
   width: 100%;
 }
 
+/* 机器是钉住的，走纸时一动不动。
+   这里有个躲不掉的算术：机身 338px + 整张签 550px 上下 = 近 890px，而顶栏到
+   页脚之间只有 780px 左右（矮屏更少）。三件事只能成立两件 ——
+   ①整张签印完 ②机器不动 ③不超出画面。
+   取的是 ①②：纸照实印完，长出来的部分越过视窗下缘。这和原来的毛病不是一回事：
+   原来是在画面正中一条硬边切断、下面是底色（只印出 43%），现在没有切口，
+   只是一屏看不完，紧接着出纸动画就把它带到结果页。 */
 .printer {
+  position: relative;
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
+/* 这里不放 filter。
+   drop-shadow() 描的是整条轮廓线，不管偏移多少都会沿着机身的每一处圆角贴一圈
+   黑边 —— 那读起来是描边，不是投影，圆角上尤其明显。地上的影子有自己的形状和
+   方向，所以它是 Printer.tsx 里第一个画的那个椭圆。 */
 .printer-body {
   position: relative;
   width: min(100%, 520px, 74vh);
-  filter: drop-shadow(0 22px 34px rgba(0, 0, 0, 0.28));
 }
 
+/* 投影画在 viewBox 外面（见 Printer.tsx 顶上那段），这里得让它露出来。
+   框外的内容不占布局，所以机器底下不会因此多出一截空白。 */
 .printer-svg {
+  overflow: visible;
   display: block;
   width: 100%;
   height: auto;
@@ -494,25 +546,16 @@ body {
   transform-origin: 170px 60px;
 }
 
-.printer-running .printer-tray {
+/* 走纸时进纸盘跟着机器抖。这里等的类名必须和 Printer.tsx 发出来的对上 ——
+   组件发的是 `printer-${state}`，也就是 printer-printing。曾经写成
+   .printer-running，那个类没有任何地方会加上，整段动画是死的。 */
+.printer-printing .printer-tray {
   animation: tray-shudder 0.22s linear infinite;
 }
 
 @keyframes tray-shudder {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(0.7px); }
-}
-
-.silk {
-  font: 6.5px var(--mono);
-  letter-spacing: 0.14em;
-  fill: var(--case-shadow);
-}
-
-.plate {
-  font: 700 11px var(--serif);
-  letter-spacing: 0.26em;
-  fill: rgba(23, 22, 26, 0.62);
 }
 
 .led { fill: var(--case-shadow); opacity: 0.55; }
@@ -523,49 +566,107 @@ body {
   50% { opacity: 0.25; }
 }
 
-/* 屏：这一步该做什么，只在这里说 */
+/* 屏：这一步该做什么，只在这里说。
+   三层叠出「玻璃底下亮着」：inset 的暗压住四边（字是沉在玻璃下面的，不是浮在
+   表面），外面一圈同色的光溢到框上，扫描线单独放到 ::before 上好让它慢慢爬。 */
 .lcd {
   position: absolute;
-  left: 41.8%;
-  top: 34.6%;
-  width: 47.6%;
-  height: 11.2%;
+  /* 屏玻璃在 viewBox(348×214) 里是 155,91,154,24 */
+  left: 44.54%;
+  top: 42.52%;
+  width: 44.25%;
+  height: 11.21%;
   display: flex;
   align-items: center;
   gap: 6px;
   padding: 0 7px;
   overflow: hidden;
-  background-image: repeating-linear-gradient(
-    0deg,
-    rgba(255, 255, 255, 0.05) 0 1px,
-    transparent 1px 3px
-  );
   font: 600 clamp(8px, 2.5vw, 10.5px) / 1 var(--mono);
   letter-spacing: 0.06em;
   color: var(--lcd-on);
   text-shadow: 0 0 6px rgba(121, 239, 170, 0.5);
+  box-shadow:
+    inset 0 0 9px rgba(0, 0, 0, 0.75),
+    0 0 10px rgba(121, 239, 170, 0.16);
+}
+
+/* 扫描线：暗线而不是亮线 —— 点阵屏的行距是不发光的那一条。
+   位移正好等于一个条纹周期（3px），所以循环处接得上，看不出跳。 */
+.lcd::before {
+  content: '';
+  position: absolute;
+  inset: -4px 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.26) 0 1px,
+    transparent 1px 3px
+  );
+  animation: lcd-scan 3.2s linear infinite;
+}
+
+@keyframes lcd-scan {
+  to { transform: translateY(3px); }
 }
 
 .lcd.alert {
   color: var(--lcd-warn);
   text-shadow: 0 0 6px rgba(243, 194, 79, 0.5);
+  box-shadow:
+    inset 0 0 9px rgba(0, 0, 0, 0.75),
+    0 0 10px rgba(243, 194, 79, 0.18);
 }
 
+/* 状态码换的时候闪一下，像一块真的点阵屏在刷新。
+   不给 fill —— 动画跑完自己退回上面那条基础样式，所以 animation 被关掉
+   （.shell.calm）时它就是一个静止的码。 */
 .lcd-code {
   flex: none;
   opacity: 0.78;
   letter-spacing: 0.1em;
+  animation: code-in 0.3s steps(3);
 }
 
+@keyframes code-in {
+  0% { opacity: 0.08; }
+  40% { opacity: 1; }
+  70% { opacity: 0.28; }
+}
+
+/* 打印中这一档压过上面那条（权重更高）：码一直在慢慢闪，机器在忙。 */
+.printer-printing .lcd-code {
+  animation: code-busy 0.8s steps(2) infinite;
+}
+
+@keyframes code-busy {
+  50% { opacity: 0.4; }
+}
+
+/* .lcd-text 自己是 aria-live 区域，必须一直在，不能拿 key 去重挂 ——
+   否则读屏会漏播或重播。所以打字动画挂在里面那层 .lcd-typed 上，
+   换句话时只重挂内层。 */
 .lcd-text {
   min-width: 0;
   flex: 1;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   font-family: var(--sans);
   font-weight: 500;
   letter-spacing: 0.04em;
+}
+
+/* 一个字一个字打出来。用 clip-path 而不是 width：百分比是按元素自己的盒子
+   算的，中英文、等宽非等宽都一样，不用知道字符宽度。
+   基础样式不写 clip-path —— 终态就是「全部露出来」，animation 一关就是它。 */
+.lcd-typed {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  animation: lcd-type 0.48s steps(20) both;
+}
+
+@keyframes lcd-type {
+  from { clip-path: inset(0 100% 0 0); }
 }
 
 .lcd-caret {
@@ -583,21 +684,32 @@ body {
 /* 面板上那颗键 —— 页面上唯一的实体控件 */
 .print-key {
   position: absolute;
-  left: 55.9%;
-  top: 55.1%;
-  width: 33.5%;
-  height: 15.9%;
+  /* 键在 viewBox(348×214) 里是 198,135,116,32，坑是 194,131,124,40 */
+  left: 56.9%;
+  top: 63.08%;
+  width: 33.33%;
+  height: 14.95%;
   display: grid;
   place-items: center;
   padding: 0;
   border: 0;
   border-radius: 999px;
   cursor: pointer;
-  background: linear-gradient(180deg, var(--case-hi) 0%, var(--case-lo) 100%);
+  /* 键帽是鼓的，不是斜的：顶面几乎不变色，到下缘才急着收暗。
+     --case-hi 和 --case 本来就很近，光靠渐变分不出体积 —— 鼓起来那一下
+     主要由下面两道 inset 负责：上沿一条白高光，下沿一圈卷下去的暗。 */
+  background: linear-gradient(
+    180deg,
+    var(--case-hi) 0%,
+    var(--case-hi) 40%,
+    var(--case) 78%,
+    var(--case-lo) 100%
+  );
   box-shadow:
     0 3px 0 var(--case-shadow),
     0 7px 12px rgba(0, 0, 0, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -5px 7px rgba(108, 88, 58, 0.26);
   transition: transform 0.09s ease, box-shadow 0.09s ease;
 }
 
@@ -649,17 +761,68 @@ body {
 
 /* 出纸：只放出纸头那一截。走纸会把下面的内容顶开，顶太多整台机器就会往上飘，
    所以高度写死 —— 反正整张签紧接着在结果页上铺开。 */
+/* 走纸。
+   steps() 是这里的关键：真机是步进电机送纸，一行一格地顶出来，不是匀速滑出。
+   原来用的 cubic-bezier 出来是一块布被拉开，机械感全没了。26 格 ≈ 一格一行。 */
+/* 绝对定位，脱离文档流 —— 纸长到 550px 也不会把页脚顶下去、把整台机器挤歪。
+   left/right 归零配 margin auto 就是居中，不用 transform（出纸那段动画要用
+   transform，占了就打架）。 */
 .printer-out {
+  position: absolute;
+  top: calc(100% - 1px);
+  left: 0;
+  right: 0;
   width: 67%;
   max-width: 320px;
-  margin: -1px auto 0;
+  margin: 0 auto;
   height: 0;
   overflow: hidden;
-  transition: height 1.9s cubic-bezier(0.18, 0.72, 0.3, 1);
+  z-index: 2;
+  transition: height 1.9s steps(26, end);
 }
 
+/* 走完整张。--feed-h 是 Printer.tsx 在这一帧绘制前量好写进来的实际签高；
+   量不到就退回原来那个写死的值，至少不会一格都不走。 */
 .printer-out.feeding {
-  height: 236px;
+  height: var(--feed-h, 236px);
+  /* 封顶在视口下缘（Printer.tsx 量的）。没有它，纸长过屏幕时会把文档撑高，
+     走纸那 1.9 秒会多出一根滚动条，整页横着抖一下。 */
+  max-height: var(--feed-max, 100dvh);
+}
+
+/* 出纸口投在纸上的影：纸刚从那道缝里出来，缝的上唇压着它。
+   贴在窗口顶上 —— 那里正是纸和机器接上的地方。 */
+.printer-out::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 13px;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(rgba(38, 30, 18, 0.34), transparent);
+}
+
+/* 印字头：窗口的下沿就是正在成像的那一行，压一道亮线在那儿。
+   只在走纸时出现 —— 停下来还亮着就成了纸上的一条印痕。 */
+.printer-out.feeding::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  z-index: 3;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 246, 214, 0.9) 12%,
+    rgba(255, 252, 240, 0.95) 50%,
+    rgba(255, 246, 214, 0.9) 88%,
+    transparent
+  );
 }
 
 .printer-slot.ejecting .printer-body {
@@ -691,11 +854,16 @@ body {
 }
 
 /* .sheet 自己没有宽度上限，原来靠 .sheet-stack 兜着。它现在挪到右栏里了，
-   上限得由两个栏位来给，数值跟 .sheet-stack / .share-panel 保持同一档。 */
+   上限得由两个栏位来给，数值跟 .sheet-stack / .share-panel 保持同一档。
+
+   480 收到 400：签纸压到 308px 高之后，520 宽的卡片变成一张横幅，直排的签诗
+   缩在正中、两边全是空白。收窄之后才回到「一张票」的比例。
+   两栏必须同宽 —— 窄屏上它们是上下叠成一卷纸的，解签那张顶上的撕线
+   （.sheet::before）一旦比签纸宽，就会探到纸外面去。 */
 .result-col-slip,
 .result-col-side {
   width: 100%;
-  max-width: 480px;
+  max-width: 400px;
 }
 
 /* 并排的门槛跟本文件其它规则对齐，同样是 1000px。
@@ -703,7 +871,7 @@ body {
    两栏分完右边不到 280px —— 解签正文、三颗按钮和追问输入框都塞不下。 */
 @media (min-width: 1000px) {
   .result-col-slip,
-  .result-col-side { max-width: 520px; }
+  .result-col-side { max-width: 420px; }
 
   .result-deck.has-interpretation {
     display: grid;
@@ -726,28 +894,41 @@ body {
 
 /* ── 签纸 ── */
 
+/* 这里不再淡入。
+   签纸在走纸那 1.9 秒里已经揭晓过一次了，结果页再淡入一次就是同一张纸揭两遍，
+   中间那一下断得很明显。现在结果页直接就位，那一刻的分量交给等级的落印
+   （.sheet-stack .slip-level）。 */
 .sheet-stack {
   width: 100%;
-  max-width: 480px;
-  animation: sheet-in 0.6s cubic-bezier(0.2, 0.8, 0.3, 1) both;
-}
-
-@keyframes sheet-in {
-  from { opacity: 0; transform: translateY(16px); }
+  max-width: 400px;
 }
 
 .slip {
+  position: relative;
   display: block;
   background: var(--paper);
   color: var(--ink);
   font-family: var(--serif);
-  padding: 20px 18px 12px;
+  padding: 14px 16px 10px;
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.22);
 }
 
+/* 热敏纸的网点。极淡 —— 它不该被看见，只该让这张纸不像一块纯色。 */
+.slip::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(23, 22, 26, 0.05) 0.5px, transparent 0.5px);
+  background-size: 3px 3px;
+}
+
+/* 整张签的高度是被出纸口那点地方逼出来的：机身底下只有 260px 上下，原来的
+   签有 530px，走纸时永远只能露出一半。下面每一处的紧缩都是为了这个数 ——
+   改动时先看一眼 .printer-out 那段的注释，别把省下来的又还回去。 */
 .slip-head {
   text-align: center;
-  padding-bottom: 12px;
+  padding-bottom: 8px;
 }
 
 .slip-brand {
@@ -757,25 +938,6 @@ body {
   letter-spacing: 0.34em;
   text-indent: 0.34em;
 }
-
-.slip-brand-sub {
-  margin: 4px 0 0;
-  font: 7.5px/1 var(--mono);
-  letter-spacing: 0.22em;
-  color: var(--ink-3);
-}
-
-.slip-emblem {
-  width: 46px;
-  height: 46px;
-  margin-top: 12px;
-  color: var(--tone);
-}
-
-.slip-emblem-field { fill: currentColor; opacity: 0.14; }
-.slip-emblem-line { fill: none; stroke: currentColor; stroke-width: 1.4; }
-.slip-emblem-core { fill: currentColor; }
-.slip-emblem-ray { stroke: currentColor; stroke-width: 1.4; opacity: 0.5; }
 
 .slip-cell {
   border: 1px solid var(--rule);
@@ -788,7 +950,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 14px 12px;
+  padding: 9px 12px;
   background-repeat: no-repeat;
   background-size: 9px 9px;
   background-position: top left, top right, bottom left, bottom right;
@@ -807,10 +969,58 @@ body {
   white-space: nowrap;
 }
 
+/* ③ 落印：等级这一格是整张纸的重音，结果页就位时它砸下来。
+   只挂在 .sheet-stack 下面 —— 走纸窗口里那张和求签记录里的都不该再动一次。
+   基础样式就是落定后的样子，动画只写 from：这样 .shell.calm 和
+   prefers-reduced-motion 把 animation 关掉之后，留下的是终态而不是半空中。 */
+.sheet-stack .slip-level {
+  animation: stamp 0.44s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+/* 墨晕：砸下去那一下从字底下推开一圈，随即散掉。 */
+.sheet-stack .slip-cell-level {
+  position: relative;
+  isolation: isolate;
+}
+
+.sheet-stack .slip-cell-level::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 116px;
+  height: 116px;
+  margin: -58px 0 0 -58px;
+  border-radius: 50%;
+  z-index: -1;
+  opacity: 0;
+  background: radial-gradient(circle, var(--tone) 0%, transparent 68%);
+  animation: ink-bloom 0.7s ease-out 0.08s both;
+}
+
+@keyframes stamp {
+  from { transform: scale(1.22); opacity: 0.35; }
+}
+
+@keyframes ink-bloom {
+  0% { opacity: 0; transform: scale(0.4); }
+  22% { opacity: 0.22; }
+  100% { opacity: 0; transform: scale(1.5); }
+}
+
+/* 四个等级落下的力道不一样 —— 这是「等级只换了个颜色」之外，纸上唯一
+   还能把好坏说出来的地方。上上签砸得最重，下签歪一点、软一点。 */
+.sheet-stack [data-tone='best'] .slip-level { animation-duration: 0.5s; }
+.sheet-stack [data-tone='best'] .slip-cell-level::after { animation-duration: 0.85s; }
+.sheet-stack [data-tone='low'] .slip-level {
+  animation-timing-function: cubic-bezier(0.3, 0.9, 0.5, 1);
+}
+.sheet-stack [data-tone='low'] .slip-cell-level::after { opacity: 0; animation: none; }
+
 .slip-level {
   flex: 1;
   text-align: center;
-  font-size: clamp(30px, 9.2vw, 44px);
+  font-size: clamp(24px, 6vw, 30px);
   font-weight: 700;
   line-height: 1.1;
   letter-spacing: 0.2em;
@@ -819,11 +1029,12 @@ body {
 
 .slip-cell-title {
   text-align: center;
-  padding: 11px 14px;
+  padding: 7px 14px;
 }
 
 .slip-title {
-  font-size: clamp(17px, 4.8vw, 22px);
+  font-size: clamp(16px, 4.2vw, 20px);
+  line-height: 1.35;
   font-weight: 500;
   letter-spacing: 0.52em;
   text-indent: 0.52em;
@@ -834,7 +1045,7 @@ body {
 .slip-cell-body {
   display: flex;
   justify-content: center;
-  padding: 18px 14px 20px;
+  padding: 12px 14px;
 }
 
 /* 直排只给中文的签纸：七言两句竖着读是对的，一句英文竖着读不是。 */
@@ -844,8 +1055,10 @@ body {
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
-  gap: 15px;
-  height: 208px;
+  gap: 13px;
+  /* 132 是七言一句竖着排得下的下限：7 字 × 14px × (1 + 0.14 字距) ≈ 112。
+     再压下去句子会自己折成两列，七言就断了。 */
+  height: 124px;
 }
 
 .slip[data-lang='en'] .slip-vertical {
@@ -853,8 +1066,8 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 13px;
-  min-height: 208px;
+  gap: 11px;
+  min-height: 124px;
   max-width: 38ch;
   text-align: center;
 }
@@ -862,15 +1075,15 @@ body {
 .slip-vertical p { margin: 0; }
 
 .slip-poem {
-  font-size: 16.5px;
-  letter-spacing: 0.16em;
-  line-height: 1.5;
+  font-size: 13.5px;
+  letter-spacing: 0.13em;
+  line-height: 1.32;
 }
 
 .slip-meaning {
-  font-size: 13.5px;
+  font-size: 12.5px;
   letter-spacing: 0.1em;
-  line-height: 1.6;
+  line-height: 1.5;
   color: var(--ink-2);
 }
 
@@ -916,14 +1129,6 @@ body {
 }
 
 .slip-mini[data-lang='en'] .slip-mini-title { letter-spacing: 0.06em; }
-
-.slip-foot {
-  margin-top: 12px;
-  text-align: center;
-  font: 8px/1 var(--mono);
-  letter-spacing: 0.2em;
-  color: var(--ink-3);
-}
 
 /* 求签记录里的紧凑一行 */
 .slip-mini {
@@ -1054,7 +1259,7 @@ body {
 .followup {
   color: var(--ink);
   width: 100%;
-  max-width: 480px;
+  max-width: 400px;
   margin-top: 16px;
   padding: 18px 20px 20px;
   background: var(--paper);
@@ -1380,6 +1585,15 @@ code {
 
 .shell.calm .stage[data-tone]::after { opacity: 0.26; }
 
+/* 新加的几个动画都遵守「基础样式 = 终态、keyframes 只写 from」，所以上面那条
+   animation:none 落下来就是终态，不会卡在半空。只有两样要单独管：
+   底纹的 opacity 在基础样式里是 0（靠 forwards 顶上去），见上面那条；
+   印字头是纯装饰，走纸在这个模式下一步到位，那道亮线闪一下只是噪音。 */
+.shell.calm .printer-out::after,
+.shell.calm .printer-out::before { display: none; }
+
+
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -1389,19 +1603,22 @@ code {
     transition-duration: 0.01ms !important;
   }
   .stage[data-tone]::after { opacity: 0.26; }
+  .printer-out::after { display: none; }
 }
 
 @media (min-width: 1000px) {
   .shell { padding: 24px 40px 26px; }
   .printer-body { width: min(100%, 560px, 74vh); }
+  /* 和 .result-col-* 同一档。留着旧的 520 会把上面那条 400 盖掉，
+     签纸在宽屏上又变回横幅。 */
   .sheet-stack,
   .share-panel,
-  .followup { max-width: 520px; }
+  .followup { max-width: 420px; }
 }
 
 @media (max-width: 720px) {
-  .ask-slot { min-height: 190px; }
-  .ask-slot.printed { min-height: 190px; }
+  .ask-slot { min-height: 150px; }
+  .ask-slot.printed { min-height: 150px; }
   .ask-zone { padding: 20px 18px; }
 }
 
