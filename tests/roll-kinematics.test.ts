@@ -280,3 +280,51 @@ describe('纸带网格：零每帧堆分配', () => {
     expect(trail.head).toBe(0);
   });
 });
+
+import * as TEX from '../src/app/roll/textures';
+import { STICKS } from '../src/shared/sticks';
+
+describe('贴图版面（纯计算部分）', () => {
+  it('八格横向铺满 atlas，格子宽高比对上世界尺寸 CARD_LEN : W', () => {
+    expect(TEX.ATLAS_W).toBe(TEX.CARD_PX * K.N);
+    const cellAspect = TEX.CARD_PX / TEX.ATLAS_H;
+    expect(cellAspect).toBeCloseTo(K.CARD_LEN / K.W, 2);
+  });
+
+  it('atlasCellRect 严丝合缝，不留缝也不重叠', () => {
+    for (let slot = 0; slot < K.N; slot += 1) {
+      const r = TEX.atlasCellRect(slot);
+      expect(r.x).toBe(slot * TEX.CARD_PX);
+      expect(r.y).toBe(0);
+      expect(r.w).toBe(TEX.CARD_PX);
+      expect(r.h).toBe(TEX.ATLAS_H);
+    }
+    expect(TEX.atlasCellRect(K.N - 1).x + TEX.CARD_PX).toBe(TEX.ATLAS_W);
+  });
+
+  it('八张预览签互不相同，而且都是真的签 —— 滚筒上没有占位文字', () => {
+    const seen = new Set<number>();
+    for (let slot = 0; slot < K.N; slot += 1) {
+      const stick = TEX.previewStick(slot);
+      expect(STICKS).toContain(stick);
+      seen.add(stick.no);
+    }
+    expect(seen.size).toBe(K.N);
+  });
+
+  it('pseudoRandom 是确定性的 —— 同一颗种子每次都画出同一张纸', () => {
+    const a = TEX.pseudoRandom(42);
+    const b = TEX.pseudoRandom(42);
+    for (let i = 0; i < 50; i += 1) {
+      const v = a();
+      expect(v).toBe(b());
+      expect(v).toBeGreaterThanOrEqual(0);
+      expect(v).toBeLessThan(1);
+    }
+  });
+
+  it('按规范：每格 2500 条桑皮纤维，木刻版是镜像的', () => {
+    expect(TEX.PAPER_FIBRES).toBe(2500);
+    expect(TEX.MIRROR_BLOCK).toBe(true);
+  });
+});
