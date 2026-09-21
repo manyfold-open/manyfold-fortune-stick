@@ -273,9 +273,13 @@ export function applyA2AResult(accumulator: StreamAccumulator, raw: unknown): vo
     const id = stringValue(artifact.artifactId) ?? stringValue(artifact.id) ?? 'artifact';
     const text = partsText(artifact.parts);
     if (!accumulator.order.includes(id)) accumulator.order.push(id);
+    // A2A 0.3 puts append on the event; a few compatible servers put it on the
+    // artifact object. Accept both forms so streamed text is not reduced to the
+    // last chunk before the interpretation parser sees it.
+    const append = value.append === true || artifact.append === true;
     accumulator.artifacts.set(
       id,
-      value.append ? `${accumulator.artifacts.get(id) ?? ''}${text}` : text,
+      append ? `${accumulator.artifacts.get(id) ?? ''}${text}` : text,
     );
   }
 

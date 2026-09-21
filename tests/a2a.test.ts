@@ -16,6 +16,17 @@ describe('foldA2AResults (stream accumulator)', () => {
     expect(snapshot.terminal).toBe(true);
   });
 
+  it('accepts append on the artifact for compatible A2A servers', () => {
+    const snapshot = foldA2AResults([
+      { kind: 'artifact-update', artifact: { artifactId: 'a', parts: [{ kind: 'text', text: 'Hello' }] } },
+      {
+        kind: 'artifact-update',
+        artifact: { artifactId: 'a', append: true, parts: [{ kind: 'text', text: ', world' }] },
+      },
+    ]);
+    expect(snapshot.text).toBe('Hello, world');
+  });
+
   it('replaces an artifact when append is not set', () => {
     const snapshot = foldA2AResults([
       { kind: 'artifact-update', artifact: { artifactId: 'a', parts: [{ kind: 'text', text: 'draft' }] } },

@@ -117,7 +117,6 @@ describe('parseInterpretation', () => {
 
   it('answer 为空时返回 null —— 宁可落回通用解释', () => {
     expect(parseInterpretation(JSON.stringify({ ...good, answer: '   ' }), stick, 'zh')).toBeNull();
-    expect(parseInterpretation('完全不是 JSON', stick, 'zh')).toBeNull();
     expect(parseInterpretation('{ 坏掉的 json', stick, 'zh')).toBeNull();
   });
 
@@ -135,6 +134,24 @@ describe('parseInterpretation', () => {
       'zh',
     );
     expect(parsed!.answer.length).toBe(600);
+  });
+
+  it('agent 回普通文字时也保留解读，不退回通用解释', () => {
+    const parsed = parseInterpretation('前面的准备已经够了，今天可以先迈出第一步。', stick, 'zh');
+    expect(parsed).toMatchObject({
+      answer: '前面的准备已经够了，今天可以先迈出第一步。',
+      source: 'ai',
+    });
+    expect(parsed?.meaning).toBe(stickText(stick, 'zh').meaning);
+  });
+
+  it('接受常见的 response/content JSON 包装', () => {
+    const parsed = parseInterpretation(
+      JSON.stringify({ response: '先把最小的一步做出来。' }),
+      stick,
+      'zh',
+    );
+    expect(parsed?.answer).toBe('先把最小的一步做出来。');
   });
 });
 
