@@ -344,6 +344,7 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
             sheet={sheet}
             fault={fault}
             language={sheet ? sheet.language : props.prefs.language}
+            soundEnabled={props.prefs.sound}
             onShake={() => void draw()}
             disabled={printing}
           />

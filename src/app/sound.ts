@@ -251,6 +251,98 @@ export function bambooRattle(ms: number): () => void {
   };
 }
 
+/**
+ * 搅动/划过竹签：单次短促轻快的竹木刮擦微碰声（极低延迟，用于鼠标/手指搅动时）
+ */
+export function bambooRustle(intensity = 0.5): void {
+  const audio = ctx();
+  if (!audio) return;
+  const start = audio.currentTime;
+
+  // 1. 竹木微敲击
+  const osc = audio.createOscillator();
+  osc.type = 'triangle';
+  const pitch = 750 + Math.random() * 450;
+  osc.frequency.setValueAtTime(pitch, start);
+  osc.frequency.exponentialRampToValueAtTime(180, start + 0.02);
+
+  const filter = audio.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.setValueAtTime(1400 + Math.random() * 600, start);
+  filter.Q.setValueAtTime(4.0, start);
+
+  const gain = audio.createGain();
+  const vol = Math.min(0.05, 0.02 * intensity);
+  gain.gain.setValueAtTime(vol, start);
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.022);
+
+  osc.connect(filter).connect(gain).connect(audio.destination);
+  osc.start(start);
+  osc.stop(start + 0.025);
+
+  // 2. 竹皮轻微摩擦微噪
+  const noise = audio.createBufferSource();
+  noise.buffer = noiseBuffer(audio, 0.035, 0.2);
+  const nFilter = audio.createBiquadFilter();
+  nFilter.type = 'bandpass';
+  nFilter.frequency.setValueAtTime(2200 + Math.random() * 400, start);
+  nFilter.Q.setValueAtTime(2.5, start);
+
+  const nGain = audio.createGain();
+  nGain.gain.setValueAtTime(vol * 0.7, start);
+  nGain.gain.exponentialRampToValueAtTime(0.0001, start + 0.03);
+
+  noise.connect(nFilter).connect(nGain).connect(audio.destination);
+  noise.start(start);
+}
+
+/**
+ * 抽出一签：竹签从密实竹群中滑出拉升的木质摩擦滑音
+ */
+export function bambooDrawSound(): void {
+  const audio = ctx();
+  if (!audio) return;
+  const start = audio.currentTime;
+
+  // 1. 竹竿滑动上升音
+  const osc = audio.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(320, start);
+  osc.frequency.exponentialRampToValueAtTime(880, start + 0.28);
+
+  const filter = audio.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.setValueAtTime(1100, start);
+  filter.frequency.linearRampToValueAtTime(2200, start + 0.28);
+  filter.Q.setValueAtTime(2.5, start);
+
+  const gain = audio.createGain();
+  gain.gain.setValueAtTime(0.0001, start);
+  gain.gain.linearRampToValueAtTime(0.04, start + 0.05);
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.32);
+
+  osc.connect(filter).connect(gain).connect(audio.destination);
+  osc.start(start);
+  osc.stop(start + 0.35);
+
+  // 2. 伴随摩擦微白噪
+  const noise = audio.createBufferSource();
+  noise.buffer = noiseBuffer(audio, 0.3, 0.25);
+  const nFilter = audio.createBiquadFilter();
+  nFilter.type = 'bandpass';
+  nFilter.frequency.setValueAtTime(1800, start);
+  nFilter.frequency.linearRampToValueAtTime(2800, start + 0.28);
+  nFilter.Q.setValueAtTime(2.0, start);
+
+  const nGain = audio.createGain();
+  nGain.gain.setValueAtTime(0.0001, start);
+  nGain.gain.linearRampToValueAtTime(0.035, start + 0.06);
+  nGain.gain.exponentialRampToValueAtTime(0.0001, start + 0.3);
+
+  noise.connect(nFilter).connect(nGain).connect(audio.destination);
+  noise.start(start);
+}
+
 /** 打印完成/定签：按等级演绎不同的东方铜磬、颂钵与古寺晨钟 */
 export function chime(level?: StickLevel): void {
   const audio = ctx();
