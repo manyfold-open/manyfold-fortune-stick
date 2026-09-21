@@ -52,109 +52,111 @@ export default function ReadingResult(props: {
     <section className="stage result" data-tone={LEVEL_TONE[reading.stick.level].key}>
       <p className="asked">{reading.question}</p>
 
-      <div className="sheet-stack">
-        <StickFace stick={reading.stick} language={reading.language} />
+      <div className={`result-deck${interpretation ? ' has-interpretation' : ''}`}>
+        <div className="result-col-slip">
+          <div className="sheet-stack">
+            <StickFace stick={reading.stick} language={reading.language} />
 
-        {!interpretation && (
-          <div className="sheet-actions">
-            {props.interpreting ? (
-              <p className="working" role="status">
-                {t('interpreting')}
-                <span className="dots" aria-hidden />
-              </p>
-            ) : (
-              <button type="button" className="text-action lead-action" onClick={props.onInterpret}>
-                {t('interpret')}
-              </button>
+            {!interpretation && (
+              <div className="sheet-actions">
+                {props.interpreting ? (
+                  <p className="working" role="status">
+                    {t('interpreting')}
+                    <span className="dots" aria-hidden />
+                  </p>
+                ) : (
+                  <button type="button" className="text-action lead-action" onClick={props.onInterpret}>
+                    {t('interpret')}
+                  </button>
+                )}
+                {props.error && !props.interpreting && <p className="fault">{props.error}</p>}
+              </div>
             )}
-            {props.error && !props.interpreting && <p className="fault">{props.error}</p>}
           </div>
-        )}
+        </div>
 
         {interpretation && (
-          <article className="sheet">
-            {isFallback && (
-              <p className="sheet-note">
-                {/* error 存的是码，文案在这边 —— 不认识的码原样显示，
-                    这样新加的错误不会被悄悄吞掉。 */}
-                {reading.error ? storedErrorText(reading.error, t) : t('fallbackNote')}{' '}
-                <button
-                  type="button"
-                  className="text-action"
-                  onClick={props.onInterpret}
-                  disabled={props.interpreting}
-                >
-                  {props.interpreting ? t('retrying') : t('retryInterpret')}
-                </button>
-              </p>
-            )}
+          <div className="result-col-side">
+            <article className="sheet">
+              {isFallback && (
+                <p className="sheet-note">
+                  {/* error 存的是码，文案在这边 —— 不认识的码原样显示，
+                      这样新加的错误不会被悄悄吞掉。 */}
+                  {reading.error ? storedErrorText(reading.error, t) : t('fallbackNote')}{' '}
+                  <button
+                    type="button"
+                    className="text-action"
+                    onClick={props.onInterpret}
+                    disabled={props.interpreting}
+                  >
+                    {props.interpreting ? t('retrying') : t('retryInterpret')}
+                  </button>
+                </p>
+              )}
 
-            <section className="sheet-block">
-              <h3>{sheet.blockMeaning}</h3>
-              <p className="sheet-lead">{interpretation.meaning}</p>
-            </section>
-            <section className="sheet-block">
-              <h3>{sheet.blockAnswer}</h3>
-              <p>{interpretation.answer}</p>
-            </section>
-            {interpretation.notice && (
               <section className="sheet-block">
-                <h3>{sheet.blockNotice}</h3>
-                <p>{interpretation.notice}</p>
+                <h3>{sheet.blockMeaning}</h3>
+                <p className="sheet-lead">{interpretation.meaning}</p>
               </section>
-            )}
-            <section className="sheet-block">
-              <h3>{sheet.blockAction}</h3>
-              <p>{interpretation.action}</p>
-            </section>
+              <section className="sheet-block">
+                <h3>{sheet.blockAnswer}</h3>
+                <p>{interpretation.answer}</p>
+              </section>
+              {interpretation.notice && (
+                <section className="sheet-block">
+                  <h3>{sheet.blockNotice}</h3>
+                  <p>{interpretation.notice}</p>
+                </section>
+              )}
+              <section className="sheet-block">
+                <h3>{sheet.blockAction}</h3>
+                <p>{interpretation.action}</p>
+              </section>
 
-            {props.interpreting && (
-              <p className="working" role="status">
-                {t('reinterpreting')}
-                <span className="dots" aria-hidden />
-              </p>
+              {props.interpreting && (
+                <p className="working" role="status">
+                  {t('reinterpreting')}
+                  <span className="dots" aria-hidden />
+                </p>
+              )}
+            </article>
+
+            <nav className="result-actions">
+              <button type="button" className="text-action" onClick={() => setShowShare((open) => !open)}>
+                {showShare ? t('actionShareClose') : t('actionShare')}
+              </button>
+              <button
+                type="button"
+                className="text-action"
+                onClick={() => setShowFollowUp((open) => !open)}
+              >
+                {showFollowUp ? t('actionFollowUpClose') : t('actionFollowUp')}
+              </button>
+              <button type="button" className="text-action strong" onClick={props.onRestart}>
+                {t('actionRestart')}
+              </button>
+            </nav>
+
+            {showShare && (
+              <SharePanel
+                stick={reading.stick}
+                language={reading.language}
+                interpretation={interpretation}
+                question={reading.question}
+                onClose={() => setShowShare(false)}
+              />
             )}
-          </article>
+
+            {showFollowUp && (
+              <FollowUp
+                readingId={reading.id}
+                language={reading.language}
+                onMessages={props.onFollowUpMessages}
+              />
+            )}
+          </div>
         )}
       </div>
-
-      {interpretation && (
-        <>
-          <nav className="result-actions">
-            <button type="button" className="text-action" onClick={() => setShowShare((open) => !open)}>
-              {showShare ? t('actionShareClose') : t('actionShare')}
-            </button>
-            <button
-              type="button"
-              className="text-action"
-              onClick={() => setShowFollowUp((open) => !open)}
-            >
-              {showFollowUp ? t('actionFollowUpClose') : t('actionFollowUp')}
-            </button>
-            <button type="button" className="text-action strong" onClick={props.onRestart}>
-              {t('actionRestart')}
-            </button>
-          </nav>
-
-          {showShare && (
-            <SharePanel
-              stick={reading.stick}
-              language={reading.language}
-              interpretation={interpretation}
-              question={reading.question}
-              onClose={() => setShowShare(false)}
-            />
-          )}
-
-          {showFollowUp && (
-            <FollowUp
-              readingId={reading.id}
-              language={reading.language}
-              onMessages={props.onFollowUpMessages}
-            />
-          )}
-        </>
-      )}
     </section>
   );
 }

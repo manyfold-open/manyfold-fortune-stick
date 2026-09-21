@@ -11,6 +11,10 @@
          一次请求拿两家，让两种签纸看起来像同一台机器印的。
          加载不上时会落回 Songti SC / SimSun 和 Georgia，排版不会散。
 
+         styles.css 的 --serif 排在这两家前面还有 GenRyuMin（源流明体）——
+         那是「本机装过才生效」的增强，故意不进这笔请求：整包 CJK 明体几 MB，
+         为它拖慢首屏不划算。改这里之前先看那边的注释。
+
          故意不让它挡住首屏：字体表是渲染阻塞资源，一旦 Google Fonts 慢或者被挡，
          模块脚本要等它，整页就是白的。先按 print 媒体加载，到了再切成 all。 -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />

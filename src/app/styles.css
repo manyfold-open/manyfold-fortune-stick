@@ -39,7 +39,15 @@
 
   /* 四个等级的底色。tone 用在纸上的字，ground 用在整页的底。 */
   --tone: #5b5750;
-  --serif: 'Noto Serif SC', 'Songti SC', 'STSong', 'SimSun', serif;
+  /* 开头两家是「装了才有」的增强：GenRyuMin（源流明体）不在 index.html 那笔
+     Google Fonts 请求里 —— 一整包 CJK 明体几 MB，为它拖慢首屏不值得。本机装过的
+     人得到更好的明体，没装的照旧落到 Noto Serif SC，两边都不会坏。
+     ButTaiwan 的发行版本家族名不止一种写法，都列上，配不上的会被跳过。
+
+     Noto Serif TC 排在 SC 后面是有意的：这个站的正文是简体（<html lang="zh-CN">），
+     TC 抢在前面会让装了它的人拿到繁体地区字形。放在后面只当 Google Fonts
+     被挡时的兜底。 */
+  --serif: 'GenRyuMin2 TW', 'GenRyuMin TW', 'GenRyuMin', 'Noto Serif SC', 'Noto Serif TC', 'Songti SC', 'STSong', 'SimSun', serif;
   --serif-en: 'Noto Serif', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
   --sans: system-ui, -apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
   --mono: ui-monospace, 'SF Mono', 'SFMono-Regular', Menlo, Consolas, monospace;
@@ -668,6 +676,52 @@ body {
 
 @keyframes paper-up {
   to { transform: translateY(-34px) scale(1.05); }
+}
+
+/* ── 结果页：大屏左右并排，窄屏照旧上下叠成一卷纸 ── */
+
+.result-deck {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* 中间不留缝。解签那张要贴着签纸下沿，撕线才接得上（见 .sheet::before）——
+     这是窄屏上唯一的形态，所以缝隙一旦留出来，手机上就全程看不到那卷纸了。 */
+  gap: 0;
+}
+
+/* .sheet 自己没有宽度上限，原来靠 .sheet-stack 兜着。它现在挪到右栏里了，
+   上限得由两个栏位来给，数值跟 .sheet-stack / .share-panel 保持同一档。 */
+.result-col-slip,
+.result-col-side {
+  width: 100%;
+  max-width: 480px;
+}
+
+/* 并排的门槛跟本文件其它规则对齐，同样是 1000px。
+   再往下切没有意义：769px 的屏幕扣掉 .shell 左右各 28px 只剩 713px，
+   两栏分完右边不到 280px —— 解签正文、三颗按钮和追问输入框都塞不下。 */
+@media (min-width: 1000px) {
+  .result-col-slip,
+  .result-col-side { max-width: 520px; }
+
+  .result-deck.has-interpretation {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+    gap: 32px;
+    max-width: 1072px;
+  }
+
+  /* 签纸留在视线里 —— 右边解签加上追问，比它长得多。 */
+  .result-deck.has-interpretation .result-col-slip {
+    position: sticky;
+    top: 24px;
+  }
+
+  /* 撕线的意思是「和上面那张是同一卷纸」。并排之后上面没有纸了，
+     留着就成了凭空一道虚线。 */
+  .result-deck.has-interpretation .sheet::before { display: none; }
 }
 
 /* ── 签纸 ── */
