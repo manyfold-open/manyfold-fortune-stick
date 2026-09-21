@@ -106,23 +106,23 @@ describe('parseInterpretation', () => {
   };
 
   it('解析裸 JSON', () => {
-    const parsed = parseInterpretation(JSON.stringify(good), stick);
+    const parsed = parseInterpretation(JSON.stringify(good), stick, 'zh');
     expect(parsed).toMatchObject({ ...good, source: 'ai' });
   });
 
   it('剥掉 markdown 代码块和前后客套话', () => {
     const raw = `好的，这是解读：\n\`\`\`json\n${JSON.stringify(good)}\n\`\`\`\n希望有帮助。`;
-    expect(parseInterpretation(raw, stick)?.answer).toBe(good.answer);
+    expect(parseInterpretation(raw, stick, 'zh')?.answer).toBe(good.answer);
   });
 
   it('answer 为空时返回 null —— 宁可落回通用解释', () => {
-    expect(parseInterpretation(JSON.stringify({ ...good, answer: '   ' }), stick)).toBeNull();
-    expect(parseInterpretation('完全不是 JSON', stick)).toBeNull();
-    expect(parseInterpretation('{ 坏掉的 json', stick)).toBeNull();
+    expect(parseInterpretation(JSON.stringify({ ...good, answer: '   ' }), stick, 'zh')).toBeNull();
+    expect(parseInterpretation('完全不是 JSON', stick, 'zh')).toBeNull();
+    expect(parseInterpretation('{ 坏掉的 json', stick, 'zh')).toBeNull();
   });
 
   it('缺失的次要字段落回这支签预先写好的内容', () => {
-    const parsed = parseInterpretation(JSON.stringify({ answer: good.answer }), stick);
+    const parsed = parseInterpretation(JSON.stringify({ answer: good.answer }), stick, 'zh');
     expect(parsed?.meaning).toBe(stickText(stick, 'zh').meaning);
     expect(parsed?.action).toBe(stickText(stick, 'zh').action);
     expect(parsed?.notice).toBe('');
@@ -132,6 +132,7 @@ describe('parseInterpretation', () => {
     const parsed = parseInterpretation(
       JSON.stringify({ ...good, answer: '长'.repeat(5000) }),
       stick,
+      'zh',
     );
     expect(parsed!.answer.length).toBe(600);
   });
@@ -139,7 +140,7 @@ describe('parseInterpretation', () => {
 
 describe('fallbackInterpretation', () => {
   it('用这支签预先写好的通用解释和行动方向，并标明来源', () => {
-    const fallback = fallbackInterpretation(stick);
+    const fallback = fallbackInterpretation(stick, 'zh');
     expect(fallback.answer).toBe(stickText(stick, 'zh').general);
     expect(fallback.action).toBe(stickText(stick, 'zh').action);
     expect(fallback.source).toBe('fallback');
@@ -148,7 +149,7 @@ describe('fallbackInterpretation', () => {
 
 describe('提示词', () => {
   it('解签提示词把签号、等级、签诗当成既定事实交给 agent', () => {
-    const prompt = buildInterpretPrompt('我该不该换工作？', stick);
+    const prompt = buildInterpretPrompt('我该不该换工作？', stick, 'zh');
     expect(prompt).toContain('我该不该换工作？');
     expect(prompt).toContain(`第 ${stick.no} 签`);
     expect(prompt).toContain(stick.level);
@@ -159,7 +160,7 @@ describe('提示词', () => {
 
   it('下签的提示词明确要求不恐吓', () => {
     const low = STICKS.find((one) => one.level === '下签')!;
-    expect(buildInterpretPrompt('问题', low)).toContain('不要使用吓人的说法');
+    expect(buildInterpretPrompt('问题', low, 'zh')).toContain('不要使用吓人的说法');
   });
 
   it('追问提示词始终带上原问题、这支签和已给出的解读，并禁止改签', () => {
@@ -169,6 +170,7 @@ describe('提示词', () => {
       notice: '留意',
       action: '建议',
       source: 'ai',
+      language: 'zh',
     };
     const reading: Reading = {
       id: 'r1',
@@ -177,9 +179,10 @@ describe('提示词', () => {
       status: 'interpreted',
       interpretation,
       error: null,
+      language: 'zh',
       createdAt: new Date().toISOString(),
     };
-    const prompt = buildFollowUpPrompt(reading, interpretation, '先从哪一步开始？');
+    const prompt = buildFollowUpPrompt(reading, interpretation, '先从哪一步开始？', 'zh');
     expect(prompt).toContain('我该不该换工作？');
     expect(prompt).toContain(`第 ${stick.no} 签`);
     expect(prompt).toContain(stickText(stick, 'zh').poem[1]);
@@ -242,5 +245,83 @@ describe('英文签库', () => {
     expect(LEVEL_LABEL.en['中签']).toBe('MIDDLING');
     expect(LEVEL_LABEL.en['下签']).toBe('POOR FORTUNE');
     expect(LEVEL_LABEL.zh['上上签']).toBe('上上签');
+  });
+});
+
+describe('按问题的语言解签', () => {
+  it('英文问题得到英文提示词，而且不含中文指令', () => {
+    const prompt = buildInterpretPrompt('Should I take this job offer?', stick, 'en');
+    expect(prompt).toContain('Should I take this job offer?');
+    expect(prompt).toContain(stickText(stick, 'en').poem[0]);
+    expect(prompt).toContain('Reply in English');
+    expect(prompt).not.toContain('全部用中文');
+  });
+
+  it('英文提示词照样把签当成既定事实，也照样禁止预言', () => {
+    const prompt = buildInterpretPrompt('Should I move?', stick, 'en');
+    expect(prompt).toContain('fixed by the machine');
+    expect(prompt).toContain('Do not predict');
+  });
+
+  it('英文提示词里带的是英文等级名，不是中文等级', () => {
+    const prompt = buildInterpretPrompt('Should I move?', stick, 'en');
+    expect(prompt).toContain(LEVEL_LABEL.en[stick.level]);
+    expect(prompt).not.toContain(`第 ${stick.no} 签`);
+  });
+
+  it('中文问题的提示词一个字没变', () => {
+    const prompt = buildInterpretPrompt('我该不该换工作？', stick, 'zh');
+    expect(prompt).toContain('由系统抽定，不可更改');
+    expect(prompt).toContain('全部用中文');
+  });
+
+  it('英文下签同样要求不恐吓', () => {
+    const low = STICKS.find((one) => one.level === '下签')!;
+    expect(buildInterpretPrompt('Anything?', low, 'en')).toContain('never frightening');
+  });
+
+  it('兜底文案跟着语言走，并记下自己是哪种语言写的', () => {
+    const fallback = fallbackInterpretation(stick, 'en');
+    expect(fallback.answer).toBe(stickText(stick, 'en').general);
+    expect(fallback.action).toBe(stickText(stick, 'en').action);
+    expect(fallback.source).toBe('fallback');
+    expect(fallback.language).toBe('en');
+    // 兜底整段都得是英文，包括那句「还没结合你的问题」。
+    expect(detectLanguage(fallback.answer)).toBe('en');
+    expect(detectLanguage(fallback.notice)).toBe('en');
+    expect(detectLanguage(fallbackInterpretation(stick, 'zh').notice)).toBe('zh');
+  });
+
+  it('解析出来的解读记下语言，缺字段时落回同语言的预写内容', () => {
+    const parsed = parseInterpretation(JSON.stringify({ answer: 'Take the week.' }), stick, 'en');
+    expect(parsed?.language).toBe('en');
+    expect(parsed?.meaning).toBe(stickText(stick, 'en').meaning);
+    expect(parsed?.action).toBe(stickText(stick, 'en').action);
+  });
+
+  it('追问提示词用同一种语言，并且仍然禁止改签', () => {
+    const interpretation: Interpretation = {
+      meaning: 'Things are clearing up.',
+      answer: 'Given your question, list the conditions first.',
+      notice: 'You may be ignoring the cost of waiting.',
+      action: 'Write down three criteria today.',
+      source: 'ai',
+      language: 'en',
+    };
+    const reading: Reading = {
+      id: 'r1',
+      question: 'Should I take this job offer?',
+      stick,
+      status: 'interpreted',
+      interpretation,
+      error: null,
+      language: 'en',
+      createdAt: new Date().toISOString(),
+    };
+    const prompt = buildFollowUpPrompt(reading, interpretation, 'Where do I start?', 'en');
+    expect(prompt).toContain('Should I take this job offer?');
+    expect(prompt).toContain('does not draw a new stick');
+    expect(prompt).toContain('Where do I start?');
+    expect(prompt).not.toContain('不重新抽签');
   });
 });

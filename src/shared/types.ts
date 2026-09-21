@@ -4,6 +4,7 @@
  * and free of runtime imports from either side.
  */
 
+import type { Language } from './lang';
 import type { FortuneStick } from './sticks';
 
 /* ───────── Manyfold connect (settings page) ───────── */
@@ -72,6 +73,12 @@ export interface Interpretation {
    * 'fallback'— the stick's pre-written text, shown because generation failed
    */
   source: 'ai' | 'fallback';
+  /**
+   * 这份解读当初是用哪种语言写的。界面语言可以换，这一段不会重写，
+   * 所以把它记在 JSON 里（blob 没有 schema，这一列是免费的），
+   * 即使将来 detectLanguage 的规则调整了，旧记录上的标注也还是准的。
+   */
+  language: Language;
 }
 
 export type ReadingStatus = 'drawn' | 'interpreted' | 'failed';
@@ -86,8 +93,13 @@ export interface Reading {
   stick: FortuneStick;
   status: ReadingStatus;
   interpretation: Interpretation | null;
-  /** Why the last interpretation attempt failed, if it did. */
+  /** Why the last interpretation attempt failed, if it did — a code, localised in the browser. */
   error: string | null;
+  /**
+   * 这一局的语言。由 question 推导，不落库 —— 见 src/shared/lang.ts。
+   * 签纸、解读和追问都用它；界面语言换了也不会动它。
+   */
+  language: Language;
   createdAt: string;
 }
 
