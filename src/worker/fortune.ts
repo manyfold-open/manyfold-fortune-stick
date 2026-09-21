@@ -194,28 +194,6 @@ export function parseInterpretation(
   // gracefully to the text the agent actually returned instead of throwing away
   // a valid reading and showing the generic fallback.
   const unfenced = raw.replace(/```(?:json|text|plain)?/gi, '').replace(/```/g, '').trim();
-  const start = unfenced.indexOf('{');
-  const end = unfenced.lastIndexOf('}');
-
-  let parsed: unknown = null;
-  if (start >= 0 && end > start) {
-    try {
-      parsed = JSON.parse(unfenced.slice(start, end + 1));
-    } catch {
-      // Some models emit typographic JSON quotes. This is deliberately a small
-      // compatibility pass; arbitrary repair would risk changing the answer.
-      try {
-        parsed = JSON.parse(
-          unfenced
-            .slice(start, end + 1)
-            .replace(/[“”]/g, '"')
-            .replace(/[‘’]/g, "'"),
-        );
-      } catch {
-        parsed = null;
-      }
-    }
-  }
 
   const findObject = (value: unknown): Record<string, unknown> | null => {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
@@ -232,7 +210,52 @@ export function parseInterpretation(
     return null;
   };
 
-  const value = findObject(parsed);
+  const parseJsonCandidate = (candidate: string): unknown => {
+    try {
+      return JSON.parse(candidate);
+    } catch {
+      // Some models emit typographic JSON quotes. This is deliberately a small
+      // compatibility pass; arbitrary repair would risk changing the answer.
+      try {
+        return JSON.parse(candidate.replace(/[“”]/g, '"').replace(/[‘’]/g, "'"));
+      } catch {
+        return null;
+      }
+    }
+  };
+
+  // A streaming provider can expose more than one artifact snapshot in the
+  // final text. Parse balanced objects independently and use the one that has
+  // an answer, rather than requiring the entire accumulated stream to be one
+  // JSON document.
+  const parsedCandidates: unknown[] = [];
+  for (let start = 0; start < unfenced.length; start += 1) {
+    if (unfenced[start] !== '{') continue;
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+    for (let end = start; end < unfenced.length; end += 1) {
+      const character = unfenced[end];
+      if (inString) {
+        if (escaped) escaped = false;
+        else if (character === '\\') escaped = true;
+        else if (character === '"') inString = false;
+        continue;
+      }
+      if (character === '"') inString = true;
+      else if (character === '{') depth += 1;
+      else if (character === '}') {
+        depth -= 1;
+        if (depth === 0) {
+          const parsed = parseJsonCandidate(unfenced.slice(start, end + 1));
+          if (parsed !== null) parsedCandidates.push(parsed);
+          break;
+        }
+      }
+    }
+  }
+
+  const value = parsedCandidates.map(findObject).find(Boolean) ?? null;
 
   const pick = (source: Record<string, unknown> | null, keys: string[], limit: number): string => {
     if (!source) return '';
@@ -262,7 +285,7 @@ export function parseInterpretation(
 
   // A response containing a JSON-looking brace pair but invalid JSON is also
   // more likely a malformed structured response than an intentional prose one.
-  if (start >= 0 || end >= 0) return null;
+  if (unfenced.includes('{') || unfenced.includes('}')) return null;
 
   // Last resort: a normal prose answer is still an AI reading. Keep the fixed
   // meaning/action and place the agent's response in the main answer field.
