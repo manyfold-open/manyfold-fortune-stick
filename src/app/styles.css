@@ -3066,3 +3066,24 @@ code {
   .roll-canvas-wrapper { min-height: 260px; aspect-ratio: 4 / 3; }
 }
 
+
+/* 籤筒 v2：主體是直立細長的，16:10 的畫布太扁，給它自己的比例 */
+.cyl3d-canvas-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  min-height: 420px;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42), inset 0 0 0 1px rgba(255, 240, 210, 0.07);
+}
+
+.cyl3d-canvas-wrapper canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+@media (max-width: 640px) {
+  .cyl3d-canvas-wrapper { min-height: 320px; aspect-ratio: 3 / 4; }
+}

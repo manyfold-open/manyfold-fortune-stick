@@ -32,6 +32,7 @@ import {
   type Prefs,
 } from '../storage';
 import FortuneCylinder from './FortuneCylinder';
+import FortuneCylinder3D from './FortuneCylinder3D';
 import FortunePaperRoll from './FortunePaperRoll';
 import Printer from './Printer';
 import QuestionForm from './QuestionForm';
@@ -45,10 +46,10 @@ interface Fault {
   text: string;
 }
 
-type Vessel = 'cylinder' | 'printer' | 'roll';
+type Vessel = 'cylinder' | 'printer' | 'roll' | 'cylinder3d';
 
 const isVessel = (v: string | null): v is Vessel =>
-  v === 'cylinder' || v === 'printer' || v === 'roll';
+  v === 'cylinder' || v === 'printer' || v === 'roll' || v === 'cylinder3d';
 
 export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boolean }) {
   const t = useT();
@@ -354,10 +355,41 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
             <span aria-hidden="true">📜</span>
             <span>{props.prefs.language === 'en' ? 'Woodblock Press' : '木刻滾印'}</span>
           </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={vessel === 'cylinder3d'}
+            className={`vessel-btn${vessel === 'cylinder3d' ? ' active' : ''}`}
+            onClick={() => selectVessel('cylinder3d')}
+            disabled={printing}
+          >
+            <span aria-hidden="true">🎍</span>
+            <span>{props.prefs.language === 'en' ? 'Cylinder v2' : '籤筒 v2'}</span>
+          </button>
         </div>
       </div>
 
-      {vessel === 'roll' ? (
+      {vessel === 'cylinder3d' ? (
+        <div className="roll-slot">
+          <FortuneCylinder3D
+            state={
+              phase === 'printing'
+                ? 'shaking'
+                : phase === 'ejecting'
+                  ? 'ejecting'
+                  : typed > 0
+                    ? 'ready'
+                    : 'idle'
+            }
+            sheet={sheet}
+            fault={fault}
+            language={sheet ? sheet.language : props.prefs.language}
+            soundEnabled={props.prefs.sound}
+            onShake={() => void draw()}
+            disabled={printing}
+          />
+        </div>
+      ) : vessel === 'roll' ? (
         <div className="roll-slot">
           <FortunePaperRoll
             state={
