@@ -84,8 +84,12 @@ Rules for anyone — human or AI agent — iterating on it. These are the load-b
      (`probeAgentAuth`), never `message/send` — a real turn bills the user;
    - agent-supplied URLs go through `validateA2AUrl` before use (SSRF guard);
    - error strings pass through `safeErrorText` before leaving the worker;
-   - A2A `messageId`s are derived from stored rows, not random, so retries cannot
-     double-bill (`src/worker/fortune.ts`).
+   - A2A `messageId`s are derived from stored rows, not random, so a double-submit cannot
+     double-bill — but they must move when the row does. `interpretMessageId` derives one
+     from the row's `updated_at`: two clicks inside the same attempt read the same cursor
+     and stay one message, while a deliberate 重试解签 (the row has been written since) is a
+     new one. A messageId fixed per reading makes every retry byte-identical to the first,
+     and the agent answers it with an empty stream — that button then never works.
 15. **Keep new routes behind the admin gate.** Any route added under `/api/` is protected by
    the `ADMIN_PASSWORD` middleware automatically — do not add exceptions beyond `/api/health`
    and `/api/state` without a reason as good as theirs.
