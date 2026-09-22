@@ -11,6 +11,7 @@ export const en = {
   brandSub: 'AI FORTUNE STICK',
   navHistory: 'Your slips',
   navBackToGame: 'Back to the machine',
+  privacyNav: 'Privacy & data',
   railLeft: 'MODEL WY-36 · MADE IN CHINA',
   railRight: 'T H I R T Y - S I X   S T I C K S',
   footerSound: 'Sound {state}',
@@ -105,6 +106,47 @@ export const en = {
   historyDelete: 'Delete this record',
   historyNoticeLabel: 'Worth noticing: ',
   historyActionLabel: 'One small thing you can do: ',
+
+  /* ── privacy & data ── */
+  privacyTitle: 'Privacy & data',
+  privacyIntro:
+    'This deployment does not use cookies, advertising trackers, pixels, or analytics. The notes below describe what this code actually stores and sends.',
+  privacyStoredTitle: 'What the browser stores',
+  privacyStoredRecords:
+    'localStorage key wenyiqian.records: up to 100 reading records, including questions, stick numbers, readings, follow-up content, and timestamps.',
+  privacyStoredPrefs:
+    'localStorage keys wenyiqian.current and wenyiqian.prefs: the current reading ID, plus sound, motion, and interface-language preferences.',
+  privacyStoredPassword:
+    'sessionStorage key adminPassword: present only when ADMIN_PASSWORD is set for the deployment. It disappears when the tab closes and is sent in a request header, never in a cookie or URL.',
+  privacyServerTitle: 'What the server stores',
+  privacyServerReadings:
+    'Cloudflare D1 tables readings and reading_messages: the question, fixed stick number, interpretation, interpretation error, follow-ups, statuses, and creation/update times.',
+  privacyServerAgents:
+    'D1 tables agents and connect_sessions: connected-agent names, descriptions, RPC URLs, verification state, expiry, and encrypted credentials plus short-lived authorization-flow data. Credentials are never returned to the browser.',
+  privacyServerRetention:
+    'Readings and follow-ups have no automatic application-level expiry. They remain until you delete them from History or the deployment operator clears the database. Authorization sessions normally expire after about 15 minutes; disconnecting an agent deletes its connection data.',
+  privacyThirdPartyTitle: 'Third-party services',
+  privacyManyfold:
+    'When you ask for a reading, your question, the stick content, the existing reading, and follow-ups are sent to the Manyfold agent you connected. The connection flow also sends the app name and HTTPS site URL to Manyfold; agent tokens never reach the browser.',
+  privacyFonts:
+    'The page requests Noto Serif fonts from Google Fonts. Google handles those font requests; this app does not put your question or reading into a font request.',
+  privacyCloudflare:
+    'The site, Worker, and D1 run on Cloudflare. wrangler.jsonc also enables Cloudflare Worker observability, so Cloudflare may process request metadata, logs, and metrics under its platform service; this app adds no analytics or behavioral tracking.',
+  privacyCookiesTitle: 'Cookies and analytics',
+  privacyCookies:
+    'This app does not set, read, or depend on cookies. It does not need an anonymous cross-request identifier, so there is no cookie expiry or cookie withdrawal action.',
+  privacyAnalytics:
+    'There is currently no Google Analytics, GTM, Meta Pixel, Sentry, Hotjar, PostHog, or other analytics script. Without a measurement ID, no analytics script or event is sent, so no extra consent banner is shown.',
+  privacySharingTitle: 'What sharing exposes',
+  privacySharing:
+    'Sharing generates an image in your browser and hands it to the system share sheet or downloads it; this app has no public sharing service. The image may contain the stick number, level, poem, one-line meaning, an optional question, and a QR code. Whoever receives the image can see whatever you included, and the receiving platform has its own handling.',
+  privacyControlsTitle: 'Controls, withdrawal, and deletion',
+  privacyControls:
+    'You can delete one or all records from History. You can also clear this device’s reading records, current ID, preferences, and tab-scoped admin password here. Clearing browser data does not delete records already on the server; History separately attempts to delete the matching D1 records.',
+  privacyClearButton: 'Clear local data',
+  privacyClearConfirm: 'Confirm clear',
+  privacyClearCancel: 'Keep data',
+  privacyCleared: 'Local data cleared.',
 
   /* ── password gate ── */
   gateTitle: 'Admin password required',

@@ -20,14 +20,16 @@ import AmbientMotes from './components/AmbientMotes';
 import FortuneGame from './components/FortuneGame';
 import HistoryView from './components/HistoryView';
 import PasswordGate from './components/PasswordGate';
+import PrivacyView from './components/PrivacyView';
 import SettingsView from './components/SettingsView';
 import { LanguageProvider, useT, useUiLanguage } from './i18n';
 import { getPrefs, setPrefs, type Prefs } from './storage';
 
-type Route = 'game' | 'history' | 'settings';
+type Route = 'game' | 'history' | 'settings' | 'privacy';
 
 const routeFromHash = (): Route => {
   const hash = location.hash.replace(/^#\/?/, '');
+  if (location.pathname.replace(/\/+$/, '') === '/privacy' || hash === 'privacy') return 'privacy';
   if (hash === 'settings') return 'settings';
   if (hash === 'history') return 'history';
   return 'game';
@@ -150,7 +152,7 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
           >
             {t('langSwitch')}
           </button>
-          <a className="text-action" href={route === 'game' ? '#history' : '#/'}>
+          <a className="text-action" href={route === 'game' ? '#history' : '/'}>
             {route === 'game' ? t('navHistory') : t('navBackToGame')}
           </a>
         </span>
@@ -164,6 +166,7 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
         />
       )}
       {route === 'history' && <HistoryView />}
+      {route === 'privacy' && <PrivacyView />}
       {route === 'game' && (
         <FortuneGame prefs={prefs} interpreterReady={state.interpreterReady} />
       )}
@@ -191,6 +194,9 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
         </div>
 
         <div className="footer-credits">
+          <a className="footer-credit-link" href="/privacy">
+            {t('privacyNav')}
+          </a>
           <a
             href="https://manyfold.ai/"
             target="_blank"

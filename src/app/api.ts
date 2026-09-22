@@ -10,6 +10,7 @@
 import type { ApiErrorBody } from '../shared/types';
 import type { Translate } from '../shared/i18n';
 import { ERROR_KEYS, storedErrorText as storedText } from '../shared/error-copy';
+import { browserStorage, safeGet, safeRemove, safeSet } from '../shared/safe-storage';
 import { FOLLOW_UP_MAX, QUESTION_MAX, QUESTION_MIN } from './constants';
 
 const PASSWORD_KEY = 'adminPassword';
@@ -46,10 +47,11 @@ export function errorMessage(cause: unknown, t: Translate): string {
   return cause instanceof Error ? cause.message : String(cause);
 }
 
-export const getStoredPassword = (): string => sessionStorage.getItem(PASSWORD_KEY) ?? '';
+export const getStoredPassword = (): string => safeGet(browserStorage('sessionStorage'), PASSWORD_KEY) ?? '';
 export const setStoredPassword = (value: string): void => {
-  if (value) sessionStorage.setItem(PASSWORD_KEY, value);
-  else sessionStorage.removeItem(PASSWORD_KEY);
+  const storage = browserStorage('sessionStorage');
+  if (value) safeSet(storage, PASSWORD_KEY, value);
+  else safeRemove(storage, PASSWORD_KEY);
 };
 
 let unauthorizedHandler: (() => void) | null = null;

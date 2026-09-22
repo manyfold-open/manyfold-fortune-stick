@@ -10,6 +10,7 @@
  */
 
 import type { Language } from '../shared/lang';
+import { browserStorage, safeGet, safeRemove, safeSet } from '../shared/safe-storage';
 import type { Interpretation, Reading } from '../shared/types';
 
 const RECORDS_KEY = 'wenyiqian.records';
@@ -48,7 +49,7 @@ export interface Prefs {
 
 function read<T>(key: string, fallback: T): T {
   try {
-    const raw = localStorage.getItem(key);
+    const raw = safeGet(browserStorage('localStorage'), key);
     return raw ? (JSON.parse(raw) as T) : fallback;
   } catch {
     return fallback;
@@ -56,38 +57,22 @@ function read<T>(key: string, fallback: T): T {
 }
 
 function write(key: string, value: unknown): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    /* 存不下就算了，不影响这一局 */
-  }
+  safeSet(browserStorage('localStorage'), key, JSON.stringify(value));
 }
 
 function remove(key: string): void {
-  try {
-    localStorage.removeItem(key);
-  } catch {
-    /* 同上 */
-  }
+  safeRemove(browserStorage('localStorage'), key);
 }
 
 /* ───────── 当前这一支签 ───────── */
 
 export const getCurrentReadingId = (): string | null => {
-  try {
-    return localStorage.getItem(CURRENT_KEY);
-  } catch {
-    return null;
-  }
+  return safeGet(browserStorage('localStorage'), CURRENT_KEY);
 };
 
 export const setCurrentReadingId = (id: string | null): void => {
   if (id) {
-    try {
-      localStorage.setItem(CURRENT_KEY, id);
-    } catch {
-      /* 同上 */
-    }
+    safeSet(browserStorage('localStorage'), CURRENT_KEY, id);
   } else {
     remove(CURRENT_KEY);
   }
@@ -124,6 +109,13 @@ export function clearRecords(): void {
   remove(RECORDS_KEY);
   setCurrentReadingId(null);
 }
+
+/** Clear every browser-side value owned by this app, including preferences. */
+export const clearLocalData = (): void => {
+  remove(RECORDS_KEY);
+  remove(CURRENT_KEY);
+  remove(PREFS_KEY);
+};
 
 /* ───────── 偏好 ───────── */
 

@@ -15,6 +15,7 @@ export const zh = {
   brandSub: 'AI FORTUNE STICK',
   navHistory: '求签记录',
   navBackToGame: '回到求签',
+  privacyNav: '隐私与数据',
   railLeft: 'MODEL WY-36 · MADE IN CHINA',
   railRight: '三 十 六 签 · 一 问 一 答',
   footerSound: '声音{state}',
@@ -108,6 +109,47 @@ export const zh = {
   historyDelete: '删除这条记录',
   historyNoticeLabel: '值得留意：',
   historyActionLabel: '可以做的一件小事：',
+
+  /* ── 隐私与数据 ── */
+  privacyTitle: '隐私与数据',
+  privacyIntro:
+    '这个部署不使用 Cookie、广告追踪、像素或 analytics。以下说明只描述这份代码实际会保存和传送的资料。',
+  privacyStoredTitle: '浏览器会保存什么',
+  privacyStoredRecords:
+    'localStorage 的 wenyiqian.records：最多 100 条求签记录，包括问题、签号、解读、追问内容和时间。',
+  privacyStoredPrefs:
+    'localStorage 的 wenyiqian.current 和 wenyiqian.prefs：当前求签 ID，以及声音、动画和界面语言偏好。',
+  privacyStoredPassword:
+    'sessionStorage 的 adminPassword：只有部署设置 ADMIN_PASSWORD 时才会有，标签页关闭后消失，并以请求 header 发送，不放进 Cookie 或 URL。',
+  privacyServerTitle: '服务器会保存什么',
+  privacyServerReadings:
+    'Cloudflare D1 的 readings 和 reading_messages：问题、固定的签号、解读、解读错误、追问、状态和创建／更新时间。',
+  privacyServerAgents:
+    'D1 的 agents 和 connect_sessions：已连接 agent 的名称、描述、RPC 地址、验证状态、到期时间，以及加密保存的授权凭证和短暂的授权流程资料。凭证不会返回浏览器。',
+  privacyServerRetention:
+    '求签和追问记录没有自动过期时间，会保留到你在记录页删除，或部署者清除数据库。授权流程通常约 15 分钟过期；断开 agent 会删除它的连接资料。',
+  privacyThirdPartyTitle: '第三方服务',
+  privacyManyfold:
+    '解签时，问题、签的内容、已有解读和追问会传给你连接的 Manyfold agent。连接流程也会把应用名称和 HTTPS 网站地址传给 Manyfold；本应用不会把 agent token 传到浏览器。',
+  privacyFonts:
+    '页面会从 Google Fonts 请求 Noto Serif 字体。字体请求由 Google 处理；本应用不会把问题或解读放进字体请求。',
+  privacyCloudflare:
+    '网站、Worker 和 D1 运行在 Cloudflare。wrangler.jsonc 也开启了 Cloudflare Worker observability，因此 Cloudflare 可能按其平台服务处理请求元数据、logs 和 metrics；本应用没有额外加入 analytics 或行为追踪。',
+  privacyCookiesTitle: 'Cookie 与 analytics',
+  privacyCookies:
+    '本应用不设置、读取或依赖 Cookie，也不需要匿名用户跨请求识别，因此没有 Cookie 期限或撤回操作。',
+  privacyAnalytics:
+    '当前没有 Google Analytics、GTM、Meta Pixel、Sentry、Hotjar、PostHog 或其他 analytics script；没有 measurement ID，也不会发送 analytics event，所以不会显示额外 consent banner。',
+  privacySharingTitle: '分享会公开什么',
+  privacySharing:
+    '分享只在你的浏览器生成图片并交给系统分享或下载，不会上传到本应用的分享服务。图片可能包含签号、等级、签诗、一句话签意、可选的问题和 QR code；你把图片发给谁，就由那个平台和收件人看到。',
+  privacyControlsTitle: '控制、撤回与清除',
+  privacyControls:
+    '你可以在求签记录页删除单条或全部记录；也可以在这里清除本机的求签记录、当前 ID、偏好和标签页里的管理密码。清除本机资料不会替你删除已经留在服务器的记录；记录页会另外尝试删除对应的 D1 记录。',
+  privacyClearButton: '清除本机资料',
+  privacyClearConfirm: '确认清除',
+  privacyClearCancel: '保留资料',
+  privacyCleared: '本机资料已清除。',
 
   /* ── 密码门 ── */
   gateTitle: '需要管理密码',
