@@ -1860,16 +1860,316 @@ body {
   }
 }
 
-/* 撕线：和上面那张是同一卷纸 */
+/* 撕线由 TearLine 及 TearEdge 精确接管 */
 .sheet::before {
-  content: '';
+  display: none;
+}
+
+/* ── 撕紙齒孔與擬真互動撕線 ── */
+
+.tear-line-container {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+  height: 26px;
+  margin: 4px 0 0;
+  cursor: pointer;
+  user-select: none;
+  background: var(--paper);
+  z-index: 4;
+}
+
+.tear-notch {
+  width: 10px;
+  height: 18px;
+  background: var(--bg);
+  flex: none;
+  z-index: 3;
+  transition: background 0.3s;
+}
+
+.tear-notch-left {
+  border-radius: 0 10px 10px 0;
+  box-shadow: inset -1px 0 2px rgba(38, 26, 18, 0.1);
+}
+
+.tear-notch-right {
+  border-radius: 10px 0 0 10px;
+  box-shadow: inset 1px 0 2px rgba(38, 26, 18, 0.1);
+}
+
+.tear-track {
+  flex: 1;
+  height: 2px;
+  position: relative;
+  overflow: visible;
+  display: flex;
+  align-items: center;
+}
+
+.tear-perforations {
+  width: 100%;
+  height: 2px;
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--hair) 0,
+    var(--hair) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+  opacity: 0.85;
+}
+
+.tear-tab {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px 2px 7px;
+  margin-right: 6px;
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  background: var(--tone-bg);
+  color: var(--tone);
+  border: 1px dashed color-mix(in srgb, var(--tone) 45%, transparent);
+  box-shadow: 0 1px 3px rgba(38, 26, 18, 0.08);
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 4;
+}
+
+.tear-tab:hover {
+  background: var(--tone);
+  color: #fff;
+  border-style: solid;
+  transform: translateY(-1px) scale(1.05);
+  box-shadow: 0 3px 8px rgba(38, 26, 18, 0.16);
+}
+
+.tear-tab-icon {
+  font-size: 12px;
+  display: inline-block;
+  transform: rotate(-30deg);
+  transition: transform 0.2s;
+}
+
+.tear-tab:hover .tear-tab-icon {
+  transform: rotate(0deg) scale(1.15);
+}
+
+/* 撕扯瞬間高光劃過線條 */
+.tear-line-container.tearing .tear-rip-glow {
   position: absolute;
-  left: 14px;
-  right: 14px;
-  top: 0;
-  height: 1px;
-  background-image: linear-gradient(90deg, var(--hair) 0 5px, transparent 5px 10px);
-  background-size: 10px 1px;
+  top: -2px;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.95) 50%,
+    var(--tone) 75%,
+    transparent 100%
+  );
+  filter: drop-shadow(0 0 6px var(--tone));
+  animation: tear-rip-sweep 0.44s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  pointer-events: none;
+  z-index: 5;
+}
+
+@keyframes tear-rip-sweep {
+  0% {
+    clip-path: inset(0 0 0 100%);
+    opacity: 1;
+  }
+  60% {
+    clip-path: inset(0 0 0 0%);
+    opacity: 1;
+  }
+  100% {
+    clip-path: inset(0 0 0 0%);
+    opacity: 0;
+  }
+}
+
+/* 撕扯時下半截紙張微垂下沉、晃動、纖維拉扯感 */
+.sheet.sheet-tearing {
+  transform-origin: top left;
+  animation: sheet-tearing-peel 0.44s ease-out both;
+}
+
+@keyframes sheet-tearing-peel {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  30% {
+    transform: translateY(3px) rotate(1.2deg);
+  }
+  70% {
+    transform: translateY(8px) rotate(-1.4deg) scale(0.995);
+  }
+  100% {
+    transform: translateY(16px) rotate(0.4deg) scale(1);
+  }
+}
+
+/* ── 撕紙毛邊 (TearEdge SVG) ── */
+
+.tear-edge {
+  width: 100%;
+  height: 10px;
+  overflow: hidden;
+  color: var(--paper);
+  position: relative;
+  z-index: 5;
+  pointer-events: none;
+  line-height: 0;
+}
+
+.tear-edge-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  filter: drop-shadow(0 1px 1px rgba(38, 26, 18, 0.08));
+}
+
+.stub-bottom-edge {
+  margin-top: -1px;
+  margin-bottom: 0;
+}
+
+.card-top-edge {
+  margin-top: -9px;
+  margin-bottom: 4px;
+}
+
+/* ── 已撕下：靈籤珍藏卡 (Torn Keepsake Card) ── */
+
+.stage.stage-torn .slip-stub {
+  margin-bottom: 0;
+  box-shadow: 0 2px 6px rgba(38, 26, 18, 0.06), 0 8px 18px rgba(38, 26, 18, 0.08);
+  border-bottom: none;
+}
+
+.torn-card-container {
+  width: 100%;
+  max-width: 440px;
+  margin: 18px auto 0;
+  perspective: 1000px;
+  animation: torn-card-reveal 0.52s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes torn-card-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.96) rotateX(8deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotateX(0deg);
+  }
+}
+
+.sheet.torn-card {
+  box-shadow:
+    0 2px 8px rgba(38, 26, 18, 0.08),
+    0 16px 42px -4px rgba(38, 26, 18, 0.18),
+    0 32px 64px -12px rgba(38, 26, 18, 0.16);
+  border-radius: 0 0 4px 4px;
+  background-color: var(--paper);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  animation: torn-card-float 4.2s ease-in-out infinite alternate;
+}
+
+.sheet.torn-card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 4px 12px rgba(38, 26, 18, 0.1),
+    0 20px 48px -4px rgba(38, 26, 18, 0.22),
+    0 36px 72px -12px rgba(38, 26, 18, 0.18);
+}
+
+@keyframes torn-card-float {
+  0% {
+    transform: translateY(0px);
+  }
+  100% {
+    transform: translateY(-4px);
+  }
+}
+
+.torn-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 0 10px;
+  border-bottom: 1px dashed color-mix(in srgb, var(--rule) 55%, transparent);
+  margin-bottom: 12px;
+}
+
+.torn-card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--tone);
+  background: var(--tone-bg);
+  padding: 3px 12px;
+  border-radius: 12px;
+  border: 0.5px solid color-mix(in srgb, var(--tone) 35%, transparent);
+}
+
+/* 動作按鈕增強 */
+.result-actions .action-tear {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: var(--tone-bg);
+  color: var(--tone);
+  border: 1px dashed color-mix(in srgb, var(--tone) 40%, transparent);
+  transition: all 0.2s ease;
+}
+
+.result-actions .action-tear:hover {
+  background: var(--tone);
+  color: #fff;
+  border-style: solid;
+  transform: translateY(-1px);
+}
+
+.result-actions .action-reattach {
+  opacity: 0.78;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.result-actions .action-reattach:hover {
+  opacity: 1;
+  transform: translateX(-2px);
+}
+
+/* 靜態平靜模式 fallback */
+.shell.calm .sheet.torn-card,
+.calm .sheet.torn-card {
+  animation: none !important;
+  transform: none !important;
+}
+
+.shell.calm .tear-line-container.tearing .tear-rip-glow,
+.calm .tear-line-container.tearing .tear-rip-glow {
+  animation: none !important;
+  display: none;
 }
 
 .sheet-block { margin-bottom: 12px; }
