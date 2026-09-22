@@ -1,4 +1,4 @@
-# 问一签 · Fortune Stick
+# Fortune Stick
 
 An AI fortune-stick reading built on Cloudflare Workers and Manyfold.
 
