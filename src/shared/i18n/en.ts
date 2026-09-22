@@ -20,7 +20,7 @@ export const en = {
   footerMotion: 'Motion {state}',
   footerMotionReduced: 'reduced',
   footerMotionNormal: 'normal',
-  footerNote: 'A stick is a reference. The walking is yours.',
+  footerNote: 'The stick offers a perspective. What you do next is up to you.',
   langSwitch: '中文',
   langSwitchLabel: '切换到简体中文',
   loading: 'Warming up the printer…',
@@ -29,10 +29,10 @@ export const en = {
   restoring: 'Fetching your slip…',
   documentTitle: 'AI Fortune Stick',
   documentDescription:
-    'AI Fortune Stick: write down what is on your mind, press the key on the printer, and receive one fixed fortune stick.',
+    'AI Fortune Stick: write down what is on your mind, press the printer key, and receive one fixed reading to think with.',
 
   /* ── asking ── */
-  askLabel: 'What you want to ask',
+  askLabel: 'What would you like to ask?',
   askGhost: 'Write down the thing on your mind',
   example1: 'How should I handle the recent changes at work?',
   example2: 'Is this relationship still worth putting myself into?',
@@ -47,7 +47,7 @@ export const en = {
   faultTooShort: 'A few more characters (at least {min})',
   faultTooLong: 'Too long — keep it under {max} characters',
   printKeyCap: 'PRINT',
-  printKeyIdle: 'Press the key to print this stick',
+  printKeyIdle: 'Press the key to draw a stick',
   printKeyBusy: 'Printing',
 
   /* ── the result page ── */
@@ -56,11 +56,11 @@ export const en = {
   reinterpreting: 'Reading it again',
   retryInterpret: 'Try reading again',
   retrying: 'Retrying…',
-  fallbackNote: 'This one could not be read against your question.',
-  blockMeaning: 'What the stick says',
-  blockAnswer: 'On your question',
-  blockNotice: 'Worth noticing',
-  blockAction: 'One small thing you can do',
+  fallbackNote: 'This reading could not be tailored to your question.',
+  blockMeaning: 'What this stick points to',
+  blockAnswer: 'How it speaks to your question',
+  blockNotice: 'One thing to keep in mind',
+  blockAction: 'One thing you can do today',
   actionShare: 'Share',
   actionShareClose: 'Close sharing',
   actionTearShare: 'Tear & share',
@@ -73,7 +73,7 @@ export const en = {
   actionRestart: 'Draw another',
 
   /* ── follow-up ── */
-  followUpEmpty: 'Keep asking about this same stick. Neither it nor the reading will change.',
+  followUpEmpty: 'Ask another question about this same stick. The stick and its reading will stay the same.',
   followUpQuick1: 'What should I be paying attention to right now?',
   followUpQuick2: 'Where would I start?',
   followUpQuick3: 'What happens if I leave it for now?',
@@ -98,7 +98,7 @@ export const en = {
 
   /* ── history ── */
   historyTitle: 'Your slips',
-  historyEmpty: 'Nothing on this device yet. The sticks you draw will stay here.',
+  historyEmpty: 'No slips yet. Draw one and it will stay here on this device.',
   historyGoDraw: 'Go draw one',
   historyClear: 'Clear all',
   historyClearConfirm: 'Confirm clear',
