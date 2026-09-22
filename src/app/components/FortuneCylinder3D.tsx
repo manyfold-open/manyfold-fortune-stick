@@ -168,7 +168,10 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
 
       // 手势与筒子的运动全在 shared/cylinder/shake.ts —— 那边有测试钉着
       // 「正常力道来回甩约 1.9 秒出签、拖一下按着不动永远不出」这件事。
-      stepShake(dr.shake, dt, dr.dragging);
+      // armed：这一局可以抽签吗。没写问题时照样跟手动（手感），但不记账 ——
+      // 不然使用者写问题之前摇的那些会全部存起来，一写完随手一碰就掉签。
+      const armed = stateRef.current === 'ready' && !dr.requested;
+      stepShake(dr.shake, dt, dr.dragging, armed);
       const sh = dr.shake;
       const shaking = sh.intensity > 0.05;
       if (shaking && stateRef.current === 'ready' && !dr.requested) {
