@@ -4,6 +4,7 @@ import {
   buildInterpretPrompt,
   drawStickNo,
   fallbackInterpretation,
+  interpretMessageId,
   normalizeQuestion,
   parseInterpretation,
   unparseableError,
@@ -369,5 +370,65 @@ describe('unparseableError', () => {
 
   it('原文照样过脱敏', () => {
     expect(unparseableError('Bearer nca_secret_token')).not.toContain('nca_secret_token');
+  });
+});
+
+describe('interpretMessageId', () => {
+  const FIRST = '2026-09-22T06:27:35.118Z';
+  const AFTER_FIRST = '2026-09-22T06:36:52.693Z';
+
+  it('同一次尝试里是稳定的 —— 连点两下不该被算成两轮', () => {
+    expect(interpretMessageId('r1', FIRST)).toBe(interpretMessageId('r1', FIRST));
+  });
+
+  it('上一次尝试写完之后重试，是一则新的消息 —— 同一个 id 会被 agent 当成同一则，直接关掉串流', () => {
+    expect(interpretMessageId('r1', FIRST)).not.toBe(interpretMessageId('r1', AFTER_FIRST));
+  });
+
+  it('不同的签不会撞在一起', () => {
+    expect(interpretMessageId('r1', FIRST)).not.toBe(interpretMessageId('r2', FIRST));
+  });
+
+  it('没有 updated_at 也给得出一个带签号的稳定值', () => {
+    expect(interpretMessageId('r1', null)).toBe(interpretMessageId('r1', null));
+    expect(interpretMessageId('r1', null)).toContain('r1');
+  });
+});
+
+// 线上 6747829e 那一条：agent 把中文引号写成没转义的半角引号，一整份写得好好的解读
+// 就被当成坏 JSON 丢掉，用户看到的是通用解释。
+describe('parseInterpretation：坏 JSON 的保底（按键切片）', () => {
+  it('值里有没转义的半角引号，仍旧救得回来', () => {
+    const reply =
+      '{"meaning":"这件事可以开始","answer":"通常就那么一两个环节最要紧。",' +
+      '"notice":"容易把"谨慎"当成拖延","action":"指出最不可逆的一步"}';
+    expect(parseInterpretation(reply, stick, 'zh')).toMatchObject({
+      meaning: '这件事可以开始',
+      answer: '通常就那么一两个环节最要紧。',
+      notice: '容易把"谨慎"当成拖延',
+      action: '指出最不可逆的一步',
+      source: 'ai',
+    });
+  });
+
+  it('救回来的值里，转义过的引号还原成引号', () => {
+    const reply = '{"answer":"他说\\"好\\"就够了","notice":"容易把"谨慎"当成拖延"}';
+    expect(parseInterpretation(reply, stick, 'zh')?.answer).toBe('他说"好"就够了');
+  });
+
+  it('最后一段被截断，前面已经写完的字段照样救回来', () => {
+    const reply = '{"meaning":"到了关键的一小段","answer":"分清楚哪一步最要紧。","notice":"容易把';
+    expect(parseInterpretation(reply, stick, 'zh')?.answer).toBe('分清楚哪一步最要紧。');
+  });
+
+  it('只有括号、没有认得的字段，还是落回通用解释 —— 保底不是什么都吞', () => {
+    expect(parseInterpretation('{ 我觉得这支签还行 }', stick, 'zh')).toBeNull();
+  });
+});
+
+describe('提示词：少制造坏 JSON', () => {
+  it('明确要求字符串里不要用半角引号 —— 那是线上唯一见过的坏 JSON 成因', () => {
+    expect(buildInterpretPrompt('我该不该换工作', stick, 'zh')).toContain('「」');
+    expect(buildInterpretPrompt('should I switch jobs', stick, 'en')).toMatch(/double quote/i);
   });
 });

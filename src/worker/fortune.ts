@@ -69,10 +69,11 @@ interface ReadingRow {
   context_id: string | null;
   active_task_id: string | null;
   created_at: string;
+  updated_at: string | null;
 }
 
 const READING_COLUMNS =
-  'id, question, stick_no, status, interpretation, error, context_id, active_task_id, created_at';
+  'id, question, stick_no, status, interpretation, error, context_id, active_task_id, created_at, updated_at';
 
 function toReading(row: ReadingRow): Reading {
   const stick = stickByNo(row.stick_no);
@@ -192,6 +193,69 @@ const FIELD_LIMITS: Record<keyof Omit<Interpretation, 'source' | 'language'>, nu
   action: 120,
 };
 
+/** 按键切片时认得的键，和下面 pick 用的那几组别名保持一致。 */
+const SALVAGE_KEYS = [
+  'meaning',
+  'summary',
+  'answer',
+  'response',
+  'content',
+  'text',
+  'notice',
+  'caveat',
+  'insight',
+  'action',
+  'suggestion',
+  'nextStep',
+];
+
+/** 救回来的是人话不是代码，转义只还原这几种。 */
+function unescapeJsonish(raw: string): string {
+  return raw
+    .replace(/\\n/g, '\n')
+    .replace(/\\t/g, '\t')
+    .replace(/\\(["\\/])/g, '$1');
+}
+
+/**
+ * 严格解析失败之后的保底：**只切片，不改字**。
+ *
+ * 值的起止由**键**决定，不由引号决定 —— 模型很爱把中文引号写成没转义的半角引号
+ *（线上就有一条 `"notice":"容易把"谨慎"当成拖延"`），一个这样的引号就让整份写得
+ * 好好的解读被判成坏 JSON，用户拿到的是通用解释。按键切边界不会被值里的引号带偏，
+ * 也永远不会生出 agent 没写过的字：每个值都是原文里的一整段，最多去掉收尾的
+ * `"`、`,`、`}`。顺带把被截断的回覆也救了 —— 最后一段没写完，前面写完的照样能用。
+ *
+ * 一个认得的键都没有就返回 null，调用方照旧落回通用解释 —— 保底不是什么都吞。
+ */
+function salvageFields(text: string): Record<string, unknown> | null {
+  const anchor = new RegExp(`"(${SALVAGE_KEYS.join('|')})"\\s*:\\s*"`, 'g');
+  const found: { key: string; at: number; from: number }[] = [];
+  for (let match = anchor.exec(text); match; match = anchor.exec(text)) {
+    found.push({ key: match[1], at: match.index, from: match.index + match[0].length });
+  }
+  if (found.length === 0) return null;
+
+  const salvaged: Record<string, unknown> = {};
+  found.forEach((field, index) => {
+    // 这个值一直延伸到下一个键为止，中间有多少引号都不管。
+    const end = found[index + 1]?.at ?? text.length;
+    const value = unescapeJsonish(
+      text
+        .slice(field.from, end)
+        .replace(/\s+$/, '')
+        .replace(/[}\]]+$/, '')
+        .replace(/\s+$/, '')
+        .replace(/,$/, '')
+        .replace(/\s+$/, '')
+        .replace(/"$/, ''),
+    ).trim();
+    // 同一个键出现多次（串流里重复的快照）只认第一次写满的那一份。
+    if (value && !salvaged[field.key]) salvaged[field.key] = value;
+  });
+  return Object.keys(salvaged).length > 0 ? salvaged : null;
+}
+
 /**
  * 把 agent 返回的文本解析成四段解读。
  *
@@ -271,7 +335,8 @@ export function parseInterpretation(
     }
   }
 
-  const value = parsedCandidates.map(findObject).find(Boolean) ?? null;
+  // 严格解析优先；一个都解不出来，再按键切片救一次。
+  const value = parsedCandidates.map(findObject).find(Boolean) ?? salvageFields(unfenced);
 
   const pick = (source: Record<string, unknown> | null, keys: string[], limit: number): string => {
     if (!source) return '';
@@ -381,7 +446,8 @@ ${stickBlock(stick, 'en')}
 5. Reply in English throughout. No markdown headings and no bullet characters.
 
 [Output format]
-Output one JSON object and nothing else. Do not wrap it in a code block:
+Output one JSON object and nothing else. Do not wrap it in a code block. Never put a raw
+double quote inside a string value — use single quotes if you need to quote something:
 {"meaning":"one sentence on what this stick means for their question, plain words, under 30 words","answer":"written against their actual question, 60 to 110 words","notice":"one angle they may be overlooking, under 30 words","action":"one concrete thing they can do today, under 20 words"}`;
   }
 
@@ -401,7 +467,8 @@ ${stickBlock(stick, 'zh')}
 5. 全部用中文，不要使用 markdown 标题或列表符号。
 
 【输出格式】
-只输出一个 JSON 对象，不要输出任何其它文字，也不要用代码块包起来：
+只输出一个 JSON 对象，不要输出任何其它文字，也不要用代码块包起来。字符串里不要出现
+半角双引号，要加引号就用「」：
 {"meaning":"一句话签意，用浅显的话说这支签对他这个问题意味着什么，40 字以内","answer":"结合他的问题展开，80 到 150 字","notice":"指出一个他可能忽略的角度，40 字以内","action":"一件具体的、今天就能做的小事，30 字以内"}`;
 }
 
@@ -525,6 +592,24 @@ async function askAgent(
 }
 
 /**
+ * 一轮解签的 A2A messageId。
+ *
+ * 拿这一行的 updated_at 当游标，而不是固定值，也不是随机值：
+ *  · 同一次尝试里连点两下 —— 两个请求读到同一个 updated_at，送出同一个 messageId，
+ *    agent 那边不会把它算成两轮（这是 AGENTS.md 第 14 条要守的事）；
+ *  · 上一次尝试写完之后（updated_at 已经前进）按「重试解签」—— 新的 messageId，
+ *    才是一则新的消息。
+ *
+ * 固定成 `qianyi-<id>-interpret` 的话，重试送出的是跟第一次一字不差的 messageId，
+ * agent 认得这则消息，开了串流就直接关掉，一个事件都不回 —— 线上三次重试三次空串流
+ * 都是这么来的，「重试解签」那颗按钮从来没成功过。
+ */
+export function interpretMessageId(readingId: string, updatedAt: string | null): string {
+  const cursor = (updatedAt ?? '').replace(/[^0-9A-Za-z]/g, '');
+  return cursor ? `qianyi-${readingId}-interpret-${cursor}` : `qianyi-${readingId}-interpret`;
+}
+
+/**
  * 解签。成功写入个性化解读；失败写入这支签的通用解释并记下原因，
  * 让「重试解签」还能再试一次 —— 无论走哪条路，签都不变。
  */
@@ -544,8 +629,8 @@ export async function interpretReading(env: Env, id: string): Promise<Reading> {
     const cred = await pickInterpreter(env);
     const answer = await askAgent(
       cred,
-      // 由存储行推导，不用随机值：重试同一次求签不会被当成新的一轮计费。
-      `qianyi-${reading.id}-interpret`,
+      // 由存储行推导，不用随机值 —— 连点两下是同一则消息，刻意的重试是新的一则。
+      interpretMessageId(reading.id, row.updated_at),
       buildInterpretPrompt(reading.question, reading.stick, reading.language),
       { contextId, taskId: null },
       INTERPRET_TIMEOUT_MS,
