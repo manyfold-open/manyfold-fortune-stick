@@ -88,46 +88,50 @@ export default function ReadingResult(props: {
   };
 
   const actionsNav = (
-    <nav className="result-actions">
-      {tearState === 'torn' ? (
-        <>
-          <button type="button" className="text-action action-reattach" onClick={handleReattach}>
-            ↩ {t('actionReattach')}
+    <nav className="result-actions" data-lang={reading.language}>
+      <div className="actions-cluster actions-cluster-primary">
+        {tearState === 'torn' ? (
+          <>
+            <button type="button" className="text-action action-reattach" onClick={handleReattach}>
+              ↩ {t('actionReattach')}
+            </button>
+            <button
+              type="button"
+              className="text-action strong"
+              onClick={() => {
+                setShowShare((open) => !open);
+                if (!showShare) setShowFollowUp(false);
+              }}
+            >
+              {showShare ? t('actionShareClose') : t('actionShare')}
+            </button>
+          </>
+        ) : (
+          <button type="button" className="text-action action-tear strong" onClick={handleTear}>
+            <span className="tear-icon" aria-hidden="true">
+              ✂
+            </span>{' '}
+            {t('actionTearShare')}
           </button>
-          <button
-            type="button"
-            className="text-action strong"
-            onClick={() => {
-              setShowShare((open) => !open);
-              if (!showShare) setShowFollowUp(false);
-            }}
-          >
-            {showShare ? t('actionShareClose') : t('actionShare')}
-          </button>
-        </>
-      ) : (
-        <button type="button" className="text-action action-tear strong" onClick={handleTear}>
-          <span className="tear-icon" aria-hidden="true">
-            ✂
-          </span>{' '}
-          {t('actionTearShare')}
+        )}
+      </div>
+
+      <div className="actions-cluster actions-cluster-secondary">
+        <button
+          type="button"
+          className="text-action"
+          onClick={() => {
+            setShowFollowUp((open) => !open);
+            if (!showFollowUp) setShowShare(false);
+          }}
+        >
+          {showFollowUp ? t('actionFollowUpClose') : t('actionFollowUp')}
         </button>
-      )}
 
-      <button
-        type="button"
-        className="text-action"
-        onClick={() => {
-          setShowFollowUp((open) => !open);
-          if (!showFollowUp) setShowShare(false);
-        }}
-      >
-        {showFollowUp ? t('actionFollowUpClose') : t('actionFollowUp')}
-      </button>
-
-      <button type="button" className="text-action" onClick={props.onRestart}>
-        {t('actionRestart')}
-      </button>
+        <button type="button" className="text-action" onClick={props.onRestart}>
+          {t('actionRestart')}
+        </button>
+      </div>
     </nav>
   );
 
