@@ -118,6 +118,8 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
     }
   }, []);
 
+  /** 籤筒 v2 的出籤時機由元件回報（搖多久是使用者決定的），這裡先擱著那支籤。 */
+  const pendingReading = useRef<Reading | null>(null);
   const timers = useRef<number[]>([]);
   const stopMotor = useRef<(() => void) | null>(null);
   /** 输入框本体。例句在机器下方，填完字要把光标送回这里，所以 ref 归这一层。 */
@@ -204,6 +206,14 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
         return;
       }
 
+      // 籤筒 v2：摇多久由使用者决定，固定计时器就不对了 —— 演完由 onRevealed 回报。
+      if (vessel === 'cylinder3d') {
+        setSheet(body.reading);
+        pendingReading.current = body.reading;
+        setPhase('ejecting');
+        return;
+      }
+
       // 纸开始往外走，走完再把画面交给结果页 —— 中间这段时间签已经定死了。
       setSheet(body.reading);
       // 滚印机要把签纸整张碾出来再停稳，比签筒多留一点时间。
@@ -228,6 +238,20 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
       setFault({ code: 'ERROR', text: errorMessage(cause, t) });
     }
   }, [phase, question, props.prefs.reducedMotion, props.prefs.sound, t, vessel]);
+
+  /** 籤筒 v2 演完了：这时候才把画面交给结果页。 */
+  const revealDone = useCallback(() => {
+    const drawn = pendingReading.current;
+    if (!drawn) return;
+    pendingReading.current = null;
+    if (props.prefs.sound) {
+      chime(drawn.stick.level);
+      stampSound(drawn.stick.level);
+    }
+    setReading(drawn);
+    setSheet(null);
+    setPhase('ask');
+  }, [props.prefs.sound]);
 
   const interpret = useCallback(async () => {
     if (!reading || interpreting) return;
@@ -386,6 +410,7 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
             language={sheet ? sheet.language : props.prefs.language}
             soundEnabled={props.prefs.sound}
             onShake={() => void draw()}
+            onRevealed={revealDone}
             disabled={printing}
           />
         </div>

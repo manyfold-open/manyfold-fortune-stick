@@ -37,6 +37,8 @@ export const TILT_Z = -0.46;
 export const TILT_X = 0.13;
 /** 整支签筒在世界里的落点，让它悬在案几上方。 */
 export const RIG_Y = -4.2;
+/** 案几平面。脱出的籤落在这里。 */
+export const GROUND_Y = RIG_Y - 2.3;
 /** 斜持之后整支筒的重心会甩到 x≈+2，这里把它推回画面中轴。 */
 export const RIG_X = -2.0;
 
@@ -56,6 +58,8 @@ export interface CylinderScene {
   camera: THREE.PerspectiveCamera;
   scene: THREE.Scene;
   tiltGroup: THREE.Group;
+  /** tiltGroup 的静止高度 —— 组件摇动时以它为基准上下甩。 */
+  baseY: number;
   sticks: StickHandle[];
   resize: (w: number, h: number) => void;
   render: () => void;
@@ -119,7 +123,7 @@ export function createCylinderScene(host: HTMLElement): CylinderScene | null {
     new THREE.MeshStandardMaterial({ color: TABLE_COLOR, roughness: 0.95, metalness: 0.02 }),
   );
   table.rotation.x = -Math.PI / 2;
-  table.position.y = RIG_Y - 2.3;
+  table.position.y = GROUND_Y;
   table.receiveShadow = true;
   scene.add(table);
 
@@ -130,7 +134,7 @@ export function createCylinderScene(host: HTMLElement): CylinderScene | null {
     new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false, opacity: 0.9 }),
   );
   blob.rotation.x = -Math.PI / 2;
-  blob.position.set(RIG_X, RIG_Y - 2.29, 0);
+  blob.position.set(RIG_X, GROUND_Y + 0.01, 0);
   scene.add(blob);
 
   /* ── 贴图 ── */
@@ -265,6 +269,7 @@ export function createCylinderScene(host: HTMLElement): CylinderScene | null {
     camera,
     scene,
     tiltGroup,
+    baseY: RIG_Y,
     sticks,
     resize,
     render: () => renderer.render(scene, camera),
