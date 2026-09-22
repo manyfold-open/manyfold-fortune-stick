@@ -89,6 +89,16 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
     };
   }, []);
 
+  const triggerHaptic = useCallback((pattern: number | number[]) => {
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      try {
+        navigator.vibrate(pattern);
+      } catch {
+        /* Ignore on restricted environments */
+      }
+    }
+  }, []);
+
   const draw = useCallback(async () => {
     // 按键自己在打印中就禁用了，这里再挡一道：抽签是这个游戏最不能出错的一步，
     // 多一支签就等于把用户刚看到的那一支换掉了。
@@ -106,9 +116,14 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
     setFault(null);
     setPhase('printing');
     const calm = props.prefs.reducedMotion;
+    triggerHaptic(22);
     if (props.prefs.sound) {
       pressSound();
       if (!calm) stopMotor.current = motor(PRINT_MS);
+    }
+    if (!calm) {
+      // 步进电机微脉冲触感
+      triggerHaptic([10, 65, 10, 65, 10, 65, 10]);
     }
 
     try {
@@ -129,6 +144,7 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
       setSheet(body.reading);
       timers.current.push(
         window.setTimeout(() => {
+          triggerHaptic([35, 40, 18]);
           if (props.prefs.sound) {
             chime(body.reading.stick.level);
             stampSound(body.reading.stick.level);
