@@ -66,6 +66,7 @@ interface Drive {
   restAt: number;
   /** 上次回报给 React 的进度档位，用来节流重渲染。 */
   reported: number;
+  lastProbe: number;
   last: number;
   lastRustle: number;
   camX: number;
@@ -90,6 +91,15 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
   const [stageLabel, setStageLabel] = useState<Stage>('rest');
   /** 摇签进度 0..1。摇筒是个没有终点提示的动作，不给进度使用者只能瞎摇。 */
   const [progress, setProgress] = useState(0);
+  /** ?cyldebug=1 打开即时诊断 —— 卡住的时候不用再靠猜。 */
+  const [debug] = useState(() => {
+    try {
+      return new URL(window.location.href).searchParams.get('cyldebug') === '1';
+    } catch {
+      return false;
+    }
+  });
+  const [probe, setProbe] = useState('');
 
   const d = useRef<Drive>({
     stage: 'rest',
@@ -101,6 +111,7 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
     free: null,
     restAt: 0,
     reported: -1,
+    lastProbe: 0,
     last: 0,
     lastRustle: 0,
     camX: 0,
@@ -117,6 +128,8 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
 
   const stateRef = useRef(state);
   const soundRef = useRef(soundEnabled ?? false);
+  const debugRef = useRef(debug);
+  debugRef.current = debug;
   const shakeCb = useRef(onShake);
   const revealCb = useRef(onRevealed);
   stateRef.current = state;
@@ -259,6 +272,27 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
         revealCb.current?.();
       }
 
+      /* 3.5 诊断疊層 */
+      if (debugRef.current && now - dr.lastProbe > 120) {
+        dr.lastProbe = now;
+        const ch = dr.chosen;
+        const need = ch >= 0 ? exitRise(rig.sticks[ch].rest) : 0;
+        setProbe(
+          [
+            `stage ${dr.stage}`,
+            `state ${stateRef.current}`,
+            `armed ${stateRef.current === 'ready' && !dr.requested}`,
+            `drag ${dr.dragging ? 'Y' : 'n'}`,
+            `intens ${sh.intensity.toFixed(2)}`,
+            `work ${sh.work.toFixed(1)}/${SHAKE_WORK_NEEDED}`,
+            `chosen ${ch < 0 ? '-' : ch + 1}`,
+            ch >= 0 ? `climb ${dr.motions[ch].y.toFixed(2)}/${need.toFixed(2)}` : 'climb -',
+            dr.free ? `fall y=${dr.free.y.toFixed(2)} rest=${dr.free.resting ? 'Y' : 'n'}` : 'fall -',
+            `fps ${(1 / dt).toFixed(0)}`,
+          ].join('  ·  '),
+        );
+      }
+
       /* 4. 筒身沿自己的轴跟着手滑动，静止时轻微呼吸 */
       rig.tiltGroup.rotation.z = baseZ + Math.sin(t * 0.55) * 0.016 - sh.vel * 0.012;
       rig.tiltGroup.rotation.x = baseX + Math.sin(t * 0.41 + 1.2) * 0.012;
@@ -390,6 +424,7 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
         tabIndex={disabled ? -1 : 0}
         aria-label={en ? 'Shake the 3D fortune-stick cylinder' : '搖動 3D 宮廟籤筒'}
       />
+      {debug ? <pre className="cyl3d-probe">{probe}</pre> : null}
       <div className="roll-action-area">
         {fault ? (
           <div className="roll-fault-pill" role="alert">
