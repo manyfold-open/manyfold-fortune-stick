@@ -88,6 +88,29 @@ describe('籤束：中签那一支要爬得出来', () => {
     expect(t, '爬出来花太久').toBeLessThan(3.5);
   });
 
+  it('抽中之後就算停手，那一支也要自己爬出來', () => {
+    // 使用者看到进度条满了、提示说「有一支籤正在往上爬」，自然就停手了。
+    // 这时候如果 CHOSEN_LIFT 打不过重力，它会沉回去，画面就永远卡在那里。
+    const chosen = 11;
+    const m = B.createMotions(G.STICK_COUNT);
+    const need = B.exitRise(G.bundleSlot(chosen).rest);
+    shake(m, 1.6, 20); // 摇到抽中签为止
+    // 从这里开始完全不摇：shakeA = 0、intensity = 0
+    let t = 0;
+    const steps = Math.round(6 / DT);
+    for (let s = 0; s < steps; s += 1) {
+      B.stepBundle(m, traits, DT, AXIS_G, 0, 0, chosen);
+      t += DT;
+      if (m[chosen].y >= need) break;
+    }
+    expect(m[chosen].y, '停手之后中签那支沉回去了，永远出不来').toBeGreaterThanOrEqual(need);
+    expect(t, '停手之后爬太久，使用者会以为卡住').toBeLessThan(4.5);
+  });
+
+  it('CHOSEN_LIFT 必須打得過重力 —— 這是上一條的根本原因', () => {
+    expect(B.CHOSEN_LIFT).toBeGreaterThan(B.GRAVITY * Math.cos(0.46));
+  });
+
   it('中签的那一支爬得比其他所有籤都高', () => {
     const chosen = 5;
     const m = B.createMotions(G.STICK_COUNT);
