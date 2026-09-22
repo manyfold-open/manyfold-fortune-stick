@@ -1239,7 +1239,7 @@ body {
 }
 
 .result-deck.mode-single .slip-cell-body {
-  padding: 9px 12px 7px;
+  padding: 9px 12px 10px;
 }
 
 .result-deck.mode-single .slip[data-lang='zh'] .slip-grid-columns {
@@ -1777,6 +1777,16 @@ body {
   border-top: 1px dashed color-mix(in srgb, var(--rule) 55%, transparent);
   width: 90%;
   margin: 0 auto;
+}
+
+.slip[data-lang='en'] .slip-cell-body,
+.result-deck.mode-single .slip[data-lang='en'] .slip-cell-body {
+  padding-bottom: 15px;
+}
+
+.slip[data-lang='en'] .slip-lucky-badge,
+.result-deck.mode-single .slip[data-lang='en'] .slip-lucky-badge {
+  margin-top: 2px;
 }
 
 .slip[data-lang='en'] .slip-lucky {
@@ -3050,6 +3060,8 @@ code {
   .ask-zone { --mark-len: 14px; padding: 16px 12px; }
   .sheet-stack .slip { margin: 8px 10px 10px; }
   .slip-cell { padding: 8px 10px; }
+  .slip-cell-body { padding-bottom: 12px; }
+  .slip[data-lang='en'] .slip-cell-body { padding-bottom: 14px; }
   .footer { gap: 12px; }
   .footer-note { top: 14px; left: 0; }
 }
