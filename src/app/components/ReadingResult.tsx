@@ -269,7 +269,7 @@ export default function ReadingResult(props: {
           <StickFace stick={reading.stick} language={reading.language} />
 
           {!interpretation && !props.interpreting && (
-            <div className="sheet-actions">
+            <div className="sheet-actions" data-lang={reading.language}>
               <button type="button" className="text-action lead-action" onClick={props.onInterpret}>
                 {t('interpret')}
               </button>
