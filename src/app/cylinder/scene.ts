@@ -58,8 +58,10 @@ export interface CylinderScene {
   camera: THREE.PerspectiveCamera;
   scene: THREE.Scene;
   tiltGroup: THREE.Group;
-  /** tiltGroup 的静止高度 —— 组件摇动时以它为基准上下甩。 */
+  /** tiltGroup 的静止位置 —— 组件摇动时以它为基准沿筒轴滑动。 */
+  baseX: number;
   baseY: number;
+  baseZ: number;
   sticks: StickHandle[];
   resize: (w: number, h: number) => void;
   render: () => void;
@@ -269,7 +271,9 @@ export function createCylinderScene(host: HTMLElement): CylinderScene | null {
     camera,
     scene,
     tiltGroup,
+    baseX: RIG_X,
     baseY: RIG_Y,
+    baseZ: 0,
     sticks,
     resize,
     render: () => renderer.render(scene, camera),

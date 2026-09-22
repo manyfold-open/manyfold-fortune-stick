@@ -42,7 +42,11 @@ export interface FortuneCylinder3DProps {
 }
 
 /** 摇到这个累积功才去跟服务端要签。够久才有仪式感，太久会烦。 */
-const SHAKE_WORK_NEEDED = 26;
+const SHAKE_WORK_NEEDED = 16;
+/** 筒子沿自己的轴能被拉动的行程。够大才甩得动，太大会离开画面。 */
+const TUBE_SWING = 1.05;
+/** 拖多少像素等于一个世界单位。越小越跟手。 */
+const PIXELS_PER_UNIT = 150;
 /** 落定之后让镜头看清签号的停顿。 */
 const REVEAL_HOLD_MS = 1500;
 
@@ -53,13 +57,21 @@ interface Drive {
   motions: StickMotion[];
   traits: StickTrait[];
   chosen: number;
-  /** 手的加速度沿筒轴的分量，与归一化强度。 */
+  /** 手把筒子拉到哪（沿筒轴，世界单位）。 */
+  handTarget: number;
+  /** 筒子实际到了哪，以及它的速度 —— 弹簧跟随，所以有重量感。 */
+  tubeOffset: number;
+  tubeVel: number;
+  prevTubeVel: number;
+  /** 筒子的加速度换算成籤在筒内感受到的惯性力。 */
   shakeA: number;
   intensity: number;
   work: number;
   requested: boolean;
   free: FreeStick | null;
   restAt: number;
+  /** 上次回报给 React 的进度档位，用来节流重渲染。 */
+  reported: number;
   last: number;
   lastRustle: number;
   camX: number;
@@ -82,18 +94,25 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
   const sceneRef = useRef<CylinderScene | null>(null);
   const [failed, setFailed] = useState(false);
   const [stageLabel, setStageLabel] = useState<Stage>('rest');
+  /** 摇签进度 0..1。摇筒是个没有终点提示的动作，不给进度使用者只能瞎摇。 */
+  const [progress, setProgress] = useState(0);
 
   const d = useRef<Drive>({
     stage: 'rest',
     motions: createMotions(STICK_COUNT),
     traits: Array.from({ length: STICK_COUNT }, (_, i) => stickTrait(i)),
     chosen: -1,
+    handTarget: 0,
+    tubeOffset: 0,
+    tubeVel: 0,
+    prevTubeVel: 0,
     shakeA: 0,
     intensity: 0,
     work: 0,
     requested: false,
     free: null,
     restAt: 0,
+    reported: -1,
     last: 0,
     lastRustle: 0,
     camX: 0,
@@ -144,6 +163,10 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
     const baseX = rig.tiltGroup.rotation.x;
     // 重力沿筒轴的分量：筒子斜持，不是整个 g
     const axisG = 9.81 * Math.cos(Math.hypot(TILT_Z, TILT_X));
+    // 筒轴在世界里的方向 —— 手一拖，筒子要沿着自己的轴滑，不是沿着萤幕的 Y
+    const axis = new THREE.Vector3(0, 1, 0).applyEuler(
+      new THREE.Euler(TILT_X, 0, TILT_Z),
+    );
     const worldPos = new THREE.Vector3();
     const worldQuat = new THREE.Quaternion();
 
@@ -155,15 +178,37 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
       if (dt <= 0) return;
       const t = (now - t0) / 1000;
 
-      // 手势衰减：放手之后摇动很快停下来
-      dr.shakeA *= Math.exp(-6 * dt);
-      dr.intensity *= Math.exp(-2.6 * dt);
+      // 放手之后手的目标回到原位，筒子自己荡回来
+      if (!dr.dragging) dr.handTarget *= Math.exp(-7 * dt);
+
+      // 筒子用弹簧追手 —— 它有质量，所以跟得到但跟不紧，这就是重量感的来源
+      // 弹簧刚度与阻尼：跟得到手，但跟不紧 —— 跟不紧的那一点点就是重量感
+      const springK = 190;
+      const springC = 15;
+      const accel = (dr.handTarget - dr.tubeOffset) * springK - dr.tubeVel * springC;
+      dr.prevTubeVel = dr.tubeVel;
+      dr.tubeVel += accel * dt;
+      dr.tubeOffset += dr.tubeVel * dt;
+      if (dr.tubeOffset > TUBE_SWING) { dr.tubeOffset = TUBE_SWING; dr.tubeVel *= -0.3; }
+      if (dr.tubeOffset < -TUBE_SWING) { dr.tubeOffset = -TUBE_SWING; dr.tubeVel *= -0.3; }
+
+      // 筒子往上加速时，籤因为惯性相对往下沉；筒子一停，它们就往上冲。这就是摇签。
+      const tubeAccel = (dr.tubeVel - dr.prevTubeVel) / dt;
+      dr.shakeA = Math.max(-38, Math.min(38, -tubeAccel * 0.5));
+      dr.intensity = Math.min(1, Math.abs(dr.tubeVel) / 5.5);
 
       const shaking = dr.intensity > 0.05;
       if (shaking && stateRef.current === 'ready' && !dr.requested) {
         dr.work += dr.intensity * dt * 10;
+        // 节流：只有跨过一格才通知 React，不然每帧都重渲染
+        const notch = Math.min(20, Math.floor((dr.work / SHAKE_WORK_NEEDED) * 20));
+        if (notch !== dr.reported) {
+          dr.reported = notch;
+          setProgress(Math.min(1, dr.work / SHAKE_WORK_NEEDED));
+        }
         if (dr.work >= SHAKE_WORK_NEEDED) {
           dr.requested = true;
+          setProgress(1);
           shakeCb.current();
         }
       }
@@ -239,10 +284,14 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
         revealCb.current?.();
       }
 
-      /* 4. 筒身跟着手势晃，静止时轻微呼吸 */
-      rig.tiltGroup.rotation.z = baseZ + Math.sin(t * 0.55) * 0.016 + dr.shakeA * 0.004;
+      /* 4. 筒身沿自己的轴跟着手滑动，静止时轻微呼吸 */
+      rig.tiltGroup.rotation.z = baseZ + Math.sin(t * 0.55) * 0.016 - dr.tubeVel * 0.012;
       rig.tiltGroup.rotation.x = baseX + Math.sin(t * 0.41 + 1.2) * 0.012;
-      rig.tiltGroup.position.y = rig.baseY + Math.max(-0.35, Math.min(0.35, dr.shakeA * 0.012));
+      rig.tiltGroup.position.set(
+        rig.baseX + axis.x * dr.tubeOffset,
+        rig.baseY + axis.y * dr.tubeOffset,
+        rig.baseZ + axis.z * dr.tubeOffset,
+      );
 
       /* 5. 弹簧相机 */
       const close = dr.stage === 'reveal' || dr.stage === 'done';
@@ -303,9 +352,11 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
     if (!dr.dragging || disabled) return;
     const dy = e.clientY - dr.pointerY;
     dr.pointerY = e.clientY;
-    // 往上拖 = 把筒子往上甩，籤受到向上的惯性
-    dr.shakeA = Math.max(-34, Math.min(34, dr.shakeA - dy * 1.5));
-    dr.intensity = Math.min(1, dr.intensity + Math.abs(dy) * 0.022);
+    // 往上拖 = 把筒子往上带。像素换成世界单位，筒子就 1:1 跟着手走。
+    dr.handTarget = Math.max(
+      -TUBE_SWING,
+      Math.min(TUBE_SWING, dr.handTarget - dy / PIXELS_PER_UNIT),
+    );
     if (dr.stage === 'rest' && dr.intensity > 0.2) {
       dr.stage = 'shaking';
       setStageLabel('shaking');
@@ -344,7 +395,11 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
         : stageLabel === 'reveal' || stageLabel === 'done'
           ? en ? '✦ Your stick has fallen ✦' : '✦ 神籤已落 ✦'
           : stageLabel === 'shaking'
-            ? en ? 'Keep shaking — hold and drag up and down' : '繼續搖 —— 按住上下拖曳'
+            ? progress >= 1
+              ? en ? 'A stick is working its way up…' : '有一支籤正在往上爬…'
+              : progress > 0.55
+                ? en ? 'Almost there — keep shaking' : '快了，再搖一會兒'
+                : en ? 'Keep shaking — hold and drag up and down' : '繼續搖 —— 按住上下拖曳'
             : en ? 'Hold and drag up and down to shake the cylinder' : '按住上下拖曳，虔心搖動籤筒';
 
   return (
@@ -367,9 +422,23 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
             <span className="fault-text">{fault.text}</span>
           </div>
         ) : (
-          <p className={`roll-hint${stageLabel === 'reveal' || stageLabel === 'done' ? ' highlight' : ''}`}>
-            {hint}
-          </p>
+          <div className="cyl3d-status">
+            <p className={`roll-hint${stageLabel === 'reveal' || stageLabel === 'done' ? ' highlight' : ''}`}>
+              {hint}
+            </p>
+            {state !== 'idle' && stageLabel !== 'reveal' && stageLabel !== 'done' ? (
+              <div
+                className="cyl3d-gauge"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(progress * 100)}
+                aria-label={en ? 'Shake progress' : '搖籤進度'}
+              >
+                <span style={{ width: `${Math.round(progress * 100)}%` }} />
+              </div>
+            ) : null}
+          </div>
         )}
       </div>
     </div>
