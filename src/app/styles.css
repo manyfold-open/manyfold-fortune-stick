@@ -92,8 +92,8 @@
 
   .stage::before {
     background:
-      /* 夜深案几上的柔和暖琥珀燈籠/燭光，自然對齊印表機左上光源 */
-      radial-gradient(ellipse 85% 72% at 43% 28%, rgba(255, 215, 160, 0.09) 0%, rgba(255, 205, 140, 0.02) 46%, transparent 78%),
+      /* 夜深案几上的柔和暖琥珀燈籠/燭光，自然對齊印表機左上光源與游標流轉 */
+      radial-gradient(ellipse 85% 72% at var(--lamp-x, 43%) var(--lamp-y, 28%), rgba(255, 215, 160, 0.09) 0%, rgba(255, 205, 140, 0.02) 46%, transparent 78%),
       /* 深沉夜色環境暗角，專注聚攏於中央案面 */
       radial-gradient(ellipse 110% 95% at 50% 48%, transparent 48%, rgba(10, 8, 7, 0.65) 100%),
       var(--ground);
@@ -102,7 +102,7 @@
   .stage[data-tone]::before {
     background:
       radial-gradient(ellipse 85% 70% at 46% 36%, color-mix(in srgb, var(--tone) 15%, transparent) 0%, color-mix(in srgb, var(--tone) 3%, transparent) 55%, transparent 80%),
-      radial-gradient(ellipse 85% 72% at 43% 28%, rgba(255, 215, 160, 0.07) 0%, transparent 70%),
+      radial-gradient(ellipse 85% 72% at var(--lamp-x, 43%) var(--lamp-y, 28%), rgba(255, 215, 160, 0.07) 0%, transparent 70%),
       radial-gradient(ellipse 110% 95% at 50% 48%, transparent 48%, rgba(10, 8, 7, 0.65) 100%),
       var(--ground);
   }
@@ -387,14 +387,24 @@ body {
   padding: 0 0 67px;
 }
 
+/* 靜室空氣微塵粒子層 */
+.ambient-motes {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  pointer-events: none;
+}
+
 .stage::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: -2;
   background:
-    /* 案頭柔和暖光，自然對齊印表機左上光源 (光從左上方來，頂面最亮) */
-    radial-gradient(ellipse 85% 72% at 43% 28%, rgba(255, 252, 246, 0.48) 0%, rgba(255, 248, 238, 0.18) 42%, transparent 76%),
+    /* 案頭柔和暖光，自然對齊印表機左上光源並隨指針/視差流轉 */
+    radial-gradient(ellipse 85% 72% at var(--lamp-x, 43%) var(--lamp-y, 28%), rgba(255, 252, 246, 0.48) 0%, rgba(255, 248, 238, 0.18) 42%, transparent 76%),
     /* 靜室案几邊緣暗角，將視覺自然向中央收攏 */
     radial-gradient(ellipse 110% 95% at 50% 48%, transparent 55%, rgba(42, 32, 22, 0.08) 100%),
     var(--ground);
@@ -405,7 +415,7 @@ body {
 .stage[data-tone]::before {
   background:
     radial-gradient(ellipse 85% 70% at 46% 36%, color-mix(in srgb, var(--tone) 16%, transparent) 0%, color-mix(in srgb, var(--tone) 3%, transparent) 52%, transparent 80%),
-    radial-gradient(ellipse 85% 72% at 43% 28%, rgba(255, 252, 246, 0.42) 0%, rgba(255, 248, 238, 0.14) 42%, transparent 76%),
+    radial-gradient(ellipse 85% 72% at var(--lamp-x, 43%) var(--lamp-y, 28%), rgba(255, 252, 246, 0.42) 0%, rgba(255, 248, 238, 0.14) 42%, transparent 76%),
     radial-gradient(ellipse 110% 95% at 50% 48%, transparent 55%, rgba(42, 32, 22, 0.08) 100%),
     var(--ground);
 }
@@ -414,7 +424,7 @@ body {
 .stage[data-tone='best']::before {
   background:
     radial-gradient(ellipse 85% 70% at 46% 36%, rgba(201, 156, 50, 0.2) 0%, rgba(37, 77, 134, 0.14) 35%, transparent 75%),
-    radial-gradient(ellipse 85% 72% at 43% 28%, rgba(255, 252, 246, 0.48) 0%, rgba(255, 248, 238, 0.18) 42%, transparent 76%),
+    radial-gradient(ellipse 85% 72% at var(--lamp-x, 43%) var(--lamp-y, 28%), rgba(255, 252, 246, 0.48) 0%, rgba(255, 248, 238, 0.18) 42%, transparent 76%),
     radial-gradient(ellipse 110% 95% at 50% 48%, transparent 55%, rgba(42, 32, 22, 0.08) 100%),
     var(--ground);
 }
@@ -423,7 +433,7 @@ body {
 .stage[data-tone='good']::before {
   background:
     radial-gradient(ellipse 85% 70% at 46% 36%, rgba(185, 135, 25, 0.18) 0%, rgba(240, 195, 90, 0.08) 45%, transparent 75%),
-    radial-gradient(ellipse 85% 72% at 43% 28%, rgba(255, 252, 246, 0.45) 0%, rgba(255, 248, 238, 0.16) 42%, transparent 76%),
+    radial-gradient(ellipse 85% 72% at var(--lamp-x, 43%) var(--lamp-y, 28%), rgba(255, 252, 246, 0.45) 0%, rgba(255, 248, 238, 0.16) 42%, transparent 76%),
     radial-gradient(ellipse 110% 95% at 50% 48%, transparent 55%, rgba(42, 32, 22, 0.08) 100%),
     var(--ground);
 }
@@ -432,7 +442,7 @@ body {
 .stage[data-tone='fair']::before {
   background:
     radial-gradient(ellipse 85% 70% at 46% 36%, rgba(27, 109, 73, 0.16) 0%, rgba(100, 170, 130, 0.06) 45%, transparent 75%),
-    radial-gradient(ellipse 85% 72% at 43% 28%, rgba(255, 252, 246, 0.4) 0%, rgba(255, 248, 238, 0.14) 42%, transparent 76%),
+    radial-gradient(ellipse 85% 72% at var(--lamp-x, 43%) var(--lamp-y, 28%), rgba(255, 252, 246, 0.4) 0%, rgba(255, 248, 238, 0.14) 42%, transparent 76%),
     radial-gradient(ellipse 110% 95% at 50% 48%, transparent 55%, rgba(42, 32, 22, 0.08) 100%),
     var(--ground);
 }
@@ -441,7 +451,7 @@ body {
 .stage[data-tone='low']::before {
   background:
     radial-gradient(ellipse 85% 70% at 46% 36%, rgba(133, 68, 50, 0.16) 0%, rgba(160, 100, 80, 0.05) 45%, transparent 75%),
-    radial-gradient(ellipse 85% 72% at 43% 28%, rgba(255, 252, 246, 0.38) 0%, rgba(255, 248, 238, 0.12) 42%, transparent 76%),
+    radial-gradient(ellipse 85% 72% at var(--lamp-x, 43%) var(--lamp-y, 28%), rgba(255, 252, 246, 0.38) 0%, rgba(255, 248, 238, 0.12) 42%, transparent 76%),
     radial-gradient(ellipse 110% 95% at 50% 48%, transparent 55%, rgba(42, 32, 22, 0.08) 100%),
     var(--ground);
 }
@@ -456,11 +466,6 @@ body {
   opacity: 0.045;
   mix-blend-mode: multiply;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='woodGrain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.035 0.75' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.45 0 0 0 0 0.38 0 0 0 0 0.3 1 0 0 0 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23woodGrain)'/%3E%3C/svg%3E");
-}
-
-/* 停用原本太花雜的幾何旋轉銅錢圖案 */
-.stage[data-tone]::after {
-  display: none;
 }
 
 .stage-loading {
@@ -522,6 +527,27 @@ body {
 .ask-zone:focus-within {
   --mark: var(--on-ground-2);
   --mark-len: 24px;
+}
+
+.ask-zone.focused {
+  --mark: var(--on-ground);
+  --mark-len: 28px;
+}
+
+.ask-zone::before {
+  content: '';
+  position: absolute;
+  inset: -12px;
+  border-radius: 8px;
+  background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.12) 0%, transparent 72%);
+  opacity: 0;
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+.ask-zone.focused::before,
+.ask-zone:focus-within::before {
+  opacity: 1;
 }
 
 .ask-grow {
@@ -730,9 +756,25 @@ body {
   animation: tray-shudder 0.22s linear infinite;
 }
 
+/* 机身步进微颤，与步进电机步频和齿轮声同步 */
+.printer-printing .printer-body {
+  animation: chassis-shudder 0.15s linear infinite;
+}
+
 @keyframes tray-shudder {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(0.7px); }
+}
+
+@keyframes chassis-shudder {
+  0%, 100% { transform: translateY(0); }
+  35% { transform: translateY(0.35px) scaleY(0.9996); }
+  70% { transform: translateY(-0.15px); }
+}
+
+.calm .printer-printing .printer-tray,
+.calm .printer-printing .printer-body {
+  animation: none;
 }
 
 .led { fill: var(--case-shadow); opacity: 0.55; }
@@ -981,7 +1023,7 @@ body {
   background: linear-gradient(rgba(38, 30, 18, 0.34), transparent);
 }
 
-/* 印字头：窗口的下沿就是正在成像的那一行，压一道亮线在那儿。
+/* 印字头：窗口的下沿就是正在成像的那一行，压一道微热光晕在那儿。
    只在走纸时出现 —— 停下来还亮着就成了纸上的一条印痕。 */
 .printer-out.feeding::after {
   content: '';
@@ -989,17 +1031,35 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  height: 2px;
+  height: 2.5px;
   z-index: 3;
   pointer-events: none;
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 246, 214, 0.9) 12%,
-    rgba(255, 252, 240, 0.95) 50%,
-    rgba(255, 246, 214, 0.9) 88%,
+    rgba(255, 246, 214, 0.85) 15%,
+    rgba(255, 252, 240, 0.98) 50%,
+    rgba(255, 246, 214, 0.85) 85%,
     transparent
   );
+  box-shadow: 0 0 7px rgba(255, 235, 175, 0.75);
+  animation: printhead-scan 0.18s ease-in-out infinite alternate;
+}
+
+@keyframes printhead-scan {
+  0% {
+    opacity: 0.7;
+    filter: drop-shadow(0 0 1px rgba(255, 215, 120, 0.4));
+  }
+  100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 5px rgba(255, 235, 160, 0.9));
+  }
+}
+
+.calm .printer-out.feeding::after {
+  animation: none;
+  box-shadow: none;
 }
 
 .printer-slot.ejecting .printer-body {
@@ -1280,11 +1340,21 @@ body {
 .slip {
   position: relative;
   display: block;
-  background: var(--paper);
+  background-color: var(--paper);
+  background-image: linear-gradient(
+    90deg,
+    rgba(38, 26, 18, 0.015) 0%,
+    transparent 6%,
+    transparent 94%,
+    rgba(38, 26, 18, 0.02) 100%
+  );
   color: var(--ink);
   font-family: var(--serif);
   padding: 0;
-  box-shadow: 0 3px 8px rgba(38, 26, 18, 0.08), 0 16px 36px rgba(38, 26, 18, 0.16);
+  box-shadow:
+    0 1px 3px rgba(38, 26, 18, 0.06),
+    0 8px 24px -4px rgba(38, 26, 18, 0.13),
+    0 22px 48px -8px rgba(38, 26, 18, 0.16);
   border: 1.5px solid var(--rule);
   overflow: visible;
   animation: slip-settle 0.54s 0.16s cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -1398,9 +1468,34 @@ body {
   animation: stamp 0.44s cubic-bezier(0.2, 1.35, 0.35, 1) both;
 }
 
-/* 上上签：重印 + 鎏金光晕双层扩散 */
-.sheet-stack [data-tone='best'] .slip-level {
+/* 上上签：重印 + 鎏金流光反射 + 鎏金光晕双层扩散 */
+.sheet-stack [data-tone='best'] .slip-level,
+.slip[data-tone='best'] .slip-level {
+  background: linear-gradient(
+    115deg,
+    #1b3b6f 0%,
+    #254d86 32%,
+    #d4af37 var(--lamp-foil, 50%),
+    #fff8d6 calc(var(--lamp-foil, 50%) + 6%),
+    #c99c32 calc(var(--lamp-foil, 50%) + 14%),
+    #254d86 78%,
+    #1b3b6f 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 1px 1px rgba(255, 255, 255, 0.7));
   animation: stamp-best 0.5s cubic-bezier(0.18, 1.45, 0.3, 1) both;
+}
+
+.slip[data-tone='best'] .slip-corner {
+  border-color: #c99c32;
+  filter: drop-shadow(0 0 1px rgba(201, 156, 50, 0.45));
+}
+
+.slip[data-tone='best'] .slip-title-flourish {
+  color: #c99c32;
+  text-shadow: 0 0 6px rgba(201, 156, 50, 0.35);
 }
 
 .sheet-stack [data-tone='best'] .level-stamp-aura {
@@ -1420,15 +1515,15 @@ body {
   100% {
     transform: scale(1) rotate(0deg);
     opacity: 1;
-    filter: none;
+    filter: drop-shadow(0 1px 1px rgba(255, 255, 255, 0.7));
   }
 }
 
 @keyframes ink-bloom-gold {
-  0% { opacity: 0; transform: scale(0.25); }
-  20% { opacity: 0.6; }
-  60% { opacity: 0.35; }
-  100% { opacity: 0; transform: scale(2.0); }
+  0% { opacity: 0; transform: scale(0.25); filter: blur(3px); }
+  20% { opacity: 0.65; filter: blur(1px); }
+  60% { opacity: 0.35; filter: blur(0.5px); }
+  100% { opacity: 0; transform: scale(2.05); filter: blur(2px); }
 }
 
 /* 上签：明快琥珀墨晕 */
@@ -1774,7 +1869,14 @@ body {
   from {
     opacity: 0;
     transform: translateY(7px);
+    filter: blur(1.5px);
     clip-path: inset(0 0 100% 0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+    clip-path: inset(0 0 0 0);
   }
 }
 

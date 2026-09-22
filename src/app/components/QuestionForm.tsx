@@ -37,7 +37,7 @@ export default function QuestionForm(props: {
   return (
     // 没有框，就把整块区域都做成可以落笔的地方：点哪里都开始写。
     <div className="ask" onClick={() => field.current?.focus()}>
-      <div className="ask-zone">
+      <div className={`ask-zone${focused ? ' focused' : ''}${!empty ? ' has-content' : ''}`}>
         {/* 用 data-value 撑开高度：输入区自己长高，不需要 JS，也不会出现滚动条。 */}
         <div className="ask-grow" data-value={props.value}>
           <textarea

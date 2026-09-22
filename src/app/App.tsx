@@ -16,6 +16,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { AppState } from '../shared/types';
 import { api, onUnauthorized } from './api';
+import AmbientMotes from './components/AmbientMotes';
 import FortuneGame from './components/FortuneGame';
 import HistoryView from './components/HistoryView';
 import PasswordGate from './components/PasswordGate';
@@ -81,6 +82,30 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
+  // 滑鼠與觸控動態燈光視差：在桌面模擬真實頭頂燈的微小光影流轉
+  useEffect(() => {
+    if (prefs.reducedMotion) return;
+    const onPointerMove = (e: PointerEvent) => {
+      const w = window.innerWidth || 1;
+      const h = window.innerHeight || 1;
+      const nx = Math.max(0, Math.min(1, e.clientX / w));
+      const ny = Math.max(0, Math.min(1, e.clientY / h));
+      const lampX = 43 + (nx - 0.5) * 14;
+      const lampY = 28 + (ny - 0.5) * 10;
+      const foilPos = Math.round(15 + nx * 70);
+      document.documentElement.style.setProperty('--lamp-x', `${lampX.toFixed(2)}%`);
+      document.documentElement.style.setProperty('--lamp-y', `${lampY.toFixed(2)}%`);
+      document.documentElement.style.setProperty('--lamp-foil', `${foilPos}%`);
+    };
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      document.documentElement.style.removeProperty('--lamp-x');
+      document.documentElement.style.removeProperty('--lamp-y');
+      document.documentElement.style.removeProperty('--lamp-foil');
+    };
+  }, [prefs.reducedMotion]);
+
   // <html lang> 决定读屏软件怎么念这一页，所以它得跟着界面语言走，不能钉死在 zh-CN。
   // 标题和描述同理 —— 标签页上显示的是当前这个人看得懂的那个名字。
   useEffect(() => {
@@ -113,6 +138,7 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
 
   return (
     <main className={`shell${prefs.reducedMotion ? ' calm' : ''}`}>
+      <AmbientMotes reducedMotion={prefs.reducedMotion} />
       <header className="topbar">
         <span className="topbar-actions">
           {/* 只换界面。已经印出来的签一个字都不会动。 */}
