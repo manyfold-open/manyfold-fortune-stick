@@ -1,6 +1,6 @@
 /**
- * 外壳：加载一次 /api/state，用 location.hash 在三个页面之间切换（没有 router 依赖），
- * 并在部署设了密码而本浏览器还没给出时升起密码门。
+ * 外壳：加载一次 /api/state，用 location.hash 在三个页面之间切换（没有 router 依赖）。
+ * 游戏页公开可玩；密码门只在部署者打开设置页时出现。
  *
  * 外壳自己几乎不占地方 —— 一行牌记、一行页脚，中间全是机器和纸。两侧曾经立过
  * 两条竖排的装饰铭牌，撤掉了：它们把视线往外拉，而这一屏要看的只有中间那台机器。
@@ -29,8 +29,9 @@ type Route = 'game' | 'history' | 'settings' | 'privacy';
 
 const routeFromHash = (): Route => {
   const hash = location.hash.replace(/^#\/?/, '');
-  if (location.pathname.replace(/\/+$/, '') === '/privacy' || hash === 'privacy') return 'privacy';
-  if (hash === 'settings') return 'settings';
+  const pathname = location.pathname.replace(/\/+$/, '') || '/';
+  if (pathname === '/privacy' || hash === 'privacy') return 'privacy';
+  if (pathname === '/settings' || hash === 'settings') return 'settings';
   if (hash === 'history') return 'history';
   return 'game';
 };
@@ -66,23 +67,28 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
       const next = await api<AppState>('/api/state');
       setState(next);
       setLoadError('');
-      setGateOpen(next.adminRequired && !next.adminOk);
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : String(error));
     }
   }, []);
 
   useEffect(() => {
-    onUnauthorized(() => setGateOpen(true));
+    onUnauthorized(() => {
+      if (route === 'settings') setGateOpen(true);
+    });
     void refreshState();
     return () => onUnauthorized(null);
-  }, [refreshState]);
+  }, [refreshState, route]);
 
   useEffect(() => {
     const onHash = () => setRoute(routeFromHash());
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
+
+  useEffect(() => {
+    setGateOpen(route === 'settings' && Boolean(state?.adminRequired && !state.adminOk));
+  }, [route, state]);
 
   // 滑鼠與觸控動態燈光視差：在桌面模擬真實頭頂燈的微小光影流轉
   useEffect(() => {
@@ -158,7 +164,7 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
         </span>
       </header>
 
-      {route === 'settings' && (
+      {route === 'settings' && state.adminOk && (
         <SettingsView
           agents={state.agents}
           initialSession={state.connect.session}

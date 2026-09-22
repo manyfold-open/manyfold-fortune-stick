@@ -2,9 +2,9 @@
  * Fetch wrapper for the app's own API.
  *
  * The admin password (when the deployment has one) lives in sessionStorage and is
- * attached to every request as x-admin-password. A 401 with admin_password_invalid
- * notifies the App so it can raise the password gate — components never handle
- * authentication themselves.
+ * attached only to the bootstrap/settings requests that can use it. Public game
+ * requests never need or receive it. A 401 with admin_password_invalid notifies
+ * the App so it can raise the password gate — components never handle auth.
  */
 
 import type { ApiErrorBody } from '../shared/types';
@@ -60,7 +60,15 @@ export const onUnauthorized = (handler: (() => void) | null): void => {
   unauthorizedHandler = handler;
 };
 
-export function authHeaders(): Record<string, string> {
+const isAdminAwarePath = (path: string): boolean =>
+  path === '/api/state' ||
+  path === '/api/connect' ||
+  path.startsWith('/api/connect/') ||
+  path === '/api/agents' ||
+  path.startsWith('/api/agents/');
+
+export function authHeaders(path = ''): Record<string, string> {
+  if (!isAdminAwarePath(path)) return {};
   const password = getStoredPassword();
   return password ? { 'x-admin-password': password } : {};
 }
@@ -70,7 +78,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     ...init,
     headers: {
       ...(init.body ? { 'content-type': 'application/json' } : {}),
-      ...authHeaders(),
+      ...authHeaders(path),
       ...(init.headers ?? {}),
     },
   });

@@ -1,7 +1,7 @@
 /**
- * Shown when the deployment has ADMIN_PASSWORD set and this browser has not
- * provided it (or provided a wrong one). The password lives in sessionStorage —
- * gone when the tab closes, never in a cookie, never in a URL.
+ * Shown on /settings when the deployment has ADMIN_PASSWORD set and this browser
+ * has not provided it (or provided a wrong one). The password lives in
+ * sessionStorage — gone when the tab closes, never in a cookie, never in a URL.
  */
 
 import { useState } from 'react';

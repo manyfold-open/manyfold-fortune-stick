@@ -153,7 +153,7 @@ export const zh = {
 
   /* ── 密码门 ── */
   gateTitle: '需要管理密码',
-  gateBody: '这个部署设置了 ADMIN_PASSWORD，输入后才能继续。',
+  gateBody: '这个部署的设置页需要 ADMIN_PASSWORD，输入后才能管理 agent。',
   gateLabel: '管理密码',
   gateWrong: '密码不对。',
   gateSubmit: '解锁',
@@ -178,7 +178,7 @@ export const zh = {
   settingsMoreNote: '重新授权一个已经连着的 agent 会就地换掉它的 token —— 授权过期时用得上。',
   settingsAboutTitle: '关于这个部署',
   settingsAboutBody:
-    'agent 的 token 以 AES-GCM 加密存在 D1 里，任何时候都不会发到浏览器。设置 ADMIN_PASSWORD 可以把整个站（包括游戏）锁在密码后面，设置 CONFIG_ENCRYPTION_KEY 可以让加密密钥不落库。详见 README。',
+    'agent 的 token 以 AES-GCM 加密存在 D1 里，任何时候都不会发到浏览器。设置 ADMIN_PASSWORD 只保护这个设置页的 agent 管理操作，游戏仍然公开可玩。设置 CONFIG_ENCRYPTION_KEY 可以让加密密钥不落库。详见 README。',
 
   /* ── 连接 Manyfold ── */
   connectStart: '连接 Manyfold agent',

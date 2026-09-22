@@ -150,7 +150,7 @@ export const en = {
 
   /* ── password gate ── */
   gateTitle: 'Admin password required',
-  gateBody: 'This deployment has ADMIN_PASSWORD set. Enter it to continue.',
+  gateBody: 'This deployment protects agent management with ADMIN_PASSWORD. Enter it to continue.',
   gateLabel: 'Admin password',
   gateWrong: 'That password is not right.',
   gateSubmit: 'Unlock',
@@ -179,7 +179,7 @@ export const en = {
     'Re-authorizing an agent that is already connected swaps its token in place — useful when an authorization expires.',
   settingsAboutTitle: 'About this deployment',
   settingsAboutBody:
-    'Agent tokens are AES-GCM encrypted in D1 and are never sent to the browser. Setting ADMIN_PASSWORD locks the whole site, game included, behind a password. Setting CONFIG_ENCRYPTION_KEY keeps the encryption key out of the database. See the README.',
+    'Agent tokens are AES-GCM encrypted in D1 and are never sent to the browser. ADMIN_PASSWORD protects agent-management operations on this settings page only; the game remains public. Setting CONFIG_ENCRYPTION_KEY keeps the encryption key out of the database. See the README.',
 
   /* ── connecting to Manyfold ── */
   connectStart: 'Connect a Manyfold agent',
