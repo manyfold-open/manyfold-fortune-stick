@@ -27,6 +27,7 @@ import {
   type FortuneStick,
 } from '../shared/sticks';
 import { UNPARSEABLE } from '../shared/error-copy';
+import { withoutDashes } from '../shared/text';
 import { HttpError, type AgentCredential, type Env } from './types';
 import { A2AError, consumeA2AStream, safeErrorText } from './a2a';
 import { credentialFor, listConnectedAgents } from './connect';
@@ -80,23 +81,30 @@ function toReading(row: ReadingRow): Reading {
   if (!stick) throw new HttpError(500, 'unknown_stick', '这条求签记录指向了一支不存在的签。');
   // 语言由问题推导，不落库：question 写进去之后就不再改，所以这里算出来的
   // 永远是当初印出来的那张纸的语言。这个库没有迁移步骤，能不加列就不加列。
-  const language = detectLanguage(row.question);
+  const question = withoutDashes(row.question);
   let interpretation: Interpretation | null = null;
   if (row.interpretation) {
     try {
-      interpretation = JSON.parse(row.interpretation) as Interpretation;
+      const parsed = JSON.parse(row.interpretation) as Interpretation;
+      interpretation = {
+        ...parsed,
+        meaning: withoutDashes(parsed.meaning ?? ''),
+        answer: withoutDashes(parsed.answer ?? ''),
+        notice: withoutDashes(parsed.notice ?? ''),
+        action: withoutDashes(parsed.action ?? ''),
+      };
     } catch {
       interpretation = null;
     }
   }
   return {
     id: row.id,
-    question: row.question,
+    question,
     stick,
     status: (row.status as ReadingStatus) ?? 'drawn',
     interpretation,
     error: row.error,
-    language,
+    language: detectLanguage(question),
     createdAt: row.created_at,
   };
 }
@@ -113,7 +121,7 @@ async function readRow(env: Env, id: string): Promise<ReadingRow> {
 
 /** 校验问题。长度按「字符」数，中文一个字算一个。 */
 export function normalizeQuestion(raw: unknown): string {
-  const question = typeof raw === 'string' ? raw.trim().replace(/\s+/g, ' ') : '';
+  const question = typeof raw === 'string' ? withoutDashes(raw.trim().replace(/\s+/g, ' ')) : '';
   const length = [...question].length;
   if (length === 0) throw new HttpError(400, 'question_required', '先写下你想问的事，再开始摇签。');
   if (length < QUESTION_MIN_CHARS) {
@@ -169,7 +177,7 @@ const UNPARSEABLE_SNIPPET_CHARS = 200;
  * 纸上不印这一段，浏览器认出这个前缀就只说人话（src/shared/error-copy.ts）。
  */
 export function unparseableError(raw: string): string {
-  const snippet = safeErrorText(raw).trim().slice(0, UNPARSEABLE_SNIPPET_CHARS);
+  const snippet = withoutDashes(safeErrorText(raw).trim()).slice(0, UNPARSEABLE_SNIPPET_CHARS);
   return snippet ? `${UNPARSEABLE}: ${snippet}` : UNPARSEABLE;
 }
 
@@ -177,10 +185,10 @@ export function unparseableError(raw: string): string {
 export function fallbackInterpretation(stick: FortuneStick, language: Language): Interpretation {
   const text = stickText(stick, language);
   return {
-    meaning: text.meaning,
-    answer: text.general,
-    notice: FALLBACK_NOTICE[language],
-    action: text.action,
+    meaning: withoutDashes(text.meaning),
+    answer: withoutDashes(text.general),
+    notice: withoutDashes(FALLBACK_NOTICE[language]),
+    action: withoutDashes(text.action),
     source: 'fallback',
     language,
   };
@@ -343,18 +351,18 @@ export function parseInterpretation(
     const text = keys
       .map((key) => source[key])
       .find((candidate): candidate is string => typeof candidate === 'string' && candidate.trim().length > 0);
-    const trimmed = text?.trim() ?? '';
+    const trimmed = withoutDashes(text?.trim() ?? '');
     return trimmed.slice(0, limit);
   };
 
   const answer = pick(value, ['answer', 'response', 'content', 'text'], FIELD_LIMITS.answer);
   if (answer) {
     return {
-      meaning: pick(value, ['meaning', 'summary'], FIELD_LIMITS.meaning) || preset.meaning,
+      meaning: pick(value, ['meaning', 'summary'], FIELD_LIMITS.meaning) || withoutDashes(preset.meaning),
       answer,
       notice: pick(value, ['notice', 'caveat', 'insight'], FIELD_LIMITS.notice),
       action:
-        pick(value, ['action', 'suggestion', 'nextStep'], FIELD_LIMITS.action) || preset.action,
+        pick(value, ['action', 'suggestion', 'nextStep'], FIELD_LIMITS.action) || withoutDashes(preset.action),
       source: 'ai',
       language,
     };
@@ -372,7 +380,7 @@ export function parseInterpretation(
   // meaning/action and place the agent's response in the main answer field.
   const prose = unfenced.trim();
   if (!prose) return null;
-  const text = prose.slice(0, FIELD_LIMITS.answer);
+  const text = withoutDashes(prose).slice(0, FIELD_LIMITS.answer);
   if (!text) return null;
   return {
     meaning: preset.meaning,
@@ -444,10 +452,11 @@ ${stickBlock(stick, 'en')}
 3. ${TONE_BY_LEVEL.en[stick.level]}
 4. If the question touches health, money or legal decisions, help them see which conditions matter rather than ruling on it, and suggest a professional where that is the honest answer.
 5. Reply in English throughout. No markdown headings and no bullet characters.
+6. Do not use em dashes, en dashes, or any dash punctuation. Use commas, full stops, or parentheses instead.
 
 [Output format]
 Output one JSON object and nothing else. Do not wrap it in a code block. Never put a raw
-double quote inside a string value — use single quotes if you need to quote something:
+double quote inside a string value. Use single quotes if you need to quote something:
 {"meaning":"one sentence on what this stick means for their question, plain words, under 30 words","answer":"written against their actual question, 60 to 110 words","notice":"one angle they may be overlooking, under 30 words","action":"one concrete thing they can do today, under 20 words"}`;
   }
 
@@ -465,6 +474,7 @@ ${stickBlock(stick, 'zh')}
 3. ${TONE_BY_LEVEL.zh[stick.level]}
 4. 如果问题涉及健康、财务、法律等重要决定，帮他梳理该考虑哪些条件，不下武断结论，必要时建议咨询专业人士。
 5. 全部用中文，不要使用 markdown 标题或列表符号。
+6. 不要使用破折号、长横线或其他 dash 符号，改用逗号、句号或括号。
 
 【输出格式】
 只输出一个 JSON 对象，不要输出任何其它文字，也不要用代码块包起来。字符串里不要出现
@@ -493,6 +503,7 @@ The reading you already gave:
 [Rules]
 This turn is a follow-up. It does not draw a new stick, and it does not change this stick's level or the reading above. Keep talking about the same stick.
 Keep the answer under 120 words. Say it directly, do not restate the above, no JSON, no markdown. Reply in English.
+Do not use em dashes, en dashes, or any dash punctuation. Use commas, full stops, or parentheses instead.
 
 [Their follow-up]
 ${question}`;
@@ -512,6 +523,7 @@ ${question}`;
 【规则】
 这一轮是追问，不重新抽签，也不改变这支签的等级和上面的解读。就着同一支签往下说。
 回答控制在 150 字以内，直接讲，不要复述上面的内容，不要用 JSON，不要用 markdown。
+不要使用破折号、长横线或其他 dash 符号，改用逗号、句号或括号。
 
 【他的追问】
 ${question}`;
@@ -657,8 +669,8 @@ export async function interpretReading(env: Env, id: string): Promise<Reading> {
       cause instanceof HttpError
         ? cause.code
         : cause instanceof Error
-          ? safeErrorText(cause.message)
-          : safeErrorText(cause);
+          ? withoutDashes(safeErrorText(cause.message))
+          : withoutDashes(safeErrorText(cause));
   }
 
   await env.DB.prepare(
@@ -683,7 +695,11 @@ export async function listFollowUps(env: Env, id: string): Promise<FollowUpMessa
   )
     .bind(id, FOLLOW_UP_HISTORY_LIMIT)
     .all<FollowUpMessage>();
-  return (results ?? []).reverse();
+  return (results ?? []).reverse().map((message) => ({
+    ...message,
+    content: withoutDashes(message.content),
+    error: message.error ? withoutDashes(message.error) : null,
+  }));
 }
 
 async function insertFollowUp(
@@ -695,7 +711,14 @@ async function insertFollowUp(
     `INSERT INTO reading_messages (reading_id, role, content, status, error, created_at)
      VALUES (?, ?, ?, ?, ?, ?)`,
   )
-    .bind(readingId, fields.role, fields.content, fields.status ?? 'complete', fields.error ?? null, now())
+    .bind(
+      readingId,
+      fields.role,
+      withoutDashes(fields.content),
+      fields.status ?? 'complete',
+      fields.error ? withoutDashes(fields.error) : null,
+      now(),
+    )
     .run();
   return Number(result.meta.last_row_id);
 }
@@ -711,7 +734,7 @@ export async function handleFollowUp(options: {
   waitUntil: (promise: Promise<unknown>) => void;
 }): Promise<Response> {
   const { env, readingId } = options;
-  const message = options.message.trim();
+  const message = withoutDashes(options.message.trim());
   if (!message) throw new HttpError(400, 'message_required', '写点什么再发送。');
   if ([...message].length > FOLLOW_UP_MAX_CHARS) {
     throw new HttpError(400, 'message_too_long', `追问请控制在 ${FOLLOW_UP_MAX_CHARS} 个字以内。`);
@@ -765,16 +788,16 @@ export async function handleFollowUp(options: {
         },
         signal: controller.signal,
         onSnapshot: async (current) => {
-          partial = current.text;
+          partial = withoutDashes(current.text);
           const timestamp = Date.now();
           if (current.text && (timestamp - lastTextSent >= TEXT_EVENT_INTERVAL_MS || current.terminal)) {
             lastTextSent = timestamp;
-            await send({ type: 'text', text: current.text });
+            await send({ type: 'text', text: partial });
           }
         },
       });
 
-      const text = snapshot.text.trim();
+      const text = withoutDashes(snapshot.text.trim());
       if (!text) {
         throw new A2AError(
           snapshot.state && snapshot.state !== 'completed'
@@ -791,7 +814,9 @@ export async function handleFollowUp(options: {
         .run();
       await send({ type: 'done', text });
     } catch (cause) {
-      const detail = cause instanceof Error ? safeErrorText(cause.message) : safeErrorText(cause);
+      const detail = withoutDashes(
+        cause instanceof Error ? safeErrorText(cause.message) : safeErrorText(cause),
+      );
       await insertFollowUp(env, readingId, {
         role: 'agent',
         content: partial,

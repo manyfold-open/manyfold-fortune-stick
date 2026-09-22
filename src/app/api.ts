@@ -9,6 +9,7 @@
 
 import type { ApiErrorBody } from '../shared/types';
 import type { Translate } from '../shared/i18n';
+import { withoutDashes } from '../shared/text';
 import { ERROR_KEYS, storedErrorText as storedText } from '../shared/error-copy';
 import { browserStorage, safeGet, safeRemove, safeSet } from '../shared/safe-storage';
 import { FOLLOW_UP_MAX, QUESTION_MAX, QUESTION_MIN } from './constants';
@@ -35,16 +36,16 @@ const ERROR_VARS = { min: QUESTION_MIN, max: QUESTION_MAX, followUpMax: FOLLOW_U
  * （码查表，agent 自己那句原样显示 —— 见 src/shared/error-copy.ts）
  */
 export const storedErrorText = (error: string, t: Translate): string =>
-  storedText(error, t, ERROR_VARS);
+  withoutDashes(storedText(error, t, ERROR_VARS));
 
 /** 把任何一个抛出来的东西变成一句给人看的话。 */
 export function errorMessage(cause: unknown, t: Translate): string {
   if (cause instanceof ApiError) {
     const key = ERROR_KEYS[cause.code];
-    if (key) return t(key, ERROR_VARS);
-    return cause.message || t('errUnknown');
+    if (key) return withoutDashes(t(key, ERROR_VARS));
+    return withoutDashes(cause.message || t('errUnknown'));
   }
-  return cause instanceof Error ? cause.message : String(cause);
+  return withoutDashes(cause instanceof Error ? cause.message : String(cause));
 }
 
 export const getStoredPassword = (): string => safeGet(browserStorage('sessionStorage'), PASSWORD_KEY) ?? '';

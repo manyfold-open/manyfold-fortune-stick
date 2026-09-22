@@ -14,6 +14,7 @@ import type { FollowUpMessage, Reading } from '../../shared/types';
 import { storedErrorText } from '../api';
 import { LEVEL_TONE } from '../constants';
 import { copyFor, useT } from '../i18n';
+import { withoutDashes } from '../../shared/text';
 import FollowUp from './FollowUp';
 import SharePanel from './SharePanel';
 import StickFace from './StickFace';
@@ -31,6 +32,16 @@ export default function ReadingResult(props: {
   const [showFollowUp, setShowFollowUp] = useState(false);
   const { reading } = props;
   const { interpretation } = reading;
+  const displayQuestion = withoutDashes(reading.question);
+  const displayInterpretation = interpretation
+    ? {
+        ...interpretation,
+        meaning: withoutDashes(interpretation.meaning),
+        answer: withoutDashes(interpretation.answer),
+        notice: withoutDashes(interpretation.notice),
+        action: withoutDashes(interpretation.action),
+      }
+    : null;
   const isFallback = interpretation?.source === 'fallback';
   /**
    * 那四个小标题跟**这一局**的语言走，不跟界面：它们标的是 agent 用那种语言写下的
@@ -85,26 +96,26 @@ export default function ReadingResult(props: {
 
       <section className="sheet-block sheet-block-lead">
         <h3>{sheet.blockMeaning}</h3>
-        <p className="sheet-lead">{interpretation?.meaning}</p>
+        <p className="sheet-lead">{displayInterpretation?.meaning}</p>
       </section>
 
       <section className="sheet-block sheet-block-answer">
         <h3>{sheet.blockAnswer}</h3>
-        <p>{interpretation?.answer}</p>
+        <p>{displayInterpretation?.answer}</p>
       </section>
 
-      {(interpretation?.notice || interpretation?.action) && (
+      {(displayInterpretation?.notice || displayInterpretation?.action) && (
         <div className="sheet-pair">
-          {interpretation.notice && (
+          {displayInterpretation.notice && (
             <section className="sheet-block sheet-block-notice">
               <h3>{sheet.blockNotice}</h3>
-              <p>{interpretation.notice}</p>
+            <p>{displayInterpretation.notice}</p>
             </section>
           )}
-          {interpretation.action && (
+          {displayInterpretation.action && (
             <section className="sheet-block sheet-block-action">
               <h3>{sheet.blockAction}</h3>
-              <p>{interpretation.action}</p>
+            <p>{displayInterpretation.action}</p>
             </section>
           )}
         </div>
@@ -127,7 +138,7 @@ export default function ReadingResult(props: {
           stick={reading.stick}
           language={reading.language}
           interpretation={interpretation}
-          question={reading.question}
+          question={displayQuestion}
           onClose={() => setShowShare(false)}
         />
       )}
@@ -189,7 +200,7 @@ export default function ReadingResult(props: {
             <span className="scroll-head-label">
               {reading.language === 'en' ? 'QUESTION' : '所求之事'}
             </span>
-            <p className="scroll-head-text">{reading.question}</p>
+            <p className="scroll-head-text">{displayQuestion}</p>
           </div>
 
           <StickFace stick={reading.stick} language={reading.language} />

@@ -112,6 +112,16 @@ describe('parseInterpretation', () => {
     expect(parsed).toMatchObject({ ...good, source: 'ai' });
   });
 
+  it('解析后不会把 dash 带进解读内容', () => {
+    const parsed = parseInterpretation(
+      JSON.stringify({ ...good, answer: '先做这一步——再观察结果。' }),
+      stick,
+      'zh',
+    );
+    expect(parsed?.answer).toBe('先做这一步 再观察结果。');
+    expect(parsed?.answer).not.toMatch(/[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]/);
+  });
+
   it('剥掉 markdown 代码块和前后客套话', () => {
     const raw = `好的，这是解读：\n\`\`\`json\n${JSON.stringify(good)}\n\`\`\`\n希望有帮助。`;
     expect(parseInterpretation(raw, stick, 'zh')?.answer).toBe(good.answer);

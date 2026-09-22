@@ -15,6 +15,7 @@
  */
 
 import { useState, type RefObject } from 'react';
+import { withoutDashes } from '../../shared/text';
 import { QUESTION_MAX } from '../constants';
 import { useT } from '../i18n';
 import { typeTick } from '../sound';
@@ -44,7 +45,7 @@ export default function QuestionForm(props: {
             className="ask-input"
             ref={field}
             value={props.value}
-            onChange={(event) => props.onChange(event.target.value)}
+            onChange={(event) => props.onChange(withoutDashes(event.target.value))}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
             onKeyDown={(event) => {

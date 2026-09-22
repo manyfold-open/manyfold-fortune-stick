@@ -10,16 +10,20 @@
  */
 
 import type { Language } from '../lang';
+import { withoutDashes } from '../text';
 import { zh, type Copy } from './zh';
 import { en } from './en';
 
 export type { Copy };
 export { zh, en };
 
-const TABLES: Record<Language, Copy> = { zh, en };
+const DISPLAY_TABLES: Record<Language, Copy> = {
+  zh: Object.fromEntries(Object.entries(zh).map(([key, value]) => [key, withoutDashes(value)])) as Copy,
+  en: Object.fromEntries(Object.entries(en).map(([key, value]) => [key, withoutDashes(value)])) as Copy,
+};
 
 /** 某种语言下的整张表。给那些不跟界面走的地方用（比如记录里某一条自己的语言）。 */
-export const copyFor = (language: Language): Copy => TABLES[language];
+export const copyFor = (language: Language): Copy => DISPLAY_TABLES[language];
 
 /** 把 {name} 换成值。没给值的占位符原样留着，方便一眼看出是哪个键漏了。 */
 export function format(template: string, vars?: Record<string, string | number>): string {
@@ -35,4 +39,4 @@ export type Translate = (key: keyof Copy, vars?: Record<string, string | number>
 export const translatorFor =
   (language: Language): Translate =>
   (key, vars) =>
-    format(TABLES[language][key], vars);
+    format(DISPLAY_TABLES[language][key], vars);

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { zh } from '../src/shared/i18n/zh';
 import { en } from '../src/shared/i18n/en';
-import { format, translatorFor } from '../src/shared/i18n';
+import { copyFor, format, translatorFor } from '../src/shared/i18n';
 
 describe('界面字典', () => {
   it('两张表的键完全一致 —— 漏一个就编译不过，这里再兜一层', () => {
@@ -38,5 +38,14 @@ describe('界面字典', () => {
   it('translatorFor 按语言取表并插值', () => {
     expect(translatorFor('zh')('faultTooShort', { min: 5 })).toContain('至少 5 字');
     expect(translatorFor('en')('faultTooShort', { min: 5 })).toContain('at least 5');
+  });
+
+  it('前端文案不会带出 dash', () => {
+    for (const language of ['zh', 'en'] as const) {
+      for (const key of Object.keys(zh) as (keyof typeof zh)[]) {
+        expect(translatorFor(language)(key)).not.toMatch(/[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]/);
+        expect(copyFor(language)[key]).not.toMatch(/[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]/);
+      }
+    }
   });
 });

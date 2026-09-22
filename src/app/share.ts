@@ -9,6 +9,7 @@
  */
 
 import type { Language } from '../shared/lang';
+import { withoutDashes } from '../shared/text';
 import {
   LEVEL_LABEL,
   STICK_COUNT,
@@ -355,9 +356,11 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
   const en = language === 'en';
   const face = en ? SERIF_EN : SERIF;
   const text = stickText(stick, language);
+  const question = withoutDashes(input.question);
+  const meaning = withoutDashes(input.interpretation?.meaning ?? text.meaning);
   const { tone, ground } = TONE[stick.level];
   const center = WIDTH / 2;
-  const withQuestion = input.includeQuestion && Boolean(input.question.trim());
+  const withQuestion = input.includeQuestion && Boolean(question.trim());
 
   paintGround(context, ground);
   context.textAlign = 'center';
@@ -367,7 +370,7 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
     context.fillStyle = 'rgba(22,21,25,0.72)';
     context.font = `500 34px ${face}`;
     let y = 122;
-    for (const line of wrapFor(language)(context, input.question, WIDTH - 260).slice(0, 3)) {
+    for (const line of wrapFor(language)(context, question, WIDTH - 260).slice(0, 3)) {
       context.fillText(line, center, y);
       y += 46;
     }
@@ -459,7 +462,7 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
       [
         { text: text.poem[0], font: `500 34px ${face}`, color: INK, step: 46 },
         { text: text.poem[1], font: `500 34px ${face}`, color: INK, step: 46 },
-        { text: input.interpretation?.meaning ?? text.meaning, font: `400 27px ${face}`, color: INK_2, step: 38 },
+        { text: meaning, font: `400 27px ${face}`, color: INK_2, step: 38 },
         { text: `Lucky colour: ${lucky.en}`, font: `400 24px ${face}`, color: tone, step: 34 },
       ],
       {
@@ -478,7 +481,7 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
         { text: text.poem[0], font: `500 44px ${SERIF}`, color: INK, step: 50 },
         { text: text.poem[1], font: `500 44px ${SERIF}`, color: INK, step: 50 },
         {
-          text: input.interpretation?.meaning ?? text.meaning,
+          text: meaning,
           font: `400 33px ${SERIF}`,
           color: INK_2,
           step: 39,
@@ -566,8 +569,9 @@ export async function shareImage(
 /** 分享全都失败时的最后一招：一段可以直接粘的短文字。 */
 export const shareText = (stick: FortuneStick, meaning: string, language: Language): string => {
   const text = stickText(stick, language);
+  const cleanMeaning = withoutDashes(meaning);
   if (language === 'en') {
-    return `${APP_NAME} · No. ${stick.no} · ${LEVEL_LABEL.en[stick.level]}\n${text.poem[0]} / ${text.poem[1]}\n${meaning}`;
+    return `${APP_NAME} · No. ${stick.no} · ${LEVEL_LABEL.en[stick.level]}\n${text.poem[0]} / ${text.poem[1]}\n${cleanMeaning}`;
   }
-  return `${APP_NAME} · 第 ${stick.no} 签 · ${stick.level}\n${text.poem[0]}，${text.poem[1]}\n${meaning}`;
+  return `${APP_NAME} · 第 ${stick.no} 签 · ${stick.level}\n${text.poem[0]}，${text.poem[1]}\n${cleanMeaning}`;
 };
