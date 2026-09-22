@@ -10,7 +10,7 @@
  */
 
 import { useState } from 'react';
-import { stickText } from '../../shared/sticks';
+import { LEVEL_LABEL, stickText } from '../../shared/sticks';
 import type { FollowUpMessage, Reading } from '../../shared/types';
 import { storedErrorText } from '../api';
 import { LEVEL_TONE } from '../constants';
@@ -316,7 +316,7 @@ export default function ReadingResult(props: {
               <div className="torn-card-header">
                 <span className="torn-card-badge">
                   {reading.language === 'en'
-                    ? `No. ${reading.stick.no} · ${reading.stick.level} · ${stickInfo.title}`
+                    ? `No. ${reading.stick.no} · ${LEVEL_LABEL.en[reading.stick.level]} · ${stickInfo.title}`
                     : `第 ${reading.stick.no} 籤 · ${reading.stick.level} · ${stickInfo.title}`}
                 </span>
               </div>
