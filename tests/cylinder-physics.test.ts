@@ -109,11 +109,18 @@ describe('籤束：中签那一支要爬得出来', () => {
     const chosen = 11;
     const need = B.exitRise(G.bundleSlot(chosen).rest);
 
+    // 摇一小段就停手：这时还没到脱出高度
     const stopped = B.createMotions(G.STICK_COUNT);
-    shake(stopped, 1.0, 20, chosen);
+    shake(stopped, 0.3, 20, chosen);
+    const atRelease = stopped[chosen].y;
+    expect(atRelease, '才摇 0.3 秒就出去了，太快').toBeLessThan(need);
+
+    // 停手八秒：它应该停在原地，不会自己爬完剩下的路
     for (let s = 0; s < 60 * 8; s += 1) B.stepBundle(stopped, traits, DT, AXIS_G, 0, 0, chosen);
     expect(stopped[chosen].y, '停手之后居然自己爬出去了').toBeLessThan(need);
+    expect(stopped[chosen].y, '停手之后沉回去了').toBeGreaterThan(atRelease - 0.12);
 
+    // 一直摇就出得来
     const kept = B.createMotions(G.STICK_COUNT);
     shake(kept, 6, 20, chosen);
     expect(kept[chosen].y, '一直摇却摇不出来').toBeGreaterThanOrEqual(need);
@@ -125,6 +132,50 @@ describe('籤束：中签那一支要爬得出来', () => {
     shake(m, 2.5, 20, chosen);
     const others = m.filter((_, i) => i !== chosen).map((s) => s.y);
     expect(m[chosen].y).toBeGreaterThan(Math.max(...others));
+  });
+});
+
+describe('真實搖動：36 支都要出得來', () => {
+  /**
+   * 真实的摇动：强度跟着手速走，折返点归零，平均只有 0.64 —— 不是恒定 1。
+   * 上面那些用恒定 1 的测试会给出过于乐观的结论，这一条是护栏。
+   */
+  function shakeReal(chosen: number, secs: number): { exit: number; maxOther: number } {
+    const m = B.createMotions(G.STICK_COUNT);
+    const need = B.exitRise(G.bundleSlot(chosen).rest);
+    let exit = Infinity;
+    for (let s = 0; s < secs / DT; s += 1) {
+      const ph = s * DT * 2 * Math.PI * 2.1;
+      B.stepBundle(m, traits, DT, AXIS_G, Math.sin(ph) * 20, Math.abs(Math.cos(ph)), chosen);
+      if (exit === Infinity && m[chosen].y >= need) exit = s * DT;
+    }
+    return { exit, maxOther: Math.max(...m.map((x, i) => (i === chosen ? -1 : x.y))) };
+  }
+
+  it('不管抽中哪一支，都要在合理時間內搖出來', () => {
+    const times: number[] = [];
+    for (let i = 0; i < G.STICK_COUNT; i += 1) {
+      const r = shakeReal(i, 12);
+      expect(r.exit, `第 ${i + 1} 支摇不出来`).toBeLessThan(3);
+      times.push(r.exit);
+    }
+    // 别快到还没摇就出来
+    expect(Math.min(...times)).toBeGreaterThan(0.6);
+  });
+
+  it('搖動平均強度只有 0.64，恆定 1 是過於樂觀的假設', () => {
+    let sum = 0;
+    const n = 600;
+    for (let s = 0; s < n; s += 1) sum += Math.abs(Math.cos(s * DT * 2 * Math.PI * 2.1));
+    expect(sum / n).toBeLessThan(0.7);
+  });
+
+  it('中籤那一支出去了，其他 35 支還留在筒裡', () => {
+    const r = shakeReal(17, 12);
+    const smallestExit = Math.min(
+      ...Array.from({ length: G.STICK_COUNT }, (_, i) => B.exitRise(G.bundleSlot(i).rest)),
+    );
+    expect(r.maxOther, '别的籤也跟着跑出来了').toBeLessThan(smallestExit);
   });
 });
 

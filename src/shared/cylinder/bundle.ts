@@ -16,6 +16,14 @@ export const GRAVITY = 9.81;
 export const DAMP = 1.9;
 /** 籤与籤之间的摩擦耦合：整束会一起动，而不是各弹各的。 */
 export const COUPLING = 3.2;
+/**
+ * 中签那一支的耦合系数（相对于 COUPLING）。
+ *
+ * 它正在从籤束里**挣脱**，本来就该滑过邻籤，而不是被整束拖住。原本它和其他籤
+ * 用同一个耦合，于是每爬一点就被拉回静止的大队，实测要摇 5.5 秒才出得来 ——
+ * 使用者早就停手了，画面卡在「有一支籤鬆動了」。
+ */
+export const CHOSEN_COUPLING = 0.18;
 /** 撞到筒底的回弹系数。竹子撞木头，弹不高。 */
 export const FLOOR_RESTITUTION = 0.16;
 /**
@@ -34,9 +42,11 @@ export const RATCHET = 5.2;
  * 一定要乘：写成常数的话那支籤会无条件往上飘，变成「它自己浮上来」而不是
  * 「被你摇出来」—— 实测回报「也太怪」。籤是摇出来的，停手就不该继续爬。
  *
- * 满强度时净得 11.2 + 棘轮 − 8.79 > 0，摇着就爬；强度归零时这一项也归零。
+ * 数值是扫过全部 36 支、用**真实**强度曲线量出来的：手来回甩时折返点速度归零，
+ * 平均强度只有 0.64，不是 1。原先所有测试都喂恒定 1，于是 11.2 在测试里看起来
+ * 够用，实际上要摇 5.5 秒才出得来 —— 使用者早就停手了。21 对应 1.2～2.1 秒。
  */
-export const CHOSEN_LIFT = 11.2;
+export const CHOSEN_LIFT = 21;
 
 /**
  * 摩擦咬合：低于这个强度，籤束挤在一起互相卡住，谁都不会自己滑下去。
@@ -113,8 +123,9 @@ export function stepBundle(
     let a = -axisGravity + shakeA * t.resp + drive * RATCHET * t.climb;
     if (i === chosen) a += drive * CHOSEN_LIFT;
     m.vy += a * dt;
-    // 邻籤摩擦：往整束的平均速度靠拢
-    m.vy += (meanV - m.vy) * Math.min(1, COUPLING * dt);
+    // 邻籤摩擦：往整束的平均速度靠拢。中签那一支正在挣脱，滑过邻籤，所以耦合弱得多。
+    const coup = i === chosen ? COUPLING * CHOSEN_COUPLING : COUPLING;
+    m.vy += (meanV - m.vy) * Math.min(1, coup * dt);
     m.vy *= decay;
     // 咬合：静止时速度被压掉，籤就卡在原地不动
     m.vy *= hold;
