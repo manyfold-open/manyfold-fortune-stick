@@ -401,8 +401,8 @@ function stickBlock(stick: FortuneStick, language: Language): string {
     return [
       `No. ${stick.no} · ${level} · ${text.title}`,
       `Couplet: ${text.poem[0]} / ${text.poem[1]}`,
-      `What this stick fixedly means: ${text.meaning}`,
-      `This stick's general reading: ${text.general}`,
+      `The stick's central meaning: ${text.meaning}`,
+      `A general reading of this stick: ${text.general}`,
     ].join('\n');
   }
   return [
@@ -422,13 +422,13 @@ const TONE_BY_LEVEL: Record<Language, Record<FortuneStick['level'], string>> = {
   },
   en: {
     上上签:
-      'This is the best level. You may talk about opportunity and about moving with the current, while reminding them not to drop the habits that got them here just because things got easier.',
+      'This is the strongest level. You can talk about opportunity and making good use of the momentum, while reminding them not to abandon the habits that got them here just because things are getting easier.',
     上签:
-      'This is a good level. Keep the tone positive and talk about where they can push one step further, but promise no outcome.',
+      'This is a favourable level. Keep the tone positive and point to one place where they can take the next step, without promising a particular outcome.',
     中签:
-      'This is a middling level. Keep the tone neutral and talk about pacing, conditions, and what needs establishing first.',
+      'This is a mixed level. Keep the tone balanced and talk about pace, conditions, and what needs to be clarified first.',
     下签:
-      'This is the lowest level. Talk about slowing down, observing and adjusting. Stay warm and never frightening: no alarming language, and no predicting a bad outcome.',
+      'This is a cautionary level. Talk about slowing down, looking carefully, and adjusting course. Stay warm, never frightening, and do not predict a bad outcome.',
   },
 };
 
@@ -448,11 +448,12 @@ ${stickBlock(stick, 'en')}
 
 [How to write it]
 1. Warm, specific and conversational, like a friend who understands their situation. No mystical register, no fortune-teller voice.
-2. Do not predict that anything will certainly happen. Never write "you will definitely", "inevitably" or "it is fated". What you give is a way of seeing the question and advice they can act on.
-3. ${TONE_BY_LEVEL.en[stick.level]}
-4. If the question touches health, money or legal decisions, help them see which conditions matter rather than ruling on it, and suggest a professional where that is the honest answer.
-5. Reply in English throughout. No markdown headings and no bullet characters.
-6. Do not use em dashes, en dashes, or any dash punctuation. Use commas, full stops, or parentheses instead.
+2. Write idiomatic, natural English, as if you grew up speaking it. Do not translate Chinese sentence structures or metaphors literally. If a sentence sounds poetic but unclear, rewrite it in plain everyday English. Prefer clarity over symmetry.
+3. Do not predict that anything will certainly happen. Never write "you will definitely", "inevitably" or "it is fated". What you give is a way of seeing the question and advice they can act on.
+4. ${TONE_BY_LEVEL.en[stick.level]}
+5. If the question touches health, money or legal decisions, help them see which conditions matter rather than ruling on it, and suggest a professional where that is the honest answer.
+6. Reply in English throughout. No markdown headings and no bullet characters.
+7. Do not use em dashes, en dashes, or any dash punctuation. Use commas, full stops, or parentheses instead.
 
 [Output format]
 Output one JSON object and nothing else. Do not wrap it in a code block. Never put a raw
@@ -496,13 +497,13 @@ Their original question: ${reading.question}
 The stick they drew: ${stickBlock(reading.stick, 'en')}
 The reading you already gave:
 - Meaning: ${interpretation.meaning}
-- On their question: ${interpretation.answer}
-- Worth noticing: ${interpretation.notice}
-- Suggested: ${interpretation.action}
+- How it relates to their question: ${interpretation.answer}
+- One thing to keep in mind: ${interpretation.notice}
+- One useful next step: ${interpretation.action}
 
 [Rules]
 This turn is a follow-up. It does not draw a new stick, and it does not change this stick's level or the reading above. Keep talking about the same stick.
-Keep the answer under 120 words. Say it directly, do not restate the above, no JSON, no markdown. Reply in English.
+Keep the answer under 120 words. Say it directly, do not restate the above, no JSON, no markdown. Reply in natural, idiomatic English. Do not translate Chinese sentence patterns or use vague poetic phrases when a plain sentence would be clearer.
 Do not use em dashes, en dashes, or any dash punctuation. Use commas, full stops, or parentheses instead.
 
 [Their follow-up]

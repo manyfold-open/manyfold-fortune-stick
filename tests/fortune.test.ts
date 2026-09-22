@@ -262,6 +262,24 @@ describe('英文签库', () => {
     }
   });
 
+  it('英文文案不带明显的逐字翻译腔', () => {
+    const forbidden = [
+      'the walking is yours',
+      'fixedly means',
+      'fix your direction',
+      'the thing is moving underneath',
+      'what it lacks is contact with the outside',
+      'the answer is more direct than you think',
+    ];
+    for (const entry of STICKS) {
+      const text = stickText(entry, 'en');
+      const joined = `${text.title} ${text.poem.join(' ')} ${text.meaning} ${text.general} ${text.action}`.toLowerCase();
+      for (const phrase of forbidden) {
+        expect(joined, `第 ${entry.no} 签仍含有直译腔：${phrase}`).not.toContain(phrase);
+      }
+    }
+  });
+
   it('36 个英文签名互不重复', () => {
     const titles = STICKS.map((entry) => stickText(entry, 'en').title);
     expect(new Set(titles).size).toBe(36);

@@ -390,7 +390,7 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
 
   context.fillStyle = INK_3;
   context.font = `500 17px ${MONO}`;
-  spaced(context, 'A REFERENCE, NOT A ROUTE', center, startY + 80, 3);
+  spaced(context, 'A PERSPECTIVE, NOT A ROADMAP', center, startY + 80, 3);
 
   drawEmblem(context, center, startY + 138, 38, tone);
 
@@ -519,7 +519,7 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
 
     context.fillStyle = INK_2;
     context.font = `500 15px ${face}`;
-    context.fillText(en ? 'A REFERENCE, NOT A ROUTE' : '签为参考，路要自己走', textX, footerY + 74);
+    context.fillText(en ? 'A PERSPECTIVE, NOT A ROADMAP' : '签为参考，路要自己走', textX, footerY + 74);
 
     context.fillStyle = INK_3;
     context.font = `400 13px ${MONO}`;
@@ -530,7 +530,7 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
     context.font = `400 18px ${MONO}`;
     spaced(
       context,
-      en ? 'AI FORTUNE STICK · A REFERENCE, NOT A ROUTE' : 'AI FORTUNE STICK · 签为参考，路要自己走',
+      en ? 'AI FORTUNE STICK · A PERSPECTIVE, NOT A ROADMAP' : 'AI FORTUNE STICK · 签为参考，路要自己走',
       center,
       footerY + 54,
       2,
