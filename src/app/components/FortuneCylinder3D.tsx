@@ -105,7 +105,10 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
   const [failed, setFailed] = useState(false);
   const [stageLabel, setStageLabel] = useState<Stage>('rest');
   const [handingOff, setHandingOff] = useState(false);
-  /** 攪籤進度 0..1。攪是個沒有終點提示的動作，不給進度使用者只能瞎攪。 */
+  /**
+   * 攪了多少 0..1 —— 只拿來決定提示文字，**不畫進度條**。畫了使用者會以為是限時任務
+   * （實際回饋：「好像有限時、要攪很久」）。攪多久由使用者決定，這只是「真的攪了」的下限。
+   */
   const [progress, setProgress] = useState(0);
   /** 手還按著嗎 —— 提示要分「繼續攪」與「可以放手了」。 */
   const [dragging, setDragging] = useState(false);
@@ -427,14 +430,12 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
         : stageLabel === 'shaking'
           ? progress >= 1
             ? dragging
-              ? en ? 'That is enough — let go whenever you like' : '可以放手了 —— 想攪多久都行'
+              ? en ? 'Stir as long as you like — let go to draw' : '想攪多久都可以 —— 放手就抽'
               : en ? 'A stick is coming up…' : '籤就要出來了…'
             : dragging
-              ? progress > 0.55
-                ? en ? 'Almost there — keep stirring' : '快了，再攪一會兒'
-                : en ? 'Keep stirring — go round and round' : '繼續攪 —— 繞著圈攪，別停'
-              : en ? 'Not yet — stir a little longer' : '還沒攪夠，再攪一會兒'
-          : en ? 'Press on the sticks and stir them round' : '按住籤，繞著圈攪 —— 攪夠了再放手';
+              ? en ? 'Stir them round…' : '攪一攪…'
+              : en ? 'Give them a real stir first' : '先攪一下再放手'
+          : en ? 'Press on the sticks and stir — let go whenever you like' : '按住籤攪一攪 —— 想攪多久都可以，放手就抽';
 
   return (
     <div className="roll-stage cyl3d-stage">
@@ -460,18 +461,6 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
             <p className={`roll-hint${stageLabel === 'pulling' || stageLabel === 'done' ? ' highlight' : ''}`}>
               {hint}
             </p>
-            {state !== 'idle' && stageLabel !== 'pulling' && stageLabel !== 'done' ? (
-              <div
-                className="cyl3d-gauge"
-                role="progressbar"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={Math.round(progress * 100)}
-                aria-label={en ? 'Stir progress' : '攪籤進度'}
-              >
-                <span style={{ width: `${Math.round(progress * 100)}%` }} />
-              </div>
-            ) : null}
           </div>
         )}
       </div>

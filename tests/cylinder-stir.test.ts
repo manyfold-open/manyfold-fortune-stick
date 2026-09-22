@@ -20,7 +20,7 @@ const stir = (s: S.StirState, secs: number, armed = true, r = 60, hz = 1.5) => {
 };
 
 describe('攪：手 → 籤束', () => {
-  it('繞圈攪幾秒就攢夠 —— 正常力道約 3～5 秒', () => {
+  it('真的攪了一下就算數 —— 攪多久由使用者決定，不是限時任務（正常力道約 0.5～1.2 秒）', () => {
     const s = S.createStir();
     let t = 0;
     while (s.work < S.STIR_WORK_NEEDED && t < 20) {
@@ -29,8 +29,17 @@ describe('攪：手 → 籤束', () => {
       S.stepStir(s, DT, true, true);
       t += DT;
     }
-    expect(t).toBeGreaterThan(2);
-    expect(t).toBeLessThan(6);
+    expect(t).toBeGreaterThan(0.5);
+    expect(t).toBeLessThan(1.2);
+  });
+
+  it('隨手甩一下（0.25 秒）不算 —— 不然碰一下就抽出去了', () => {
+    const s = S.createStir();
+    for (let t = 0; t < 0.25; t += DT) {
+      S.pushStir(s, 12, 0, DT);
+      S.stepStir(s, DT, true, true);
+    }
+    expect(s.work).toBeLessThan(S.STIR_WORK_NEEDED);
   });
 
   it('還沒寫問題時攪的不記帳 —— 不然一寫完隨手一碰就抽出去了', () => {

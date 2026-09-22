@@ -3125,7 +3125,6 @@ code {
   .cyl3d-canvas-wrapper { min-height: 320px; }
 }
 
-/* 搖籤進度。搖筒是個沒有終點提示的動作 —— 不給進度，使用者只能瞎搖。 */
 .cyl3d-status {
   display: flex;
   flex-direction: column;
@@ -3134,18 +3133,3 @@ code {
   width: 100%;
 }
 
-.cyl3d-gauge {
-  width: min(240px, 60%);
-  height: 3px;
-  border-radius: 2px;
-  background: color-mix(in srgb, var(--on-ground-2) 22%, transparent);
-  overflow: hidden;
-}
-
-.cyl3d-gauge > span {
-  display: block;
-  height: 100%;
-  border-radius: 2px;
-  background: linear-gradient(90deg, #8d4b2b, #e8bf63);
-  transition: width 0.18s ease-out;
-}
