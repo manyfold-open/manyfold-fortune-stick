@@ -1,6 +1,6 @@
 # 籤筒 v3 交接（2026-09-23）
 
-分支 `feat/3d-cylinder-rebuild`。**182 個測試全過**（14 個檔），`tsc -b` 通過。
+分支 `feat/3d-cylinder-rebuild`。**187 個測試全過**（14 個檔），`tsc -b` 與 `npm run check` 通過。
 設計文件：[`specs/2026-09-22-cylinder-stir-design.md`](specs/2026-09-22-cylinder-stir-design.md)。
 只在本機做，還沒上線（部署是手動的，見 AGENTS.md）。
 
@@ -57,11 +57,27 @@
    正解：`idleCameraZ` 逐點用它自己的深度算。
 9. **畫布填滿首屏**由組件量：視窗高 − 畫布頂端 − 下方提示區（CSS 量不到上面還有多少東西）。
 
-## 還沒做
+## 下一步（新 session 從這裡接）
 
-- 使用者回報「抽出來的體驗還是很怪」，**還沒問清楚是哪一段**。已修掉自己逐格看得到的
-  （籤頭衝出畫面），其餘等使用者實測回報。
-- 擲筊確認；`src/app/roll/scene.ts` 的 `PCFSoftShadowMap` 警告（滾印那條使用者說先擱著）。
+**拿籤到看籤要改成一口氣、不頓** —— 計畫與量測數據在
+[`plans/2026-09-23-cylinder-pull-smoothing.md`](plans/2026-09-23-cylinder-pull-smoothing.md)。
+已提給使用者，**等使用者確認後開做**（先寫測試再改）。
+
+這一輪之後又修了兩件（都已 commit）：
+- 攪多久由使用者決定：門檻降到約 0.8 秒、拿掉進度條（`bc0daed`）。
+- 籤跟籤互相穿插：傾斜方向改成只往左右／往後，不往鏡頭倒（`2cea4d8`）。
+
+其他還沒做：擲筊確認；`src/app/roll/scene.ts` 的 `PCFSoftShadowMap` 警告（使用者說先擱著）。
+
+## 驗證技巧（內建瀏覽器面板）
+
+- rAF **和** cAF 都要墊（見下面 v2 的環境陷阱第 1 條），墊完用 vessel state 撥到 `printer` 再撥回
+  `cylinder3d` 逼元件重掛，frame loop 才是活的。
+- 要逐格看動畫：把 rAF 墊片改成可暫停的虛擬時鐘（暫停時把 callback 存起來、恢復時補上暫停的時長），
+  在同一次 JS 呼叫裡攪、放手、等到 `pulling`、推進到指定毫秒再暫停。分開呼叫的來回延遲比動畫還長。
+- **面板在背景時截圖會是舊畫面**：截圖前先呼叫一次 `rig.render()`。像素量測則在同一個 task 裡
+  `render()` 完馬上 `readPixels`。
+- 想看某個角落：停住 frame loop 後直接改 `rig.camera` 位置再 `render()`（v3 平頂方塊就是這樣抓到的）。
 
 ---
 
