@@ -25,6 +25,12 @@ import {
   type StickTrait,
 } from '../../shared/cylinder/bundle';
 import { createFreeStick, stepFree, type FreeStick } from '../../shared/cylinder/eject';
+import {
+  createShake,
+  pushHand,
+  stepShake,
+  type ShakeState,
+} from '../../shared/cylinder/shake';
 import { STICK_COUNT, STICK_LEN, STICK_T } from '../../shared/cylinder/geometry';
 import { GROUND_Y, TILT_X, TILT_Z, createCylinderScene, type CylinderScene } from '../cylinder/scene';
 import { bambooDropSound, bambooRustle } from '../sound';
@@ -43,10 +49,6 @@ export interface FortuneCylinder3DProps {
 
 /** 摇到这个累积功才去跟服务端要签。够久才有仪式感，太久会烦。 */
 const SHAKE_WORK_NEEDED = 16;
-/** 筒子沿自己的轴能被拉动的行程。够大才甩得动，太大会离开画面。 */
-const TUBE_SWING = 1.05;
-/** 拖多少像素等于一个世界单位。越小越跟手。 */
-const PIXELS_PER_UNIT = 150;
 /** 落定之后让镜头看清签号的停顿。 */
 const REVEAL_HOLD_MS = 1500;
 
@@ -57,16 +59,8 @@ interface Drive {
   motions: StickMotion[];
   traits: StickTrait[];
   chosen: number;
-  /** 手把筒子拉到哪（沿筒轴，世界单位）。 */
-  handTarget: number;
-  /** 筒子实际到了哪，以及它的速度 —— 弹簧跟随，所以有重量感。 */
-  tubeOffset: number;
-  tubeVel: number;
-  prevTubeVel: number;
-  /** 筒子的加速度换算成籤在筒内感受到的惯性力。 */
-  shakeA: number;
-  intensity: number;
-  work: number;
+  /** 手势与筒子的运动 —— 逻辑在 shared/cylinder/shake.ts，那边有测试钉着。 */
+  shake: ShakeState;
   requested: boolean;
   free: FreeStick | null;
   restAt: number;
@@ -82,7 +76,7 @@ interface Drive {
   lookZ: number;
   camReady: boolean;
   pointerY: number;
-  pointerV: number;
+  pointerAt: number;
   dragging: boolean;
 }
 
@@ -102,13 +96,7 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
     motions: createMotions(STICK_COUNT),
     traits: Array.from({ length: STICK_COUNT }, (_, i) => stickTrait(i)),
     chosen: -1,
-    handTarget: 0,
-    tubeOffset: 0,
-    tubeVel: 0,
-    prevTubeVel: 0,
-    shakeA: 0,
-    intensity: 0,
-    work: 0,
+    shake: createShake(),
     requested: false,
     free: null,
     restAt: 0,
@@ -123,7 +111,7 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
     lookZ: 0,
     camReady: false,
     pointerY: 0,
-    pointerV: 0,
+    pointerAt: 0,
     dragging: false,
   });
 
@@ -178,35 +166,19 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
       if (dt <= 0) return;
       const t = (now - t0) / 1000;
 
-      // 放手之后手的目标回到原位，筒子自己荡回来
-      if (!dr.dragging) dr.handTarget *= Math.exp(-7 * dt);
-
-      // 筒子用弹簧追手 —— 它有质量，所以跟得到但跟不紧，这就是重量感的来源
-      // 弹簧刚度与阻尼：跟得到手，但跟不紧 —— 跟不紧的那一点点就是重量感
-      const springK = 190;
-      const springC = 15;
-      const accel = (dr.handTarget - dr.tubeOffset) * springK - dr.tubeVel * springC;
-      dr.prevTubeVel = dr.tubeVel;
-      dr.tubeVel += accel * dt;
-      dr.tubeOffset += dr.tubeVel * dt;
-      if (dr.tubeOffset > TUBE_SWING) { dr.tubeOffset = TUBE_SWING; dr.tubeVel *= -0.3; }
-      if (dr.tubeOffset < -TUBE_SWING) { dr.tubeOffset = -TUBE_SWING; dr.tubeVel *= -0.3; }
-
-      // 筒子往上加速时，籤因为惯性相对往下沉；筒子一停，它们就往上冲。这就是摇签。
-      const tubeAccel = (dr.tubeVel - dr.prevTubeVel) / dt;
-      dr.shakeA = Math.max(-38, Math.min(38, -tubeAccel * 0.5));
-      dr.intensity = Math.min(1, Math.abs(dr.tubeVel) / 5.5);
-
-      const shaking = dr.intensity > 0.05;
+      // 手势与筒子的运动全在 shared/cylinder/shake.ts —— 那边有测试钉着
+      // 「正常力道来回甩约 1.9 秒出签、拖一下按着不动永远不出」这件事。
+      stepShake(dr.shake, dt, dr.dragging);
+      const sh = dr.shake;
+      const shaking = sh.intensity > 0.05;
       if (shaking && stateRef.current === 'ready' && !dr.requested) {
-        dr.work += dr.intensity * dt * 10;
-        // 节流：只有跨过一格才通知 React，不然每帧都重渲染
-        const notch = Math.min(20, Math.floor((dr.work / SHAKE_WORK_NEEDED) * 20));
+        // work 由 stepShake 累积；这里只负责到门槛就去要签
+        const notch = Math.min(20, Math.floor((sh.work / SHAKE_WORK_NEEDED) * 20));
         if (notch !== dr.reported) {
           dr.reported = notch;
-          setProgress(Math.min(1, dr.work / SHAKE_WORK_NEEDED));
+          setProgress(Math.min(1, sh.work / SHAKE_WORK_NEEDED));
         }
-        if (dr.work >= SHAKE_WORK_NEEDED) {
+        if (sh.work >= SHAKE_WORK_NEEDED) {
           dr.requested = true;
           setProgress(1);
           shakeCb.current();
@@ -214,20 +186,20 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
       }
 
       // 竹签互相碰撞的沙沙声，按强度节流
-      if (soundRef.current && dr.intensity > 0.18 && now - dr.lastRustle > 70) {
+      if (soundRef.current && sh.intensity > 0.18 && now - dr.lastRustle > 70) {
         dr.lastRustle = now;
-        bambooRustle(Math.min(1, dr.intensity));
+        bambooRustle(Math.min(1, sh.intensity));
       }
 
       /* 1. 筒内籤束 */
       if (dr.stage === 'rest' || dr.stage === 'shaking') {
-        stepBundle(dr.motions, dr.traits, dt, axisG, dr.shakeA, dr.intensity, dr.chosen);
+        stepBundle(dr.motions, dr.traits, dt, axisG, sh.shakeA, sh.intensity, dr.chosen);
         for (let i = 0; i < STICK_COUNT; i += 1) {
           const h = rig.sticks[i];
           const m = dr.motions[i];
           h.mesh.position.y = h.rest + m.y + STICK_LEN / 2;
           // 摇动时籤头轻微摆动
-          const w = dr.intensity * 0.06;
+          const w = sh.intensity * 0.06;
           h.mesh.rotation.x = h.baseTiltX + Math.sin(t * 9 + i) * w;
           h.mesh.rotation.z = h.baseTiltZ + Math.cos(t * 11 + i * 1.7) * w;
         }
@@ -246,7 +218,7 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
             e.y = worldPos.y;
             e.z = worldPos.z;
             // 顺着筒口的方向被甩出去
-            e.vx = 1.5 + dr.intensity * 1.2;
+            e.vx = 1.5 + sh.intensity * 1.2;
             e.vy = 1.1;
             e.vz = 1.9;
             e.wx = 4.2;
@@ -285,12 +257,12 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
       }
 
       /* 4. 筒身沿自己的轴跟着手滑动，静止时轻微呼吸 */
-      rig.tiltGroup.rotation.z = baseZ + Math.sin(t * 0.55) * 0.016 - dr.tubeVel * 0.012;
+      rig.tiltGroup.rotation.z = baseZ + Math.sin(t * 0.55) * 0.016 - sh.vel * 0.012;
       rig.tiltGroup.rotation.x = baseX + Math.sin(t * 0.41 + 1.2) * 0.012;
       rig.tiltGroup.position.set(
-        rig.baseX + axis.x * dr.tubeOffset,
-        rig.baseY + axis.y * dr.tubeOffset,
-        rig.baseZ + axis.z * dr.tubeOffset,
+        rig.baseX + axis.x * sh.offset,
+        rig.baseY + axis.y * sh.offset,
+        rig.baseZ + axis.z * sh.offset,
       );
 
       /* 5. 弹簧相机 */
@@ -339,6 +311,7 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
     const dr = d.current;
     dr.dragging = true;
     dr.pointerY = e.clientY;
+    dr.pointerAt = performance.now();
     // 指标捕获不是必需的，拿不到也照样能摇 —— 别让它把整个手势掀掉
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
@@ -350,14 +323,13 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
   const onPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     const dr = d.current;
     if (!dr.dragging || disabled) return;
+    const now = performance.now();
     const dy = e.clientY - dr.pointerY;
+    const gap = Math.max(0.001, (now - dr.pointerAt) / 1000);
     dr.pointerY = e.clientY;
-    // 往上拖 = 把筒子往上带。像素换成世界单位，筒子就 1:1 跟着手走。
-    dr.handTarget = Math.max(
-      -TUBE_SWING,
-      Math.min(TUBE_SWING, dr.handTarget - dy / PIXELS_PER_UNIT),
-    );
-    if (dr.stage === 'rest' && dr.intensity > 0.2) {
+    dr.pointerAt = now;
+    pushHand(dr.shake, dy, gap);
+    if (dr.stage === 'rest' && dr.shake.intensity > 0.2) {
       dr.stage = 'shaking';
       setStageLabel('shaking');
     }
@@ -399,8 +371,8 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
               ? en ? 'A stick is working its way up…' : '有一支籤正在往上爬…'
               : progress > 0.55
                 ? en ? 'Almost there — keep shaking' : '快了，再搖一會兒'
-                : en ? 'Keep shaking — hold and drag up and down' : '繼續搖 —— 按住上下拖曳'
-            : en ? 'Hold and drag up and down to shake the cylinder' : '按住上下拖曳，虔心搖動籤筒';
+                : en ? 'Keep shaking — keep moving, do not stop' : '繼續搖 —— 上下來回甩，別停'
+            : en ? 'Hold and swing up and down — a stick will fall out on its own' : '按住籤筒，上下來回甩 —— 籤會自己掉出來';
 
   return (
     <div className="roll-stage">
