@@ -6,7 +6,7 @@ One question. One stick. One reading.
 
 ## What it is
 
-问一签 is a quiet, guided fortune-stick experience. Write down a question, press the key on the fortune printer, and receive one fixed fortune stick.
+AI Fortune Stick is a quiet, guided fortune-stick experience. Write down a question, press the key on the fortune printer, and receive one fixed fortune stick.
 
 Read the slip first — the number, level, title, and poem — then reveal an interpretation connected to your situation.
 
