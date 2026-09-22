@@ -3,7 +3,7 @@
  * 系统分享用不了就退回下载；下载也不行时，至少给一段可以复制的短文字。
  */
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { stickText, type FortuneStick } from '../../shared/sticks';
 import type { Interpretation } from '../../shared/types';
 import { useT } from '../i18n';
@@ -23,8 +23,11 @@ export default function SharePanel(props: {
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState('');
   const [fallbackText, setFallbackText] = useState('');
+  const sharingRef = useRef(false);
 
   const go = async () => {
+    if (sharingRef.current) return;
+    sharingRef.current = true;
     setBusy(true);
     setStatus('');
     setFallbackText('');
@@ -48,6 +51,7 @@ export default function SharePanel(props: {
         ),
       );
     } finally {
+      sharingRef.current = false;
       setBusy(false);
     }
   };

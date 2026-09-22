@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "问一签 — an online fortune-stick game on Cloudflare Workers, with readings written by a connected Manyfold agent.",
+  "description": "AI Fortune Stick — an online fortune-stick game on Cloudflare Workers, with readings written by a connected Manyfold agent.",
   "license": "MIT",
   "scripts": {
     "dev": "vite",
@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "hono": "^4.13.1",
+    "qrcode": "^1.5.4",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
@@ -25,6 +26,7 @@
     "@cloudflare/vite-plugin": "^1.51.2",
     "@cloudflare/workers-types": "^5.20260811.1",
     "@types/node": "^24.0.0",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^6.0.5",

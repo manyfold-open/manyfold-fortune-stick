@@ -12,7 +12,7 @@
  */
 export const zh = {
   /* ── 外壳 ── */
-  brandSub: 'FORTUNE PRINTER',
+  brandSub: 'AI FORTUNE STICK',
   navHistory: '求签记录',
   navBackToGame: '回到求签',
   railLeft: 'MODEL WY-36 · MADE IN CHINA',
@@ -30,9 +30,9 @@ export const zh = {
   loadFailed: '连不上服务：{detail}',
   retry: '重试',
   restoring: '正在取回你的签…',
-  documentTitle: '问一签',
+  documentTitle: 'AI Fortune Stick',
   documentDescription:
-    '写下心里的事，按下打印机上的按钮，印一张属于你的签。问一签是一个轻量的在线求签游戏。',
+    'AI Fortune Stick：写下心里的事，按下打印机上的按钮，印一张已经固定的签。',
 
   /* ── 提问 ── */
   askLabel: '你想问的事',

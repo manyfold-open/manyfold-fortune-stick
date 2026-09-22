@@ -39,7 +39,7 @@ import { seal, unseal } from './crypto';
 import { now } from './db';
 
 const DEFAULT_API_BASE = 'https://api.manyfold.ai';
-const CLIENT_NAME = '问一签 Fortune Sticks';
+const CLIENT_NAME = 'AI Fortune Stick';
 const START_TIMEOUT_MS = 20_000;
 const POLL_TIMEOUT_MS = 30_000;
 const SESSION_TTL_MS = 15 * 60_000;

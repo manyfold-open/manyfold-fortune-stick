@@ -8,7 +8,7 @@ import type { Copy } from './zh';
 
 export const en = {
   /* ── shell ── */
-  brandSub: 'FORTUNE PRINTER',
+  brandSub: 'AI FORTUNE STICK',
   navHistory: 'Your slips',
   navBackToGame: 'Back to the machine',
   railLeft: 'MODEL WY-36 · MADE IN CHINA',
@@ -26,9 +26,9 @@ export const en = {
   loadFailed: 'Cannot reach the service: {detail}',
   retry: 'Try again',
   restoring: 'Fetching your slip…',
-  documentTitle: 'Fortune Printer',
+  documentTitle: 'AI Fortune Stick',
   documentDescription:
-    'Write down what is on your mind, press the key on the printer, and it prints a fortune stick for you. A small online fortune-stick game.',
+    'AI Fortune Stick: write down what is on your mind, press the key on the printer, and receive one fixed fortune stick.',
 
   /* ── asking ── */
   askLabel: 'What you want to ask',

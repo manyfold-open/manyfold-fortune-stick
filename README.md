@@ -1,4 +1,4 @@
-# 问一签 · Fortune Stick
+# AI Fortune Stick · 问一签
 
 An AI fortune-stick reading built on Cloudflare Workers and Manyfold.
 
@@ -41,7 +41,7 @@ Follow-up questions stay grounded in the original question, the same stick, and 
 
 ## Sharing and privacy
 
-Sharing creates an image of the slip. It includes the stick number, level, poem, and one-line meaning. The full interpretation and follow-up conversation stay out of the image.
+Sharing creates an image of the slip with a QR code that brings someone back to the game. It includes the stick number, level, poem, and one-line meaning. The full interpretation and follow-up conversation stay out of the image.
 
 Your reading history is kept locally in your browser.
 

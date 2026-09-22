@@ -18,9 +18,12 @@ import {
 } from '../shared/sticks';
 import type { Interpretation } from '../shared/types';
 import { LEVEL_TONE } from './constants';
+import QRCode from 'qrcode';
 
 const WIDTH = 1080;
-const HEIGHT = 1350;
+const HEIGHT = 1500;
+const APP_NAME = 'AI Fortune Stick';
+const QR_SIZE = 132;
 const SERIF = '"Noto Serif SC", "Songti SC", "STSong", "SimSun", serif';
 const SERIF_EN = 'Charter, "Charter BT", Georgia, Palatino, "Noto Serif", "Iowan Old Style", "Times New Roman", serif';
 const MONO = 'ui-monospace, "SF Mono", Menlo, Consolas, monospace';
@@ -241,6 +244,30 @@ function paintGround(context: CanvasRenderingContext2D, ground: string): void {
   context.restore();
 }
 
+/** 生成回到游戏首页的二维码。分享图可能离开当前页面，所以不保留 hash 路由。 */
+async function loadShareQr(): Promise<HTMLImageElement | null> {
+  try {
+    const url = new URL(window.location.href);
+    url.hash = '';
+    const dataUrl = await QRCode.toDataURL(url.toString(), {
+      errorCorrectionLevel: 'M',
+      margin: 1,
+      width: QR_SIZE,
+      color: { dark: INK, light: PAPER },
+    });
+    const image = new Image();
+    image.decoding = 'async';
+    await new Promise<void>((resolve, reject) => {
+      image.onload = () => resolve();
+      image.onerror = () => reject(new Error('二维码加载失败。'));
+      image.src = dataUrl;
+    });
+    return image;
+  } catch {
+    return null;
+  }
+}
+
 /** 纸票上的纹章，和 StickFace 里那枚是同一个形状。 */
 function drawEmblem(context: CanvasRenderingContext2D, cx: number, cy: number, r: number, tone: string): void {
   const diamond = (radius: number) => {
@@ -317,6 +344,7 @@ async function waitForFonts(): Promise<void> {
 
 export async function renderShareImage(input: ShareInput): Promise<Blob> {
   await waitForFonts();
+  const qrImage = await loadShareQr();
   const canvas = document.createElement('canvas');
   canvas.width = WIDTH;
   canvas.height = HEIGHT;
@@ -354,11 +382,11 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
 
   context.fillStyle = INK;
   context.font = `700 44px ${SERIF}`;
-  spaced(context, '问一签', center, cardTop + 104, 16);
+  spaced(context, APP_NAME.toUpperCase(), center, cardTop + 104, 8);
 
   context.fillStyle = INK_3;
   context.font = `500 19px ${MONO}`;
-  spaced(context, 'WEN YI QIAN · FORTUNE PRINTER', center, cardTop + 146, 3);
+  spaced(context, 'A REFERENCE, NOT A ROUTE', center, cardTop + 146, 3);
 
   drawEmblem(context, center, cardTop + 216, 46, tone);
 
@@ -465,11 +493,24 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
   context.font = `400 20px ${MONO}`;
   spaced(
     context,
-    en ? 'FORTUNE PRINTER · A REFERENCE, NOT A ROUTE' : '问一签 · 签为参考，路要自己走',
+    en ? 'AI FORTUNE STICK · A REFERENCE, NOT A ROUTE' : 'AI FORTUNE STICK · 签为参考，路要自己走',
     center,
     cardTop + cardHeight - 30,
     3,
   );
+
+  if (qrImage) {
+    const qrFrame = QR_SIZE + 28;
+    const qrX = WIDTH - 90 - qrFrame;
+    const qrY = HEIGHT - 210;
+    context.fillStyle = PAPER;
+    context.fillRect(qrX, qrY, qrFrame, qrFrame);
+    context.drawImage(qrImage, qrX + 14, qrY + 14, QR_SIZE, QR_SIZE);
+    context.fillStyle = INK_3;
+    context.font = `400 18px ${MONO}`;
+    context.textAlign = 'center';
+    context.fillText(en ? 'SCAN TO PLAY' : '扫码再玩一签', qrX + qrFrame / 2, qrY - 14);
+  }
 
   context.fillStyle = 'rgba(22,21,25,0.5)';
   context.font = `400 24px ${MONO}`;
@@ -496,7 +537,7 @@ export async function shareImage(
   const file = new File([blob], name, { type: 'image/png' });
   const shareData = {
     files: [file],
-    title: en ? 'Fortune Printer' : '问一签',
+    title: APP_NAME,
     text: en
       ? `No. ${stick.no} · ${LEVEL_LABEL.en[stick.level]}`
       : `第 ${stick.no} 签 · ${stick.level}`,
@@ -508,6 +549,7 @@ export async function shareImage(
     } catch (error) {
       // 用户自己取消了，不算失败，也不该再触发一次下载。
       if ((error as Error)?.name === 'AbortError') return 'shared';
+      throw error;
     }
   }
   const url = URL.createObjectURL(blob);
@@ -525,7 +567,7 @@ export async function shareImage(
 export const shareText = (stick: FortuneStick, meaning: string, language: Language): string => {
   const text = stickText(stick, language);
   if (language === 'en') {
-    return `Fortune Printer · No. ${stick.no} · ${LEVEL_LABEL.en[stick.level]}\n${text.poem[0]} / ${text.poem[1]}\n${meaning}`;
+    return `${APP_NAME} · No. ${stick.no} · ${LEVEL_LABEL.en[stick.level]}\n${text.poem[0]} / ${text.poem[1]}\n${meaning}`;
   }
-  return `问一签 · 第 ${stick.no} 签 · ${stick.level}\n${text.poem[0]}，${text.poem[1]}\n${meaning}`;
+  return `${APP_NAME} · 第 ${stick.no} 签 · ${stick.level}\n${text.poem[0]}，${text.poem[1]}\n${meaning}`;
 };
