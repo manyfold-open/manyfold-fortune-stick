@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import * as K from '../src/app/roll/kinematics';
+import * as K from '../src/shared/roll/kinematics';
 
 describe('无滑动纯滚动锁定', () => {
   it('八张卡片严丝合缝地咬住一整个周长', () => {
@@ -328,7 +328,7 @@ describe('滚筒网格', () => {
   });
 });
 
-import * as TEX from '../src/app/roll/textures';
+import * as TEX from '../src/shared/roll/cards';
 import { STICKS } from '../src/shared/sticks';
 
 describe('贴图版面（纯计算部分）', () => {

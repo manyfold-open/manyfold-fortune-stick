@@ -12,45 +12,27 @@
  */
 
 import type { Language } from '../../shared/lang';
-import { LEVEL_LABEL, STICKS, stickText, type FortuneStick } from '../../shared/sticks';
-import { N, W } from './kinematics';
+import { LEVEL_LABEL, stickText, type FortuneStick } from '../../shared/sticks';
+import { N, W } from '../../shared/roll/kinematics';
+import {
+  ATLAS_H,
+  ATLAS_W,
+  CARD_PX,
+  MIRROR_BLOCK,
+  PAPER_FIBRES,
+  atlasCellRect,
+  previewStick,
+  pseudoRandom,
+  wrapText,
+} from '../../shared/roll/cards';
 
-/* ── 版面 ── */
+// 版面算术留在 shared 里（那边有测试），这里只做真正需要 2D context 的绘制。
+export { ATLAS_H, ATLAS_W, CARD_PX, MIRROR_BLOCK, PAPER_FIBRES, atlasCellRect, previewStick, pseudoRandom, wrapText };
 
-/** 一格沿行进方向的像素数。440/480 ≈ CARD_LEN/W，误差 0.04%，看不出来。 */
-export const CARD_PX = 440;
-export const ATLAS_H = 480;
-export const ATLAS_W = CARD_PX * N;
-
-export const PAPER_FIBRES = 2500;
-/** 真的雕版是反着刻的。改成 false 就变成「看得懂的」滚筒。 */
-export const MIRROR_BLOCK = true;
 
 const SERIF = '"Kaiti SC", "STKaiti", "BiauKai", "DFKai-SB", "Noto Serif TC", serif';
 const LATIN = '"Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif';
 
-export const atlasCellRect = (slot: number): { x: number; y: number; w: number; h: number } => ({
-  x: slot * CARD_PX,
-  y: 0,
-  w: CARD_PX,
-  h: ATLAS_H,
-});
-
-/**
- * 滚筒上八格默认刻哪八支签。步长 5 与 36 互质，所以八格必不重复；
- * 而且它们都是真的签 —— 玩家凑近看滚筒，看到的是签文，不是占位符。
- */
-export const previewStick = (slot: number): FortuneStick => STICKS[(slot * 5 + 2) % STICKS.length];
-
-/** 确定性伪随机（Lehmer / MINSTD），和 FortuneCylinder 里那一套同源。 */
-export function pseudoRandom(seed: number): () => number {
-  let s = seed % 2147483647;
-  if (s <= 0) s += 2147483646;
-  return () => {
-    s = (s * 16807) % 2147483647;
-    return (s - 1) / 2147483646;
-  };
-}
 
 /* ── 底子 ── */
 
@@ -189,43 +171,6 @@ function paintVertical(
   }
 }
 
-/**
- * 按空格折行，最多 maxLines 行；塞不下的尾巴用省略号收掉。
- *
- * 量宽度这件事由调用方注入（浏览器里传 measureText），于是折行逻辑本身是纯的，
- * 能在 node 下被测到 —— 这个模块其余部分都没有自动测试可言。
- */
-export function wrapText(
-  measure: (text: string) => number,
-  text: string,
-  maxWidth: number,
-  maxLines: number,
-): string[] {
-  const words = text.split(/\s+/).filter(Boolean);
-  const lines: string[] = [];
-  let line = '';
-  let overflow = false;
-  for (const word of words) {
-    const next = line ? `${line} ${word}` : word;
-    if (!line || measure(next) <= maxWidth) {
-      line = next;
-      continue;
-    }
-    if (lines.length + 1 === maxLines) {
-      overflow = true;
-      break;
-    }
-    lines.push(line);
-    line = word;
-  }
-  if (line) lines.push(line);
-  if (overflow && lines.length > 0) {
-    let last = lines[lines.length - 1];
-    while (last.length > 1 && measure(`${last}…`) > maxWidth) last = last.slice(0, -1);
-    lines[lines.length - 1] = `${last}…`;
-  }
-  return lines;
-}
 
 /**
  * 把一行字压进给定宽度：从 basePx 按整数级往下缩，缩到 minPx 为止。

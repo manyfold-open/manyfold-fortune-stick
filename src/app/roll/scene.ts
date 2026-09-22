@@ -31,7 +31,7 @@ import {
   createTrail,
   type RibbonBuffers,
   type Trail,
-} from './kinematics';
+} from '../../shared/roll/kinematics';
 import { createAtlasCanvas, createBlobCanvas, createBlockCanvas, createBrassCanvas } from './textures';
 
 /** 案几的颜色。纸带尾端就是溶进这个颜色里，所以两处必须是同一个值。 */

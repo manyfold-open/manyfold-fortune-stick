@@ -28,7 +28,7 @@ import {
   springK,
   tailS,
   writeRibbon,
-} from '../roll/kinematics';
+} from '../../shared/roll/kinematics';
 import { createRollScene, type RollScene } from '../roll/scene';
 import { previewStick, repaintSlot } from '../roll/textures';
 import { paperRollRumble, paperUnfurl, woodblockPress } from '../sound';
