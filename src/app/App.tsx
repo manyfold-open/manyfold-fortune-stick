@@ -178,6 +178,8 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
       )}
 
       <footer className="footer">
+        <span className="footer-note">{t('footerNote')}</span>
+
         <div className="footer-prefs">
           <button
             type="button"
@@ -200,9 +202,6 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
         </div>
 
         <div className="footer-credits">
-          <a className="footer-credit-link" href="/privacy">
-            {t('privacyNav')}
-          </a>
           <a
             href="https://manyfold.ai/"
             target="_blank"
@@ -233,7 +232,9 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
           </a>
         </div>
 
-        <span className="footer-note">{t('footerNote')}</span>
+        <a className="footer-credit-link footer-privacy" href="/privacy">
+          {t('privacyNav')}
+        </a>
       </footer>
 
       {gateOpen && <PasswordGate onSubmitted={refreshState} />}
