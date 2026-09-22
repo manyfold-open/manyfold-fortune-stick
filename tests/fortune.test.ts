@@ -301,6 +301,12 @@ describe('英文签库', () => {
     expect(LEVEL_LABEL.en['下签']).toBe('POOR FORTUNE');
     expect(LEVEL_LABEL.zh['上上签']).toBe('上上签');
   });
+
+  it('英文珍藏卡使用英文等级名，而不是内部中文等级键', () => {
+    for (const entry of STICKS) {
+      expect(LEVEL_LABEL.en[entry.level]).not.toBe(entry.level);
+    }
+  });
 });
 
 describe('按问题的语言解签', () => {
