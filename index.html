@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="写下心里的事，按下打印机上的按钮，印一张属于你的签。问一签是一个轻量的在线求签游戏。" />
+    <meta name="theme-color" content="#c8beaf" />
+    <title>问一签</title>
+    <!-- 两套衬线：中文的 Noto Serif SC，英文签纸的 Noto Serif（拉丁子集，比前者小得多）。
+         一次请求拿两家，让两种签纸看起来像同一台机器印的。
+         加载不上时会落回 Songti SC / SimSun 和 Georgia，排版不会散。
+
+         styles.css 的 --serif 排在这两家前面还有 GenRyuMin（源流明体）——
+         那是「本机装过才生效」的增强，故意不进这笔请求：整包 CJK 明体几 MB，
+         为它拖慢首屏不划算。改这里之前先看那边的注释。
+
+         故意不让它挡住首屏：字体表是渲染阻塞资源，一旦 Google Fonts 慢或者被挡，
+         模块脚本要等它，整页就是白的。先按 print 媒体加载，到了再切成 all。 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;700;900&family=Noto+Serif:wght@400;500;700&display=swap"
+      rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;700;900&family=Noto+Serif:wght@400;500;700&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/app/main.tsx"></script>
+  </body>
+</html>

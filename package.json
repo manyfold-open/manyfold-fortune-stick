@@ -1,0 +1,48 @@
+{
+  "name": "manyfold-fortune-stick",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "问一签 — an online fortune-stick game on Cloudflare Workers, with readings written by a connected Manyfold agent.",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "check": "tsc -b && vite build && wrangler deploy --dry-run",
+    "test": "vitest run",
+    "deploy": "npm run build && wrangler deploy",
+    "smoke": "node scripts/smoke.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "hono": "^4.13.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.51.2",
+    "@cloudflare/workers-types": "^5.20260811.1",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.0.5",
+    "typescript": "^5.9.3",
+    "vite": "^8.2.1",
+    "vitest": "^4.1.10",
+    "wrangler": "^4.120.1"
+  },
+  "cloudflare": {
+    "label": "问一签 Fortune Sticks",
+    "products": [
+      "Workers",
+      "D1"
+    ],
+    "bindings": {
+      "DB": {
+        "description": "Stores drawn sticks and their readings, follow-up conversations, and connected agents (tokens encrypted at rest)."
+      }
+    }
+  }
+}
