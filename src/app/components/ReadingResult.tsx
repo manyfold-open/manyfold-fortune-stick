@@ -4,20 +4,23 @@
  * 揭晓时只有签纸本身 —— 签号、等级、四字签名、签诗。解签是另外按一下：让用户先看签、
  * 先自己猜，再决定什么时候揭晓（产品文档第三步）。
  *
- * 签纸在任何状态下都可见：解签中、解签失败、重试中，它都不会被遮住，也不会被替换。
- *
- * 页面上没有一个带框的按钮，动作都是纸上的一行字。
+ * 解签后支持拟真撕纸动效：
+ * 用户可点击「撕下分享」或沿齿孔拉断纸条，整张解签内容伴随物理断裂声与触感震动，
+ * 脱离并向前浮现为一张立体的「灵签珍藏卡」，可直接保存分享，或随时贴回。
  */
 
 import { useState } from 'react';
+import { stickText } from '../../shared/sticks';
 import type { FollowUpMessage, Reading } from '../../shared/types';
 import { storedErrorText } from '../api';
 import { LEVEL_TONE } from '../constants';
 import { copyFor, useT } from '../i18n';
 import { withoutDashes } from '../../shared/text';
+import { paperSettleSound, tearPaperSound } from '../sound';
 import FollowUp from './FollowUp';
 import SharePanel from './SharePanel';
 import StickFace from './StickFace';
+import TearLine, { TearEdge } from './TearLine';
 
 export default function ReadingResult(props: {
   reading: Reading;
@@ -30,6 +33,7 @@ export default function ReadingResult(props: {
   const t = useT();
   const [showShare, setShowShare] = useState(false);
   const [showFollowUp, setShowFollowUp] = useState(false);
+  const [tearState, setTearState] = useState<'intact' | 'tearing' | 'torn'>('intact');
   const { reading } = props;
   const { interpretation } = reading;
   const displayQuestion = withoutDashes(reading.question);
@@ -50,18 +54,66 @@ export default function ReadingResult(props: {
    */
   const sheet = copyFor(reading.language);
 
+  const handleTear = () => {
+    if (tearState !== 'intact') return;
+    setTearState('tearing');
+    setShowFollowUp(false);
+    setShowShare(true);
+
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      try {
+        navigator.vibrate([12, 18, 26, 32]);
+      } catch {
+        /* Ignore on restricted environments */
+      }
+    }
+
+    tearPaperSound(0.3);
+
+    setTimeout(() => {
+      setTearState('torn');
+    }, 440);
+  };
+
+  const handleReattach = () => {
+    paperSettleSound(0.2);
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      try {
+        navigator.vibrate(15);
+      } catch {
+        /* Ignore */
+      }
+    }
+    setTearState('intact');
+  };
+
   const actionsNav = (
     <nav className="result-actions">
-      <button
-        type="button"
-        className="text-action"
-        onClick={() => {
-          setShowShare((open) => !open);
-          if (!showShare) setShowFollowUp(false);
-        }}
-      >
-        {showShare ? t('actionShareClose') : t('actionShare')}
-      </button>
+      {tearState === 'torn' ? (
+        <>
+          <button type="button" className="text-action action-reattach" onClick={handleReattach}>
+            ↩ {t('actionReattach')}
+          </button>
+          <button
+            type="button"
+            className="text-action strong"
+            onClick={() => {
+              setShowShare((open) => !open);
+              if (!showShare) setShowFollowUp(false);
+            }}
+          >
+            {showShare ? t('actionShareClose') : t('actionShare')}
+          </button>
+        </>
+      ) : (
+        <button type="button" className="text-action action-tear strong" onClick={handleTear}>
+          <span className="tear-icon" aria-hidden="true">
+            ✂
+          </span>{' '}
+          {t('actionTearShare')}
+        </button>
+      )}
+
       <button
         type="button"
         className="text-action"
@@ -72,7 +124,8 @@ export default function ReadingResult(props: {
       >
         {showFollowUp ? t('actionFollowUpClose') : t('actionFollowUp')}
       </button>
-      <button type="button" className="text-action strong" onClick={props.onRestart}>
+
+      <button type="button" className="text-action" onClick={props.onRestart}>
         {t('actionRestart')}
       </button>
     </nav>
@@ -191,10 +244,16 @@ export default function ReadingResult(props: {
     </article>
   );
 
+  const stickInfo = stickText(reading.stick, reading.language);
+
   return (
-    <section className="stage result" data-tone={LEVEL_TONE[reading.stick.level].key}>
+    <section
+      className={`stage result${tearState === 'torn' ? ' stage-torn' : ''}`}
+      data-tone={LEVEL_TONE[reading.stick.level].key}
+    >
       <div className="result-deck mode-single">
-        <div className="sheet-stack">
+        {/* 上半部：紙卷本體（所求之事 + 籤面） */}
+        <div className={`sheet-stack${tearState === 'torn' ? ' slip-stub' : ''}`}>
           {/* 所求之事：神諭紙卷抬頭 */}
           <div className="scroll-head" data-lang={reading.language}>
             <span className="scroll-head-label">
@@ -221,12 +280,46 @@ export default function ReadingResult(props: {
 
           {!interpretation && props.interpreting && loadingSkeleton}
 
-          {interpretation && (
-            <article className={`sheet${props.interpreting ? ' sheet-loading' : ''}`} data-lang={reading.language}>
+          {/* 解籤後未撕下：呈現齒孔撕線 */}
+          {interpretation && tearState !== 'torn' && (
+            <TearLine onTear={handleTear} isTearing={tearState === 'tearing'} />
+          )}
+
+          {/* 若已撕下，上半紙卷底部露出自然撕斷毛邊 */}
+          {interpretation && tearState === 'torn' && (
+            <TearEdge position="bottom" className="stub-bottom-edge" />
+          )}
+
+          {/* 未撕下時，解籤內容接在同一卷紙下方 */}
+          {interpretation && tearState !== 'torn' && (
+            <article
+              className={`sheet${props.interpreting ? ' sheet-loading' : ''}${tearState === 'tearing' ? ' sheet-tearing' : ''}`}
+              data-lang={reading.language}
+            >
               {interpretationContent}
             </article>
           )}
         </div>
+
+        {/* 若已撕下，解籤內容向前浮起，成為立體的「靈籤珍藏卡」 */}
+        {interpretation && tearState === 'torn' && (
+          <div className="torn-card-container">
+            <article
+              className={`sheet torn-card${props.interpreting ? ' sheet-loading' : ''}`}
+              data-lang={reading.language}
+            >
+              <TearEdge position="top" className="card-top-edge" />
+              <div className="torn-card-header">
+                <span className="torn-card-badge">
+                  {reading.language === 'en'
+                    ? `No. ${reading.stick.no} · ${reading.stick.level} · ${stickInfo.title}`
+                    : `第 ${reading.stick.no} 籤 · ${reading.stick.level} · ${stickInfo.title}`}
+                </span>
+              </div>
+              {interpretationContent}
+            </article>
+          </div>
+        )}
       </div>
     </section>
   );

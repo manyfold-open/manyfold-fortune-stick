@@ -21,10 +21,9 @@ import type { Interpretation } from '../shared/types';
 import { LEVEL_TONE } from './constants';
 import QRCode from 'qrcode';
 
-const WIDTH = 1080;
-const HEIGHT = 1500;
+const WIDTH = 840;
 const APP_NAME = 'AI Fortune Stick';
-const QR_SIZE = 132;
+const QR_SIZE = 104;
 const SERIF = '"Noto Serif SC", "Songti SC", "STSong", "SimSun", serif';
 const SERIF_EN = 'Charter, "Charter BT", Georgia, Palatino, "Noto Serif", "Iowan Old Style", "Times New Roman", serif';
 const MONO = 'ui-monospace, "SF Mono", Menlo, Consolas, monospace';
@@ -214,36 +213,6 @@ function drawHorizontal(
   }
 }
 
-/** 底色上的那层格纹，和页面上是同一套图形。 */
-function paintGround(context: CanvasRenderingContext2D, ground: string): void {
-  context.fillStyle = ground;
-  context.fillRect(0, 0, WIDTH, HEIGHT);
-
-  const tile = 108;
-  context.save();
-  context.strokeStyle = 'rgba(255,255,255,0.42)';
-  context.globalAlpha = 0.5;
-  context.lineWidth = 1.4;
-  for (let y = 0; y < HEIGHT + tile; y += tile) {
-    for (let x = 0; x < WIDTH + tile; x += tile) {
-      const cx = x + tile / 2;
-      const cy = y + tile / 2;
-      context.beginPath();
-      context.moveTo(cx, y + 4);
-      context.lineTo(x + tile - 4, cy);
-      context.lineTo(cx, y + tile - 4);
-      context.lineTo(x + 4, cy);
-      context.closePath();
-      context.stroke();
-
-      context.beginPath();
-      context.arc(cx, cy, tile * 0.17, 0, Math.PI * 2);
-      context.stroke();
-      context.strokeRect(cx - tile * 0.09, cy - tile * 0.09, tile * 0.18, tile * 0.18);
-    }
-  }
-  context.restore();
-}
 
 /** 生成回到游戏首页的二维码。分享图可能离开当前页面，所以不保留 hash 路由。 */
 async function loadShareQr(): Promise<HTMLImageElement | null> {
@@ -346,11 +315,6 @@ async function waitForFonts(): Promise<void> {
 export async function renderShareImage(input: ShareInput): Promise<Blob> {
   await waitForFonts();
   const qrImage = await loadShareQr();
-  const canvas = document.createElement('canvas');
-  canvas.width = WIDTH;
-  canvas.height = HEIGHT;
-  const context = canvas.getContext('2d');
-  if (!context) throw new Error('这个浏览器不支持生成图片。');
 
   const { stick, language } = input;
   const en = language === 'en';
@@ -358,119 +322,151 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
   const text = stickText(stick, language);
   const question = withoutDashes(input.question);
   const meaning = withoutDashes(input.interpretation?.meaning ?? text.meaning);
-  const { tone, ground } = TONE[stick.level];
+  const { tone } = TONE[stick.level];
   const center = WIDTH / 2;
   const withQuestion = input.includeQuestion && Boolean(question.trim());
 
-  paintGround(context, ground);
-  context.textAlign = 'center';
+  const qOffset = withQuestion ? 90 : 0;
+  const HEIGHT = 1070 + qOffset;
 
-  // 问题印在纸的外面，和页面上一样 —— 纸是纸，问的事是问的事。
+  const canvas = document.createElement('canvas');
+  canvas.width = WIDTH;
+  canvas.height = HEIGHT;
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('这个浏览器不支持生成图片。');
+
+  // 整张图就是纯正签纸本身，无外围多余背景
+  context.fillStyle = PAPER;
+  context.fillRect(0, 0, WIDTH, HEIGHT);
+
+  // 宣纸古典文武双边框与四角回纹
+  context.strokeStyle = 'rgba(23, 22, 26, 0.65)';
+  context.lineWidth = 1.5;
+  context.strokeRect(18, 18, WIDTH - 36, HEIGHT - 36);
+
+  context.strokeStyle = 'rgba(23, 22, 26, 0.18)';
+  context.lineWidth = 0.6;
+  context.strokeRect(22, 22, WIDTH - 44, HEIGHT - 44);
+
+  drawCorners(context, 18, 18, WIDTH - 36, HEIGHT - 36, 12);
+
+  const cellX = 64;
+  const cellWidth = WIDTH - 2 * cellX;
+
+  // 所求之事：直接融入签纸顶端神谕抬头部
   if (withQuestion) {
-    context.fillStyle = 'rgba(22,21,25,0.72)';
-    context.font = `500 34px ${face}`;
-    let y = 122;
-    for (const line of wrapFor(language)(context, question, WIDTH - 260).slice(0, 3)) {
-      context.fillText(line, center, y);
-      y += 46;
+    const qBoxX = cellX;
+    const qBoxY = 36;
+    const qBoxWidth = cellWidth;
+    const qBoxHeight = 74;
+
+    context.fillStyle = 'rgba(23, 22, 26, 0.035)';
+    context.fillRect(qBoxX, qBoxY, qBoxWidth, qBoxHeight);
+    context.strokeStyle = 'rgba(23, 22, 26, 0.18)';
+    context.lineWidth = 1;
+    context.strokeRect(qBoxX, qBoxY, qBoxWidth, qBoxHeight);
+
+    context.fillStyle = tone;
+    context.font = `600 13px ${MONO}`;
+    context.textAlign = 'left';
+    context.fillText(en ? 'QUESTION' : '所求之事', qBoxX + 18, qBoxY + 24);
+
+    context.fillStyle = INK;
+    context.font = `500 20px ${face}`;
+    const qLines = wrapFor(language)(context, question, qBoxWidth - 36).slice(0, 2);
+    let qTextY = qBoxY + 52;
+    for (const line of qLines) {
+      context.fillText(line, qBoxX + 18, qTextY);
+      qTextY += 26;
     }
   }
 
-  const cardTop = withQuestion ? 240 : 172;
-  const cardHeight = 1044;
-  context.fillStyle = 'rgba(0,0,0,0.16)';
-  context.fillRect(96, cardTop + 16, WIDTH - 192, cardHeight);
-  context.fillStyle = PAPER;
-  context.fillRect(90, cardTop, WIDTH - 180, cardHeight);
+  const startY = withQuestion ? 134 : 44;
 
+  context.textAlign = 'center';
   context.fillStyle = INK;
-  context.font = `700 44px ${SERIF}`;
-  spaced(context, APP_NAME.toUpperCase(), center, cardTop + 104, 8);
+  context.font = `700 40px ${SERIF}`;
+  spaced(context, APP_NAME.toUpperCase(), center, startY + 44, 7);
 
   context.fillStyle = INK_3;
-  context.font = `500 19px ${MONO}`;
-  spaced(context, 'A REFERENCE, NOT A ROUTE', center, cardTop + 146, 3);
+  context.font = `500 17px ${MONO}`;
+  spaced(context, 'A REFERENCE, NOT A ROUTE', center, startY + 80, 3);
 
-  drawEmblem(context, center, cardTop + 216, 46, tone);
-
-  const cellX = 150;
-  const cellWidth = WIDTH - 300;
+  drawEmblem(context, center, startY + 138, 38, tone);
 
   // 一格等级
-  const levelY = cardTop + 286;
-  const levelH = 130;
+  const levelY = startY + 192;
+  const levelH = 120;
   context.strokeStyle = INK;
-  context.lineWidth = 2;
+  context.lineWidth = 1.8;
   context.strokeRect(cellX, levelY, cellWidth, levelH);
-  drawCorners(context, cellX, levelY, cellWidth, levelH, 18);
+  drawCorners(context, cellX, levelY, cellWidth, levelH, 16);
 
   context.fillStyle = INK_3;
-  context.font = `400 26px ${face}`;
+  context.font = `400 24px ${face}`;
   context.textAlign = 'left';
-  context.fillText(en ? `NO. ${stick.no}` : `第 ${stick.no} 签`, cellX + 34, levelY + levelH / 2 + 10);
+  context.fillText(en ? `NO. ${stick.no}` : `第 ${stick.no} 签`, cellX + 30, levelY + levelH / 2 + 9);
   context.textAlign = 'right';
   context.fillText(
     en ? `OF ${STICK_COUNT}` : '之 签 运',
-    cellX + cellWidth - 34,
-    levelY + levelH / 2 + 10,
+    cellX + cellWidth - 30,
+    levelY + levelH / 2 + 9,
   );
   context.textAlign = 'center';
 
-  // 英文等级是一个词：92px 配 20 的字距会直接顶出格子，所以收到 52 和 8。
   context.fillStyle = INK;
-  context.font = en ? `700 52px ${face}` : `700 92px ${SERIF}`;
+  context.font = en ? `700 48px ${face}` : `700 86px ${SERIF}`;
   spaced(
     context,
     LEVEL_LABEL[language][stick.level],
     center,
-    levelY + levelH / 2 + (en ? 20 : 34),
-    en ? 8 : 20,
+    levelY + levelH / 2 + (en ? 18 : 31),
+    en ? 8 : 18,
   );
 
   // 一格四字签名
   const titleY = levelY + levelH;
-  const titleH = 100;
+  const titleH = 88;
   context.strokeRect(cellX, titleY, cellWidth, titleH);
   context.fillStyle = INK_2;
   if (en) {
-    // 英文签名是一个短语：先按一行试，撑不下就换小一号折两行。
-    context.font = `500 40px ${face}`;
+    context.font = `500 36px ${face}`;
     if (context.measureText(text.title).width > cellWidth - 80) {
-      context.font = `500 32px ${face}`;
+      context.font = `500 28px ${face}`;
       const lines = wrapWords(context, text.title, cellWidth - 80).slice(0, 2);
-      let y = titleY + titleH / 2 - (lines.length - 1) * 17 + 10;
+      let y = titleY + titleH / 2 - (lines.length - 1) * 16 + 8;
       for (const line of lines) {
         context.fillText(line, center, y);
-        y += 34;
+        y += 30;
       }
     } else {
-      spaced(context, text.title, center, titleY + titleH / 2 + 15, 4);
+      spaced(context, text.title, center, titleY + titleH / 2 + 13, 4);
     }
   } else {
-    context.font = `500 50px ${SERIF}`;
-    spaced(context, text.title, center, titleY + titleH / 2 + 18, 26);
+    context.font = `500 46px ${SERIF}`;
+    spaced(context, text.title, center, titleY + titleH / 2 + 16, 24);
   }
 
   // 一格直排签诗与签意
   const bodyY = titleY + titleH;
-  const bodyH = 458;
+  const bodyH = 430;
   context.strokeRect(cellX, bodyY, cellWidth, bodyH);
   const lucky = LEVEL_TONE[stick.level].luckyColor;
   if (en) {
     drawHorizontal(
       context,
       [
-        { text: text.poem[0], font: `500 34px ${face}`, color: INK, step: 46 },
-        { text: text.poem[1], font: `500 34px ${face}`, color: INK, step: 46 },
-        { text: meaning, font: `400 27px ${face}`, color: INK_2, step: 38 },
-        { text: `Lucky colour: ${lucky.en}`, font: `400 24px ${face}`, color: tone, step: 34 },
+        { text: text.poem[0], font: `500 32px ${face}`, color: INK, step: 44 },
+        { text: text.poem[1], font: `500 32px ${face}`, color: INK, step: 44 },
+        { text: meaning, font: `400 26px ${face}`, color: INK_2, step: 36 },
+        { text: `Lucky colour: ${lucky.en}`, font: `400 23px ${face}`, color: tone, step: 32 },
       ],
       {
         centerX: center,
-        top: bodyY + 44,
-        width: cellWidth - 110,
-        height: bodyH - 88,
-        gap: 26,
+        top: bodyY + 40,
+        width: cellWidth - 100,
+        height: bodyH - 80,
+        gap: 24,
         wrapText: wrapWords,
       },
     );
@@ -478,46 +474,71 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
     drawVertical(
       context,
       [
-        { text: text.poem[0], font: `500 44px ${SERIF}`, color: INK, step: 50 },
-        { text: text.poem[1], font: `500 44px ${SERIF}`, color: INK, step: 50 },
+        { text: text.poem[0], font: `500 42px ${SERIF}`, color: INK, step: 48 },
+        { text: text.poem[1], font: `500 42px ${SERIF}`, color: INK, step: 48 },
         {
           text: meaning,
-          font: `400 33px ${SERIF}`,
+          font: `400 31px ${SERIF}`,
           color: INK_2,
-          step: 39,
+          step: 37,
         },
-        { text: `幸运色：${lucky.zh}`, font: `400 29px ${SERIF}`, color: tone, step: 35 },
+        { text: `幸运色：${lucky.zh}`, font: `400 27px ${SERIF}`, color: tone, step: 34 },
       ],
-      { centerX: center, top: bodyY + 44, height: bodyH - 88, gap: 22 },
+      { centerX: center, top: bodyY + 40, height: bodyH - 80, gap: 20 },
     );
   }
 
-  context.fillStyle = INK_3;
-  context.font = `400 20px ${MONO}`;
-  spaced(
-    context,
-    en ? 'AI FORTUNE STICK · A REFERENCE, NOT A ROUTE' : 'AI FORTUNE STICK · 签为参考，路要自己走',
-    center,
-    cardTop + cardHeight - 30,
-    3,
-  );
+  // 签纸底部：虚线分隔，内部整合二维码与名言
+  const footerY = bodyY + bodyH + 18;
+  context.save();
+  context.strokeStyle = 'rgba(23, 22, 26, 0.25)';
+  context.lineWidth = 1;
+  context.setLineDash([5, 4]);
+  context.beginPath();
+  context.moveTo(cellX, footerY);
+  context.lineTo(cellX + cellWidth, footerY);
+  context.stroke();
+  context.restore();
 
   if (qrImage) {
-    const qrFrame = QR_SIZE + 28;
-    const qrX = WIDTH - 90 - qrFrame;
-    const qrY = HEIGHT - 210;
-    context.fillStyle = PAPER;
-    context.fillRect(qrX, qrY, qrFrame, qrFrame);
-    context.drawImage(qrImage, qrX + 14, qrY + 14, QR_SIZE, QR_SIZE);
+    const qrSize = QR_SIZE;
+    const qrX = cellX + cellWidth - qrSize - 12;
+    const qrY = footerY + 16;
+    context.drawImage(qrImage, qrX, qrY, qrSize, qrSize);
+
+    context.fillStyle = INK_3;
+    context.font = `500 11px ${MONO}`;
+    context.textAlign = 'center';
+    context.fillText(en ? 'SCAN TO PLAY' : '扫码再玩一签', qrX + qrSize / 2, qrY + qrSize + 15);
+
+    const textX = cellX + 10;
+    context.textAlign = 'left';
+    context.fillStyle = INK;
+    context.font = `700 18px ${MONO}`;
+    context.fillText(APP_NAME.toUpperCase(), textX, footerY + 44);
+
+    context.fillStyle = INK_2;
+    context.font = `500 15px ${face}`;
+    context.fillText(en ? 'A REFERENCE, NOT A ROUTE' : '签为参考，路要自己走', textX, footerY + 74);
+
+    context.fillStyle = INK_3;
+    context.font = `400 13px ${MONO}`;
+    context.fillText(location.host, textX, footerY + 102);
+  } else {
+    context.textAlign = 'center';
     context.fillStyle = INK_3;
     context.font = `400 18px ${MONO}`;
-    context.textAlign = 'center';
-    context.fillText(en ? 'SCAN TO PLAY' : '扫码再玩一签', qrX + qrFrame / 2, qrY - 14);
+    spaced(
+      context,
+      en ? 'AI FORTUNE STICK · A REFERENCE, NOT A ROUTE' : 'AI FORTUNE STICK · 签为参考，路要自己走',
+      center,
+      footerY + 54,
+      2,
+    );
+    context.fillStyle = 'rgba(22,21,25,0.5)';
+    context.font = `400 14px ${MONO}`;
+    context.fillText(location.host, center, footerY + 84);
   }
-
-  context.fillStyle = 'rgba(22,21,25,0.5)';
-  context.font = `400 24px ${MONO}`;
-  context.fillText(location.host, center, HEIGHT - 26);
 
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(
