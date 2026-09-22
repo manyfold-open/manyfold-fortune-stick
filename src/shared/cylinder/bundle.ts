@@ -29,16 +29,24 @@ export const FLOOR_RESTITUTION = 0.16;
  */
 export const RATCHET = 5.2;
 /**
- * 中签那一支额外得到的向上驱力。
+ * 中签那一支额外得到的向上驱力，**乘上摇动强度**。
  *
- * 它必须**单独就打得过重力沿轴的分量（约 8.79）**，不能靠摇动的棘轮去补。
- * 原因是使用者的实际行为：进度条一满、提示说「有一支籤正在往上爬」，人就停手了。
- * 这时候 intensity 归零，如果 CHOSEN_LIFT 小于重力，那支籤会直接沉回筒底，
- * 画面永远卡在那里 —— 这是实测踩到的，不是假想。
+ * 一定要乘：写成常数的话那支籤会无条件往上飘，变成「它自己浮上来」而不是
+ * 「被你摇出来」—— 实测回报「也太怪」。籤是摇出来的，停手就不该继续爬。
  *
- * 11.2 − 8.79 = 2.41，除以阻尼 1.9 得终端速度约 1.27/s，爬完约 1.9 的行程要 1.5 秒。
+ * 满强度时净得 11.2 + 棘轮 − 8.79 > 0，摇着就爬；强度归零时这一项也归零。
  */
 export const CHOSEN_LIFT = 11.2;
+
+/**
+ * 摩擦咬合：低于这个强度，籤束挤在一起互相卡住，谁都不会自己滑下去。
+ *
+ * 没有它，停手之后中签那支会沉回筒底，使用者就永远等不到籤 —— 也是实测踩到的。
+ * 有了它，停手 = 停在原地：不沉回去，也不自己往上飘。这两件事要同时成立。
+ */
+export const GRIP_RELEASE = 0.25;
+/** 完全卡死时每帧保留多少速度。留一点点，免得看起来像被冻住。 */
+export const GRIP_HOLD = 0.1;
 
 export interface StickMotion {
   /** 沿筒轴离静止位置的位移，向上为正。永远 >= 0（不会穿过筒底）。 */
@@ -94,16 +102,22 @@ export function stepBundle(
   meanV /= n;
 
   const decay = Math.exp(-DAMP * dt);
+  const drive = Math.min(1, Math.max(0, intensity));
+  // 不摇的时候籤束靠摩擦咬死；摇到 GRIP_RELEASE 就完全松开
+  const grip = Math.max(0, 1 - drive / GRIP_RELEASE);
+  const hold = 1 - grip * (1 - GRIP_HOLD);
+
   for (let i = 0; i < n; i += 1) {
     const m = motions[i];
     const t = traits[i];
-    const drive = Math.min(1, Math.max(0, intensity));
     let a = -axisGravity + shakeA * t.resp + drive * RATCHET * t.climb;
-    if (i === chosen) a += CHOSEN_LIFT;
+    if (i === chosen) a += drive * CHOSEN_LIFT;
     m.vy += a * dt;
     // 邻籤摩擦：往整束的平均速度靠拢
     m.vy += (meanV - m.vy) * Math.min(1, COUPLING * dt);
     m.vy *= decay;
+    // 咬合：静止时速度被压掉，籤就卡在原地不动
+    m.vy *= hold;
     m.y += m.vy * dt;
     if (m.y < 0) {
       m.y = 0;

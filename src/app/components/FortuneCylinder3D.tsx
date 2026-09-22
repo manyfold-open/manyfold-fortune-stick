@@ -371,11 +371,11 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
           ? en ? '✦ Your stick has fallen ✦' : '✦ 神籤已落 ✦'
           : stageLabel === 'shaking'
             ? progress >= 1
-              ? en ? 'A stick is working its way up…' : '有一支籤正在往上爬…'
+              ? en ? 'One is working loose — keep shaking' : '有一支籤鬆動了 —— 繼續搖，別停'
               : progress > 0.55
                 ? en ? 'Almost there — keep shaking' : '快了，再搖一會兒'
                 : en ? 'Keep shaking — keep moving, do not stop' : '繼續搖 —— 上下來回甩，別停'
-            : en ? 'Hold and swing up and down — a stick will fall out on its own' : '按住籤筒，上下來回甩 —— 籤會自己掉出來';
+            : en ? 'Hold and swing up and down until one falls out' : '按住籤筒，上下來回甩 —— 搖到一支自己掉出來';
 
   return (
     <div className="roll-stage">

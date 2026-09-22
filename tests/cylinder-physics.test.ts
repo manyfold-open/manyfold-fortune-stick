@@ -88,27 +88,35 @@ describe('籤束：中签那一支要爬得出来', () => {
     expect(t, '爬出来花太久').toBeLessThan(3.5);
   });
 
-  it('抽中之後就算停手，那一支也要自己爬出來', () => {
-    // 使用者看到进度条满了、提示说「有一支籤正在往上爬」，自然就停手了。
-    // 这时候如果 CHOSEN_LIFT 打不过重力，它会沉回去，画面就永远卡在那里。
+  it('停手之後那一支停在原地 —— 不沉回去，也不自己往上飄', () => {
+    // 籤束挤在一起，靠摩擦互相卡住。摇它才松动往上爬，停手就卡在原地。
+    // 早先为了修「停手会沉回去」，把 CHOSEN_LIFT 拉到大于重力，结果那支籤变成
+    // 无条件往上飘 —— 不是摇出来的，是浮上来的，实测回报「也太怪」。
     const chosen = 11;
     const m = B.createMotions(G.STICK_COUNT);
-    const need = B.exitRise(G.bundleSlot(chosen).rest);
-    shake(m, 1.6, 20); // 摇到抽中签为止
-    // 从这里开始完全不摇：shakeA = 0、intensity = 0
-    let t = 0;
-    const steps = Math.round(6 / DT);
-    for (let s = 0; s < steps; s += 1) {
-      B.stepBundle(m, traits, DT, AXIS_G, 0, 0, chosen);
-      t += DT;
-      if (m[chosen].y >= need) break;
-    }
-    expect(m[chosen].y, '停手之后中签那支沉回去了，永远出不来').toBeGreaterThanOrEqual(need);
-    expect(t, '停手之后爬太久，使用者会以为卡住').toBeLessThan(4.5);
+    shake(m, 2.2, 20, chosen);
+    const held = m[chosen].y;
+    expect(held, '摇的时候没爬起来').toBeGreaterThan(0.3);
+
+    // 完全停手 4 秒
+    for (let s = 0; s < 60 * 4; s += 1) B.stepBundle(m, traits, DT, AXIS_G, 0, 0, chosen);
+    const after = m[chosen].y;
+    expect(after, '停手之后沉回去了').toBeGreaterThan(held - 0.12);
+    expect(after, '停手之后还在自己往上飘').toBeLessThan(held + 0.12);
   });
 
-  it('CHOSEN_LIFT 必須打得過重力 —— 這是上一條的根本原因', () => {
-    expect(B.CHOSEN_LIFT).toBeGreaterThan(B.GRAVITY * Math.cos(0.46));
+  it('只有持續搖動才爬得出去 —— 籤是搖出來的，不是自己浮上來的', () => {
+    const chosen = 11;
+    const need = B.exitRise(G.bundleSlot(chosen).rest);
+
+    const stopped = B.createMotions(G.STICK_COUNT);
+    shake(stopped, 1.0, 20, chosen);
+    for (let s = 0; s < 60 * 8; s += 1) B.stepBundle(stopped, traits, DT, AXIS_G, 0, 0, chosen);
+    expect(stopped[chosen].y, '停手之后居然自己爬出去了').toBeLessThan(need);
+
+    const kept = B.createMotions(G.STICK_COUNT);
+    shake(kept, 6, 20, chosen);
+    expect(kept[chosen].y, '一直摇却摇不出来').toBeGreaterThanOrEqual(need);
   });
 
   it('中签的那一支爬得比其他所有籤都高', () => {
