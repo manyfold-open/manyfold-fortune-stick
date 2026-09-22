@@ -66,7 +66,7 @@ export const en = {
   actionTearShare: 'Tear & share',
   tearHint: 'Tear along perforation to keep or share',
   tearPullTab: 'TEAR',
-  actionReattach: 'Put back on scroll',
+  actionReattach: 'Re-attach',
   shareTalisman: 'Fortune card',
   actionFollowUp: 'Ask a follow-up',
   actionFollowUpClose: 'Close follow-up',
