@@ -160,3 +160,68 @@ describe('籤束像一把花束：靠在筒口上、上端往外散開', () => {
     for (const { s } of poses) expect(Math.abs(s.yaw)).toBeLessThanOrEqual(0.4);
   });
 });
+
+describe('籤跟籤不穿插 —— 前排中間那支曾被兩旁往前倒的籤「切斷」，露出一截平頂的方塊', () => {
+  const all = Array.from({ length: G.STICK_COUNT }, (_, i) => {
+    const s = G.bundleSlot(i);
+    return { i, s, p: G.stickPose(s) };
+  });
+  /** 籤身在高度 y 時的籤心座標（沿籤軸，獨立重算）。 */
+  const at = (p: G.StickPose, y: number) => {
+    const u = (y - p.cy) / p.ay;
+    return { x: p.cx + p.ax * u, z: p.cz + p.az * u };
+  };
+  const tipY = (p: G.StickPose) => p.cy + p.ay * (G.STICK_LEN / 2);
+
+  it('沒有一支籤往鏡頭那邊倒 —— 往前倒就會從前面那支的身上穿過去', () => {
+    for (const { i, p } of all) expect(p.az, `第 ${i + 1} 支`).toBeLessThanOrEqual(1e-9);
+  });
+
+  it('同一排相鄰兩支：筒口以上前後順序從頭到尾不變（順序一翻就是穿過去了）', () => {
+    for (const a of all) {
+      for (const b of all) {
+        if (a.i >= b.i || a.s.row !== b.s.row) continue;
+        const top = Math.min(tipY(a.p), tipY(b.p));
+        let sign = 0;
+        for (let k = 0; k <= 16; k += 1) {
+          const y = G.TUBE_H + ((top - G.TUBE_H) * k) / 16;
+          const pa = at(a.p, y);
+          const pb = at(b.p, y);
+          // 只看左右有重疊的那一段 —— 沒重疊的地方前後順序無所謂
+          if (Math.abs(pa.x - pb.x) >= G.STICK_W) continue;
+          const d = Math.sign(pa.z - pb.z);
+          expect(d, `第 ${a.i + 1} 與第 ${b.i + 1} 支疊在同一個深度`).not.toBe(0);
+          if (sign === 0) sign = d;
+          expect(d, `第 ${a.i + 1} 與第 ${b.i + 1} 支在 y=${y.toFixed(2)} 穿過彼此`).toBe(sign);
+        }
+      }
+    }
+  });
+
+  it('前、中、後三排在筒口以上各自待在自己的深度，連籤厚都算進去也不重疊', () => {
+    const zRange = (r: number) => {
+      let lo = Infinity;
+      let hi = -Infinity;
+      for (const { s, p } of all) {
+        if (s.row !== r) continue;
+        for (const y of [G.TUBE_H, tipY(p)]) {
+          const z = at(p, y).z;
+          lo = Math.min(lo, z - G.STICK_T);
+          hi = Math.max(hi, z + G.STICK_T);
+        }
+      }
+      return { lo, hi };
+    };
+    expect(zRange(0).lo).toBeGreaterThan(zRange(1).hi);
+    expect(zRange(1).lo).toBeGreaterThan(zRange(2).hi);
+  });
+
+  it('同一排越靠中間越前面 —— 像手上握著一把牌', () => {
+    for (const r of [0, 1, 2]) {
+      const row = all.filter(({ s }) => s.row === r);
+      for (const a of row) for (const b of row) {
+        if (Math.abs(a.s.x) + 1e-6 < Math.abs(b.s.x)) expect(a.p.cz).toBeGreaterThan(b.p.cz);
+      }
+    }
+  });
+});

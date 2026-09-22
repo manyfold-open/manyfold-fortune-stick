@@ -70,19 +70,27 @@ export interface PullPose {
 }
 
 /**
- * 籤靠在筒口那一點 (dx·r, TUBE_H, dz·r) 上、往外傾 lean、籤底在 yb 時的姿態。
+ * 籤靠在筒口那一點 (px, TUBE_H, pz) 上、往 (dx, dz) 方向傾 lean、籤底在 yb 時的姿態。
  *
- * 支點始終是**筒口那一點**：傾角變小時籤底往外擺、但筒口以下最寬的地方仍是 r，
- * 所以只要 r ≤ BUNDLE_R 就不會穿出內壁 —— 跟 geometry.ts 的 stickPose 同一個道理。
+ * 支點始終是**筒口那一點** —— 跟 geometry.ts 的 stickPose 同一個道理。傾角只會變小，
+ * 所以筒口以下那一段只會往回收，不會比靜止時更靠近筒壁（測試逐格驗過）。
  */
-function poseAt(dx: number, dz: number, r: number, lean: number, yb: number, yaw: number): PullPose {
+function poseAt(
+  px: number,
+  pz: number,
+  dx: number,
+  dz: number,
+  lean: number,
+  yb: number,
+  yaw: number,
+): PullPose {
   const sn = Math.sin(lean);
   const ax = dx * sn;
   const ay = Math.cos(lean);
   const az = dz * sn;
   const u = (yb - TUBE_H) / ay;
-  const bx = dx * r + ax * u;
-  const bz = dz * r + az * u;
+  const bx = px + ax * u;
+  const bz = pz + az * u;
   const half = STICK_LEN / 2;
   return { cx: bx + ax * half, cy: yb + ay * half, cz: bz + az * half, ax, ay, az, yaw };
 }
@@ -94,29 +102,27 @@ function poseAt(dx: number, dz: number, r: number, lean: number, yb: number, yaw
  */
 export function pullPose(slot: BundleSlot, ms: number, reduced = false): PullPose {
   const t = reduced ? Math.max(sanitize(ms), HOLD_START) : sanitize(ms);
-  const r = Math.hypot(slot.x, slot.z);
-  const dx = r > 1e-9 ? slot.x / r : 0;
-  const dz = r > 1e-9 ? slot.z / r : 0;
+  const { x: px, z: pz, dirX: dx, dirZ: dz } = slot;
   const out = TUBE_H + CLEAR;
 
   if (t < PULL_START) {
     // 抓住：捏住籤頭往上一提，被鄰居卡住，頓回原位
     const lift = TUG * Math.sin(Math.PI * (t / GRAB_MS));
-    return poseAt(dx, dz, r, slot.lean, slot.rest + lift, slot.yaw);
+    return poseAt(px, pz, dx, dz, slot.lean, slot.rest + lift, slot.yaw);
   }
   if (t < PRESENT_START) {
     const p = ease((t - PULL_START) / PULL_MS);
     const lean = slot.lean * (1 - ease(p / STRAIGHTEN));
-    return poseAt(dx, dz, r, lean, slot.rest + (out - slot.rest) * p, slot.yaw);
+    return poseAt(px, pz, dx, dz, lean, slot.rest + (out - slot.rest) * p, slot.yaw);
   }
   if (t < HOLD_START) {
     // 已經離開筒口，往筒心正上方收、再提高、轉正
     const p = ease((t - PRESENT_START) / PRESENT_MS);
-    return poseAt(dx, dz, r * (1 - p), 0, out + PRESENT_LIFT * p, slot.yaw * (1 - p));
+    return poseAt(px * (1 - p), pz * (1 - p), dx, dz, 0, out + PRESENT_LIFT * p, slot.yaw * (1 - p));
   }
   // 拿著看：只繞自己的軸輕輕晃，不上下晃（高度只升不降，看起來才是被拿穩的）
   const s = t - HOLD_START;
-  return poseAt(dx, dz, 0, 0, out + PRESENT_LIFT, 0.035 * Math.sin((2 * Math.PI * s) / 2300));
+  return poseAt(0, 0, dx, dz, 0, out + PRESENT_LIFT, 0.035 * Math.sin((2 * Math.PI * s) / 2300));
 }
 
 /**

@@ -197,27 +197,43 @@ export interface BundleSlot {
   yaw: number;
   /** 静止时籤底离筒底多高 —— 让籤头参差不齐，而不是一个平面。 */
   rest: number;
-  /** 往外傾多少（弧度），方向是筒心 → 籤心的徑向。 */
+  /** 傾多少（弧度）。 */
   lean: number;
+  /**
+   * 往哪個方向傾（水平單位向量；直立時是 0,0）。
+   *
+   * **不是**筒心 → 籤心的徑向：前排站在筒子前半邊，徑向會帶一個往鏡頭的分量，
+   * 兩旁的籤往上走一段就從正中間那支的前面穿過去 —— 畫面上是一截平頂的方塊。
+   * 所以扇形只往左右散，後排再往後倒一點，沒有任何一支往鏡頭倒。
+   */
+  dirX: number;
+  dirZ: number;
   /** 第幾排：0 前、1 中、2 後。 */
   row: number;
 }
 
+/** 同一排往兩側每一格往後退多少：中間最前、越外越後，像手上握著一把牌。 */
+const STAGGER = 0.05;
+/** 左側多退的那一點點，見 bundleSlot。 */
+const SIDE_BIAS = 0.02;
+
 /**
  * 三排共用的左右間距：取「最寬那排的最外一支剛好落在可放範圍內」的那個值。
+ * 往後退的那一段也算進去 —— 後排本來就在後面，外側再往後退就會頂到筒壁。
  */
 const ROW_STEP = Math.min(
   ...ROWS.map((row) => {
-    const z = Math.abs(row.z) * BUNDLE_R;
-    return (Math.sqrt(Math.max(0, BUNDLE_R * BUNDLE_R - z * z)) * 0.97) / Math.max(1, (row.n - 1) / 2);
+    const half = Math.max(1, (row.n - 1) / 2);
+    const z0 = row.z * BUNDLE_R;
+    const worst = Math.max(Math.abs(z0), Math.abs(z0 - STAGGER * half - SIDE_BIAS));
+    return (Math.sqrt(Math.max(0, BUNDLE_R * BUNDLE_R - worst * worst)) * 0.97) / half;
   }),
 );
 
 /**
  * 第 i 支籤靠在筒口的哪一點。排法見上面的 `ROWS`。
  *
- * 同一排的籤正面朝鏡頭、左右對稱鋪開，越外面的往外傾越多（扇形）。前排中央那支最前，
- * 兩側一支比一支往後退一點點，像手上握著一把牌 —— 同一個深度的話，重疊的地方會打架閃爍。
+ * 同一排的籤正面朝鏡頭、左右對稱鋪開，越外面的往外傾越多（扇形）。
  */
 export function bundleSlot(i: number): BundleSlot {
   let k = i;
@@ -227,12 +243,16 @@ export function bundleSlot(i: number): BundleSlot {
     r += 1;
   }
   const row = ROWS[r];
-  // 三排共用同一個間距，中排才會剛好落在前排的縫裡（各排各算的話只會錯開一點點）
-  const x = ROW_STEP * (k - (row.n - 1) / 2);
-  // 前排中央那支最前，兩側一支比一支往後退一點點；後排則往筒心收 —— 往外退就頂到筒壁了
-  const z0 = row.z * BUNDLE_R;
-  const stagger = 0.05 * Math.abs(k - (row.n - 1) / 2);
-  const z = z0 <= 0 ? z0 + stagger : z0 - stagger;
+  // 三排共用同一個間距，中排才會剛好落在前排的縫裡
+  const off = k - (row.n - 1) / 2;
+  const x = ROW_STEP * off;
+  // 左右對稱的兩支本來會在同一個深度，筒口附近又左右重疊 —— 同深度的兩個面會互相閃爍。
+  // 左邊那支多退一點點打破對稱（比 STAGGER 小，「越中間越前面」不受影響）
+  const z = row.z * BUNDLE_R - STAGGER * Math.abs(off) - (off < 0 ? SIDE_BIAS : 0);
+  // 扇形只往左右；後排再往後倒一點。兩個分量用 tan 合成，籤軸才是 normalize(tx, 1, tz)
+  const tx = Math.sign(x) * Math.tan((Math.abs(x) / BUNDLE_R) * FAN_TILT);
+  const tz = -Math.tan(row.back);
+  const t = Math.hypot(tx, tz);
   const rand = pseudoRandom(9871 + i * 131);
   return {
     x,
@@ -240,7 +260,9 @@ export function bundleSlot(i: number): BundleSlot {
     // 正面朝鏡頭，只留一點點參差
     yaw: (rand() - 0.5) * 0.08,
     rest: row.rest,
-    lean: (Math.abs(x) / BUNDLE_R) * FAN_TILT + row.back,
+    lean: Math.atan(t),
+    dirX: t > 1e-12 ? tx / t : 0,
+    dirZ: t > 1e-12 ? tz / t : 0,
     row: r,
   };
 }
@@ -261,12 +283,11 @@ export interface StickPose {
  *
  * 支點在**筒口**：籤靠在筒口那一圈上，上端往外、下端往內。要是繞籤心傾斜，
  * 筒口那一段會往外頂出筒壁（外圈的籤會直接穿出杯身）。支點放在筒口，
- * 筒內那一段只會往筒心收，最寬的地方就是 slot 本身的半徑，永遠在 BUNDLE_R 以內。
+ * 筒內那一段往反方向收（測試逐點驗過都在 BUNDLE_R 以內）。
  */
 export function stickPose(slot: BundleSlot): StickPose {
-  const r = Math.hypot(slot.x, slot.z);
-  const dx = r > 1e-9 ? slot.x / r : 0;
-  const dz = r > 1e-9 ? slot.z / r : 0;
+  const dx = slot.dirX;
+  const dz = slot.dirZ;
   const sn = Math.sin(slot.lean);
   const ax = dx * sn;
   const ay = Math.cos(slot.lean);
