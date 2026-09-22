@@ -14,6 +14,19 @@
       ],
       "port": 5250,
       "autoPort": true
+    },
+    {
+      "name": "cylinder-verify",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "5251",
+        "--strictPort"
+      ],
+      "port": 5251
     }
   ]
 }

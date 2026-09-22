@@ -1,15 +1,13 @@
 /**
- * 重做的宫庙签筒（3D）—— 斜持、拖曳摇动、籤自己爬出来掉在案几上。
+ * 籤筒 v3（3D）—— 籤筒固定不動，按住籤繞圈攪，攪夠了放手，被拿起來的那支給你看。
  *
- * 和旧版最大的差别不在渲染，在**比例**：旧版 4.8 高 × 4.8 宽，36 支籤只占筒内截面的
- * 3.6%，所以它们只能各自站着，像插在土里。这一版内半径 1.05、高径比 2.8:1，
- * 填充率 35%，籤才挤得成一束。
+ * 這個組件**不抽籤**。籤是攪夠了那一刻服務端定死的（AGENTS.md 第 4、5 條）：
+ * 攪動功到門檻就回調 onShake() 去要籤，簽到了就把號碼記下來，放手之後照劇本
+ * （shared/cylinder/pull.ts）把一支籤「拿起來」，拿到面前時才印上那個號碼。
+ * 哪一支實體籤被拿起來跟號碼無關 —— 筒裡的籤不印號碼，拿的永遠是筒心最直那支，
+ * 往上拔才不會穿過別的籤。
  *
- * 这个组件**不抽签**。签是按下求签那一刻服务端定死的（AGENTS.md 第 4、5 条），
- * 它只负责把已经定下来的那一支演出来：摇够力道时回调 onShake() 去要签，签到了就给
- * 那一支额外的向上驱力，让它自己爬出筒口。物理不决定抽中谁，只决定它怎么出来。
- *
- * 摇多久由使用者决定，所以出签的时机不能用固定计时器 —— 演完了由 onRevealed() 回报。
+ * 攪多久由使用者決定，所以什麼時候演完不能用固定計時器 —— 演完了由 onRevealed() 回報。
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -18,22 +16,32 @@ import type { Language } from '../../shared/lang';
 import type { Reading } from '../../shared/types';
 import {
   createMotions,
-  exitRise,
   stepBundle,
   stickTrait,
   type StickMotion,
   type StickTrait,
 } from '../../shared/cylinder/bundle';
-import { createFreeStick, stepFree, type FreeStick } from '../../shared/cylinder/eject';
 import {
-  createShake,
-  pushHand,
-  stepShake,
-  type ShakeState,
-} from '../../shared/cylinder/shake';
-import { STICK_COUNT, STICK_LEN, STICK_T } from '../../shared/cylinder/geometry';
-import { GROUND_Y, TILT_X, TILT_Z, createCylinderScene, type CylinderScene } from '../cylinder/scene';
-import { bambooDropSound, bambooRustle } from '../sound';
+  STIR_WORK_NEEDED,
+  createStir,
+  pushStir,
+  stepStir,
+  type StirState,
+} from '../../shared/cylinder/stir';
+import { PULL_INDEX, STICK_COUNT, bundleSlot } from '../../shared/cylinder/geometry';
+import { IDLE_LOOK_Y, idleCameraZ, pullCamera } from '../../shared/cylinder/framing';
+import {
+  HOLD_MS,
+  NUMBER_AT,
+  PULL_DONE,
+  PULL_MS,
+  neighborNudge,
+  pullCues,
+  pullPose,
+} from '../../shared/cylinder/pull';
+import { createCylinderScene, type CylinderScene } from '../cylinder/scene';
+import { STICK_VARIANTS, createNumberedStickCanvas } from '../cylinder/materials';
+import { bambooRattle, bambooRustle, chime } from '../sound';
 
 export interface FortuneCylinder3DProps {
   state: 'idle' | 'ready' | 'shaking' | 'ejecting';
@@ -41,86 +49,88 @@ export interface FortuneCylinder3DProps {
   fault?: { code: string; text: string } | null;
   language: Language;
   soundEnabled?: boolean;
+  /** 使用者開了「減少動畫」：拿起來、推近鏡頭都直接跳到結果。 */
+  reducedMotion?: boolean;
   onShake: () => void;
-  /** 整段演完（籤落定、镜头看清签号）才回报 —— 摇多久是使用者决定的，不能用固定计时器。 */
+  /** 整段演完（籤拿到面前、鏡頭看清籤號）才回報 —— 攪多久是使用者決定的，不能用固定計時器。 */
   onRevealed?: () => void;
   disabled?: boolean;
 }
 
-/** 摇到这个累积功才去跟服务端要签。够久才有仪式感，太久会烦。 */
-const SHAKE_WORK_NEEDED = 16;
-/** 落定之后让镜头看清签号的停顿。 */
-const REVEAL_HOLD_MS = 1500;
+/** 交棒给签纸前的淡出时长，跟 styles.css 的 transition 对齐。 */
+const HANDOFF_FADE_MS = 460;
 
-type Stage = 'rest' | 'shaking' | 'falling' | 'reveal' | 'done';
+type Stage = 'rest' | 'shaking' | 'pulling' | 'done';
 
 interface Drive {
   stage: Stage;
   motions: StickMotion[];
   traits: StickTrait[];
-  chosen: number;
-  /** 手势与筒子的运动 —— 逻辑在 shared/cylinder/shake.ts，那边有测试钉着。 */
-  shake: ShakeState;
+  /** 伺服器抽到的籤號（1 起算），還沒回應是 0。 */
+  stickNo: number;
+  /** 伺服器給的籤運等級 —— 鈴聲的音色跟著它。 */
+  level: Reading['stick']['level'] | undefined;
+  /** 上一格的拿籤時間，聲音 cue 用區間判斷才不會重複響。 */
+  cueMs: number;
+  /** 手勢 → 籤束轉角、強度與攪動量 —— 邏輯在 shared/cylinder/stir.ts，那邊有測試釘著。 */
+  stir: StirState;
   requested: boolean;
-  free: FreeStick | null;
-  restAt: number;
+  /** 開始拿籤的時間。 */
+  pullAt: number;
+  /** 抽出那支已經換上印號碼的貼圖了嗎。 */
+  numbered: boolean;
+  numberTex: THREE.Texture | null;
+  /** 淡出计时器，卸载时要清掉。 */
+  handoff: number;
   /** 上次回报给 React 的进度档位，用来节流重渲染。 */
   reported: number;
-  lastProbe: number;
   last: number;
   lastRustle: number;
-  camX: number;
   camY: number;
   camZ: number;
-  lookX: number;
   lookY: number;
-  lookZ: number;
   camReady: boolean;
+  pointerX: number;
   pointerY: number;
   pointerAt: number;
   dragging: boolean;
 }
 
 export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
-  const { state, sheet, fault, language, soundEnabled, onShake, onRevealed, disabled } = props;
+  const { state, sheet, fault, language, soundEnabled, reducedMotion, onShake, onRevealed, disabled } = props;
   const en = language === 'en';
 
   const hostRef = useRef<HTMLDivElement | null>(null);
   const sceneRef = useRef<CylinderScene | null>(null);
   const [failed, setFailed] = useState(false);
   const [stageLabel, setStageLabel] = useState<Stage>('rest');
-  /** 摇签进度 0..1。摇筒是个没有终点提示的动作，不给进度使用者只能瞎摇。 */
+  const [handingOff, setHandingOff] = useState(false);
+  /** 攪籤進度 0..1。攪是個沒有終點提示的動作，不給進度使用者只能瞎攪。 */
   const [progress, setProgress] = useState(0);
-  /** ?cyldebug=1 打开即时诊断 —— 卡住的时候不用再靠猜。 */
-  const [debug] = useState(() => {
-    try {
-      return new URL(window.location.href).searchParams.get('cyldebug') === '1';
-    } catch {
-      return false;
-    }
-  });
-  const [probe, setProbe] = useState('');
+  /** 手還按著嗎 —— 提示要分「繼續攪」與「可以放手了」。 */
+  const [dragging, setDragging] = useState(false);
 
   const d = useRef<Drive>({
     stage: 'rest',
     motions: createMotions(STICK_COUNT),
     traits: Array.from({ length: STICK_COUNT }, (_, i) => stickTrait(i)),
-    chosen: -1,
-    shake: createShake(),
+    stickNo: 0,
+    level: undefined,
+    cueMs: -1,
+    stir: createStir(),
     requested: false,
-    free: null,
-    restAt: 0,
+    pullAt: 0,
+    numbered: false,
+    numberTex: null,
+    handoff: 0,
     reported: -1,
-    lastProbe: 0,
     last: 0,
     lastRustle: 0,
-    camX: 0,
-    camY: 1.4,
-    camZ: 18,
-    lookX: 0,
-    lookY: -0.1,
-    lookZ: 0,
+    camY: IDLE_LOOK_Y,
+    camZ: 25,
+    lookY: IDLE_LOOK_Y,
     camReady: false,
+    pointerX: 0,
     pointerY: 0,
     pointerAt: 0,
     dragging: false,
@@ -128,23 +138,42 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
 
   const stateRef = useRef(state);
   const soundRef = useRef(soundEnabled ?? false);
-  const debugRef = useRef(debug);
-  debugRef.current = debug;
+  const calmRef = useRef(reducedMotion ?? false);
   const shakeCb = useRef(onShake);
   const revealCb = useRef(onRevealed);
   stateRef.current = state;
   soundRef.current = soundEnabled ?? false;
+  calmRef.current = reducedMotion ?? false;
   shakeCb.current = onShake;
   revealCb.current = onRevealed;
 
-  /* ── 签到了：记下是哪一支 ── */
+  /* ── 籤到了：記下號碼。號碼只從這裡來（伺服器），動畫不決定它 ── */
   useEffect(() => {
-    if (!sheet) {
-      d.current.chosen = -1;
-      return;
-    }
-    d.current.chosen = Math.min(STICK_COUNT - 1, Math.max(0, sheet.stick.no - 1));
+    d.current.stickNo = sheet ? sheet.stick.no : 0;
+    d.current.level = sheet ? sheet.stick.level : undefined;
   }, [sheet]);
+
+  /*
+   * ── 畫布填滿首屏剩下的高度 ──
+   *
+   * 螢幕越大籤筒就該越大（鏡頭距離由 framing.ts 依長寬比算，畫布多高籤筒就多大）。
+   * 但提示文字與進度條必須留在折線以上 —— 使用者要看得到「可以放手了」。
+   * CSS 量不到畫布上面還有多少東西，所以在這裡量：視窗高 − 畫布頂端 − 下方提示區。
+   */
+  const actionRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const host = hostRef.current;
+    if (!host) return;
+    const fit = (): void => {
+      const top = host.getBoundingClientRect().top + window.scrollY;
+      const below = (actionRef.current?.offsetHeight ?? 0) + 28;
+      const floor = window.innerWidth <= 640 ? 320 : 380;
+      host.style.height = `${Math.max(floor, Math.round(window.innerHeight - top - below))}px`;
+    };
+    fit();
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  }, []);
 
   /* ── 场景只建一次 ── */
   useEffect(() => {
@@ -160,16 +189,23 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
     const dr = d.current;
     dr.last = performance.now();
     const t0 = dr.last;
-    const baseZ = rig.tiltGroup.rotation.z;
-    const baseX = rig.tiltGroup.rotation.x;
-    // 重力沿筒轴的分量：筒子斜持，不是整个 g
-    const axisG = 9.81 * Math.cos(Math.hypot(TILT_Z, TILT_X));
-    // 筒轴在世界里的方向 —— 手一拖，筒子要沿着自己的轴滑，不是沿着萤幕的 Y
-    const axis = new THREE.Vector3(0, 1, 0).applyEuler(
-      new THREE.Euler(TILT_X, 0, TILT_Z),
-    );
-    const worldPos = new THREE.Vector3();
-    const worldQuat = new THREE.Quaternion();
+    const wobble = new THREE.Euler();
+    const UP = new THREE.Vector3(0, 1, 0);
+    const axisV = new THREE.Vector3();
+    const yawQ = new THREE.Quaternion();
+    const pullSlot = bundleSlot(PULL_INDEX);
+    const spin = new THREE.Quaternion();
+    /**
+     * 籤束繞筒軸轉 phi：外圈轉得比內圈多一點點，整束才像被攪動的一團，不像一塊板子在轉。
+     * 籤心、籤軸、朝向一起轉。
+     */
+    const place = (h: (typeof rig.sticks)[number], cx: number, cy: number, cz: number, phi: number) => {
+      const a = phi * (0.8 + 0.2 * Math.min(1, Math.hypot(h.x, h.z) / 1.6));
+      const c = Math.cos(a);
+      const sn = Math.sin(a);
+      h.mesh.position.set(cx * c + cz * sn, cy, -cx * sn + cz * c);
+      return spin.setFromAxisAngle(UP, a);
+    };
 
     let raf = 0;
     const frame = (now: number): void => {
@@ -179,153 +215,132 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
       if (dt <= 0) return;
       const t = (now - t0) / 1000;
 
-      // 手势与筒子的运动全在 shared/cylinder/shake.ts —— 那边有测试钉着
-      // 「正常力道来回甩约 1.9 秒出签、拖一下按着不动永远不出」这件事。
       // armed：这一局可以抽签吗。没写问题时照样跟手动（手感），但不记账 ——
-      // 不然使用者写问题之前摇的那些会全部存起来，一写完随手一碰就掉签。
+      // 不然使用者写问题之前攪的那些会全部存起来，一写完随手一碰就掉签。
       const armed = stateRef.current === 'ready' && !dr.requested;
-      stepShake(dr.shake, dt, dr.dragging, armed);
-      const sh = dr.shake;
-      const shaking = sh.intensity > 0.05;
-      if (shaking && stateRef.current === 'ready' && !dr.requested) {
-        // work 由 stepShake 累积；这里只负责到门槛就去要签
-        const notch = Math.min(20, Math.floor((sh.work / SHAKE_WORK_NEEDED) * 20));
+      stepStir(dr.stir, dt, dr.dragging, armed);
+      const sh = dr.stir;
+      if (sh.intensity > 0.05 && armed) {
+        const notch = Math.min(20, Math.floor((sh.work / STIR_WORK_NEEDED) * 20));
         if (notch !== dr.reported) {
           dr.reported = notch;
-          setProgress(Math.min(1, sh.work / SHAKE_WORK_NEEDED));
+          setProgress(Math.min(1, sh.work / STIR_WORK_NEEDED));
         }
-        if (sh.work >= SHAKE_WORK_NEEDED) {
+        if (sh.work >= STIR_WORK_NEEDED) {
           dr.requested = true;
           setProgress(1);
           shakeCb.current();
         }
       }
 
-      // 竹签互相碰撞的沙沙声，按强度节流
-      if (soundRef.current && sh.intensity > 0.18 && now - dr.lastRustle > 70) {
+      // 竹籤互相碰撞的沙沙聲，按強度節流
+      if (soundRef.current && dr.stage !== 'pulling' && sh.intensity > 0.18 && now - dr.lastRustle > 70) {
         dr.lastRustle = now;
         bambooRustle(Math.min(1, sh.intensity));
       }
 
-      /* 1. 筒内籤束 */
+      /* 1. 攪：筒內籤束。中籤那支不再自己往上爬（-1）—— 它是放手之後被「拿」起來的 */
       if (dr.stage === 'rest' || dr.stage === 'shaking') {
-        stepBundle(dr.motions, dr.traits, dt, axisG, sh.shakeA, sh.intensity, dr.chosen);
+        stepBundle(dr.motions, dr.traits, dt, sh.jostle, sh.intensity);
         for (let i = 0; i < STICK_COUNT; i += 1) {
           const h = rig.sticks[i];
           const m = dr.motions[i];
-          h.mesh.position.y = h.rest + m.y + STICK_LEN / 2;
-          // 摇动时籤头轻微摆动
+          // 籤沿**自己的**軸滑動 —— 扇形散開之後每支的軸都不一樣；再跟著籤束繞筒軸轉
+          const p = h.pose;
+          const q = place(h, p.cx + p.ax * m.y, p.cy + p.ay * m.y, p.cz + p.az * m.y, sh.phi);
           const w = sh.intensity * 0.06;
-          h.mesh.rotation.x = h.baseTiltX + Math.sin(t * 9 + i) * w;
-          h.mesh.rotation.z = h.baseTiltZ + Math.cos(t * 11 + i * 1.7) * w;
+          wobble.set(Math.sin(t * 9 + i) * w, 0, Math.cos(t * 11 + i * 1.7) * w);
+          h.mesh.quaternion.setFromEuler(wobble).premultiply(q).multiply(h.baseQuat);
         }
-        // 中签那一支重心越过筒口 -> 翻出去，交给自由落体
-        if (dr.chosen >= 0) {
-          const h = rig.sticks[dr.chosen];
-          if (dr.motions[dr.chosen].y >= exitRise(h.rest)) {
-            h.mesh.getWorldPosition(worldPos);
-            h.mesh.getWorldQuaternion(worldQuat);
-            rig.tiltGroup.remove(h.mesh);
-            rig.scene.add(h.mesh);
-            h.mesh.position.copy(worldPos);
-            h.mesh.quaternion.copy(worldQuat);
-            const e = createFreeStick();
-            e.x = worldPos.x;
-            e.y = worldPos.y;
-            e.z = worldPos.z;
-            // 顺着筒口的方向被甩出去
-            e.vx = 1.5 + sh.intensity * 1.2;
-            e.vy = 1.1;
-            e.vz = 1.9;
-            e.wx = 4.2;
-            e.wy = 1.4;
-            e.wz = -3.1;
-            e.rx = h.mesh.rotation.x;
-            e.ry = h.mesh.rotation.y;
-            e.rz = h.mesh.rotation.z;
-            dr.free = e;
-            dr.stage = 'falling';
-            setStageLabel('falling');
-          }
+        // 攪夠了、伺服器回了、手也放開了 —— 開始拿籤
+        if (dr.requested && dr.stickNo > 0 && !dr.dragging) {
+          dr.stage = 'pulling';
+          dr.pullAt = now;
+          dr.cueMs = -1;
+          setStageLabel('pulling');
         }
       }
 
-      /* 2. 脱出的那一支自由落体 */
-      if (dr.stage === 'falling' && dr.free) {
-        const wasResting = dr.free.resting;
-        stepFree(dr.free, dt, GROUND_Y, STICK_T / 2);
-        const h = rig.sticks[dr.chosen];
-        h.mesh.position.set(dr.free.x, dr.free.y, dr.free.z);
-        h.mesh.rotation.set(dr.free.rx, dr.free.ry, dr.free.rz);
-        if (!wasResting && dr.free.resting) {
-          if (soundRef.current) bambooDropSound();
-          dr.stage = 'reveal';
-          dr.restAt = now;
-          setStageLabel('reveal');
+      /* 2. 拿籤：照劇本走（shared/cylinder/pull.ts），那邊有測試保證不穿出筒壁 */
+      if (dr.stage === 'pulling' || dr.stage === 'done') {
+        const ms = now - dr.pullAt;
+        const calm = calmRef.current;
+        const held = rig.sticks[PULL_INDEX];
+
+        // 聲音跟畫面走同一條時間軸（pull.ts 的 pullCues）：抓住那一下、開始往上抽、號碼印上去，
+        // 各自在那一格響。「抽到了」的鈴聲以前等籤紙出來才響，晚了將近三秒
+        for (const cue of pullCues(dr.cueMs, ms, calm)) {
+          if (!soundRef.current) continue;
+          if (cue === 'grab') bambooRustle(0.55);
+          else if (cue === 'slide') bambooRattle(Math.round(PULL_MS * 0.8));
+          else chime(dr.level);
+        }
+        dr.cueMs = ms;
+        const hp = pullPose(pullSlot, ms, calm);
+        // 放手那一刻籤束可能還轉在一邊：拿起來那支跟著它一起轉回正面，才不會一放手就跳一下
+        const hq = place(held, hp.cx, hp.cy, hp.cz, sh.phi);
+        axisV.set(hp.ax, hp.ay, hp.az);
+        held.mesh.quaternion
+          .setFromUnitVectors(UP, axisV)
+          .premultiply(hq)
+          .multiply(yawQ.setFromAxisAngle(UP, hp.yaw));
+
+        // 其他籤：攪動留下的起伏慢慢收掉，靠近的被帶得跳一下
+        for (let i = 0; i < STICK_COUNT; i += 1) {
+          if (i === PULL_INDEX) continue;
+          const h = rig.sticks[i];
+          const m = dr.motions[i];
+          m.y *= Math.exp(-6 * dt);
+          const lift = m.y + (calm ? 0 : neighborNudge(Math.hypot(h.x - pullSlot.x, h.z - pullSlot.z), ms));
+          const p = h.pose;
+          const q = place(h, p.cx + p.ax * lift, p.cy + p.ay * lift, p.cz + p.az * lift, sh.phi);
+          h.mesh.quaternion.copy(q).multiply(h.baseQuat);
+        }
+
+        // 轉正到一半時印上號碼 —— 號碼是伺服器給的那一個
+        if (!dr.numbered && (calm || ms >= NUMBER_AT) && dr.stickNo > 0) {
+          dr.numbered = true;
+          const tex = new THREE.CanvasTexture(createNumberedStickCanvas(dr.stickNo, PULL_INDEX % STICK_VARIANTS));
+          tex.colorSpace = THREE.SRGBColorSpace;
+          tex.anisotropy = rig.renderer.capabilities.getMaxAnisotropy();
+          const mat = held.mesh.material as THREE.MeshStandardMaterial;
+          mat.map = tex;
+          mat.needsUpdate = true;
+          dr.numberTex = tex;
+        }
+
+        if (dr.stage === 'pulling' && ms >= (calm ? HOLD_MS : PULL_DONE)) {
+          dr.stage = 'done';
+          setStageLabel('done');
+          // 先淡出再交棒 —— 直接换掉画面会「啪」一下，看完籤号的那一拍就断了
+          setHandingOff(true);
+          dr.handoff = window.setTimeout(() => revealCb.current?.(), HANDOFF_FADE_MS);
         }
       }
 
-      /* 3. 落定之后镜头推近看签号，停一拍再交棒给签纸 */
-      if (dr.stage === 'reveal' && now - dr.restAt > REVEAL_HOLD_MS) {
-        dr.stage = 'done';
-        setStageLabel('done');
-        revealCb.current?.();
-      }
-
-      /* 3.5 诊断疊層 */
-      if (debugRef.current && now - dr.lastProbe > 120) {
-        dr.lastProbe = now;
-        const ch = dr.chosen;
-        const need = ch >= 0 ? exitRise(rig.sticks[ch].rest) : 0;
-        setProbe(
-          [
-            `stage ${dr.stage}`,
-            `state ${stateRef.current}`,
-            `armed ${stateRef.current === 'ready' && !dr.requested}`,
-            `drag ${dr.dragging ? 'Y' : 'n'}`,
-            `intens ${sh.intensity.toFixed(2)}`,
-            `work ${sh.work.toFixed(1)}/${SHAKE_WORK_NEEDED}`,
-            `chosen ${ch < 0 ? '-' : ch + 1}`,
-            ch >= 0 ? `climb ${dr.motions[ch].y.toFixed(2)}/${need.toFixed(2)}` : 'climb -',
-            dr.free ? `fall y=${dr.free.y.toFixed(2)} rest=${dr.free.resting ? 'Y' : 'n'}` : 'fall -',
-            `fps ${(1 / dt).toFixed(0)}`,
-          ].join('  ·  '),
-        );
-      }
-
-      /* 4. 筒身沿自己的轴跟着手滑动，静止时轻微呼吸 */
-      rig.tiltGroup.rotation.z = baseZ + Math.sin(t * 0.55) * 0.016 - sh.vel * 0.012;
-      rig.tiltGroup.rotation.x = baseX + Math.sin(t * 0.41 + 1.2) * 0.012;
-      rig.tiltGroup.position.set(
-        rig.baseX + axis.x * sh.offset,
-        rig.baseY + axis.y * sh.offset,
-        rig.baseZ + axis.z * sh.offset,
-      );
-
-      /* 5. 弹簧相机 */
-      const close = dr.stage === 'reveal' || dr.stage === 'done';
-      const f = dr.free;
-      const tx = close && f ? f.x : 0;
-      const ty = close && f ? f.y + 0.35 : -0.1;
-      const tz = close && f ? f.z : 0;
-      const cx = close && f ? f.x + 0.6 : 0;
-      const cy = close && f ? f.y + 3.3 : 1.4;
-      const cz = close && f ? f.z + 4.6 : 18;
-      const k = 1 - Math.exp(-2.6 * dt);
-      if (!dr.camReady) {
-        dr.camX = cx; dr.camY = cy; dr.camZ = cz;
-        dr.lookX = tx; dr.lookY = ty; dr.lookZ = tz;
+      /* 3. 鏡頭：待機時平視整支籤筒；拿籤時跟著籤往上、推到籤頭與號碼（不用彈簧，不會翻轉） */
+      const aspect = rig.camera.aspect;
+      const idleZ = idleCameraZ(aspect);
+      if (dr.stage === 'pulling' || dr.stage === 'done') {
+        // 鏡頭跟著籤的高度走，籤頭永遠在畫面裡（shared/cylinder/framing.ts 的 pullCamera）
+        const c = pullCamera(now - dr.pullAt, aspect, calmRef.current);
+        dr.camY = c.camY;
+        dr.camZ = c.camZ;
+        dr.lookY = c.lookY;
+      } else if (!dr.camReady) {
+        dr.camY = IDLE_LOOK_Y;
+        dr.camZ = idleZ;
+        dr.lookY = IDLE_LOOK_Y;
         dr.camReady = true;
       } else {
-        dr.camX += (cx - dr.camX) * k;
-        dr.camY += (cy - dr.camY) * k;
-        dr.camZ += (cz - dr.camZ) * k;
-        dr.lookX += (tx - dr.lookX) * k;
-        dr.lookY += (ty - dr.lookY) * k;
-        dr.lookZ += (tz - dr.lookZ) * k;
+        // 畫布改尺寸時距離會變，追過去但別一下子跳
+        const kk = 1 - Math.exp(-2.6 * dt);
+        dr.camY += (IDLE_LOOK_Y - dr.camY) * kk;
+        dr.camZ += (idleZ - dr.camZ) * kk;
+        dr.lookY += (IDLE_LOOK_Y - dr.lookY) * kk;
       }
-      rig.camera.position.set(dr.camX, dr.camY, dr.camZ);
-      rig.camera.lookAt(dr.lookX, dr.lookY, dr.lookZ);
+      rig.camera.position.set(0, dr.camY, dr.camZ);
+      rig.camera.lookAt(0, dr.lookY, 0);
 
       rig.render();
     };
@@ -336,20 +351,24 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
 
     return () => {
       cancelAnimationFrame(raf);
+      if (d.current.handoff) window.clearTimeout(d.current.handoff);
+      d.current.numberTex?.dispose();
       observer.disconnect();
       rig.dispose();
       sceneRef.current = null;
     };
   }, []);
 
-  /* ── 拖曳 = 摇筒 ── */
+  /* ── 按住拖動 = 攪 ── */
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     if (disabled) return;
     const dr = d.current;
     dr.dragging = true;
+    setDragging(true);
+    dr.pointerX = e.clientX;
     dr.pointerY = e.clientY;
     dr.pointerAt = performance.now();
-    // 指标捕获不是必需的，拿不到也照样能摇 —— 别让它把整个手势掀掉
+    // 指标捕获不是必需的，拿不到也照样能攪 —— 别让它把整个手势掀掉
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {
@@ -361,12 +380,15 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
     const dr = d.current;
     if (!dr.dragging || disabled) return;
     const now = performance.now();
+    const dx = e.clientX - dr.pointerX;
     const dy = e.clientY - dr.pointerY;
     const gap = Math.max(0.001, (now - dr.pointerAt) / 1000);
+    dr.pointerX = e.clientX;
     dr.pointerY = e.clientY;
     dr.pointerAt = now;
-    pushHand(dr.shake, dy, gap);
-    if (dr.stage === 'rest' && dr.shake.intensity > 0.2) {
+    // 手往哪邊，籤束就往哪邊轉；手多快，籤就攪得多兇（shared/cylinder/stir.ts）
+    pushStir(dr.stir, dx, dy, gap);
+    if (dr.stage === 'rest' && dr.stir.intensity > 0.2) {
       dr.stage = 'shaking';
       setStageLabel('shaking');
     }
@@ -374,6 +396,7 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
 
   const endDrag = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     d.current.dragging = false;
+    setDragging(false);
     try {
       if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
         e.currentTarget.releasePointerCapture(e.pointerId);
@@ -399,33 +422,34 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
     ? null
     : state === 'idle'
       ? en ? 'Write your thoughts above first' : '請先在上方虔心寫下所求之事'
-      : stageLabel === 'falling'
-        ? en ? 'A stick has worked its way out…' : '有一支籤脫出了…'
-        : stageLabel === 'reveal' || stageLabel === 'done'
-          ? en ? '✦ Your stick has fallen ✦' : '✦ 神籤已落 ✦'
-          : stageLabel === 'shaking'
-            ? progress >= 1
-              ? en ? 'One is working loose — keep shaking' : '有一支籤鬆動了 —— 繼續搖，別停'
-              : progress > 0.55
-                ? en ? 'Almost there — keep shaking' : '快了，再搖一會兒'
-                : en ? 'Keep shaking — keep moving, do not stop' : '繼續搖 —— 上下來回甩，別停'
-            : en ? 'Hold and swing up and down until one falls out' : '按住籤筒，上下來回甩 —— 搖到一支自己掉出來';
+      : stageLabel === 'pulling' || stageLabel === 'done'
+        ? en ? '✦ Your stick is drawn ✦' : '✦ 神籤已出 ✦'
+        : stageLabel === 'shaking'
+          ? progress >= 1
+            ? dragging
+              ? en ? 'That is enough — let go whenever you like' : '可以放手了 —— 想攪多久都行'
+              : en ? 'A stick is coming up…' : '籤就要出來了…'
+            : dragging
+              ? progress > 0.55
+                ? en ? 'Almost there — keep stirring' : '快了，再攪一會兒'
+                : en ? 'Keep stirring — go round and round' : '繼續攪 —— 繞著圈攪，別停'
+              : en ? 'Not yet — stir a little longer' : '還沒攪夠，再攪一會兒'
+          : en ? 'Press on the sticks and stir them round' : '按住籤，繞著圈攪 —— 攪夠了再放手';
 
   return (
-    <div className="roll-stage">
+    <div className="roll-stage cyl3d-stage">
       <div
         ref={hostRef}
-        className="cyl3d-canvas-wrapper"
+        className={`cyl3d-canvas-wrapper${handingOff ? ' handing-off' : ''}`}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
         role="button"
         tabIndex={disabled ? -1 : 0}
-        aria-label={en ? 'Shake the 3D fortune-stick cylinder' : '搖動 3D 宮廟籤筒'}
+        aria-label={en ? 'Stir the sticks in the 3D fortune cylinder' : '攪動籤筒裡的籤'}
       />
-      {debug ? <pre className="cyl3d-probe">{probe}</pre> : null}
-      <div className="roll-action-area">
+      <div className="roll-action-area" ref={actionRef}>
         {fault ? (
           <div className="roll-fault-pill" role="alert">
             <span className="fault-badge">{fault.code}</span>
@@ -433,17 +457,17 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
           </div>
         ) : (
           <div className="cyl3d-status">
-            <p className={`roll-hint${stageLabel === 'reveal' || stageLabel === 'done' ? ' highlight' : ''}`}>
+            <p className={`roll-hint${stageLabel === 'pulling' || stageLabel === 'done' ? ' highlight' : ''}`}>
               {hint}
             </p>
-            {state !== 'idle' && stageLabel !== 'reveal' && stageLabel !== 'done' ? (
+            {state !== 'idle' && stageLabel !== 'pulling' && stageLabel !== 'done' ? (
               <div
                 className="cyl3d-gauge"
                 role="progressbar"
                 aria-valuemin={0}
                 aria-valuemax={100}
                 aria-valuenow={Math.round(progress * 100)}
-                aria-label={en ? 'Shake progress' : '搖籤進度'}
+                aria-label={en ? 'Stir progress' : '攪籤進度'}
               >
                 <span style={{ width: `${Math.round(progress * 100)}%` }} />
               </div>

@@ -10,7 +10,12 @@
    两条都要能关掉走纸、出纸和揭晓这三个动作。 */
 
 :root {
-  --ground: #c8beaf;
+  /* 暖木底：参考的日系杂货照就是摆在浅色木桌上拍的，底色带黄比带灰讨喜得多 */
+  --ground: #ddcbac;
+  /* 上方一片柔光，像窗边打下来的 —— 单一实色会让籤筒像贴在色块上 */
+  --ground-wash:
+    radial-gradient(130% 80% at 50% -10%, rgba(255, 250, 238, 0.95), rgba(255, 250, 238, 0) 62%),
+    radial-gradient(90% 60% at 50% 115%, rgba(150, 116, 74, 0.22), rgba(150, 116, 74, 0) 70%);
   /* --ink* 只用在纸上（签纸、续页、记录卡）。直接落在底色上的字用 --on-ground*，
      这两套在深色模式里是反过来的：纸永远是白的，底永远跟着主题走。 */
   --ink: #17161a;
@@ -75,7 +80,10 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --ground: #1a1614;
+    --ground: #221b15;
+    --ground-wash:
+      radial-gradient(130% 80% at 50% -10%, rgba(94, 74, 54, 0.55), rgba(94, 74, 54, 0) 62%),
+      radial-gradient(90% 60% at 50% 115%, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0) 70%);
     --ink: #14131a;
     --ink-2: #4d4a53;
     --ink-3: #85818d;
@@ -125,7 +133,8 @@
 
 body {
   margin: 0;
-  background: var(--ground);
+  background: var(--ground-wash), var(--ground);
+  background-attachment: fixed;
   color: var(--on-ground);
   font: 16px/1.75 var(--sans);
   -webkit-font-smoothing: antialiased;
@@ -3068,20 +3077,33 @@ code {
 
 
 /* 籤筒 v2：主體是直立細長的，16:10 的畫布太扁，給它自己的比例 */
+/* 籤筒 v2 不收在 720 的舞台里 —— 它要的是整面画布，不是一个方框 */
+.cyl3d-stage {
+  max-width: none;
+}
+
 .cyl3d-canvas-wrapper {
   position: relative;
+  /* 交棒给签纸之前先淡出，时长跟 HANDOFF_FADE_MS 对齐 */
+  transition: opacity 0.46s ease;
   width: 100%;
-  aspect-ratio: 4 / 3;
-  min-height: 420px;
-  border-radius: 14px;
+  /* 高度由 FortuneCylinder3D 量出來設定：填滿首屏剩下的高度，提示文字留在折線以上。
+     鏡頭距離由 shared/cylinder/framing.ts 依長寬比算，所以畫布多高，籤筒在頁面上就多大。
+     這裡只給腳本跑起來之前的預設值。 */
+  height: 70vh;
+  min-height: 380px;
   overflow: hidden;
-  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42), inset 0 0 0 1px rgba(255, 240, 210, 0.07);
+  /* 不画边框、不画底色 —— 籤筒直接站在页面上，画布本身是透明的 */
   /* 整塊畫布都是搖筒的握把，游標要說出來，不然沒人知道可以拖 */
   cursor: grab;
   /* 沒有這一行，手機上拖曳會變成捲動頁面，籤筒完全搖不動 */
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
+}
+
+.cyl3d-canvas-wrapper.handing-off {
+  opacity: 0;
 }
 
 .cyl3d-canvas-wrapper:active {
@@ -3100,7 +3122,7 @@ code {
 }
 
 @media (max-width: 640px) {
-  .cyl3d-canvas-wrapper { min-height: 320px; aspect-ratio: 3 / 4; }
+  .cyl3d-canvas-wrapper { min-height: 320px; }
 }
 
 /* 搖籤進度。搖筒是個沒有終點提示的動作 —— 不給進度，使用者只能瞎搖。 */
@@ -3126,18 +3148,4 @@ code {
   border-radius: 2px;
   background: linear-gradient(90deg, #8d4b2b, #e8bf63);
   transition: width 0.18s ease-out;
-}
-
-/* ?cyldebug=1 的即時診斷疊層。卡住的時候不用再靠猜。 */
-.cyl3d-probe {
-  margin: 8px 0 0;
-  padding: 6px 10px;
-  border-radius: 6px;
-  background: rgba(0, 0, 0, 0.55);
-  color: #b9e6a8;
-  font: 400 11px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
-  white-space: pre-wrap;
-  text-align: center;
-  max-width: 100%;
-  overflow-x: auto;
 }

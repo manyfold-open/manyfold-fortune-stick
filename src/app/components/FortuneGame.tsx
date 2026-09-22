@@ -32,6 +32,7 @@ import {
   type Prefs,
 } from '../storage';
 import FortuneCylinder from './FortuneCylinder';
+import { acceptsGesture, chimeAtSlip, drawStartSound } from '../../shared/cylinder/interaction';
 import FortuneCylinder3D from './FortuneCylinder3D';
 import FortunePaperRoll from './FortunePaperRoll';
 import Printer from './Printer';
@@ -97,26 +98,22 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
   const [interpreting, setInterpreting] = useState(false);
   const [fault, setFault] = useState<Fault | null>(null);
   const [restoring, setRestoring] = useState(true);
-  const [vessel, setVessel] = useState<Vessel>(() => {
+  /**
+   * 器具选择列已经收掉，籤筒 v2 就是这个产品。
+   *
+   * 只认 `?vessel=`，不再读 localStorage —— 存着的旧选择会把老使用者钉在一个
+   * 他再也切不回来的器具上（切换列没了，没有 UI 可以改）。其余三个器具程式码留着，
+   * 用 ?vessel=cylinder / printer / roll 还是进得去。
+   */
+  const [vessel] = useState<Vessel>(() => {
     try {
       const v = new URL(window.location.href).searchParams.get('vessel');
       if (isVessel(v)) return v;
-      const saved = localStorage.getItem('wenyiqian.vessel');
-      if (isVessel(saved)) return saved;
     } catch {
       /* ignore */
     }
-    return 'cylinder';
+    return 'cylinder3d';
   });
-
-  const selectVessel = useCallback((v: Vessel) => {
-    setVessel(v);
-    try {
-      localStorage.setItem('wenyiqian.vessel', v);
-    } catch {
-      /* ignore */
-    }
-  }, []);
 
   /** 籤筒 v2 的出籤時機由元件回報（搖多久是使用者決定的），這裡先擱著那支籤。 */
   const pendingReading = useRef<Reading | null>(null);
@@ -182,11 +179,14 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
     setPhase('printing');
     const calm = props.prefs.reducedMotion;
     if (props.prefs.sound) {
-      if (vessel === 'cylinder') {
+      // 判斷抽成 shared/cylinder/interaction.ts：以前這裡寫 vessel === 'cylinder'，
+      // 3D 籤筒就掉進預設分支，放了印表機的按鍵聲加馬達聲
+      const cue = drawStartSound(vessel);
+      if (cue === 'rattle') {
         stopMotor.current = bambooRattle(PRINT_MS);
-      } else if (vessel === 'roll') {
+      } else if (cue === 'rumble') {
         stopMotor.current = paperRollRumble(PRINT_MS);
-      } else {
+      } else if (cue === 'printer') {
         pressSound();
         if (!calm) stopMotor.current = motor(PRINT_MS);
       }
@@ -245,13 +245,14 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
     if (!drawn) return;
     pendingReading.current = null;
     if (props.prefs.sound) {
-      chime(drawn.stick.level);
+      // 3D 籤筒的鈴聲已經在號碼印上籤身那一格響過了，這裡只剩籤紙的蓋章聲
+      if (chimeAtSlip(vessel)) chime(drawn.stick.level);
       stampSound(drawn.stick.level);
     }
     setReading(drawn);
     setSheet(null);
     setPhase('ask');
-  }, [props.prefs.sound]);
+  }, [props.prefs.sound, vessel]);
 
   const interpret = useCallback(async () => {
     if (!reading || interpreting) return;
@@ -344,55 +345,6 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
         )}
       </div>
 
-      <div className="vessel-toggle-slot">
-        <div className="vessel-toggle-bar" role="tablist" aria-label="器具選擇">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={vessel === 'cylinder'}
-            className={`vessel-btn${vessel === 'cylinder' ? ' active' : ''}`}
-            onClick={() => selectVessel('cylinder')}
-            disabled={printing}
-          >
-            <span aria-hidden="true">🏮</span>
-            <span>{props.prefs.language === 'en' ? 'Temple Cylinder' : '宮廟籤筒'}</span>
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={vessel === 'printer'}
-            className={`vessel-btn${vessel === 'printer' ? ' active' : ''}`}
-            onClick={() => selectVessel('printer')}
-            disabled={printing}
-          >
-            <span aria-hidden="true">🖨️</span>
-            <span>{props.prefs.language === 'en' ? 'Retro Printer' : '復古印表機'}</span>
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={vessel === 'roll'}
-            className={`vessel-btn${vessel === 'roll' ? ' active' : ''}`}
-            onClick={() => selectVessel('roll')}
-            disabled={printing}
-          >
-            <span aria-hidden="true">📜</span>
-            <span>{props.prefs.language === 'en' ? 'Woodblock Press' : '木刻滾印'}</span>
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={vessel === 'cylinder3d'}
-            className={`vessel-btn${vessel === 'cylinder3d' ? ' active' : ''}`}
-            onClick={() => selectVessel('cylinder3d')}
-            disabled={printing}
-          >
-            <span aria-hidden="true">🎍</span>
-            <span>{props.prefs.language === 'en' ? 'Cylinder v2' : '籤筒 v2'}</span>
-          </button>
-        </div>
-      </div>
-
       {vessel === 'cylinder3d' ? (
         <div className="roll-slot">
           <FortuneCylinder3D
@@ -409,9 +361,11 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
             fault={fault}
             language={sheet ? sheet.language : props.prefs.language}
             soundEnabled={props.prefs.sound}
+            reducedMotion={props.prefs.reducedMotion}
             onShake={() => void draw()}
             onRevealed={revealDone}
-            disabled={printing}
+            // 籤筒 v2 的籤是摇出来的，不是演完的 —— 出籤途中关掉输入会死锁
+            disabled={!acceptsGesture(vessel, phase)}
           />
         </div>
       ) : vessel === 'roll' ? (

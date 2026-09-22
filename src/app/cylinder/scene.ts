@@ -7,48 +7,51 @@
  *     ├ tiltGroup   斜持的整支签筒（如同捧在手上）
  *     │   ├ tube / inner / 铜箍 ×2 / 筒底
  *     │   └ sticks ×36
- *     ├ blob        案几上的柔焦接触阴影
- *     └ table       案几
+ *
+ * 画布是透明的，籤筒直接站在页面上 —— 没有案几、没有影子。
  */
 
 import * as THREE from 'three';
+import type { StickPose } from '../../shared/cylinder/geometry';
 import {
   STICK_COUNT,
   STICK_LEN,
   STICK_T,
+  STICK_HEAD_R,
+  STICK_HEAD_GAP,
   STICK_W,
   TUBE_H,
   TUBE_R_IN,
   TUBE_R_OUT,
   bundleSlot,
+  cupArcU,
+  stickPose,
+  RIG_X,
+  RIG_Y,
+  TILT_X,
+  TILT_Z,
+  cupRadius,
 } from '../../shared/cylinder/geometry';
+import { IDLE_LOOK_Y, idleCameraZ } from '../../shared/cylinder/framing';
 import {
   STICK_ATLAS_W,
   STICK_CELL_W,
-  createBlobCanvas,
+  STICK_VARIANTS,
   createBrassCanvas,
   createStickAtlas,
+  createStickHeadCanvas,
   createTubeCanvas,
 } from './materials';
 
-const TABLE_COLOR = 0x241a14;
-/** 签筒斜持的角度 —— 真实求签就是斜着摇的。 */
-export const TILT_Z = -0.46;
-export const TILT_X = 0.13;
-/** 整支签筒在世界里的落点，让它悬在案几上方。 */
-export const RIG_Y = -4.2;
-/** 案几平面。脱出的籤落在这里。 */
-export const GROUND_Y = RIG_Y - 2.3;
-/** 斜持之后整支筒的重心会甩到 x≈+2，这里把它推回画面中轴。 */
-export const RIG_X = -2.0;
 
 export interface StickHandle {
   mesh: THREE.Mesh;
   /** 静止时籤底在筒内的高度。 */
   rest: number;
-  baseYaw: number;
-  baseTiltX: number;
-  baseTiltZ: number;
+  /** 靜止時的籤心與籤軸（shared/cylinder/geometry.ts 的 stickPose）。籤沿自己的軸滑動。 */
+  pose: StickPose;
+  /** 靜止時的朝向：先繞自己的軸轉 yaw，再傾到 pose 的籤軸上。 */
+  baseQuat: THREE.Quaternion;
   x: number;
   z: number;
 }
@@ -68,10 +71,103 @@ export interface CylinderScene {
   dispose: () => void;
 }
 
+
+/**
+ * 圆角方柱的侧面。等价于 open-ended 的 CylinderGeometry，只是截面换成超椭圆。
+ *
+ * 法线是从截面**切线**转 90° 算出来的，不是半径方向 —— 平面上每一点的半径方向都
+ * 不一样，拿它当法线的话四个平面会被当成曲面来打光，看起来又变回圆筒了。
+ *
+ * @param scale  相对 cupRadius 的缩放（内壁、领子都用同一个截面，只是大小不同）
+ */
+function cupShell(scale: number, height: number, segments = 160, fillet = 0): THREE.BufferGeometry {
+  const pos: number[] = [];
+  const nor: number[] = [];
+  const uv: number[] = [];
+  const idx: number[] = [];
+  const EPS = 1e-4;
+  // 縱向的每一圈：底部圓角用 8 圈把邊收圓（參考圖的杯底四邊是圓的，方方的底像罐頭），
+  // 其餘是直的，頭尾兩圈就夠
+  const rows: number[] = [];
+  if (fillet > 0) for (let k = 0; k <= 8; k += 1) rows.push((fillet * k) / 8);
+  else rows.push(0);
+  rows.push(height);
+  const R = rows.length;
+  for (let i = 0; i <= segments; i += 1) {
+    const u = i / segments;
+    // u = 0.5 要落在**正对镜头**那一面（世界 +Z），贴图上的字才在正面。
+    const th = u * Math.PI * 2 - Math.PI / 2;
+    const r = cupRadius(th) * scale;
+    const cx = Math.cos(th);
+    const cz = Math.sin(th);
+    const r2 = cupRadius(th + EPS) * scale;
+    const dx = Math.cos(th + EPS) * r2 - cx * r;
+    const dz = Math.sin(th + EPS) * r2 - cz * r;
+    const len = Math.hypot(dx, dz) || 1;
+    // 切线转 -90°：(dx,dz) -> (dz,-dx)，指向外
+    const nx = dz / len;
+    const nz = -dx / len;
+    // 貼圖照**弧長**鋪（geometry.ts 的 cupArcU）：照角度鋪的話，平面上越靠方角的
+    // 地方一度對到的杯壁越長，字就越靠邊越扁。u 反向：截面逆時針繞，照鋪會左右鏡像
+    const tu = 1 - cupArcU(th);
+    for (const y of rows) {
+      // 底部圓角：往內收 inset，法線往下轉
+      const inset = y < fillet ? fillet - Math.sqrt(fillet * fillet - (fillet - y) * (fillet - y)) : 0;
+      const tilt = y < fillet ? Math.asin((fillet - y) / fillet) : 0;
+      pos.push(cx * r - nx * inset, y, cz * r - nz * inset);
+      nor.push(nx * Math.cos(tilt), -Math.sin(tilt), nz * Math.cos(tilt));
+      uv.push(tu, y / height);
+    }
+  }
+  for (let i = 0; i < segments; i += 1) {
+    for (let k = 0; k < R - 1; k += 1) {
+      const a0 = i * R + k;
+      const b0 = (i + 1) * R + k;
+      idx.push(a0, a0 + 1, b0, a0 + 1, b0 + 1, b0);
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  geo.setIndex(idx);
+  return geo;
+}
+
+/** 杯底四邊圓角的半徑（世界單位）。 */
+const CUP_FILLET = 0.55;
+
+/** 圆角方柱的盖子（杯底）。朝下。 */
+function cupCap(scale: number, y: number, segments = 160): THREE.BufferGeometry {
+  const pos: number[] = [0, y, 0];
+  const nor: number[] = [0, -1, 0];
+  const uv: number[] = [0.5, 0.5];
+  const idx: number[] = [];
+  for (let i = 0; i <= segments; i += 1) {
+    const th = (i / segments) * Math.PI * 2;
+    const r = cupRadius(th) * scale;
+    pos.push(Math.cos(th) * r, y, Math.sin(th) * r);
+    nor.push(0, -1, 0);
+    uv.push(0.5 + Math.cos(th) * 0.5, 0.5 + Math.sin(th) * 0.5);
+  }
+  for (let i = 1; i <= segments; i += 1) idx.push(0, i, i + 1);
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  geo.setIndex(idx);
+  return geo;
+}
+
 export function createCylinderScene(host: HTMLElement): CylinderScene | null {
   let renderer: THREE.WebGLRenderer;
   try {
-    renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      // 画布透明，籤筒直接站在页面底色上 —— 不再自带一块深色背板
+      alpha: true,
+      powerPreference: 'high-performance',
+    });
   } catch {
     return null;
   }
@@ -80,64 +176,32 @@ export function createCylinderScene(host: HTMLElement): CylinderScene | null {
   const height = Math.max(1, host.clientHeight);
   renderer.setSize(width, height);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFShadowMap;
-  renderer.setClearColor(TABLE_COLOR, 1);
+  renderer.setClearAlpha(0);
   host.replaceChildren(renderer.domElement);
 
   const scene = new THREE.Scene();
-  // 案几在透视上会一路延伸到视平线，不加雾就是一条生硬的地平线横在画面中间
-  scene.fog = new THREE.Fog(TABLE_COLOR, 21, 64);
 
   const camera = new THREE.PerspectiveCamera(32, width / height, 0.5, 120);
-  camera.position.set(0, 1.4, 18);
-  camera.lookAt(0, -0.1, 0);
+  camera.position.set(0, IDLE_LOOK_Y, idleCameraZ(width / height));
+  camera.lookAt(0, IDLE_LOOK_Y, 0);
 
   /* ── 摄影棚光 ── */
-  scene.add(new THREE.HemisphereLight(0xfff1dd, 0x2a1d15, 0.55));
+  // 暖、柔，但要留住體積感：v3 第一版把環境光拉到 2.0、主光壓到 1.45，側面暗不下去，
+  // 杯子看起來像一張紙板。參考圖的杯子邊緣是會自然變暗的
+  scene.add(new THREE.HemisphereLight(0xfff4e6, 0xe6d2b6, 1.6));
 
-  const key = new THREE.DirectionalLight(0xfff0d6, 2.6);
+  const key = new THREE.DirectionalLight(0xffeedd, 1.9);
   key.position.set(7, 12, 9);
-  key.castShadow = true;
-  key.shadow.mapSize.set(1024, 1024);
-  key.shadow.camera.left = -9;
-  key.shadow.camera.right = 9;
-  key.shadow.camera.top = 9;
-  key.shadow.camera.bottom = -9;
-  key.shadow.camera.near = 1;
-  key.shadow.camera.far = 40;
-  key.shadow.bias = -0.0005;
-  key.shadow.normalBias = 0.02;
   scene.add(key);
 
   // 背后的轮廓光：把签筒从暗背景里剥出来，没有它整支筒会糊成一团
-  const rim = new THREE.DirectionalLight(0xffd8a8, 1.5);
+  const rim = new THREE.DirectionalLight(0xfff0e0, 0.35);
   rim.position.set(-6, 5, -9);
   scene.add(rim);
 
-  const fill = new THREE.DirectionalLight(0xffe4c4, 0.32);
+  const fill = new THREE.DirectionalLight(0xffeedd, 0.6);
   fill.position.set(-7, 2, 7);
   scene.add(fill);
-
-  /* ── 案几 ── */
-  const table = new THREE.Mesh(
-    new THREE.PlaneGeometry(200, 200),
-    new THREE.MeshStandardMaterial({ color: TABLE_COLOR, roughness: 0.95, metalness: 0.02 }),
-  );
-  table.rotation.x = -Math.PI / 2;
-  table.position.y = GROUND_Y;
-  table.receiveShadow = true;
-  scene.add(table);
-
-  const blobTex = new THREE.CanvasTexture(createBlobCanvas());
-  blobTex.colorSpace = THREE.SRGBColorSpace;
-  const blob = new THREE.Mesh(
-    new THREE.PlaneGeometry(9, 9),
-    new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false, opacity: 0.9 }),
-  );
-  blob.rotation.x = -Math.PI / 2;
-  blob.position.set(RIG_X, GROUND_Y + 0.01, 0);
-  scene.add(blob);
 
   /* ── 贴图 ── */
   const tubeTex = new THREE.CanvasTexture(createTubeCanvas());
@@ -161,75 +225,86 @@ export function createCylinderScene(host: HTMLElement): CylinderScene | null {
   tiltGroup.rotation.x = TILT_X;
   scene.add(tiltGroup);
 
-  const tubeMat = new THREE.MeshStandardMaterial({ map: tubeTex, roughness: 0.42, metalness: 0.05 });
-  const tube = new THREE.Mesh(
-    new THREE.CylinderGeometry(TUBE_R_OUT, TUBE_R_OUT * 0.97, TUBE_H, 72, 1, true),
-    tubeMat,
-  );
-  tube.position.y = TUBE_H / 2;
-  // 贴图把「問籤」画在 u=0.5，而 CylinderGeometry 的 u=0 对着 +Z —— 不转的话字在背面
-  tube.rotation.y = Math.PI;
-  tube.castShadow = true;
-  tube.receiveShadow = true;
+  // 黏土：粗糙度拉满、完全不反射。有一点点金属度就会出现生漆那种高光
+  const tubeMat = new THREE.MeshStandardMaterial({ map: tubeTex, roughness: 0.97, metalness: 0 });
+  const tube = new THREE.Mesh(cupShell(1, TUBE_H, 160, CUP_FILLET), tubeMat);
+  tube.position.y = 0;
   tiltGroup.add(tube);
 
   // 内壁：比外壁暗，给筒口深度
   const innerMat = new THREE.MeshStandardMaterial({
-    color: 0x1b0f0a,
-    roughness: 0.85,
+    color: 0x8d7a60,
+    roughness: 0.98,
     metalness: 0.0,
     side: THREE.BackSide,
   });
-  const inner = new THREE.Mesh(
-    new THREE.CylinderGeometry(TUBE_R_IN, TUBE_R_IN * 0.97, TUBE_H - 0.04, 48, 1, true),
-    innerMat,
-  );
-  inner.position.y = TUBE_H / 2;
+  const inner = new THREE.Mesh(cupShell(TUBE_R_IN / TUBE_R_OUT, TUBE_H - 0.04, 96), innerMat);
+  inner.position.y = 0.02;
   tiltGroup.add(inner);
 
-  const floorMat = new THREE.MeshStandardMaterial({ color: 0x2a1710, roughness: 0.9 });
+  const floorMat = new THREE.MeshStandardMaterial({ color: 0x9b8b6c, roughness: 0.98 });
   const floor = new THREE.Mesh(new THREE.CircleGeometry(TUBE_R_IN, 40), floorMat);
   floor.rotation.x = -Math.PI / 2;
   floor.position.y = 0.01;
   tiltGroup.add(floor);
 
-  const brassMat = new THREE.MeshStandardMaterial({
+  // 杯口那圈外翻的领子 —— 参考图上最好认的轮廓之一
+  const collarMat = new THREE.MeshStandardMaterial({
     map: brassTex,
-    color: 0xc89b3c,
-    metalness: 0.78,
-    roughness: 0.33,
+    roughness: 0.97,
+    metalness: 0,
   });
-  for (const [y, h, r] of [
-    [TUBE_H - 0.34, 0.5, TUBE_R_OUT * 1.035],
-    [0.3, 0.62, TUBE_R_OUT * 1.05],
-  ] as const) {
-    const band = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 64, 1, true), brassMat);
-    band.position.y = y;
-    band.castShadow = true;
-    tiltGroup.add(band);
-  }
+  const collar = new THREE.Mesh(cupShell(1.055, TUBE_H * 0.14), collarMat);
+  collar.position.y = TUBE_H - TUBE_H * 0.14;
+  tiltGroup.add(collar);
 
-  /* ── 36 支竹籤 ── */
+  // 杯底：不封起来的话，斜着看会直接看穿整只杯子
+  // 杯底跟著圓角往內收，不然會從圓角外面多出一圈平邊
+  const bottomCap = new THREE.Mesh(cupCap((TUBE_R_OUT - CUP_FILLET) / TUBE_R_OUT, 0), collarMat);
+  tiltGroup.add(bottomCap);
+
+  /* ── 竹籤（STICK_COUNT 支） ── */
+  const UP = new THREE.Vector3(0, 1, 0);
   const stickGeo = new THREE.BoxGeometry(STICK_W, STICK_LEN, STICK_T);
+  const headTex = new THREE.CanvasTexture(createStickHeadCanvas());
+  headTex.colorSpace = THREE.SRGBColorSpace;
+  // 圓盤是 CylinderGeometry 的頂蓋轉 90° 立起來的，貼圖跟著轉掉了 ——「籤」字會橫躺。
+  // 近拍時才看得出來（竹字頭跑到右邊），轉回來
+  headTex.center.set(0.5, 0.5);
+  headTex.rotation = Math.PI / 2;
+  const headGeo = new THREE.CylinderGeometry(STICK_HEAD_R, STICK_HEAD_R, STICK_T, 28);
+  const headMat = new THREE.MeshStandardMaterial({ map: headTex, roughness: 0.97, metalness: 0 });
   const sticks: StickHandle[] = [];
   for (let i = 0; i < STICK_COUNT; i += 1) {
     const slot = bundleSlot(i);
     const tex = atlasTex.clone();
     tex.needsUpdate = true;
     tex.repeat.set(STICK_CELL_W / STICK_ATLAS_W, 1);
-    tex.offset.set((i * STICK_CELL_W) / STICK_ATLAS_W, 0);
-    const mat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.62, metalness: 0.02 });
+    // 筒裡的籤不印號碼，只有 STICK_VARIANTS 種圖案輪流
+    tex.offset.set(((i % STICK_VARIANTS) * STICK_CELL_W) / STICK_ATLAS_W, 0);
+      const mat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.97, metalness: 0 });
     const mesh = new THREE.Mesh(stickGeo, mat);
-    mesh.position.set(slot.x, slot.rest + STICK_LEN / 2, slot.z);
-    mesh.rotation.set(slot.tiltX, slot.yaw, slot.tiltZ);
-    mesh.castShadow = true;
+    // 圆籤头。挂成子物件，籤怎么动它就跟着动
+    const head = new THREE.Mesh(headGeo, headMat);
+    head.rotation.x = Math.PI / 2;
+    // 这一截跟 geometry.ts 共用一个常数 —— 框景要靠它算整支籤有多长
+    head.position.y = STICK_LEN / 2 + STICK_HEAD_GAP;
+    // 圓盤往正面挪半個籤厚：跟籤身同一個深度的話，籤身頂端會橫切過圓盤下半，
+    // 「籤」字被蓋掉一半。參考圖是圓盤在前、籤身塞在後面
+    head.position.z = STICK_T / 2;
+    mesh.add(head);
+    const pose = stickPose(slot);
+    const baseQuat = new THREE.Quaternion()
+      .setFromUnitVectors(UP, new THREE.Vector3(pose.ax, pose.ay, pose.az))
+      .multiply(new THREE.Quaternion().setFromAxisAngle(UP, slot.yaw));
+    mesh.position.set(pose.cx, pose.cy, pose.cz);
+    mesh.quaternion.copy(baseQuat);
     tiltGroup.add(mesh);
     sticks.push({
       mesh,
       rest: slot.rest,
-      baseYaw: slot.yaw,
-      baseTiltX: slot.tiltX,
-      baseTiltZ: slot.tiltZ,
+      pose,
+      baseQuat,
       x: slot.x,
       z: slot.z,
     });
@@ -261,7 +336,7 @@ export function createCylinderScene(host: HTMLElement): CylinderScene | null {
     tubeTex.dispose();
     brassTex.dispose();
     atlasTex.dispose();
-    blobTex.dispose();
+    headTex.dispose();
     renderer.dispose();
     renderer.domElement.remove();
   };

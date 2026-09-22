@@ -1,58 +1,35 @@
 /**
- * 筒内籤束的约束解算 —— 纯数学，不 import three，不碰 DOM。
+ * 筒內籤束的上下起伏 —— 純數學，不 import three，不碰 DOM。
  *
- * 36 根细长桿在窄筒里做全刚体模拟，实务上几乎一定会抖动、穿透、炸开。这里改用
- * **降维**的模型：每支籤只有沿筒轴的位移与速度，外加彼此之间的摩擦耦合。筒内稳定，
- * 而真正需要细致的只有脱出的那一支 —— 那一支交给 eject.ts 做真的自由落体。
+ * 60 根、20 根細長桿在筒裡做全剛體模擬，實務上一定抖動、穿透、炸開。這裡用**降維**
+ * 的模型：每支籤只有沿自己籤軸的位移與速度，外加彼此之間的摩擦耦合。
  *
- * 会动的物理都在这里，于是「摇多久才掉」「掉之前像不像一整束」这种只能靠手感判断
- * 的事，至少它的不变量（不穿筒底、能量不会自己长出来、一定会停）是被测试钉住的。
+ * v3 起它只負責「攪的時候籤互相推擠、上下起伏」。v2 靠它把中籤那支一格一格頂出筒口
+ * （棘輪 + CHOSEN_LIFT），v3 的籤是被拿出來的（pull.ts），那一整套已經拿掉。
+ * 留下來的不變量由測試釘著：不穿筒底、能量不會自己長出來、停手一定會停、
+ * 攪再久也只是原地起伏。
  */
 
-import { STICK_LEN, TUBE_H, pseudoRandom } from './geometry';
+import { pseudoRandom } from './geometry';
 
 export const GRAVITY = 9.81;
-/** 每秒的速度衰减（空气与竹皮摩擦）。 */
+/** 每秒的速度衰減（空氣與竹皮摩擦）。 */
 export const DAMP = 1.9;
 /** 籤与籤之间的摩擦耦合：整束会一起动，而不是各弹各的。 */
 export const COUPLING = 3.2;
-/**
- * 中签那一支的耦合系数（相对于 COUPLING）。
- *
- * 它正在从籤束里**挣脱**，本来就该滑过邻籤，而不是被整束拖住。原本它和其他籤
- * 用同一个耦合，于是每爬一点就被拉回静止的大队，实测要摇 5.5 秒才出得来 ——
- * 使用者早就停手了，画面卡在「有一支籤鬆動了」。
- */
-export const CHOSEN_COUPLING = 0.18;
 /** 撞到筒底的回弹系数。竹子撞木头，弹不高。 */
 export const FLOOR_RESTITUTION = 0.16;
 /**
- * 棘轮效应的**峰值**加速度（intensity = 1 时）。摇动让籤一格一格往上爬，
- * 就是巴西坚果效应。
+ * 攪動把籤往上頂的峰值加速度（強度 = 1 時）。
  *
- * 这个值必须**小于**重力沿轴的分量（约 8.79），否则光靠摇就能把整束籤送出筒外 ——
- * 第一版写成随原始加速度线性放大，摇两秒半 36 支全部飞到 y≈16，单元测试当场抓到。
- * 最贪心的那支籤峰值也只有 RATCHET × climb_max = 5.2 × 1.45 ≈ 7.5 < 8.79，
- * 所以普通籤只会被顶起来又落回去 —— 这正是筒口那一片籤头翻滚的样子。
+ * 必須**小於**重力，否則光靠攪就能把整束籤頂出筒外：這支最貪心的籤峰值也只有
+ * RATCHET × climb_max = 5.8 × 1.45 ≈ 8.4 < 9.81，所以籤只會被頂起來又落回去。
  */
-export const RATCHET = 5.2;
-/**
- * 中签那一支额外得到的向上驱力，**乘上摇动强度**。
- *
- * 一定要乘：写成常数的话那支籤会无条件往上飘，变成「它自己浮上来」而不是
- * 「被你摇出来」—— 实测回报「也太怪」。籤是摇出来的，停手就不该继续爬。
- *
- * 数值是扫过全部 36 支、用**真实**强度曲线量出来的：手来回甩时折返点速度归零，
- * 平均强度只有 0.64，不是 1。原先所有测试都喂恒定 1，于是 11.2 在测试里看起来
- * 够用，实际上要摇 5.5 秒才出得来 —— 使用者早就停手了。21 对应 1.2～2.1 秒。
- */
-export const CHOSEN_LIFT = 21;
+export const RATCHET = 5.8;
 
 /**
  * 摩擦咬合：低于这个强度，籤束挤在一起互相卡住，谁都不会自己滑下去。
- *
- * 没有它，停手之后中签那支会沉回筒底，使用者就永远等不到籤 —— 也是实测踩到的。
- * 有了它，停手 = 停在原地：不沉回去，也不自己往上飘。这两件事要同时成立。
+ * 停手 = 停在原地（慢慢歇回去），不會自己亂跳。
  */
 export const GRIP_RELEASE = 0.25;
 /** 完全卡死时每帧保留多少速度。留一点点，免得看起来像被冻住。 */
@@ -79,30 +56,17 @@ export const stickTrait = (i: number): StickTrait => {
 };
 
 /**
- * 中签那一支要爬多高才会翻出筒口。
- *
- * 判准是**重心**越过筒口：重心一出去，斜持的筒子靠重力就会把它带倒、滑出去。
- * 用「整支籤完全离开筒子」当判准是错的 —— 那要爬 6.5 个单位，摇到天亮都掉不出来。
- */
-export const exitRise = (rest: number): number =>
-  Math.max(0.35, TUBE_H - STICK_LEN / 2 - rest);
-
-/**
  * 推进一帧。out 就是传进来的 motions，原地改写 —— 帧循环里不分配。
  *
- * @param axisGravity 重力沿筒轴的分量（筒子斜持，所以不是整个 g）
- * @param shakeA      手的加速度沿筒轴的分量，有正负
- * @param intensity   **归一化**的摇动强度 0..1，驱动棘轮（不是原始加速度）
- * @param chosen      中签的下标；-1 表示还没抽到
+ * @param jostle    籤束轉速變化帶來的推擠加速度（stir.ts），有正負
+ * @param intensity **归一化**的攪動强度 0..1
  */
 export function stepBundle(
   motions: StickMotion[],
   traits: StickTrait[],
   dt: number,
-  axisGravity: number,
-  shakeA: number,
+  jostle: number,
   intensity: number,
-  chosen: number,
 ): void {
   const n = motions.length;
   if (n === 0) return;
@@ -113,19 +77,16 @@ export function stepBundle(
 
   const decay = Math.exp(-DAMP * dt);
   const drive = Math.min(1, Math.max(0, intensity));
-  // 不摇的时候籤束靠摩擦咬死；摇到 GRIP_RELEASE 就完全松开
+  // 不攪的时候籤束靠摩擦咬死；攪到 GRIP_RELEASE 就完全松开
   const grip = Math.max(0, 1 - drive / GRIP_RELEASE);
   const hold = 1 - grip * (1 - GRIP_HOLD);
 
   for (let i = 0; i < n; i += 1) {
     const m = motions[i];
     const t = traits[i];
-    let a = -axisGravity + shakeA * t.resp + drive * RATCHET * t.climb;
-    if (i === chosen) a += drive * CHOSEN_LIFT;
-    m.vy += a * dt;
-    // 邻籤摩擦：往整束的平均速度靠拢。中签那一支正在挣脱，滑过邻籤，所以耦合弱得多。
-    const coup = i === chosen ? COUPLING * CHOSEN_COUPLING : COUPLING;
-    m.vy += (meanV - m.vy) * Math.min(1, coup * dt);
+    m.vy += (-GRAVITY + jostle * t.resp + drive * RATCHET * t.climb) * dt;
+    // 邻籤摩擦：往整束的平均速度靠拢
+    m.vy += (meanV - m.vy) * Math.min(1, COUPLING * dt);
     m.vy *= decay;
     // 咬合：静止时速度被压掉，籤就卡在原地不动
     m.vy *= hold;
