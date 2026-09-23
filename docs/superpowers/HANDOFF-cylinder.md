@@ -1,6 +1,6 @@
 # 籤筒 v3 交接（2026-09-23）
 
-分支 `feat/3d-cylinder-rebuild`。**187 個測試全過**（14 個檔），`tsc -b` 與 `npm run check` 通過。
+分支 `feat/3d-cylinder-rebuild`。**202 個測試全過**（14 個檔），`tsc -b` 與 `npm run check` 通過。
 設計文件：[`specs/2026-09-22-cylinder-stir-design.md`](specs/2026-09-22-cylinder-stir-design.md)。
 只在本機做，還沒上線（部署是手動的，見 AGENTS.md）。
 
@@ -16,16 +16,17 @@
 1. **籤筒固定不動**，按住籤繞圈攪；籤束跟著手在筒裡左右轉（最多 31°，放手一秒內轉回正面）、上下推擠。
 2. 攪夠了提示「可以放手了」，**同時**向伺服器抽籤（號碼在這一刻定死）。之後攪多久都不影響結果。
 3. **放手才抽**：筒心最直那支被「拿」起來 —— 抓住（輕提一頓）→ 抽出（轉直、貼著筒口滑出）→
-   拿到面前（轉正、印上第 N 籤）→ 拿著看 → 淡出交給籤紙。
+   拿到面前（轉正、第 N 籤淡入）→ 拿著看 → 淡出交給籤紙。**一口氣、不頓**：只有一個速度峰，
+   見 [`plans/2026-09-23-cylinder-pull-smoothing.md`](plans/2026-09-23-cylinder-pull-smoothing.md)。
 4. 外觀照參考圖（奶油色日系籤筒）：20 支排成前中後三排的扇形、杯面圖案撐滿、坐著抱梅花的垂耳狗、底部圓角。
 
 | 模組（`src/shared/cylinder/`） | 管什麼 |
 |---|---|
 | `geometry.ts` | 杯身尺寸與截面、**三排扇形**排布（`bundleSlot` / `stickPose`）、被拿起來那支 `PULL_INDEX`、杯身貼圖的弧長 UV（`cupArcU`） |
 | `stir.ts` | 手 → 籤束轉角、強度、攪動量（取代 v2 的 `shake.ts` + `aim.ts`） |
-| `bundle.ts` | 攪的時候籤上下推擠（v2 的棘輪爬升、中籤那支自己爬出去都拿掉了） |
-| `pull.ts` | 拿籤的時間軸與路徑、旁邊籤被帶動、**聲音 cue**（`pullCues`） |
-| `framing.ts` | 待機鏡頭（含透視）、近拍 `closeUpShot`、拿籤全程鏡頭 `pullCamera` |
+| `bundle.ts` | 攪的時候籤上下推擠（v2 的棘輪爬升、中籤那支自己爬出去都拿掉了）；放手後其他籤歇下來 `settleStep` |
+| `pull.ts` | 拿籤的時間軸與路徑（單峰 `surge`）、號碼淡入 `numberFade`、旁邊籤被帶動、**聲音 cue**（`pullCues`） |
+| `framing.ts` | 待機鏡頭（含透視）、近拍 `closeUpShot`、拿籤全程鏡頭 `pullCamera`（推近／視線兩個通道） |
 | `interaction.ts` | 出籤期間收不收手勢、開始抽籤放什麼聲音、籤紙出來要不要放鈴聲 |
 
 刪掉的：`shake.ts`、`aim.ts`、`eject.ts`，以及落地俯拍 `revealShot`、筒子淡出 `revealCupFade`。
@@ -39,8 +40,10 @@
    `PULL_INDEX`（筒心、最直、前半邊）—— 其他籤都往外傾、離它而去。號碼揭曉時才印上去，
    永遠是伺服器那一個（`sheet.stick.no`）。
 3. **籤頭衝出畫面頂端、鏡頭才追上去。** 鏡頭曾用固定時間表（1.0 秒才推），籤卻在 0.3～1.3 秒
-   就升了七個多單位。正解：`pullCamera` 拿籤頭高度當鏡頭進度。三者都是同一進度的線性函數，
-   「籤頭在畫面裡」在起點終點成立就處處成立，測試逐格驗過。
+   就升了七個多單位。第二版把鏡頭進度綁死在籤頭高度上，框是框住了，但籤一衝鏡頭就跟著衝
+   （推近峰值 43 u/s）。現行：推近走自己的慢時間表，**視線高度由站多遠反解**，讓籤頭釘在
+   畫面上預定的高度。框得住靠「浮的進度 ≤ 上升進度」這條不等式（`pull.ts` 用同一條曲線拉長
+   來保證），不要把浮改成別的曲線而不重驗 `cylinder-framing.test.ts`。
 4. **聲音沒跟畫面對齊。** (a) `FortuneGame.draw()` 用 `vessel === 'cylinder'` 選音效，3D 籤筒
    `'cylinder3d'` 掉進預設分支，放的是印表機按鍵聲 + 馬達；(b)「抽到了」的鈴聲等籤紙出來才響，
    晚了將近 3 秒。正解：`drawStartSound` / `chimeAtSlip`，與 `pullCues` —— 鈴聲跟換號碼貼圖用
@@ -56,25 +59,30 @@
 8. **待機鏡頭下緣只剩 2%。** 舊算法拿世界尺寸比注視點深度的視野，忘了杯身正面比注視點更靠近鏡頭。
    正解：`idleCameraZ` 逐點用它自己的深度算。
 9. **畫布填滿首屏**由組件量：視窗高 − 畫布頂端 − 下方提示區（CSS 量不到上面還有多少東西）。
+10. **分段 ease 接縫處速度歸零 = 頓。** 每段各自先慢後快再慢，接起來就是停一下再走。
+   要動的東西用一條曲線走完，其他動作寫成那條曲線的函數疊上去；測試驗速度單峰。
+11. **揭曉那一格才畫畫布、傳貼圖一定掉幀。** 號碼那一面在伺服器回號碼時就先做好、
+   `renderer.initTexture` 傳上 GPU，揭曉時只動 opacity。
 
 ## 下一步（新 session 從這裡接）
 
-**拿籤到看籤要改成一口氣、不頓** —— 計畫與量測數據在
-[`plans/2026-09-23-cylinder-pull-smoothing.md`](plans/2026-09-23-cylinder-pull-smoothing.md)。
-已提給使用者，**等使用者確認後開做**（先寫測試再改）。
+拿籤到看籤的絲滑化已做完（計畫與前後對照在
+[`plans/2026-09-23-cylinder-pull-smoothing.md`](plans/2026-09-23-cylinder-pull-smoothing.md)）。
+**等使用者在真瀏覽器上試過再說好不好** —— 使用者這台 Mac 的 swap 接近滿，掉幀也會一頓一頓，
+判斷前先請他關掉幾個大 app。
 
-這一輪之後又修了兩件（都已 commit）：
-- 攪多久由使用者決定：門檻降到約 0.8 秒、拿掉進度條（`bc0daed`）。
-- 籤跟籤互相穿插：傾斜方向改成只往左右／往後，不往鏡頭倒（`2cea4d8`）。
-
-其他還沒做：擲筊確認；`src/app/roll/scene.ts` 的 `PCFSoftShadowMap` 警告（使用者說先擱著）。
+還沒做：擲筊確認；`src/app/roll/scene.ts` 的 `PCFSoftShadowMap` 警告（使用者說先擱著）。
 
 ## 驗證技巧（內建瀏覽器面板）
 
 - rAF **和** cAF 都要墊（見下面 v2 的環境陷阱第 1 條），墊完用 vessel state 撥到 `printer` 再撥回
   `cylinder3d` 逼元件重掛，frame loop 才是活的。
-- 要逐格看動畫：把 rAF 墊片改成可暫停的虛擬時鐘（暫停時把 callback 存起來、恢復時補上暫停的時長），
-  在同一次 JS 呼叫裡攪、放手、等到 `pulling`、推進到指定毫秒再暫停。分開呼叫的來回延遲比動畫還長。
+- 要逐格看動畫：用**完全手動的虛擬時鐘** —— `performance.now` 回傳一個變數、rAF 只把 callback
+  排進佇列、自己寫 `step(n, dt)` 推時間並清佇列。時間只在你推的時候走，分幾次 JS 呼叫都沒關係，
+  截圖之間畫面不會動。要等伺服器回籤號時就不推（手按著、畫面停住），用真的 setTimeout 等。
+  pointer 事件要在推時間的 hook 裡發（組件用 `performance.now()` 算手速）。
+  組件內部從 canvas 的 `__reactFiber` 往上找 `FortuneCylinder3D`，hooks[1] 是 sceneRef（rig），
+  有 `motions` 的那個 ref 是 Drive。
 - **面板在背景時截圖會是舊畫面**：截圖前先呼叫一次 `rig.render()`。像素量測則在同一個 task 裡
   `render()` 完馬上 `readPixels`。
 - 想看某個角落：停住 frame loop 後直接改 `rig.camera` 位置再 `render()`（v3 平頂方塊就是這樣抓到的）。

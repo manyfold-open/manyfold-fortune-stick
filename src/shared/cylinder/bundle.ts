@@ -101,3 +101,26 @@ export function stepBundle(
 /** 整束的动能 —— 测试用它确认摇停之后能量会归零，不会自己长出来。 */
 export const bundleEnergy = (motions: StickMotion[]): number =>
   motions.reduce((s, m) => s + m.vy * m.vy, 0);
+
+/**
+ * 放手之後其他籤怎麼歇下來：臨界阻尼彈簧，約半秒回到原位。
+ *
+ * 舊版是 `y *= exp(-6·dt)`：一開始就是最快的速度往下掉，0.17 秒就停，看起來是「啪」一下
+ * 落回去。臨界阻尼從它當下的速度接著走，先慢慢轉向、再收回原位，不回彈。
+ * 每一格用解析解推進，跟幀率無關。
+ */
+export const SETTLE_RATE = 8;
+
+export function settleStep(m: StickMotion, dt: number): void {
+  if (!(dt > 0)) return;
+  const w = SETTLE_RATE;
+  const c2 = m.vy + w * m.y;
+  const e = Math.exp(-w * dt);
+  const y = (m.y + c2 * dt) * e;
+  m.vy = (c2 - w * (m.y + c2 * dt)) * e;
+  m.y = y;
+  if (m.y < 0) {
+    m.y = 0;
+    m.vy = 0;
+  }
+}

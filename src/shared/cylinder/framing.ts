@@ -30,7 +30,7 @@ import {
   cupRadius,
   stickPose,
 } from './geometry';
-import { HOLD_START, PULL_START, pullPose } from './pull';
+import { PULL_END, pullPose, riseProgress } from './pull';
 
 /** 与 scene.ts 的 PerspectiveCamera 一致的垂直视角（度）。 */
 export const FOV_DEG = 32;
@@ -111,16 +111,17 @@ export interface CloseUpShot {
 }
 
 /**
- * 籤被拿到筒子正上方、正面朝鏡頭時，鏡頭該站哪（世界座標，x = 0，平視 -z）。
+ * 籤被拿到筒子正上方、正面朝鏡頭時，鏡頭最後停在哪（世界座標，x = 0，平視 -z）。
  *
- * 框的是**籤頭到號碼與小圖案**，不是整支：這一鏡的工作是讓人看清第幾籤。
+ * 框的是**最後那一格**（拿著時還在微微往上浮，浮完才是這裡）、**籤頭到號碼與小圖案**，
+ * 不是整支：這一鏡的工作是讓人看清第幾籤。
  * 籤被提得夠高，框到這一段時杯身和其他籤頭都自然落在畫面下緣之外（測試釘著），
  * 所以不必像 v2 那樣把筒子淡掉。
  */
 export function closeUpShot(aspect: number): CloseUpShot {
   const a = Number.isFinite(aspect) && aspect > 0 ? Math.min(4, Math.max(0.25, aspect)) : 1;
   const t = Math.tan((FOV_DEG / 2) * (Math.PI / 180));
-  const p = pullPose(bundleSlot(PULL_INDEX), HOLD_START);
+  const p = pullPose(bundleSlot(PULL_INDEX), PULL_END);
   const top = RIG_Y + p.cy + STICK_TIP;
   const bodyTop = RIG_Y + p.cy + STICK_LEN / 2;
   const headY = bodyTop + STICK_HEAD_GAP;
@@ -144,33 +145,58 @@ export function closeUpShot(aspect: number): CloseUpShot {
 }
 
 /**
- * 拿籤全程鏡頭該在哪：**跟著籤的高度走**，從待機鏡頭一路變成近拍。
+ * 推近的進度：速度正比於 x²·(1−x)^b —— 起步比籤慢（x² 那一項），峰在 2/(b+2)，尾巴很長。
+ * 積出來是 w^(b+1)、w^(b+2)、w^(b+3) 的組合，w = 1 − x。
+ */
+const lagged = (x: number, b: number): number => {
+  const w = 1 - Math.min(1, Math.max(0, x));
+  const term = (k: number) => (1 - Math.pow(w, k)) / k;
+  const full = 1 / (b + 1) - 2 / (b + 2) + 1 / (b + 3);
+  return (term(b + 1) - 2 * term(b + 2) + term(b + 3)) / full;
+};
+/**
+ * 推近分兩層疊起來：主推在 PUSH_MS 內推完九成，峰在 40%（約 1.1 秒，籤頭的峰在 0.9 秒）；
+ * 剩下一成拉滿整條時間軸，拿著看的時候還在極慢地推、淡出時也還沒停。
+ * 主推在尾巴長起來之前早就在減速，兩層疊起來仍只有一個速度峰（測試釘著）。
+ */
+const PUSH_MS = 2800;
+const PUSH_TAIL = 0.1;
+const pushProgress = (t: number): number =>
+  (1 - PUSH_TAIL) * lagged(t / PUSH_MS, 3) + PUSH_TAIL * lagged(t / PULL_END, 2);
+
+/**
+ * 拿籤全程鏡頭該在哪：拆成兩個通道，從待機鏡頭一路變成近拍。
  *
- * v3 第一版用固定時間表（1.0 秒才開始推、2.4 秒到位），籤卻在 0.3～1.3 秒就往上衝了
- * 七個多單位 —— 籤頭先衝出畫面頂端、鏡頭才追上去，看起來很怪。改成拿籤頭高度的進度
- * 當鏡頭進度：籤升多少，鏡頭就跟多少，像是視線跟著那隻手。
+ * - **推近**（camZ）走自己的時間表，慢一拍、拉得長：籤先動，鏡頭後推，拿著看的時候還在
+ *   極慢地推完。v3 第一版把推近綁死在籤頭高度上，籤一衝鏡頭就跟著衝（峰值 43 u/s）。
+ * - **視線高度**（lookY）跟著籤走：給定這一格站多遠，直接解出要看多高，籤頭才會落在
+ *   畫面上預定的那一條高度。那條高度從待機時籤頭的位置，隨上升進度移到近拍時的位置。
  *
- * 為什麼一定框得住：籤頭高度、鏡頭高度、鏡頭距離三者都是同一個進度 p 的線性函數，
- * 「籤頭在畫面裡」這個條件在 p 上也是線性的 —— 起點（待機）和終點（近拍）都成立，
- * 中間每一點就都成立。測試逐格驗過。
+ * 為什麼一定框得住：解的是一支「虛擬籤頭」—— 把浮的量跟著上升進度一起算。真正的籤頭
+ * 浮得比上升慢（pull.ts 的 floatProgress ≤ riseProgress），所以永遠不高於虛擬那支，
+ * 也就永遠不高於預定那條線；那條線夾在待機與近拍兩個籤頭位置之間，兩個都在框裡。
+ * 最後一格上升和浮都走完，虛擬籤頭就是真籤頭，鏡頭剛好停在近拍。測試逐格驗過。
  */
 export function pullCamera(ms: number, aspect: number, reduced = false): CloseUpShot {
   const cu = closeUpShot(aspect);
   if (reduced) return cu;
+  const t = Number.isFinite(ms) ? Math.min(PULL_END, Math.max(0, ms)) : 0;
+  const th = Math.tan((FOV_DEG / 2) * (Math.PI / 180));
   const idleZ = idleCameraZ(aspect);
   const slot = bundleSlot(PULL_INDEX);
-  const tipY = (t: number): number => {
-    const p = pullPose(slot, t);
-    return p.cy + p.ay * STICK_TIP;
+  const tipOf = (at: number) => {
+    const p = pullPose(slot, at);
+    return { y: RIG_Y + p.cy + p.ay * STICK_TIP, z: p.cz + p.az * STICK_TIP };
   };
-  const from = tipY(0);
-  const to = tipY(HOLD_START);
-  // 抓住那一下的輕提不算：鏡頭跟著它一抖一抖反而怪
-  const t = Number.isFinite(ms) ? ms : 0;
-  const p = t < PULL_START ? 0 : Math.min(1, Math.max(0, (tipY(t) - from) / (to - from)));
-  return {
-    camY: IDLE_LOOK_Y + (cu.camY - IDLE_LOOK_Y) * p,
-    camZ: idleZ + (cu.camZ - idleZ) * p,
-    lookY: IDLE_LOOK_Y + (cu.lookY - IDLE_LOOK_Y) * p,
-  };
+  const t0 = tipOf(0);
+  const t1 = tipOf(PULL_END);
+  // 籤頭在畫面上的高度（NDC）：待機時、近拍時
+  const y0 = (t0.y - IDLE_LOOK_Y) / ((idleZ - t0.z) * th);
+  const y1 = (t1.y - cu.lookY) / ((cu.camZ - t1.z) * th);
+
+  const camZ = idleZ + (cu.camZ - idleZ) * pushProgress(t);
+  const r = riseProgress(t);
+  const tipY = t0.y + (t1.y - t0.y) * r;
+  const lookY = tipY - (y0 + (y1 - y0) * r) * (camZ - tipOf(t).z) * th;
+  return { camY: lookY, camZ, lookY };
 }

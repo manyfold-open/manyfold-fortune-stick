@@ -3,7 +3,7 @@
  *
  * 這個組件**不抽籤**。籤是攪夠了那一刻服務端定死的（AGENTS.md 第 4、5 條）：
  * 攪動功到門檻就回調 onShake() 去要籤，簽到了就把號碼記下來，放手之後照劇本
- * （shared/cylinder/pull.ts）把一支籤「拿起來」，拿到面前時才印上那個號碼。
+ * （shared/cylinder/pull.ts）把一支籤「拿起來」，轉向鏡頭時那個號碼才淡入。
  * 哪一支實體籤被拿起來跟號碼無關 —— 筒裡的籤不印號碼，拿的永遠是筒心最直那支，
  * 往上拔才不會穿過別的籤。
  *
@@ -16,6 +16,7 @@ import type { Language } from '../../shared/lang';
 import type { Reading } from '../../shared/types';
 import {
   createMotions,
+  settleStep,
   stepBundle,
   stickTrait,
   type StickMotion,
@@ -28,14 +29,22 @@ import {
   stepStir,
   type StirState,
 } from '../../shared/cylinder/stir';
-import { PULL_INDEX, STICK_COUNT, bundleSlot } from '../../shared/cylinder/geometry';
+import {
+  PULL_INDEX,
+  STICK_COUNT,
+  STICK_LEN,
+  STICK_T,
+  STICK_W,
+  bundleSlot,
+} from '../../shared/cylinder/geometry';
 import { IDLE_LOOK_Y, idleCameraZ, pullCamera } from '../../shared/cylinder/framing';
 import {
+  CLEAR_AT,
   HOLD_MS,
-  NUMBER_AT,
   PULL_DONE,
-  PULL_MS,
+  SLIDE_AT,
   neighborNudge,
+  numberFade,
   pullCues,
   pullPose,
 } from '../../shared/cylinder/pull';
@@ -77,8 +86,12 @@ interface Drive {
   requested: boolean;
   /** 開始拿籤的時間。 */
   pullAt: number;
-  /** 抽出那支已經換上印號碼的貼圖了嗎。 */
-  numbered: boolean;
+  /**
+   * 印著「第 N 籤」的那一面：疊在抽出那支的籤身正面，淡入它的不透明度（pull.ts 的
+   * numberFade）。號碼一到就先做好、先傳上 GPU —— 等到揭曉那一格才畫畫布、傳貼圖，
+   * 那一格一定掉幀，正好卡在最該絲滑的地方。
+   */
+  numberFace: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshStandardMaterial> | null;
   numberTex: THREE.Texture | null;
   /** 淡出计时器，卸载时要清掉。 */
   handoff: number;
@@ -123,7 +136,7 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
     stir: createStir(),
     requested: false,
     pullAt: 0,
-    numbered: false,
+    numberFace: null,
     numberTex: null,
     handoff: 0,
     reported: -1,
@@ -242,6 +255,33 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
         bambooRustle(Math.min(1, sh.intensity));
       }
 
+      // 號碼到了就先把那一面做好，透明地掛在要被拿起來那支上
+      if (!dr.numberFace && dr.stickNo > 0) {
+        const tex = new THREE.CanvasTexture(createNumberedStickCanvas(dr.stickNo, PULL_INDEX % STICK_VARIANTS));
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.anisotropy = rig.renderer.capabilities.getMaxAnisotropy();
+        rig.renderer.initTexture(tex);
+        const face = new THREE.Mesh(
+          new THREE.PlaneGeometry(STICK_W, STICK_LEN),
+          new THREE.MeshStandardMaterial({
+            map: tex,
+            roughness: 0.97,
+            metalness: 0,
+            transparent: true,
+            opacity: 0,
+            depthWrite: false,
+            polygonOffset: true,
+            polygonOffsetFactor: -1,
+            polygonOffsetUnits: -1,
+          }),
+        );
+        // 貼在籤身正面，籤頭圓盤（往前挪了半個籤厚）仍然蓋在它前面
+        face.position.z = STICK_T / 2 + 0.002;
+        rig.sticks[PULL_INDEX].mesh.add(face);
+        dr.numberFace = face;
+        dr.numberTex = tex;
+      }
+
       /* 1. 攪：筒內籤束。中籤那支不再自己往上爬（-1）—— 它是放手之後被「拿」起來的 */
       if (dr.stage === 'rest' || dr.stage === 'shaking') {
         stepBundle(dr.motions, dr.traits, dt, sh.jostle, sh.intensity);
@@ -275,7 +315,7 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
         for (const cue of pullCues(dr.cueMs, ms, calm)) {
           if (!soundRef.current) continue;
           if (cue === 'grab') bambooRustle(0.55);
-          else if (cue === 'slide') bambooRattle(Math.round(PULL_MS * 0.8));
+          else if (cue === 'slide') bambooRattle(CLEAR_AT - SLIDE_AT);
           else chime(dr.level);
         }
         dr.cueMs = ms;
@@ -288,29 +328,20 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
           .premultiply(hq)
           .multiply(yawQ.setFromAxisAngle(UP, hp.yaw));
 
-        // 其他籤：攪動留下的起伏慢慢收掉，靠近的被帶得跳一下
+        // 其他籤：攪動留下的起伏約半秒慢慢歇下來（bundle.ts 的 settleStep），靠近的被帶得跳一下
         for (let i = 0; i < STICK_COUNT; i += 1) {
           if (i === PULL_INDEX) continue;
           const h = rig.sticks[i];
           const m = dr.motions[i];
-          m.y *= Math.exp(-6 * dt);
+          settleStep(m, dt);
           const lift = m.y + (calm ? 0 : neighborNudge(Math.hypot(h.x - pullSlot.x, h.z - pullSlot.z), ms));
           const p = h.pose;
           const q = place(h, p.cx + p.ax * lift, p.cy + p.ay * lift, p.cz + p.az * lift, sh.phi);
           h.mesh.quaternion.copy(q).multiply(h.baseQuat);
         }
 
-        // 轉正到一半時印上號碼 —— 號碼是伺服器給的那一個
-        if (!dr.numbered && (calm || ms >= NUMBER_AT) && dr.stickNo > 0) {
-          dr.numbered = true;
-          const tex = new THREE.CanvasTexture(createNumberedStickCanvas(dr.stickNo, PULL_INDEX % STICK_VARIANTS));
-          tex.colorSpace = THREE.SRGBColorSpace;
-          tex.anisotropy = rig.renderer.capabilities.getMaxAnisotropy();
-          const mat = held.mesh.material as THREE.MeshStandardMaterial;
-          mat.map = tex;
-          mat.needsUpdate = true;
-          dr.numberTex = tex;
-        }
+        // 轉向鏡頭途中號碼淡入 —— 號碼是伺服器給的那一個。鈴聲（上面的 reveal）跟淡入同一格開始
+        if (dr.numberFace) dr.numberFace.material.opacity = numberFade(ms, calm);
 
         if (dr.stage === 'pulling' && ms >= (calm ? HOLD_MS : PULL_DONE)) {
           dr.stage = 'done';
