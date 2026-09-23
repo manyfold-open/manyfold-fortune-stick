@@ -103,6 +103,13 @@
 `import('/node_modules/.vite/deps/react-dom_client.js')` 的 `default.createRoot` 直接掛到頁面上，
 不必真的抽（點「解签」會真的呼叫 agent、計費）。
 
+**解籤續頁與分享圖**也跟上了（[`specs/2026-09-23-reading-sheet-and-share-design.md`](specs/2026-09-23-reading-sheet-and-share-design.md)）：
+- 籤紙與解籤是**同一張長紙條**（`.omikuji` 畫外框，「解 签」帶是紙中間的分段），繪馬跟紙同寬。
+  分成兩張的時候使用者說「感覺像是分了三段」—— 不要再拆開。
+- 分享圖：`shrineArt.ts`（場景、繪馬、印、櫻花；頁面背景也從這裡拿櫻花枝與花瓣的形狀）＋ `share.ts`（版面）。
+  驗證：`import('/src/app/share.ts?t=…')` 呼叫 `renderShareImage`，把 blob 轉成 `<img>` 掛上頁面看；
+  截圖常常是舊的一格，截兩次。
+
 還沒做：擲筊確認；`src/app/roll/scene.ts` 的 `PCFSoftShadowMap` 警告（使用者說先擱著）。
 
 ## 驗證技巧（內建瀏覽器面板）
