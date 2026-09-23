@@ -29,13 +29,13 @@ export const en = {
   footerNote: 'The stick offers a perspective. What you do next is up to you.',
   langSwitch: '中文',
   langSwitchLabel: '切换到简体中文',
-  loading: 'Warming up the printer…',
+  loading: 'Preparing the shrine…',
   loadFailed: 'Cannot reach the service: {detail}',
   retry: 'Try again',
-  restoring: 'Fetching your slip…',
+  restoring: 'Fetching your sacred slip…',
   documentTitle: 'AI Fortune Stick',
   documentDescription:
-    'AI Fortune Stick: write down what is on your mind, press the printer key, and receive one fixed reading to think with.',
+    'AI Fortune Stick: write down what is on your mind, stir the fortune cylinder, and receive one fixed slip to think with.',
 
   /* ── asking ── */
   askLabel: 'What would you like to ask?',

@@ -321,7 +321,13 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
   if (restoring) {
     return (
       <section className="stage">
-        <p className="stage-loading">{t('restoring')}</p>
+        <div className="loading-shrine" role="status" aria-live="polite">
+          <div className="loading-shrine-emblem" aria-hidden="true">
+            <span className="loading-shrine-torii">⛩️</span>
+            <span className="loading-shrine-sakura">🌸</span>
+          </div>
+          <p className="loading-shrine-text">{t('restoring')}</p>
+        </div>
       </section>
     );
   }

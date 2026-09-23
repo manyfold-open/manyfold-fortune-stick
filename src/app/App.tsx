@@ -141,8 +141,15 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
   }
   if (!state) {
     return (
-      <main className="shell">
-        <p className="stage-loading">{t('loading')}</p>
+      <main className={`shell${prefs.reducedMotion ? ' calm' : ''}`}>
+        <ShrineBackdrop calm={prefs.reducedMotion} />
+        <div className="loading-shrine" role="status" aria-live="polite">
+          <div className="loading-shrine-emblem" aria-hidden="true">
+            <span className="loading-shrine-torii">⛩️</span>
+            <span className="loading-shrine-sakura">🌸</span>
+          </div>
+          <p className="loading-shrine-text">{t('loading')}</p>
+        </div>
       </main>
     );
   }
