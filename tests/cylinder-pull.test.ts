@@ -75,7 +75,21 @@ describe('抽出的路徑：像手把籤拿起來', () => {
       expect(y, `t=${t}`).toBeGreaterThanOrEqual(prev - 1e-9);
       prev = y;
     }
-    expect(bottomOf(P.pullPose(HELD, P.HOLD_START)).y).toBeGreaterThan(G.TUBE_H);
+  });
+
+  it('只抽出一截：籤底一直插在筒裡 —— 籤筒留在畫面裡，籤是從筒裡站出來的', () => {
+    for (let t = 0; t <= P.PULL_END; t += 20) {
+      expect(bottomOf(P.pullPose(HELD, t)).y, `t=${t}`).toBeLessThan(G.TUBE_H - 1);
+    }
+  });
+
+  it('抽出來那支比其他籤都高出一截，一眼就知道是它', () => {
+    const tip = tipY(P.HOLD_START);
+    for (let i = 0; i < G.STICK_COUNT; i += 1) {
+      if (i === G.PULL_INDEX) continue;
+      const p = G.stickPose(G.bundleSlot(i));
+      expect(tip - (p.cy + p.ay * G.STICK_TIP), `stick ${i}`).toBeGreaterThan(1.2);
+    }
   });
 
   it('一口氣拿起來：籤頭速度只有一個峰，中間不歸零、不往回走', () => {
@@ -109,23 +123,11 @@ describe('抽出的路徑：像手把籤拿起來', () => {
     expect(tipY(P.PULL_END) - tipY(P.HOLD_START)).toBeLessThan(0.4);
   });
 
-  it('拿著看的時候：直立、在筒心正上方、正面朝鏡頭', () => {
+  it('拿著看的時候：直立、正面朝鏡頭', () => {
     for (let t = P.HOLD_START; t <= P.PULL_END; t += 50) {
       const p = P.pullPose(HELD, t);
       expect(p.ay).toBeGreaterThan(0.995);
-      expect(Math.hypot(p.cx, p.cz)).toBeLessThan(0.05);
       expect(Math.abs(p.yaw)).toBeLessThan(0.06);
-      expect(bottomOf(p).y).toBeGreaterThan(G.TUBE_H);
-    }
-  });
-
-  it('拿著時輕晃是慢慢晃起來的，不是一到位就突然開始擺', () => {
-    const yawV = (t: number) => (P.pullPose(HELD, t + 8).yaw - P.pullPose(HELD, t - 8).yaw) / 0.016;
-    let prev = yawV(P.HOLD_START - 200);
-    for (let t = P.HOLD_START - 184; t <= P.HOLD_START + 600; t += 16) {
-      const v = yawV(t);
-      expect(Math.abs(v - prev), `t=${t}`).toBeLessThan(0.01);
-      prev = v;
     }
   });
 
@@ -135,22 +137,16 @@ describe('抽出的路徑：像手把籤拿起來', () => {
     expect(a.cy).toBeCloseTo(b.cy, 6);
   });
 
-  it('旁邊的籤被帶得跳一下再落回：只有附近的、只在它還在筒裡的時候、幅度有限', () => {
-    const mid = (P.SLIDE_AT + P.CLEAR_AT) / 2;
+  it('旁邊的籤被帶得跳一下再落回：只有附近的、只在往上抽的那段、幅度有限', () => {
+    const mid = (P.SLIDE_AT + P.NUDGE_END_AT) / 2;
     expect(P.neighborNudge(0.5, 0)).toBe(0);
     expect(P.neighborNudge(0.5, mid)).toBeGreaterThan(0);
     expect(P.neighborNudge(0.5, mid)).toBeLessThan(0.5);
     expect(P.neighborNudge(10, mid)).toBe(0);
-    expect(P.neighborNudge(0.5, P.CLEAR_AT + 1)).toBe(0);
+    expect(P.neighborNudge(0.5, P.NUDGE_END_AT + 1)).toBe(0);
     // 從 0 長起、落回 0，不會啪一下跳上去
     expect(P.neighborNudge(0.5, P.SLIDE_AT + 16)).toBeLessThan(0.05);
-    expect(P.neighborNudge(0.5, P.CLEAR_AT - 16)).toBeLessThan(0.05);
-  });
-
-  it('被帶動那段就是它穿過筒口那段', () => {
-    expect(bottomOf(P.pullPose(HELD, P.CLEAR_AT - 5)).y).toBeLessThan(G.TUBE_H);
-    expect(bottomOf(P.pullPose(HELD, P.CLEAR_AT + 5)).y).toBeGreaterThanOrEqual(G.TUBE_H);
-    expect(P.SLIDE_AT).toBeLessThan(P.CLEAR_AT);
+    expect(P.neighborNudge(0.5, P.NUDGE_END_AT - 16)).toBeLessThan(0.05);
   });
 
   it('壞掉的時間不會算出 NaN', () => {
@@ -184,11 +180,9 @@ describe('號碼淡入，不是硬切換', () => {
     expect(P.numberFade(P.NUMBER_AT + 16)).toBeGreaterThan(0.05);
   });
 
-  it('淡入發生在轉正的途中（籤已經離開筒口，正在收向筒心）', () => {
-    const p = P.pullPose(HELD, P.NUMBER_AT);
-    expect(bottomOf(p).y).toBeGreaterThan(G.TUBE_H);
-    expect(p.cz).toBeLessThan(HELD.z);
-    expect(p.cz).toBeGreaterThan(0.05);
+  it('淡入發生在往上抽的後段：籤已經高出其他籤，還沒停下來', () => {
+    expect(tipV(P.NUMBER_AT)).toBeGreaterThan(0.2);
+    expect(tipY(P.NUMBER_AT)).toBeGreaterThan(tipY(0) + 1);
   });
 
   it('減少動畫：一開始就是清楚的', () => {

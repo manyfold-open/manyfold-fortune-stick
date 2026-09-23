@@ -3,7 +3,7 @@
  *
  * 這個組件**不抽籤**。籤是攪夠了那一刻服務端定死的（AGENTS.md 第 4、5 條）：
  * 攪動功到門檻就回調 onShake() 去要籤，簽到了就把號碼記下來，放手之後照劇本
- * （shared/cylinder/pull.ts）把一支籤「拿起來」，轉向鏡頭時那個號碼才淡入。
+ * （shared/cylinder/pull.ts）把一支籤從筒裡抽出一截，抽的途中那個號碼才淡入。
  * 哪一支實體籤被拿起來跟號碼無關 —— 筒裡的籤不印號碼，拿的永遠是筒心最直那支，
  * 往上拔才不會穿過別的籤。
  *
@@ -41,7 +41,7 @@ import {
 } from '../../shared/cylinder/geometry';
 import { IDLE_LOOK_Y, idleCameraZ, pullCamera } from '../../shared/cylinder/framing';
 import {
-  CLEAR_AT,
+  NUDGE_END_AT,
   HOLD_MS,
   PULL_DONE,
   SLIDE_AT,
@@ -64,7 +64,7 @@ export interface FortuneCylinder3DProps {
   /** 使用者開了「減少動畫」：拿起來、推近鏡頭都直接跳到結果。 */
   reducedMotion?: boolean;
   onShake: () => void;
-  /** 整段演完（籤拿到面前、鏡頭看清籤號）才回報 —— 攪多久是使用者決定的，不能用固定計時器。 */
+  /** 整段演完（籤抽出來、鏡頭看清籤號）才回報 —— 攪多久是使用者決定的，不能用固定計時器。 */
   onRevealed?: () => void;
   disabled?: boolean;
 }
@@ -344,7 +344,7 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
         for (const cue of pullCues(dr.cueMs, ms, calm)) {
           if (!soundRef.current) continue;
           if (cue === 'grab') bambooRustle(0.55);
-          else if (cue === 'slide') bambooRattle(CLEAR_AT - SLIDE_AT);
+          else if (cue === 'slide') bambooRattle(NUDGE_END_AT - SLIDE_AT);
           else chime(dr.level);
         }
         dr.cueMs = ms;
@@ -373,7 +373,7 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
           h.mesh.quaternion.copy(q).multiply(h.baseQuat);
         }
 
-        // 轉向鏡頭途中號碼淡入 —— 號碼是伺服器給的那一個。鈴聲（上面的 reveal）跟淡入同一格開始
+        // 抽的途中號碼淡入 —— 號碼是伺服器給的那一個。鈴聲（上面的 reveal）跟淡入同一格開始
         if (dr.numberFace) dr.numberFace.material.opacity = numberFade(ms, calm);
 
         if (dr.stage === 'pulling' && ms >= (calm ? HOLD_MS : PULL_DONE)) {

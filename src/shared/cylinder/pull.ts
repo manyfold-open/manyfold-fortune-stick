@@ -9,8 +9,12 @@
  * 抽出跟拿到面前之間**完全停住再起步**、拿著看的兩秒整個凍住。現在是**一口氣**：
  *
  *   - 籤從放手那一刻起只有一條上升曲線，速度只有一個峰（前段），之後一路慢慢收；
- *   - 轉直、收向筒心、轉正都疊在上升過程裡，是高度的函數，不另排一段；
- *   - 拿到面前之後還在微微往上浮、輕輕晃起來，淡出的時候它還在動。
+ *   - 拿到之後還在微微往上浮，淡出的時候它還在動。
+ *
+ * 第二版把籤整支抽出筒口、鏡頭推近到只剩籤，使用者說「籤筒往下移消失、只剩籤，很怪」。
+ * 現在**只抽出一截**：籤底一直插在筒裡，這支比其他籤高出一大截，鏡頭輕輕推近到籤頭與
+ * 號碼，筒口一直留在畫面裡（framing.ts）。籤還在筒裡，所以全程只沿自己的軸往上滑 ——
+ * 不收向筒心、不轉（轉了寬扁的籤身會掃過後面那排籤）。
  *
  * 不畫手，「被拿起來」全靠這條曲線的節奏。沒有物理、沒有碰撞，所以要靠測試保證它
  * 在任何時刻都不穿出筒壁 —— 這是那句「穿插整個籤筒」唯一的解法。
@@ -18,10 +22,10 @@
 
 import { STICK_LEN, TUBE_H, type BundleSlot } from './geometry';
 
-/** 放手到拿到面前。 */
-export const RISE_MS = 2200;
+/** 放手到抽出來停住。只抽一截，比整支抽出來短。 */
+export const RISE_MS = 1700;
 /** 拿著看，給人讀籤號。 */
-export const HOLD_MS = 1800;
+export const HOLD_MS = 2000;
 
 export const HOLD_START = RISE_MS;
 /** 整段演完，組件在這時開始淡出、交給籤紙頁。 */
@@ -32,17 +36,13 @@ export const PULL_DONE = HOLD_START + HOLD_MS;
  */
 export const PULL_END = PULL_DONE + 500;
 
-/** 抽出結束時，籤底離筒口多高。 */
-export const CLEAR = 0.35;
-/** 拿到面前時再提高多少。 */
-export const PRESENT_LIFT = 1.0;
+/**
+ * 往上抽多少（沿籤軸）。夠它高出最高那支籤一截、一眼認得出來；又不能多 ——
+ * 抽得越高，籤頭離筒口越遠，要同時框住兩者，鏡頭就推不近、號碼就越小。
+ */
+export const RAISE = 2.0;
 /** 拿著看的時候微微往上浮多少（整段慢慢浮完，淡出時還在浮）。 */
 export const FLOAT = 0.25;
-/** 拿著看時繞自己的軸輕晃的幅度（弧度）與週期。 */
-const SWAY = 0.035;
-const SWAY_MS = 2300;
-/** 晃起來要多久：一到位就突然開始擺，看起來像被彈了一下。 */
-const SWAY_IN_MS = 700;
 /** 旁邊的籤被帶動：多近才會被帶到、最多跳多高。 */
 const NUDGE_R = 1.6;
 const NUDGE_MAX = 0.3;
@@ -56,10 +56,6 @@ const clamp01 = (v: number): number => Math.min(1, Math.max(0, v));
 const ease = (u: number): number => {
   const x = clamp01(u);
   return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
-};
-const smooth = (u: number): number => {
-  const x = clamp01(u);
-  return x * x * (3 - 2 * x);
 };
 
 /**
@@ -90,12 +86,9 @@ export const riseProgress = (ms: number): number => surge(sanitize(ms) / RISE_MS
 /** 浮的進度 0..1。永遠不超過上升進度 —— 鏡頭靠這條保證籤頭不會浮出畫面（framing.ts）。 */
 export const floatProgress = (ms: number): number => surge(sanitize(ms) / PULL_END, SURGE_B);
 
-/** 籤底要升到哪（不含浮）：離開筒口、再提高一段。 */
-const TOP = TUBE_H + CLEAR + PRESENT_LIFT;
-
 /** 籤底在哪（含浮）。上升和浮都是單調的，所以它只升不降。 */
 const bottomAt = (slot: BundleSlot, ms: number): number =>
-  slot.rest + (TOP - slot.rest) * riseProgress(ms) + FLOAT * floatProgress(ms);
+  slot.rest + RAISE * riseProgress(ms) + FLOAT * floatProgress(ms);
 
 /** 反解：籤底剛好升到 y 的那一刻。只升不降，二分就好。 */
 const timeAtBottom = (slot: BundleSlot, y: number): number => {
@@ -112,13 +105,13 @@ const timeAtBottom = (slot: BundleSlot, y: number): number => {
 const TYPICAL: BundleSlot = { x: 0, z: 0, yaw: 0, rest: 0, lean: 0, dirX: 0, dirZ: 0, row: 0 };
 /** 抽出那一聲：籤真的開始往上滑（升過 0.1 單位）的那一刻。之前那一下是捏住的沙沙聲。 */
 export const SLIDE_AT = Math.round(timeAtBottom(TYPICAL, 0.1));
-/** 籤底升過筒口的那一刻：之前它還有一截在筒裡，旁邊的籤會被帶動。 */
-export const CLEAR_AT = Math.round(timeAtBottom(TYPICAL, TUBE_H));
+/** 抽得最快的那段結束（抽了八成）：之前旁邊的籤會被帶動，抽出那一聲也響到這裡。 */
+export const NUDGE_END_AT = Math.round(timeAtBottom(TYPICAL, RAISE * 0.8));
 /**
- * 號碼開始淡入：已經離開筒口、收向筒心走了三成。鈴聲也在這一格（pullCues）。
+ * 號碼開始淡入：抽了六成、已經高出其他籤，還在往上走。鈴聲也在這一格（pullCues）。
  * 鏡頭推近途中看得到它出現（framing.ts 的 pullCamera）。
  */
-export const NUMBER_AT = Math.round(timeAtBottom(TYPICAL, TUBE_H + (TOP - TUBE_H) * 0.4));
+export const NUMBER_AT = Math.round(timeAtBottom(TYPICAL, RAISE * 0.6));
 
 export interface PullPose {
   /** 籤心（mesh 原點），筒的局部座標：筒軸沿 Y、筒底內面 y = 0。 */
@@ -168,21 +161,7 @@ export function pullPose(slot: BundleSlot, ms: number, reduced = false): PullPos
   const t = reduced ? Math.max(sanitize(ms), HOLD_START) : sanitize(ms);
   const { x: px, z: pz, dirX: dx, dirZ: dz } = slot;
   const lean = slot.lean * (1 - ease(riseProgress(t) / STRAIGHTEN));
-  const yb = bottomAt(slot, t);
-  // 收向筒心、轉正：只在整支離開筒口之後。還有一截在筒裡時轉，寬扁的籤身會掃過旁邊的籤
-  const turn = smooth((yb - TUBE_H) / (TOP - TUBE_H));
-  // 拿著看：只繞自己的軸輕輕晃，慢慢晃起來
-  const s = t - HOLD_START;
-  const sway = s > 0 ? SWAY * smooth(s / SWAY_IN_MS) * Math.sin((2 * Math.PI * s) / SWAY_MS) : 0;
-  return poseAt(
-    px * (1 - turn),
-    pz * (1 - turn),
-    dx,
-    dz,
-    lean,
-    yb,
-    slot.yaw * (1 - turn) + sway,
-  );
+  return poseAt(px, pz, dx, dz, lean, bottomAt(slot, t), slot.yaw);
 }
 
 /**
@@ -199,11 +178,11 @@ export function numberFade(ms: number, reduced = false): number {
 /**
  * 旁邊的籤被帶得跳一下：離抽出那支 `dist` 遠的籤，在抽籤 `ms` 毫秒時往上多少。
  *
- * 只發生在它還有一截在筒裡的時候，越近跳越高。少了這個，那支籤像是從一束假籤裡穿出來的。
+ * 只發生在抽得最快的那段，越近跳越高。少了這個，那支籤像是從一束假籤裡穿出來的。
  */
 export function neighborNudge(dist: number, ms: number): number {
   if (!(dist < NUDGE_R) || !Number.isFinite(ms)) return 0;
-  const u = (ms - SLIDE_AT) / (CLEAR_AT - SLIDE_AT);
+  const u = (ms - SLIDE_AT) / (NUDGE_END_AT - SLIDE_AT);
   if (!(u > 0 && u < 1)) return 0;
   const s = Math.sin(Math.PI * u);
   return NUDGE_MAX * (1 - Math.max(0, dist) / NUDGE_R) * s * s;

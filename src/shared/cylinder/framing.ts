@@ -22,6 +22,7 @@ import {
   STICK_HEAD_R,
   STICK_LEN,
   TUBE_H,
+  TUBE_R_OUT,
   PULL_INDEX,
   STICK_T,
   STICK_TIP,
@@ -103,6 +104,11 @@ export function idleCameraZ(aspect: number): number {
  * 框到 38% 才包得住小圖案 —— 那是每支籤不一樣的小驚喜，切掉一半很可惜。
  */
 export const CLOSE_UP_BODY = 0.38;
+/**
+ * 筒口往下再多框多少（世界單位）：框到杯面上那行 GOOD LUCK，筒子才像是還站在那裡。
+ * 只框到領子（0.45）時筒子剩一條邊，看起來還是「只剩籤」。
+ */
+export const RIM_SHOW = 1.6;
 
 export interface CloseUpShot {
   camY: number;
@@ -111,37 +117,34 @@ export interface CloseUpShot {
 }
 
 /**
- * 籤被拿到筒子正上方、正面朝鏡頭時，鏡頭最後停在哪（世界座標，x = 0，平視 -z）。
+ * 籤被抽出一截、停在筒裡時，鏡頭最後停在哪（世界座標，x = 0，平視 -z）。
  *
- * 框的是**最後那一格**（拿著時還在微微往上浮，浮完才是這裡）、**籤頭到號碼與小圖案**，
- * 不是整支：這一鏡的工作是讓人看清第幾籤。
- * 籤被提得夠高，框到這一段時杯身和其他籤頭都自然落在畫面下緣之外（測試釘著），
- * 所以不必像 v2 那樣把筒子淡掉。
+ * 上緣是籤頭，下緣是**筒口正面**：推得越近號碼越大，但筒口不能出框 —— 第二版推到只剩籤，
+ * 使用者說「籤筒往下移消失、只剩籤，很怪」。所以這一鏡是「籤頭貼上緣、筒口貼下緣」
+ * 兩個條件一起解出來的：鏡頭高度與距離兩個未知數，剛好兩條式子。
+ *
+ * 橫向只要求籤頭圓盤在框內；窄螢幕上杯子兩側可以被切，筒口正中間那段一定在
+ * （測試釘著）。要是籤頭跟筒口連在一起都框不下籤的寬度（極窄的畫布），就退後到框得下為止。
  */
 export function closeUpShot(aspect: number): CloseUpShot {
   const a = Number.isFinite(aspect) && aspect > 0 ? Math.min(4, Math.max(0.25, aspect)) : 1;
   const t = Math.tan((FOV_DEG / 2) * (Math.PI / 180));
+  const m = 1 / MARGIN;
   const p = pullPose(bundleSlot(PULL_INDEX), PULL_END);
-  const top = RIG_Y + p.cy + STICK_TIP;
-  const bodyTop = RIG_Y + p.cy + STICK_LEN / 2;
-  const headY = bodyTop + STICK_HEAD_GAP;
-  const bottom = bodyTop - CLOSE_UP_BODY * STICK_LEN;
-  const lookY = (top + bottom) / 2;
-  const x0 = RIG_X + p.cx;
-  // 拿著時會繞自己的軸輕晃，籤頭圓盤的邊會往鏡頭擺出一點點：深度多留一個籤厚
-  const front = p.cz + STICK_T;
-  const pts: Array<[number, number]> = [
-    [x0, top],
-    [x0 - STICK_HEAD_R, headY],
-    [x0 + STICK_HEAD_R, headY],
-    [x0 - STICK_W / 2, bottom],
-    [x0 + STICK_W / 2, bottom],
-  ];
-  let d = 0;
-  for (const [x, y] of pts) {
-    d = Math.max(d, (Math.abs(y - lookY) * MARGIN) / t + front, (Math.abs(x) * MARGIN) / (t * a) + front);
-  }
-  return { camY: lookY, camZ: d, lookY };
+  // 籤頭：拿著的時候前後有一點點厚度，深度多留一個籤厚
+  const topY = RIG_Y + p.cy + STICK_TIP;
+  const topZ = p.cz + STICK_T;
+  // 筒口正面（含領子）再往下一點
+  const botY = RIG_Y + TUBE_H - RIM_SHOW;
+  const botZ = TUBE_R_OUT * COLLAR;
+  // 上：(topY − L) = m·t·(Z − topZ)；下：(L − botY) = m·t·(Z − botZ)
+  let camZ = (topY - botY) / (2 * m * t) + (topZ + botZ) / 2;
+  // 橫向：籤頭圓盤要在框內（也要框得下號碼那一段的籤寬）
+  const x0 = Math.abs(RIG_X + p.cx);
+  camZ = Math.max(camZ, (x0 + STICK_HEAD_R) / (m * t * a) + topZ, (x0 + STICK_W / 2) / (m * t * a) + botZ);
+  // 退後了的話籤頭仍貼上緣，筒口就多露一點
+  const lookY = topY - m * t * (camZ - topZ);
+  return { camY: lookY, camZ, lookY };
 }
 
 /**

@@ -122,7 +122,7 @@ const project = (
   return { x: dot(v, xAxis) / (depth * t * aspect), y: dot(v, yAxis) / (depth * t), depth };
 };
 
-describe('拿著看那一鏡：框住籤頭到號碼', () => {
+describe('拿著看那一鏡：籤頭到號碼，筒口留在畫面裡', () => {
   // 拿著的姿態是輸入，不是答案：從 pull 拿姿態，畫面自己算。近拍是**最後**那一格的樣子
   // （拿著時還在微微往上浮，鏡頭也還在慢慢推近）
   const hold = P.pullPose(G.bundleSlot(G.PULL_INDEX), P.PULL_END);
@@ -156,28 +156,21 @@ describe('拿著看那一鏡：框住籤頭到號碼', () => {
     }
   });
 
-  it('寬畫布上那一段要撐滿畫面高度 —— 推近就是要看清楚', () => {
-    for (const a of [1, LANDSCAPE, 1.8]) {
-      const ys = subject.map((p) => frame(a)(p).y);
-      expect(Math.max(...ys) - Math.min(...ys), `aspect ${a}`).toBeGreaterThan(1.5);
+  it('籤筒不會消失：筒口正面那一段一直在畫面裡（使用者：筒子往下移消失，只剩籤，很怪）', () => {
+    for (const a of ASPECTS) {
+      const see = frame(a);
+      // 筒口正面、跟籤同寬的那一段 —— 窄螢幕上杯子兩側可以被切，正中間不行
+      for (const x of [-G.STICK_W, 0, G.STICK_W]) {
+        // 筒口，連同下面那行杯面上的 GOOD LUCK
+        const q = see(world(x, G.TUBE_H - 1.2, G.TUBE_R_OUT));
+        expect(q.y, `aspect ${a}`).toBeGreaterThan(-1 / F.MARGIN - 1e-9);
+        expect(Math.abs(q.x), `aspect ${a}`).toBeLessThan(1);
+      }
     }
   });
 
-  it('杯身和其他籤頭都不在這一鏡裡 —— 畫面上只剩拿在手上的那支', () => {
-    for (const a of ASPECTS) {
-      const see = frame(a);
-      for (let k = 0; k < 36; k += 1) {
-        const th = (k / 36) * Math.PI * 2;
-        const r = G.cupRadius(th) * 1.055;
-        expect(see(world(Math.cos(th) * r, G.TUBE_H, Math.sin(th) * r)).y).toBeLessThan(-1);
-      }
-      for (let i = 0; i < G.STICK_COUNT; i += 1) {
-        if (i === G.PULL_INDEX) continue;
-        const p = G.stickPose(G.bundleSlot(i));
-        const top = world(p.cx + p.ax * G.STICK_TIP, p.cy + p.ay * G.STICK_TIP, p.cz + p.az * G.STICK_TIP);
-        expect(see(top).y, `stick ${i}`).toBeLessThan(-1);
-      }
-    }
+  it('鏡頭是往前推，不是退後 —— 號碼要比待機時大', () => {
+    for (const a of ASPECTS) expect(F.closeUpShot(a).camZ).toBeLessThan(F.idleCameraZ(a) - 3);
   });
 });
 
@@ -220,7 +213,7 @@ describe('拿籤全程的鏡頭：視線跟著籤、推近慢一拍', () => {
       const idle = F.idleCameraZ(a);
       const cu = F.closeUpShot(a).camZ;
       const at = (ms: number) => (idle - F.pullCamera(ms, a).camZ) / (idle - cu);
-      expect(at(P.HOLD_START)).toBeGreaterThan(0.75);
+      expect(at(P.HOLD_START)).toBeGreaterThan(0.7);
       for (const ms of [P.HOLD_START, P.PULL_DONE]) expect(-speed(a, ms, 'camZ'), `t=${ms}`).toBeGreaterThan(0.01);
       // 極慢：拿著看的時候比推近最快時慢得多
       expect(-speed(a, P.HOLD_START + 300, 'camZ')).toBeLessThan(3);
