@@ -1,7 +1,7 @@
 /**
  * 神社場景的畫法 —— 頁面背景（ShrineBackdrop）與分享圖（share.ts）共用。
  *
- * 櫻花枝的形狀、花瓣的形狀只在這裡定義一次：頁面用 SVG 畫枝、用 canvas 畫花瓣；
+ * 櫻花枝、花瓣、鳥居的形狀只在這裡定義一次：頁面用 SVG 畫枝與鳥居、用 canvas 畫花瓣；
  * 分享圖全用 canvas（Path2D 吃得下同一串 SVG 路徑）。兩邊長得一樣，是因為它們讀的是同一份資料。
  *
  * 分享圖的顏色寫死在這裡，不讀 CSS 變數 —— 誰分享出去都是同一張。
@@ -17,6 +17,136 @@ export const WOOD = '#ecd9b8';
 export const WOOD_HI = '#f5e8cf';
 export const WOOD_INK = '#3b2a1e';
 export const ROUND = '"Yuanti SC", "Yuanti TC", "Hiragino Maru Gothic ProN", "PingFang SC", sans-serif';
+
+/*
+ * ── 鳥居 ── 頁面上的尺寸（px，從頁面頂端量）；分享圖整組乘上一個倍率。
+ * 由上而下：笠木＋島木（0～41）→ 注連繩（兩端 44、正中 52）→ 貫（64～78）→ 繪馬的紅繩從貫垂下。
+ * 笠木、島木是 viewBox 0 0 1000 44 的路徑，水平方向撐滿寬度（只在水平方向拉，弧線還是順的）。
+ */
+export const TORII_KASAGI_VIEW = { w: 1000, h: 44 };
+/** 島木：朱紅，貼在笠木下緣 */
+export const TORII_SHIMAKI_D = 'M0 12 C150 26 350 32 500 32 C650 32 850 26 1000 12 L1000 21 C850 35 650 41 500 41 C350 41 150 35 0 21 Z';
+/** 笠木：黑漆，中間厚、兩端薄而上翹 */
+export const TORII_KASAGI_D = 'M0 0 C150 10 350 12 500 12 C650 12 850 10 1000 0 L1000 12 C850 26 650 32 500 32 C350 32 150 26 0 12 Z';
+export const TORII_RED = '#b8321f';
+export const TORII_LACQUER = ['#4a372d', '#2c211c', '#1f1713'] as const;
+/** 注連繩那一條的上緣（離笠木頂） */
+export const ROPE_TOP = 36;
+/**
+ * 注連繩的下垂：二次 Bézier 控制點在正中，x 對 t 是線性的，所以 y 直接寫成 u 的拋物線。
+ * 紙垂要掛在繩子上，位置得跟繩子用同一條式子算。
+ */
+export const ROPE_Y0 = 8;
+export const ROPE_SAG = 8;
+export const ropeY = (u: number): number => ROPE_Y0 + 4 * ROPE_SAG * u * (1 - u);
+/** 紙垂掛在繩上的位置（繩長的比例）。只掛兩旁：正中是繪馬的紅繩垂下來的地方 */
+export const SHIDE_AT = [0.1, 0.24, 0.76, 0.9];
+/** 紙垂：viewBox 0 0 14 38，一條紙摺成閃電形，一格一格左右錯開往下；頁面上畫成 20×54 */
+export const SHIDE_VIEW = { w: 14, h: 38 };
+export const SHIDE_D = 'M6 0h2v5h-2z M5 4h8v8h-8z M1 11h8v8h-8z M5 18h8v8h-8z M1 25h8v8h-8z M5 32h6l-3 5z';
+export const SHIDE_SIZE = { w: 20, h: 54 };
+/** 貫的上緣與厚度（離笠木頂） */
+export const NUKI_TOP = 64;
+export const NUKI_H = 14;
+
+/**
+ * 在分享圖上畫整座鳥居，回傳貫的下緣 y（繪馬的紅繩從那裡垂下來）。
+ * @param top 笠木頂的 y；@param k 倍率（頁面尺寸 × k）；柱子寬 pillarW、離左右邊 pillarX
+ */
+function drawTorii(g: CanvasRenderingContext2D, w: number, h: number, top: number, k: number, pillarX: number, pillarW: number): number {
+  // 貫：兩柱之間，兩端穿出柱子一截
+  const nukiY = top + NUKI_TOP * k;
+  const nukiH = NUKI_H * k;
+  const nuki = g.createLinearGradient(0, nukiY, 0, nukiY + nukiH);
+  nuki.addColorStop(0, '#cf4a2f');
+  nuki.addColorStop(0.55, TORII_RED);
+  nuki.addColorStop(1, '#972717');
+  g.fillStyle = nuki;
+  g.fillRect(pillarX - 22 * k, nukiY, w - 2 * pillarX + 44 * k, nukiH);
+
+  // 柱：左邊受光；柱腳一截黑漆
+  const baseH = h * 0.09;
+  for (const x of [pillarX, w - pillarX - pillarW]) {
+    const pillar = g.createLinearGradient(x, 0, x + pillarW, 0);
+    pillar.addColorStop(0, '#d85236');
+    pillar.addColorStop(0.4, '#c23d26');
+    pillar.addColorStop(0.8, '#a72d1c');
+    pillar.addColorStop(1, '#8f2416');
+    g.fillStyle = pillar;
+    g.fillRect(x, top + 30 * k, pillarW, h - top - 30 * k);
+    const base = g.createLinearGradient(x, 0, x + pillarW, 0);
+    base.addColorStop(0, '#3a2a22');
+    base.addColorStop(0.6, '#251b16');
+    base.addColorStop(1, '#1c1410');
+    g.fillStyle = base;
+    g.fillRect(x - 2 * k, h - baseH, pillarW + 4 * k, baseH);
+  }
+
+  // 注連繩：左柱中心拉到右柱中心，三層描邊（深色底、麻色、擰紋）
+  const x0 = pillarX + pillarW / 2;
+  const x1 = w - x0;
+  const ropeTop = top + ROPE_TOP * k;
+  const rope = () => {
+    g.beginPath();
+    g.moveTo(x0, ropeTop + ROPE_Y0 * k);
+    g.quadraticCurveTo(w / 2, ropeTop + (ROPE_Y0 + 2 * ROPE_SAG) * k, x1, ropeTop + ROPE_Y0 * k);
+  };
+  g.save();
+  g.lineCap = 'round';
+  g.strokeStyle = '#9c7f4a';
+  g.lineWidth = 13 * k;
+  rope();
+  g.stroke();
+  g.strokeStyle = '#dcc48e';
+  g.lineWidth = 11 * k;
+  rope();
+  g.stroke();
+  g.lineCap = 'butt';
+  g.strokeStyle = '#b99b5f';
+  g.setLineDash([3 * k, 6 * k]);
+  rope();
+  g.stroke();
+  g.restore();
+
+  // 紙垂：掛在繩上，垂過貫的前面
+  const shide = new Path2D(SHIDE_D);
+  const sw = SHIDE_SIZE.w * k;
+  const sh = SHIDE_SIZE.h * k;
+  for (const u of SHIDE_AT) {
+    g.save();
+    g.translate(x0 + u * (x1 - x0) - sw / 2, ropeTop + (ropeY(u) - 2) * k);
+    g.scale(sw / SHIDE_VIEW.w, sh / SHIDE_VIEW.h);
+    g.shadowColor = 'rgba(60, 40, 20, 0.15)';
+    g.shadowBlur = 2 * k;
+    g.shadowOffsetY = 1 * k;
+    g.fillStyle = '#fffdf6';
+    g.fill(shide);
+    g.shadowColor = 'transparent';
+    g.strokeStyle = '#b9ad94';
+    g.lineWidth = 0.7;
+    g.stroke(shide);
+    g.restore();
+  }
+
+  // 笠木＋島木：撐滿寬度，最後畫、壓在柱頂上
+  g.save();
+  g.translate(0, top);
+  g.scale(w / TORII_KASAGI_VIEW.w, k);
+  g.shadowColor = 'rgba(40, 24, 16, 0.22)';
+  g.shadowBlur = 4 * k;
+  g.shadowOffsetY = 3 * k;
+  g.fillStyle = TORII_RED;
+  g.fill(new Path2D(TORII_SHIMAKI_D));
+  const lacquer = g.createLinearGradient(0, 0, 0, TORII_KASAGI_VIEW.h);
+  lacquer.addColorStop(0, TORII_LACQUER[0]);
+  lacquer.addColorStop(0.35 * (32 / 44), TORII_LACQUER[1]);
+  lacquer.addColorStop(32 / 44, TORII_LACQUER[2]);
+  g.fillStyle = lacquer;
+  g.fill(new Path2D(TORII_KASAGI_D));
+  g.restore();
+
+  return nukiY + nukiH;
+}
 
 /* ── 櫻花枝：viewBox 0 0 280 180，右邊那枝是左邊鏡像 ── */
 
@@ -90,8 +220,19 @@ function drawBranch(g: CanvasRenderingContext2D, x: number, y: number, width: nu
   g.restore();
 }
 
-/** 神社的日光：暖漸層、左上日光、兩側鳥居柱與笠木、兩角櫻花枝、散落的花瓣。 */
-export function paintShrine(g: CanvasRenderingContext2D, w: number, h: number): void {
+/** 分享圖上鳥居的位置與倍率：笠木頂、頁面尺寸 × SHARE_TORII_K、柱子 */
+const SHARE_TORII_TOP = 20;
+const SHARE_TORII_K = 1.3;
+const SHARE_PILLAR_X = 28;
+const SHARE_PILLAR_W = 70;
+
+/**
+ * 神社的日光：暖漸層、左上日光、一整座鳥居（跟頁面上那座同一份形狀）、兩角櫻花枝、散落的花瓣。
+ * 回傳貫的下緣 y：繪馬的紅繩從那裡垂下來。
+ *
+ * 以前這裡只畫兩根淡掉的紅柱，加上畫面邊緣兩截灰色方塊當笠木與貫 —— 使用者：「分享卡裡的神社不夠逼真、跟原本的不一樣」。
+ */
+export function paintShrine(g: CanvasRenderingContext2D, w: number, h: number): number {
   const base = g.createLinearGradient(0, 0, 0, h);
   base.addColorStop(0, '#f3e6cb');
   base.addColorStop(1, '#dcc7a3');
@@ -104,28 +245,11 @@ export function paintShrine(g: CanvasRenderingContext2D, w: number, h: number): 
   g.fillStyle = sun;
   g.fillRect(0, 0, w, h);
 
-  // 鳥居柱：景深外，淡一點
-  g.save();
-  g.globalAlpha = 0.72;
-  for (const x of [34, w - 34 - 72]) {
-    const pillar = g.createLinearGradient(x, 0, x + 72, 0);
-    pillar.addColorStop(0, '#a3281b');
-    pillar.addColorStop(0.45, '#d2482f');
-    pillar.addColorStop(1, '#ad2e1e');
-    g.fillStyle = pillar;
-    g.fillRect(x, 0, 72, h);
-  }
-  // 笠木與貫：只畫出畫面邊緣那一截，放在最上面 —— 低了會撞到繪馬與籤紙的上緣
-  g.fillStyle = '#2f231d';
-  g.fillRect(-10, 30, 160, 34);
-  g.fillRect(w - 150, 30, 160, 34);
-  g.fillStyle = '#b83522';
-  g.fillRect(-10, 100, 130, 18);
-  g.fillRect(w - 120, 100, 130, 18);
-  g.restore();
+  const nukiBottom = drawTorii(g, w, h, SHARE_TORII_TOP, SHARE_TORII_K, SHARE_PILLAR_X, SHARE_PILLAR_W);
 
-  drawBranch(g, -40, 110, 420, false);
-  drawBranch(g, w + 40, 110, 420, true);
+  // 櫻花枝壓在笠木上，跟頁面一樣從笠木底下探出來
+  drawBranch(g, -40, SHARE_TORII_TOP + 24, 420, false);
+  drawBranch(g, w + 40, SHARE_TORII_TOP + 24, 420, true);
 
   // 花瓣：跟頁面同一套動力學，固定在同一刻 —— 每張分享圖的花瓣都在同一個地方
   for (const p of createPetals(18, 7)) {
@@ -138,6 +262,8 @@ export function paintShrine(g: CanvasRenderingContext2D, w: number, h: number): 
     drawPetal(g, s.size);
     g.restore();
   }
+
+  return nukiBottom;
 }
 
 /** 一朵五瓣的櫻花小印。 */
@@ -282,7 +408,8 @@ export function drawEma(
 }
 
 /**
- * 等級大紅印：外圈籤運色的光暈、朱紅圓印、一圈奶油細環、反白的字。
+ * 等級大紅印：朱紅圓印、一圈奶油細環、反白的字。
+ * 印外圈的籤運色光暈拿掉了，跟頁面一致（使用者：「這個綠色圓圈特效 remove」）。
  *
  * @param lines 印上的字，一行一個元素（英文兩個詞各一行）
  */
@@ -294,16 +421,7 @@ export function drawSeal(
   lines: string[],
   font: string,
   lineHeight: number,
-  aura: string,
 ): void {
-  const halo = g.createRadialGradient(cx, cy, r * 0.6, cx, cy, r * 1.7);
-  halo.addColorStop(0, `${aura}55`);
-  halo.addColorStop(1, `${aura}00`);
-  g.fillStyle = halo;
-  g.beginPath();
-  g.arc(cx, cy, r * 1.7, 0, Math.PI * 2);
-  g.fill();
-
   const fill = g.createRadialGradient(cx - r * 0.2, cy - r * 0.25, r * 0.1, cx, cy, r);
   fill.addColorStop(0, '#d4432c');
   fill.addColorStop(0.55, SEAL);
