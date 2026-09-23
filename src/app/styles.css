@@ -88,8 +88,9 @@
   box-sizing: border-box;
 }
 
-body {
+html, body {
   margin: 0;
+  overscroll-behavior-y: none;
   background: var(--ground-wash), var(--ground);
   background-attachment: fixed;
   color: var(--on-ground);
@@ -4007,9 +4008,9 @@ html:lang(en) .shell:has(.cyl3d-stage) .ask-zone {
 
 @media (max-width: 640px) {
   :is(.shell:has(.cyl3d-stage) .ask-zone, .ema-card) {
-    /* 手機上鳥居橫木與紙垂更緊湊（貫木下緣在 96px），繪馬在 120px，紅繩 24px 剛好連上貫木，紙垂絕不遮擋輸入字 */
-    margin: 72px auto 0;
-    padding: 16px 20px 8px;
+    /* 手機上緊湊貼近鳥居貫木，紅繩銜接自然，大幅收縮上方空白留位給籤筒 */
+    margin: 46px auto 0;
+    padding: 12px 18px 6px;
   }
 }
 
@@ -5054,20 +5055,209 @@ html { overflow-x: clip; }
 }
 
 /*
- * 手機上把籤筒的高度拿回來：鳥居（繪馬上緣 156px）和兩行預留把籤筒畫布壓到最小的 200px。
- * - 預留兩行按實際行高算（字是 clamp(18px, 3.4vw, 21px)、行高 1.6；一行的繪馬高 = 65 + 一行字）
- * - 頁腳：「隐私与数据」跟「声音 · 动画」併成一行，少一排
- * - 例句、提示與頁腳之間的空隙收一點
+ * 手機端全面最佳化：
+ * 1. 籤筒與輸入框距離收緊，籤筒成為絕對主角（大幅釋放垂直畫布空間、例句橫向標籤化、輸入後自動折疊零空白）
+ * 2. 解籤結果畫面鎖定整頁高度為 100dvh，只有卡片內部解籤文字獨立捲動，徹底杜絕滑動衝突與外層滾動
  */
 @media (max-width: 640px) {
-  .shell:has(.cyl3d-stage) .ask-slot,
-  .shell:has(.cyl3d-stage) .ask-slot.printed {
-    min-height: calc(97px + 65px + 2 * 1.6 * clamp(18px, 3.4vw, 21px));
+  /* 籤筒求籤階段 */
+  .shell:has(.cyl3d-stage) {
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+    padding-bottom: max(6px, env(safe-area-inset-bottom, 6px));
   }
 
-  .shell:has(.cyl3d-stage) .suggest-slot { padding-top: 10px; }
-  .shell:has(.cyl3d-stage) .suggestions { gap: 6px; }
-  .shell:has(.cyl3d-stage) .stage { padding-bottom: 12px; }
+  .shell:has(.cyl3d-stage) .stage {
+    flex: 1;
+    min-height: 0;
+    gap: 2px;
+    padding-bottom: 2px;
+  }
+
+  .shell:has(.cyl3d-stage) .ask-slot,
+  .shell:has(.cyl3d-stage) .ask-slot.printed {
+    min-height: auto;
+    flex-shrink: 0;
+  }
+
+  /* 例句在手機端呈現橫向滑動木札，僅佔單行高度 */
+  .shell:has(.cyl3d-stage) .suggest-slot {
+    padding-top: 6px;
+    width: 100%;
+    max-width: 440px;
+    flex-shrink: 0;
+  }
+
+  .shell:has(.cyl3d-stage) .suggestions {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 8px;
+    padding: 2px 14px;
+    justify-content: flex-start;
+  }
+
+  .shell:has(.cyl3d-stage) .suggestions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .shell:has(.cyl3d-stage) .suggestions li,
+  .shell:has(.cyl3d-stage) .suggestions[data-lang='en'] li {
+    flex: 0 0 auto;
+    width: auto;
+  }
+
+  .shell:has(.cyl3d-stage) .suggestions .text-action {
+    width: auto;
+    white-space: nowrap;
+    padding: 4px 10px;
+    font-size: 12px;
+  }
+
+  /* 當已有提問或出籤中，例句無縫收起為 0 高度，徹底杜絕留白空隙 */
+  .shell:has(.cyl3d-stage) .suggestions.spent {
+    max-height: 0;
+    margin: 0;
+    padding: 0;
+    opacity: 0;
+    overflow: hidden;
+    pointer-events: none;
+    transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
+  }
+
+  .shell:has(.cyl3d-stage) .suggest-slot:has(.suggestions.spent) {
+    padding: 0;
+    margin: 0;
+  }
+
+  /* 籤筒畫布：搶佔正中央全高舞台，微縮放以強化「主角」視覺魄力 */
+  .shell:has(.cyl3d-stage) .roll-slot,
+  .cyl3d-stage {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    overflow: visible;
+  }
+
+  .cyl3d-stage .cyl3d-canvas-wrapper {
+    flex: 1;
+    height: 100%;
+    min-height: 260px;
+    transform: scale(1.12);
+    transform-origin: 50% 62%;
+  }
+
+  .cyl3d-stage .roll-action-area {
+    margin-top: 2px;
+    margin-bottom: 4px;
+    flex: none;
+  }
+
+  /* 解籤結果階段：鎖定 100dvh 外層零滾動，僅卡片內部內容平滑捲動 */
+  .shell:has(.stage.result),
+  .shell:has(.result) {
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+    padding-top: max(10px, env(safe-area-inset-top, 10px));
+    padding-bottom: max(10px, env(safe-area-inset-bottom, 10px));
+    padding-inline: max(14px, calc(env(safe-area-inset-left, 0px) + 12px));
+  }
+
+  .stage.result {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    padding: 0;
+    justify-content: flex-start;
+  }
+
+  .stage.result .result-deck.mode-single {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+  }
+
+  .stage.result .sheet-stack {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+    height: 100%;
+  }
+
+  /* 手機端解籤時，繪馬緊湊掛在鳥居下方，為籤卡爭取最大閱讀空間 */
+  .result .sheet-stack .ema-card {
+    margin: 44px auto 0;
+    padding: 8px 16px 4px;
+    flex-shrink: 0;
+  }
+
+  .result .sheet-stack .ema-card .asked {
+    font-size: 15px;
+    line-height: 1.4;
+  }
+
+  /* 籤卡本體：填滿剩餘的所有垂直空間，不再定死固定高度 */
+  .result .sheet-stack .omikuji-card,
+  .result .sheet-stack .omikuji-card.flipped {
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+    --card-h: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .result .sheet-stack .omikuji-inner {
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+  }
+
+  .result .sheet-stack .omikuji.face {
+    height: 100%;
+  }
+
+  .result .sheet-stack .omikuji.face-front {
+    min-height: 0;
+    height: 100%;
+  }
+
+  .result .sheet-stack .omikuji.face-back {
+    height: 100%;
+  }
+
+  /* 解籤背面內容獨立流暢捲動，帶有 iOS momentum scrolling 與邊界防穿透 */
+  .result .face-back .sheet-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 12px;
+  }
+
+  /* 底部動作按鈕固定貼齊卡片底端，隨時可點 */
+  .result .face-back .result-actions {
+    flex: none;
+    margin-top: 6px;
+    padding-top: 8px;
+    padding-bottom: 2px;
+  }
 
   .footer {
     display: none !important;

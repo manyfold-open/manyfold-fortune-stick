@@ -152,7 +152,17 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
       {/* 求籤頁與求籤記錄是同一座神社（鳥居、櫻花瓣）；設定與隱私頁留著原本的浮塵 */}
       {route === 'game' || route === 'history' ? <ShrineBackdrop calm={prefs.reducedMotion} /> : <AmbientMotes reducedMotion={prefs.reducedMotion} />}
       <header className="topbar">
-        <a className="brand" href="/" aria-label={t('brandTitle')}>
+        <a
+          className="brand"
+          href="#/"
+          onClick={(e) => {
+            if (window.location.hash) {
+              e.preventDefault();
+              window.location.hash = '';
+            }
+          }}
+          aria-label={t('brandTitle')}
+        >
           <span className="brand-torii" aria-hidden="true">⛩️</span>
           <span className="brand-title">{t('brandTitle')}</span>
         </a>
@@ -167,7 +177,16 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
           >
             {t('langSwitch')}
           </button>
-          <a className="text-action history-link" href={route === 'game' ? '#history' : '/'}>
+          <a
+            className="text-action history-link"
+            href={route === 'game' ? '#history' : '#/'}
+            onClick={(e) => {
+              if (route !== 'game') {
+                e.preventDefault();
+                window.location.hash = '';
+              }
+            }}
+          >
             {route === 'game' ? t('navHistory') : t('navBackToGame')}
           </a>
           <button
