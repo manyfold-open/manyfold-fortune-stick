@@ -5,19 +5,26 @@ Rules for anyone — human or AI agent — iterating on it. These are the load-b
 
 ## How deployment works
 
-- **Deploys are manual.** This repository is *not* connected to Workers Builds, so merging to
-  `main` changes the repo and leaves production exactly where it was. Someone has to run
-  `npm run deploy`. Assume a green `main` is not live until you have checked.
+- **Merging to `main` deploys to production.** This repository is connected to Workers Builds
+  (the *Cloudflare Workers and Pages* GitHub App is installed on `manyfold-open`). Every push to
+  `main` — including a merged PR — builds and deploys the Worker; the build shows up as the
+  `Workers Builds: manyfold-fortune-stick` check on that commit. Treat a merge as a release:
+  never merge a PR you have not checked in a browser, and never push straight to `main`.
+- Other branches get a **preview** build, not a production deploy — the same check on a PR links
+  to it. A green preview check means it built, not that it works.
 - CI (`.github/workflows/ci.yml`) only checks; it never deploys and holds no credentials.
 - The build step is load-bearing: `wrangler deploy` ships whatever is sitting in `dist/`
   (via the Cloudflare Vite plugin's deploy-config redirect), and it does not build for you —
-  deploying a stale `dist/` silently ships the previous version. `npm run deploy` therefore
-  runs `build` first. Keep it that way, and never remove the `build` script.
+  deploying a stale `dist/` silently ships the previous version. Workers Builds starts from a
+  clean checkout, and its build command in the Cloudflare dashboard must keep running
+  `npm run build` before deploying. `npm run deploy` (for a manual deploy from a laptop) runs
+  `build` first too. Keep it that way, and never remove the `build` script.
 - After every deploy, verify it: `GET /api/health` must return HTTP 200 JSON, or
-  run `npm run smoke -- <url>`.
-- If you connect Workers Builds later (README, Path B), come back and rewrite this section.
-  It is the only place that records which way round it is, and a wrong answer here is how
-  production quietly falls behind `main`.
+  run `npm run smoke -- <url>`. A green Workers Builds check means the deploy went out, not that
+  the site is healthy.
+- If Workers Builds is ever disconnected, come back and rewrite this section. It is the only
+  place that records which way round it is, and a wrong answer here is how production quietly
+  falls behind `main` — or how an unreviewed merge goes live.
 
 ## Invariants
 
