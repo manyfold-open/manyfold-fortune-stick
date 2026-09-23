@@ -15,7 +15,7 @@
  * 这里不提交任何东西：写完之后按打印机上的键才开始（校验也在那一步，错在屏上说）。
  */
 
-import { useState, type RefObject } from 'react';
+import { useRef, useState, type RefObject } from 'react';
 import { withoutDashes } from '../../shared/text';
 import { QUESTION_MAX } from '../constants';
 import { useT } from '../i18n';
@@ -33,14 +33,22 @@ export default function QuestionForm(props: {
 }) {
   const t = useT();
   const [focused, setFocused] = useState(false);
+  const [typing, setTyping] = useState(false);
+  const swayTimer = useRef<number | null>(null);
   const field = props.inputRef;
   const length = [...props.value.trim()].length;
   const empty = props.value.length === 0;
 
+  const triggerSway = () => {
+    setTyping(true);
+    if (swayTimer.current) window.clearTimeout(swayTimer.current);
+    swayTimer.current = window.setTimeout(() => setTyping(false), 360);
+  };
+
   return (
     // 没有框，就把整块区域都做成可以落笔的地方：点哪里都开始写。
     <div className="ask" onClick={() => field.current?.focus()}>
-      <div className={`ask-zone${focused ? ' focused' : ''}${!empty ? ' has-content' : ''}`}>
+      <div className={`ask-zone${focused ? ' focused' : ''}${!empty ? ' has-content' : ''}${typing ? ' typing-sway' : ''}`}>
         <EmaChrome>
           {/* 用 data-value 撑开高度：输入区自己长高，不需要 JS，也不会出现滚动条。 */}
           <div className="ask-grow" data-value={props.value}>
@@ -48,7 +56,10 @@ export default function QuestionForm(props: {
               className="ask-input"
               ref={field}
               value={props.value}
-              onChange={(event) => props.onChange(withoutDashes(event.target.value))}
+              onChange={(event) => {
+                props.onChange(withoutDashes(event.target.value));
+                triggerSway();
+              }}
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
               onKeyDown={(event) => {

@@ -25,7 +25,46 @@ import {
 import { hanNumber } from '../shared/numerals';
 import type { Interpretation } from '../shared/types';
 import { LEVEL_TONE } from './constants';
-import { CREAM, ROUND, SEAL, SEAL_DEEP, drawEma, drawSakuraMark, drawSeal, paintShrine, spacedText } from './shrineArt';
+import { CREAM, ROUND, SEAL, SEAL_DEEP, drawEma, drawSakuraMark, drawSeal, drawWashiTape, paintShrine, spacedText } from './shrineArt';
+
+export const LUCKY_ITEMS: Record<number, { zh: string; en: string }> = {
+  1: { zh: '草莓大福', en: 'Strawberry Daifuku' },
+  2: { zh: '熱焙茶', en: 'Hot Hojicha' },
+  3: { zh: '手作御守', en: 'Handmade Omamori' },
+  4: { zh: '晨間散步', en: 'Morning Walk' },
+  5: { zh: '白桃煎茶', en: 'Peach Sencha' },
+  6: { zh: '香氛蠟燭', en: 'Scented Candle' },
+  7: { zh: '整理書桌', en: 'Tidy Workspace' },
+  8: { zh: '抹茶拿鐵', en: 'Matcha Latte' },
+  9: { zh: '翻一本好書', en: 'Reading a Book' },
+  10: { zh: '溫暖熱湯', en: 'Warm Miso Soup' },
+  11: { zh: '看天空雲朵', en: 'Cloud Watching' },
+  12: { zh: '聽一首慢歌', en: 'Soft Lo-Fi Song' },
+  13: { zh: '熱柚子茶', en: 'Warm Yuzu Tea' },
+  14: { zh: '隨手筆記', en: 'Quick Journaling' },
+  15: { zh: '曬曬太陽', en: 'Warm Sunshine' },
+  16: { zh: '一杯溫水', en: 'Cup of Warm Water' },
+  17: { zh: '伸個懶腰', en: 'Gentle Stretch' },
+  18: { zh: '買一朵花', en: 'A Fresh Flower' },
+  19: { zh: '清爽深呼吸', en: 'Deep Breaths' },
+  20: { zh: '吃一顆糖', en: 'Sweet Candy' },
+  21: { zh: '寫下感恩', en: 'Gratitude Note' },
+  22: { zh: '整理相簿', en: 'Organizing Photos' },
+  23: { zh: '品一口咖啡', en: 'Sip of Coffee' },
+  24: { zh: '換上乾淨被單', en: 'Fresh Bedding' },
+  25: { zh: '漫步樹蔭下', en: 'Tree Shade Stroll' },
+  26: { zh: '欣賞落日', en: 'Sunset Glow' },
+  27: { zh: '床頭小夜燈', en: 'Warm Bedside Lamp' },
+  28: { zh: '給植物澆水', en: 'Watering Plants' },
+  29: { zh: '煎一顆荷包蛋', en: 'Sunny-side Egg' },
+  30: { zh: '吹吹傍晚的風', en: 'Evening Breeze' },
+  31: { zh: '對鏡子笑笑', en: 'Smile in Mirror' },
+  32: { zh: '泡個熱水澡', en: 'Warm Bath' },
+  33: { zh: '聽窗外雨聲', en: 'Sound of Rain' },
+  34: { zh: '仰望夜空微星', en: 'Night Stargazing' },
+  35: { zh: '收拾隨身包', en: 'Tidying Your Bag' },
+  36: { zh: '說聲辛苦了', en: 'Gentle Goodnight' },
+};
 
 const WIDTH = 1080;
 const HEIGHT = 1350;
@@ -340,6 +379,9 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
   g.strokeStyle = 'rgba(192, 50, 31, 0.7)';
   g.strokeRect(paperX + 10, paperTop + 10, paperW - 20, paperH - 20);
 
+  // 顶部的和纸胶带：半透明樱粉和纸、微撕边，像贴在手帐里的御神签
+  drawWashiTape(g, center, paperTop + 4, 210, 30, -2.2);
+
   const innerX = paperX + PAD;
   const innerW = paperW - PAD * 2;
   let y = paperTop + PAD;
@@ -393,13 +435,14 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
     g.lineTo(innerX + innerW, ly);
     g.stroke();
   }
+  const soulMeaning = en ? `“${meaning}”` : `「${meaning}」`;
   if (en) {
     drawHorizontal(
       g,
       [
         { text: text.poem[0], font: `italic 500 32px ${face}`, color: INK, step: 44 },
         { text: text.poem[1], font: `italic 500 32px ${face}`, color: INK, step: 44 },
-        { text: meaning, font: `400 26px ${face}`, color: INK_2, step: 36 },
+        { text: soulMeaning, font: `400 26px ${face}`, color: INK_2, step: 36 },
       ],
       { centerX: center, top: y + 20, width: innerW - 70, height: BODY - 40, gap: 22, wrapText: wrapBalanced },
     );
@@ -411,35 +454,59 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
         // 七言一列要放得下：一個字的高度照這一格的高度算（BODY 會因為繪馬變高而縮）
         { text: text.poem[0], font: `500 ${Math.min(38, poemStep - 4)}px ${SERIF}`, color: INK, step: poemStep },
         { text: text.poem[1], font: `500 ${Math.min(38, poemStep - 4)}px ${SERIF}`, color: INK, step: poemStep },
-        { text: meaning, font: `400 29px ${SERIF}`, color: INK_2, step: 34 },
+        { text: soulMeaning, font: `400 29px ${SERIF}`, color: INK_2, step: 34 },
       ],
       { centerX: center, top: y + 26, height: BODY - 52, gap: 26 },
     );
   }
   y += BODY;
 
-  // 吉色胶囊与樱花小印
-  g.font = `600 24px ${face}`;
+  // 今日幸運指南（Lucky Guide：吉色 + 開運小物）
+  const luckyItem = LUCKY_ITEMS[stick.no] ?? { zh: '草莓大福', en: 'Strawberry Daifuku' };
+  g.font = `600 21px ${face}`;
   const luckyText = en ? `Lucky tone · ${lucky.en}` : `吉色 · ${lucky.zh}`;
-  const lw = g.measureText(luckyText).width + 70;
-  const ly = y + FOOT / 2;
-  // 有二维码时吉色往左让：放在二维码左边那一段的正中
-  const luckyCx = qrImage ? paperX + (paperW - QR_SIZE - PAD) / 2 : center;
+  const itemText = en ? `Lucky charm · ${luckyItem.en}` : `開運 · ${luckyItem.zh}`;
+  const lw1 = g.measureText(luckyText).width + 64;
+  const lw2 = g.measureText(itemText).width + 64;
+  const guideCx = qrImage ? paperX + (paperW - QR_SIZE - PAD) / 2 : center;
+  const ly1 = y + FOOT / 2 - 24;
+  const ly2 = y + FOOT / 2 + 24;
+
+  // 1. 吉色胶囊
   g.fillStyle = `${tone}14`;
-  g.strokeStyle = `${tone}4d`;
-  g.lineWidth = 1.5;
+  g.strokeStyle = `${tone}44`;
+  g.lineWidth = 1.4;
   g.beginPath();
-  g.roundRect(luckyCx - lw / 2, ly - 24, lw, 48, 24);
+  g.roundRect(guideCx - lw1 / 2, ly1 - 18, lw1, 36, 18);
   g.fill();
   g.stroke();
   g.fillStyle = tone;
   g.beginPath();
-  g.arc(luckyCx - lw / 2 + 28, ly, 7, 0, Math.PI * 2);
+  g.arc(guideCx - lw1 / 2 + 22, ly1, 5.5, 0, Math.PI * 2);
   g.fill();
   g.textAlign = 'left';
-  g.fillText(luckyText, luckyCx - lw / 2 + 46, ly + 9);
+  g.fillText(luckyText, guideCx - lw1 / 2 + 36, ly1 + 7);
+
+  // 2. 開運小物膠囊
+  g.fillStyle = 'rgba(192, 50, 31, 0.08)';
+  g.strokeStyle = 'rgba(192, 50, 31, 0.32)';
+  g.lineWidth = 1.4;
+  g.beginPath();
+  g.roundRect(guideCx - lw2 / 2, ly2 - 18, lw2, 36, 18);
+  g.fill();
+  g.stroke();
+  drawSakuraMark(g, guideCx - lw2 / 2 + 22, ly2, 7, SEAL);
+  g.fillStyle = SEAL_DEEP;
+  g.fillText(itemText, guideCx - lw2 / 2 + 36, ly2 + 7);
   g.textAlign = 'center';
-  drawSakuraMark(g, qrImage ? paperX + 46 : paperX + paperW - 44, ly + 10, 18, SEAL);
+
+  // 3. 櫻花小印
+  if (!qrImage) {
+    drawSakuraMark(g, paperX + 46, y + FOOT / 2, 16, SEAL);
+    drawSakuraMark(g, paperX + paperW - 46, y + FOOT / 2, 16, SEAL);
+  } else {
+    drawSakuraMark(g, paperX + 40, y + FOOT / 2, 14, SEAL);
+  }
 
   // 二维码：扫了回到游戏首页，放在纸的右下角
   if (qrImage) {

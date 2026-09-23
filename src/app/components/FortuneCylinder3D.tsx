@@ -55,6 +55,7 @@ import { createCylinderScene, type CylinderScene } from '../cylinder/scene';
 import { cylinderArt, loadCylinderArt } from '../cylinder/art';
 import { STICK_VARIANTS, createNumberedStickCanvas, paintNumberedStick } from '../cylinder/materials';
 import { bambooRattle, bambooRustle, suzu } from '../sound';
+import SakuraBloom from './SakuraBloom';
 
 export interface FortuneCylinder3DProps {
   state: 'idle' | 'ready' | 'shaking' | 'ejecting';
@@ -137,6 +138,7 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
   const [progress, setProgress] = useState(0);
   /** 手還按著嗎 —— 提示要分「繼續攪」與「可以放手了」。 */
   const [dragging, setDragging] = useState(false);
+  const [blooming, setBlooming] = useState(false);
 
   const d = useRef<Drive>({
     stage: 'rest',
@@ -182,6 +184,7 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
   useEffect(() => {
     d.current.stickNo = sheet ? sheet.stick.no : 0;
     d.current.level = sheet ? sheet.stick.level : undefined;
+    if (!sheet) setBlooming(false);
   }, [sheet]);
 
   /*
@@ -352,6 +355,7 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
         // 聲音跟畫面走同一條時間軸（pull.ts 的 pullCues）：抓住那一下、開始往上抽、號碼印上去，
         // 各自在那一格響。「抽到了」的鈴聲以前等籤紙出來才響，晚了將近三秒
         for (const cue of pullCues(dr.cueMs, ms, calm)) {
+          if (cue === 'reveal') setBlooming(true);
           if (!soundRef.current) continue;
           if (cue === 'grab') bambooRustle(0.55);
           else if (cue === 'slide') bambooRattle(NUDGE_END_AT - SLIDE_AT);
@@ -524,7 +528,9 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
         role="button"
         tabIndex={disabled ? -1 : 0}
         aria-label={en ? 'Stir the sticks in the 3D fortune cylinder' : '攪動籤筒裡的籤'}
-      />
+      >
+        <SakuraBloom active={blooming} reducedMotion={calmRef.current} />
+      </div>
       <div className="roll-action-area">
         {fault ? (
           <div className="roll-fault-pill" role="alert">
