@@ -51,6 +51,7 @@ import {
   pullPose,
   riseProgress,
 } from '../../shared/cylinder/pull';
+import { shouldRearmStir } from '../../shared/cylinder/interaction';
 import { createCylinderScene, type CylinderScene } from '../cylinder/scene';
 import { cylinderArt, loadCylinderArt } from '../cylinder/art';
 import { STICK_VARIANTS, createNumberedStickCanvas, paintNumberedStick } from '../cylinder/materials';
@@ -206,6 +207,16 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
   calmRef.current = reducedMotion ?? false;
   shakeCb.current = onShake;
   revealCb.current = onRevealed;
+
+  /* ── 這一抽失敗了（題目太短、網路錯）：清掉「要過籤」，讓使用者改完再攪一次 ── */
+  useEffect(() => {
+    const dr = d.current;
+    if (!shouldRearmStir({ requested: dr.requested, fault: Boolean(fault), drawn: dr.stickNo > 0 })) return;
+    dr.requested = false;
+    dr.stir.work = 0;
+    dr.reported = -1;
+    setProgress(0);
+  }, [fault]);
 
   /* ── 籤到了：記下號碼。號碼只從這裡來（伺服器），動畫不決定它 ── */
   useEffect(() => {

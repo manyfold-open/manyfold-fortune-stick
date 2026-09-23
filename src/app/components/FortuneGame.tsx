@@ -32,7 +32,7 @@ import {
   type Prefs,
 } from '../storage';
 import FortuneCylinder from './FortuneCylinder';
-import { acceptsGesture, chimeAtSlip, drawStartSound } from '../../shared/cylinder/interaction';
+import { acceptsGesture, chimeAtSlip, drawStartSound, enterDraws } from '../../shared/cylinder/interaction';
 import FortuneCylinder3D from './FortuneCylinder3D';
 import FortunePaperRoll from './FortunePaperRoll';
 import Printer from './Printer';
@@ -405,7 +405,8 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
           <QuestionForm
             value={question}
             onChange={setQuestion}
-            onSubmit={() => void draw()}
+            // 3D 籤筒的籤只能攪出來：Enter 只是寫完了，收起游標（手機收起鍵盤）
+            onSubmit={() => (enterDraws(vessel) ? void draw() : askField.current?.blur())}
             inputRef={askField}
             sound={props.prefs.sound}
             nudge={askNudge}
