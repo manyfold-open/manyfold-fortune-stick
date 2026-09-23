@@ -23,10 +23,13 @@ import {
   type StickTrait,
 } from '../../shared/cylinder/bundle';
 import {
-  STIR_WORK_NEEDED,
+  DEFAULT_FAN_PX,
   createStir,
   pushStir,
+  releaseStir,
+  resetStirWork,
   stepStir,
+  stirProgress,
   type StirState,
 } from '../../shared/cylinder/stir';
 import { createPick, headSpacing, stepPick, type PickState } from '../../shared/cylinder/pick';
@@ -77,6 +80,12 @@ export interface FortuneCylinder3DProps {
 /** 交棒给签纸前的淡出时长，跟 styles.css 的 transition 对齐。 */
 const HANDOFF_FADE_MS = 460;
 
+/**
+ * 攪夠了那一刻，中間那支籤自己往上冒多少（籤軸方向，世界單位）。比手撥起來的（PICK_LIFT 0.6）高、
+ * 比真的拿起來（RAISE 2）低 —— 一看就知道「好了，可以放手了」，又不像已經抽出來。
+ */
+const READY_LIFT = 0.9;
+
 /** 沒寫問題就攪籤時，「先寫下心事」那行字留多久。 */
 const ASK_FIRST_MS = 2600;
 
@@ -111,6 +120,10 @@ interface Drive {
   stir: StirState;
   /** 手撥過哪支籤、那支被撥起來多高（shared/cylinder/pick.ts）。 */
   pick: PickState;
+  /** 籤扇在畫面上多寬（px）—— 攪了多遠用它當單位（stir.ts 的 pushStir）。 */
+  fanPx: number;
+  /** 攪夠了之後中間那支籤冒出來多高，往 READY_LIFT 靠。 */
+  readyLift: number;
   lastTick: number;
   /**
    * 放手那一刻被拿的那支已經被攪／撥起來多高。拿籤的路徑從籤底在原位算起，
@@ -177,6 +190,8 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
     cueMs: -1,
     stir: createStir(),
     pick: createPick(STICK_COUNT),
+    fanPx: DEFAULT_FAN_PX,
+    readyLift: 0,
     lastTick: 0,
     heldOffset: 0,
     requested: false,
@@ -213,7 +228,7 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
     const dr = d.current;
     if (!shouldRearmStir({ requested: dr.requested, fault: Boolean(fault), drawn: dr.stickNo > 0 })) return;
     dr.requested = false;
-    dr.stir.work = 0;
+    resetStirWork(dr.stir);
     dr.reported = -1;
     setProgress(0);
   }, [fault]);
@@ -265,6 +280,11 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
       }
       frontXs.length = 0;
       for (const i of frontRow) frontXs.push(heads[i]);
+      // 籤扇多寬：最外兩支籤頭的距離（上下限在 stir.ts）。量壞了（畫布還沒排版）就留著上一次的
+      if (frontXs.length > 1) {
+        const span = Math.max(...frontXs) - Math.min(...frontXs);
+        if (span > 20) dr.fanPx = span;
+      }
     };
     /**
      * 籤束繞筒軸轉 phi：外圈轉得比內圈多一點點，整束才像被攪動的一團，不像一塊板子在轉。
@@ -286,23 +306,33 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
       if (dt <= 0) return;
       const t = (now - t0) / 1000;
 
-      // armed：这一局可以抽签吗。没写问题时照样跟手动（手感），但不记账 ——
-      // 不然使用者写问题之前攪的那些会全部存起来，一写完随手一碰就掉签。
+      // armed：这一局可以抽签吗。攪了多少在指標事件裡記（pushStir），這裡只看夠了沒 ——
+      // 放在每一格裡算的話，卡的手機每格最多算 0.05 秒，同樣的攪法要多攪好幾成。
       const armed = stateRef.current === 'ready' && !dr.requested;
-      stepStir(dr.stir, dt, dr.dragging, armed);
+      stepStir(dr.stir, dt, dr.dragging);
       const sh = dr.stir;
-      if (sh.intensity > 0.05 && armed) {
-        const notch = Math.min(20, Math.floor((sh.work / STIR_WORK_NEEDED) * 20));
+      if (armed) {
+        const p = stirProgress(sh);
+        const notch = Math.floor(p * 20);
         if (notch !== dr.reported) {
           dr.reported = notch;
-          setProgress(Math.min(1, sh.work / STIR_WORK_NEEDED));
+          setProgress(p);
         }
-        if (sh.work >= STIR_WORK_NEEDED) {
+        if (p >= 1) {
           dr.requested = true;
           setProgress(1);
+          // 攪夠了那一刻要讓人感覺得到：喀一聲、震一下，中間那支籤冒出來（readyLift）
+          if (soundRef.current) bambooRustle(2);
+          try {
+            navigator.vibrate?.(28);
+          } catch {
+            /* 不支援震動就算了 */
+          }
           shakeCb.current();
         }
       }
+      // 要過籤就冒出來；這一抽失敗、重新上膛（requested 被清掉）就落回去
+      dr.readyLift += ((dr.requested ? READY_LIFT : 0) - dr.readyLift) * (1 - Math.exp(-9 * dt));
 
       // 竹籤互相碰撞的沙沙聲，按強度節流
       if (soundRef.current && dr.stage !== 'pulling' && sh.intensity > 0.18 && now - dr.lastRustle > 70) {
@@ -367,7 +397,7 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
           const m = dr.motions[i];
           // 籤沿**自己的**軸滑動 —— 扇形散開之後每支的軸都不一樣；再跟著籤束繞筒軸轉
           const p = h.pose;
-          const y = m.y + dr.pick.lift[i];
+          const y = m.y + dr.pick.lift[i] + (i === PULL_INDEX ? dr.readyLift : 0);
           const q = place(h, p.cx + p.ax * y, p.cy + p.ay * y, p.cz + p.az * y, sh.phi);
           // 攪得越兇籤越晃；被手撥到的那支多晃一點
           const w = sh.intensity * 0.11 + dr.pick.lift[i] * 0.12;
@@ -378,7 +408,7 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
         if (dr.requested && dr.stickNo > 0 && !dr.dragging) {
           dr.stage = 'pulling';
           dr.pullAt = now;
-          dr.heldOffset = dr.motions[PULL_INDEX].y + dr.pick.lift[PULL_INDEX];
+          dr.heldOffset = dr.motions[PULL_INDEX].y + dr.pick.lift[PULL_INDEX] + dr.readyLift;
           dr.cueMs = -1;
           setStageLabel('pulling');
         }
@@ -520,17 +550,27 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
     dr.pointerY = e.clientY;
     dr.pointerAt = now;
     // 手往哪邊，籤束就往哪邊轉；手多快，籤就攪得多兇（shared/cylinder/stir.ts）
-    pushStir(dr.stir, dx, dy, gap);
-    if (dr.stage === 'rest' && dr.stir.intensity > 0.2) {
+    const armed = stateRef.current === 'ready' && !dr.requested;
+    pushStir(dr.stir, dx, dy, gap, armed, dr.fanPx);
+    // 慢慢攪的人手速到不了強度 0.2，也要進「攪」的階段，提示才會跟著走
+    if (dr.stage === 'rest' && (dr.stir.intensity > 0.2 || dr.stir.travel > 0.25)) {
       dr.stage = 'shaking';
       setStageLabel('shaking');
     }
   }, [disabled]);
 
   const endDrag = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    const wasDragging = d.current.dragging;
-    d.current.dragging = false;
+    const dr = d.current;
+    const wasDragging = dr.dragging;
+    dr.dragging = false;
     setDragging(false);
+    // 攪到快好了就放手也算（releaseStir）；差太多就晃一下籤，提示「再攪幾圈」
+    if (wasDragging && stateRef.current === 'ready' && !dr.requested && stirProgress(dr.stir) > 0) {
+      if (!releaseStir(dr.stir)) {
+        dr.stir.intensity = Math.max(dr.stir.intensity, 0.55);
+        if (soundRef.current) bambooRustle(0.5);
+      }
+    }
     // 還沒寫問題：籤照樣跟手動，但抽不出來 —— 放手時把人帶回繪馬，別讓他對著籤筒乾攪。
     // 放在放手這一刻而不是按下：按下時畫布會搶走焦點，游標送不進繪馬
     if (wasDragging && stateRef.current === 'idle') {
@@ -573,11 +613,11 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
         : stageLabel === 'shaking'
           ? progress >= 1
             ? dragging
-              ? en ? 'Stir as long as you like, then let go to draw' : '想攪多久都可以，放手就抽'
+              ? en ? 'A stick is up. Let go to draw' : '籤起來了，放手就抽'
               : en ? 'A stick is coming up…' : '籤就要出來了…'
             : dragging
               ? en ? 'Stir them round…' : '攪一攪…'
-              : en ? 'Give them a real stir first' : '先攪一下再放手'
+              : en ? 'Just a few more circles' : '再攪幾圈就好'
           : en ? 'Press on the sticks and stir. Let go whenever you like' : '按住籤攪一攪，想攪多久都可以，放手就抽';
 
   /*
