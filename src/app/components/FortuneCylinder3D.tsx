@@ -52,7 +52,8 @@ import {
   riseProgress,
 } from '../../shared/cylinder/pull';
 import { createCylinderScene, type CylinderScene } from '../cylinder/scene';
-import { STICK_VARIANTS, createNumberedStickCanvas } from '../cylinder/materials';
+import { cylinderArt, loadCylinderArt } from '../cylinder/art';
+import { STICK_VARIANTS, createNumberedStickCanvas, paintNumberedStick } from '../cylinder/materials';
 import { bambooRattle, bambooRustle, suzu } from '../sound';
 
 export interface FortuneCylinder3DProps {
@@ -270,7 +271,16 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
 
       // 號碼到了就先把那一面做好，透明地掛在要被拿起來那支上
       if (!dr.numberFace && dr.stickNo > 0) {
-        const tex = new THREE.CanvasTexture(createNumberedStickCanvas(dr.stickNo, PULL_INDEX % STICK_VARIANTS));
+        const faceCanvas = createNumberedStickCanvas(dr.stickNo, PULL_INDEX % STICK_VARIANTS);
+        const tex = new THREE.CanvasTexture(faceCanvas);
+        // 插畫通常早就載好了；萬一還沒（網路慢、開場就秒抽），圖好了再把小圖補上
+        if (!cylinderArt()) {
+          const no = dr.stickNo;
+          void loadCylinderArt().then((art) => {
+            paintNumberedStick(faceCanvas, no, PULL_INDEX % STICK_VARIANTS, art);
+            tex.needsUpdate = true;
+          });
+        }
         tex.colorSpace = THREE.SRGBColorSpace;
         tex.anisotropy = rig.renderer.capabilities.getMaxAnisotropy();
         rig.renderer.initTexture(tex);

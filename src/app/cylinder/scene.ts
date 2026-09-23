@@ -41,7 +41,11 @@ import {
   createStickAtlas,
   createStickHeadCanvas,
   createTubeCanvas,
+  paintStickAtlas,
+  paintStickHead,
+  paintTubeCanvas,
 } from './materials';
+import { loadCylinderArt } from './art';
 
 
 export interface StickHandle {
@@ -204,7 +208,8 @@ export function createCylinderScene(host: HTMLElement): CylinderScene | null {
   scene.add(fill);
 
   /* ── 贴图 ── */
-  const tubeTex = new THREE.CanvasTexture(createTubeCanvas());
+  const tubeCanvas = createTubeCanvas();
+  const tubeTex = new THREE.CanvasTexture(tubeCanvas);
   tubeTex.colorSpace = THREE.SRGBColorSpace;
   tubeTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
 
@@ -266,7 +271,8 @@ export function createCylinderScene(host: HTMLElement): CylinderScene | null {
   /* ── 竹籤（STICK_COUNT 支） ── */
   const UP = new THREE.Vector3(0, 1, 0);
   const stickGeo = new THREE.BoxGeometry(STICK_W, STICK_LEN, STICK_T);
-  const headTex = new THREE.CanvasTexture(createStickHeadCanvas());
+  const headCanvas = createStickHeadCanvas();
+  const headTex = new THREE.CanvasTexture(headCanvas);
   headTex.colorSpace = THREE.SRGBColorSpace;
   // 圓盤是 CylinderGeometry 的頂蓋轉 90° 立起來的，貼圖跟著轉掉了 ——「籤」字會橫躺。
   // 近拍時才看得出來（竹字頭跑到右邊），轉回來
@@ -318,7 +324,30 @@ export function createCylinderScene(host: HTMLElement): CylinderScene | null {
     camera.updateProjectionMatrix();
   };
 
+  // 插畫（使用者給的 SVG，art.ts）要先解碼：貼圖先用底色和字，圖好了在同一張 canvas 上重畫。
+  // 20 支籤的貼圖是同一張 atlas clone 出來的（共用 canvas），但 three 是照每個 Texture 自己的
+  // version 決定要不要重傳 —— 每一支都要標 needsUpdate，只標 atlasTex 籤身不會換
+  let disposed = false;
+  void loadCylinderArt()
+    .then((art) => {
+      if (disposed) return;
+      paintTubeCanvas(tubeCanvas, art);
+      tubeTex.needsUpdate = true;
+      paintStickAtlas(atlasCanvas, art);
+      atlasTex.needsUpdate = true;
+      for (const s of sticks) {
+        const map = (s.mesh.material as THREE.MeshStandardMaterial).map;
+        if (map) map.needsUpdate = true;
+      }
+      paintStickHead(headCanvas, art);
+      headTex.needsUpdate = true;
+    })
+    .catch(() => {
+      /* 圖載不進來就留著底色和字：籤筒照樣能玩 */
+    });
+
   const dispose = (): void => {
+    disposed = true;
     const seen = new Set<THREE.Material>();
     scene.traverse((obj) => {
       const mesh = obj as THREE.Mesh;

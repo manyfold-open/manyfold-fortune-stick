@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="530" height="1045" viewBox="0 -10 530 1045" role="img" aria-labelledby="title description">
+  <title id="title">Kawaii omikuji fortune-stick container</title>
+  <desc id="description">A cream Japanese fortune-stick container with five illustrated fortune sticks, red plum blossoms, a bow, and a cute bear holding a flower.</desc>
+  <defs>
+    <linearGradient id="pot" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#f4dfbd"/>
+      <stop offset="0.12" stop-color="#fff5dc"/>
+      <stop offset="0.48" stop-color="#fff8e7"/>
+      <stop offset="0.82" stop-color="#f8e8cb"/>
+      <stop offset="1" stop-color="#dfb887"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#e6c69d"/>
+      <stop offset="0.12" stop-color="#fff8e7"/>
+      <stop offset="0.5" stop-color="#fffdf1"/>
+      <stop offset="0.88" stop-color="#f7e8ce"/>
+      <stop offset="1" stop-color="#dcb488"/>
+    </linearGradient>
+    <linearGradient id="stick" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#eed7b4"/>
+      <stop offset="0.18" stop-color="#fff6e2"/>
+      <stop offset="0.55" stop-color="#fff9e8"/>
+      <stop offset="1" stop-color="#ecd4ae"/>
+    </linearGradient>
+    <linearGradient id="medallion" x1="0" x2="0.8" y1="0" y2="1">
+      <stop offset="0" stop-color="#fff9e7"/>
+      <stop offset="0.7" stop-color="#f7e6c6"/>
+      <stop offset="1" stop-color="#e8c79e"/>
+    </linearGradient>
+    <linearGradient id="red" x1="0" x2="0.8" y1="0" y2="1">
+      <stop offset="0" stop-color="#f1745c"/>
+      <stop offset="1" stop-color="#cf4537"/>
+    </linearGradient>
+    <style>
+      .outline { stroke:#59382a; stroke-linejoin:round; stroke-linecap:round; }
+      .ink { fill:#58382a; }
+      .cn { font-family:'Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif; font-weight:800; }
+      .latin { font-family:'Arial Rounded MT Bold','Avenir Next',Arial,sans-serif; font-weight:800; }
+      .paperText { fill:#59382a; font-family:'Arial Rounded MT Bold','Avenir Next',Arial,sans-serif; font-weight:800; }
+    </style>
+    <g id="plum">
+      <g fill="url(#red)" stroke="#c94b3d" stroke-width="1.5" class="outline">
+        <ellipse cx="0" cy="-9" rx="7" ry="10"/>
+        <ellipse cx="8.6" cy="-2.8" rx="7" ry="10" transform="rotate(72 8.6 -2.8)"/>
+        <ellipse cx="5.3" cy="7.3" rx="7" ry="10" transform="rotate(144 5.3 7.3)"/>
+        <ellipse cx="-5.3" cy="7.3" rx="7" ry="10" transform="rotate(216 -5.3 7.3)"/>
+        <ellipse cx="-8.6" cy="-2.8" rx="7" ry="10" transform="rotate(288 -8.6 -2.8)"/>
+      </g>
+      <circle r="3.5" fill="#fff0d4"/>
+      <circle cx="-1" cy="-1" r="1" fill="#b73f32"/>
+      <circle cx="2" cy="1" r="1" fill="#b73f32"/>
+    </g>
+    <g id="tinyFlower">
+      <g fill="#f2a185" stroke="#65402d" stroke-width="2.1" class="outline">
+        <circle cx="0" cy="-8" r="7.4"/><circle cx="7.6" cy="-2.5" r="7.4"/>
+        <circle cx="4.7" cy="6.5" r="7.4"/><circle cx="-4.7" cy="6.5" r="7.4"/>
+        <circle cx="-7.6" cy="-2.5" r="7.4"/>
+      </g>
+      <circle r="3" fill="#704632"/>
+    </g>
+    <g id="littleStar" fill="#68432f">
+      <path d="M0-6.3 1.8-1.8 6.3 0 1.8 1.8 0 6.3-1.8 1.8-6.3 0-1.8-1.8Z"/>
+    </g>
+    <g id="miniPlum">
+      <g fill="#e96a53" stroke="#613c2d" stroke-width="1.5" class="outline">
+        <circle cy="-5" r="4.4"/><circle cx="4.8" cy="-1.5" r="4.4"/><circle cx="3" cy="4" r="4.4"/><circle cx="-3" cy="4" r="4.4"/><circle cx="-4.8" cy="-1.5" r="4.4"/>
+      </g><circle r="1.9" fill="#fff2d8"/>
+    </g>
+  </defs>
+
+  <!-- Five separate slips and their round fortune heads -->
+  <g id="fortune_sticks">
+    <g id="stick_flower">
+      <path d="M47 160 Q84 170 123 160 L163 431 Q131 438 92 433 L46 171 Q45 165 47 160Z" fill="url(#stick)" class="outline" stroke-width="2.8"/>
+      <path d="M56 174 Q85 183 114 174 L148 422" fill="none" stroke="#d8b98d" stroke-width="1.5"/>
+      <circle cx="82" cy="87" r="60" fill="#e5c59c" opacity=".55"/>
+      <circle cx="82" cy="83" r="59" fill="url(#medallion)" stroke="#f8eed9" stroke-width="5"/>
+      <circle cx="82" cy="83" r="49" fill="none" stroke="#e9c995" stroke-width="1.6"/>
+      <text x="82" y="98" text-anchor="middle" class="cn ink" font-size="42">籤</text>
+      <use xlink:href="#miniPlum" x="63" y="201"/>
+      <use xlink:href="#littleStar" x="83" y="213"/>
+      <text x="91" y="253" text-anchor="middle" class="cn ink" font-size="17">上上籤</text>
+      <text x="92" y="284" text-anchor="middle" class="paperText" font-size="16" letter-spacing=".4">GOOD</text>
+      <text x="96" y="305" text-anchor="middle" class="paperText" font-size="16" letter-spacing=".4">LUCK</text>
+      <circle cx="97" cy="332" r="2.6" fill="#68432f"/>
+      <use xlink:href="#plum" x="106" y="378" transform="scale(.85) translate(18 67)"/>
+    </g>
+    <g id="stick_smiling_flower">
+      <path d="M145 169 Q184 180 221 169 L253 432 Q218 438 183 433 L143 180 Q142 173 145 169Z" fill="url(#stick)" class="outline" stroke-width="2.8"/>
+      <path d="M155 180 Q184 190 212 181 L239 423" fill="none" stroke="#d8b98d" stroke-width="1.5"/>
+      <circle cx="186" cy="96" r="58" fill="#e5c59c" opacity=".55"/>
+      <circle cx="186" cy="92" r="57" fill="url(#medallion)" stroke="#f8eed9" stroke-width="5"/>
+      <circle cx="186" cy="92" r="47" fill="none" stroke="#e9c995" stroke-width="1.6"/>
+      <text x="186" y="106" text-anchor="middle" class="cn ink" font-size="40">籤</text>
+      <use xlink:href="#miniPlum" x="170" y="202"/>
+      <use xlink:href="#littleStar" x="188" y="216"/>
+      <text x="194" y="257" text-anchor="middle" class="cn ink" font-size="17">上上籤</text>
+      <text x="195" y="286" text-anchor="middle" class="paperText" font-size="16">GOOD</text>
+      <text x="198" y="307" text-anchor="middle" class="paperText" font-size="16">LUCK</text>
+      <circle cx="184" cy="337" r="2.3" fill="#68432f"/><circle cx="202" cy="337" r="2.3" fill="#68432f"/>
+      <g transform="translate(199 382)">
+        <path d="M0-17 C4-24 12-21 14-15 C23-17 28-10 24-4 C31 3 26 11 18 11 C15 20 7 21 1 16 C-7 22-15 18-15 10 C-24 8-26 0-20-6 C-22-15-14-20-7-16Z" fill="#fff1d7" stroke="#65402d" stroke-width="3" class="outline"/>
+        <circle cx="-4" cy="-2" r="1.8" fill="#59382a"/><circle cx="6" cy="-2" r="1.8" fill="#59382a"/>
+        <path d="M-2 4 Q1 8 4 4" fill="none" stroke="#59382a" stroke-width="1.7" stroke-linecap="round"/>
+      </g>
+    </g>
+    <g id="stick_fuji">
+      <path d="M222 132 Q268 150 307 132 L308 433 L225 433 L221 145 Q221 137 222 132Z" fill="url(#stick)" class="outline" stroke-width="3"/>
+      <path d="M232 148 Q266 162 297 148 L298 423" fill="none" stroke="#d8b98d" stroke-width="1.5"/>
+      <circle cx="269" cy="64" r="63" fill="#e5c59c" opacity=".55"/>
+      <circle cx="269" cy="60" r="62" fill="url(#medallion)" stroke="#f8eed9" stroke-width="5"/>
+      <circle cx="269" cy="60" r="51" fill="none" stroke="#e9c995" stroke-width="1.7"/>
+      <text x="269" y="76" text-anchor="middle" class="cn ink" font-size="44">籤</text>
+      <use xlink:href="#miniPlum" x="246" y="177"/>
+      <use xlink:href="#littleStar" x="263" y="193"/>
+      <text x="270" y="239" text-anchor="middle" class="cn ink" font-size="18">上上籤</text>
+      <text x="269" y="273" text-anchor="middle" class="paperText" font-size="17">GOOD</text>
+      <text x="269" y="296" text-anchor="middle" class="paperText" font-size="17">LUCK</text>
+      <circle cx="269" cy="322" r="2.7" fill="#68432f"/>
+      <g transform="translate(269 373)">
+        <path d="M-22 7 0-24 23 7 Q24 10 20 10 H-19Q-24 10-22 7Z" fill="#ceb8a1" stroke="#59382a" stroke-width="3" class="outline"/>
+        <path d="M-13 0-7-8-2-3 3-8 10 0Z" fill="#fff2d9"/>
+        <path d="M-20 8H21" stroke="#6a4634" stroke-width="2"/>
+      </g>
+    </g>
+    <g id="stick_torii">
+      <path d="M309 169 Q347 180 385 166 L362 433 L292 433 L301 179 Q302 173 309 169Z" fill="url(#stick)" class="outline" stroke-width="2.8"/>
+      <path d="M317 181 Q346 192 375 180 L355 423" fill="none" stroke="#d8b98d" stroke-width="1.5"/>
+      <circle cx="348" cy="99" r="58" fill="#e5c59c" opacity=".55"/>
+      <circle cx="348" cy="95" r="57" fill="url(#medallion)" stroke="#f8eed9" stroke-width="5"/>
+      <circle cx="348" cy="95" r="47" fill="none" stroke="#e9c995" stroke-width="1.6"/>
+      <text x="348" y="109" text-anchor="middle" class="cn ink" font-size="40">籤</text>
+      <use xlink:href="#littleStar" x="337" y="217"/>
+      <text x="339" y="257" text-anchor="middle" class="cn ink" font-size="17">上上籤</text>
+      <text x="339" y="289" text-anchor="middle" class="paperText" font-size="16">GOOD</text>
+      <text x="339" y="310" text-anchor="middle" class="paperText" font-size="16">LUCK</text>
+      <circle cx="333" cy="338" r="2.5" fill="#68432f"/>
+      <g transform="translate(337 384) rotate(4)">
+        <path d="M-19-19 H18 Q21-19 20-15 L18-11 H-20 L-22-16Q-22-19-19-19Z" fill="#cc5943" stroke="#59382a" stroke-width="3" class="outline"/>
+        <path d="M-15-11  -16 20 M13-11 12 20" stroke="#68432f" stroke-width="6" stroke-linecap="round"/>
+        <path d="M-17-4H15" stroke="#f7dcae" stroke-width="2"/>
+        <path d="M-12-18V-11 M0-18V-11 M12-18V-11" stroke="#f8e8c8" stroke-width="2"/>
+      </g>
+    </g>
+    <g id="stick_daruma">
+      <path d="M395 185 Q432 198 468 185 L441 433 L372 433 L386 195 Q387 188 395 185Z" fill="url(#stick)" class="outline" stroke-width="2.8"/>
+      <path d="M402 197 Q431 208 459 196 L435 423" fill="none" stroke="#d8b98d" stroke-width="1.5"/>
+      <circle cx="453" cy="108" r="59" fill="#e5c59c" opacity=".55"/>
+      <circle cx="453" cy="104" r="58" fill="url(#medallion)" stroke="#f8eed9" stroke-width="5"/>
+      <circle cx="453" cy="104" r="48" fill="none" stroke="#e9c995" stroke-width="1.6"/>
+      <text x="453" y="119" text-anchor="middle" class="cn ink" font-size="41">籤</text>
+      <use xlink:href="#miniPlum" x="431" y="205" transform="scale(.75) translate(144 68)"/>
+      <use xlink:href="#littleStar" x="450" y="224"/>
+      <text x="435" y="267" text-anchor="middle" class="cn ink" font-size="17">上上籤</text>
+      <text x="433" y="300" text-anchor="middle" class="paperText" font-size="16">GOOD</text>
+      <text x="432" y="321" text-anchor="middle" class="paperText" font-size="16">LUCK</text>
+      <circle cx="429" cy="348" r="2.5" fill="#68432f"/>
+      <g transform="translate(423 390)">
+        <path d="M-20 2 C-21-13-11-23 2-23 C17-23 25-11 22 3 C20 15 11 22-1 20 C-14 19-20 12-20 2Z" fill="#d77659" stroke="#59382a" stroke-width="3" class="outline"/>
+        <path d="M-17 6 Q-10 1-3 5 Q4 2 17 8 L17 14 Q0 23-15 15Z" fill="#f8e5c8" stroke="#59382a" stroke-width="2.2" class="outline"/>
+        <ellipse cx="-7" cy="-5" rx="2.1" ry="3.2" fill="#59382a"/><ellipse cx="7" cy="-5" rx="2.1" ry="3.2" fill="#59382a"/>
+        <path d="M-2 1 Q0 3 2 1" fill="none" stroke="#59382a" stroke-width="1.7"/>
+        <circle cx="-10" cy="3" r="2.3" fill="#f1a188"/><circle cx="11" cy="3" r="2.3" fill="#f1a188"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- Rounded ceramic body -->
+  <g id="container">
+    <path d="M73 451 Q76 440 94 440 H428 Q457 440 457 462 V965 Q457 1009 417 1018 Q413 1020 405 1020 H124 Q76 1018 73 975Z" fill="url(#pot)" stroke="#d4b48d" stroke-width="2.5" class="outline"/>
+    <path d="M81 486 V956 Q82 994 112 1004" fill="none" stroke="#fff8e7" stroke-width="3" opacity=".72"/>
+    <path d="M448 491 V963 Q446 994 424 1004" fill="none" stroke="#d8b78b" stroke-width="2" opacity=".65"/>
+  </g>
+
+  <g id="typography">
+    <text x="265" y="548" text-anchor="middle" class="latin" fill="#684534" stroke="#684534" stroke-width=".8" font-size="38" letter-spacing="3.5">GOOD LUCK</text>
+    <g fill="#68432f">
+      <circle cx="126" cy="579" r="3.3"/><circle cx="138" cy="579" r="2.8"/><circle cx="151" cy="579" r="2.8"/><circle cx="164" cy="579" r="2.8"/><circle cx="177" cy="579" r="2.8"/><circle cx="190" cy="579" r="2.8"/><circle cx="203" cy="579" r="2.8"/><circle cx="216" cy="579" r="2.8"/><circle cx="229" cy="579" r="2.8"/><circle cx="242" cy="579" r="2.8"/>
+      <circle cx="288" cy="579" r="2.8"/><circle cx="301" cy="579" r="2.8"/><circle cx="314" cy="579" r="2.8"/><circle cx="327" cy="579" r="2.8"/><circle cx="340" cy="579" r="2.8"/><circle cx="353" cy="579" r="2.8"/><circle cx="366" cy="579" r="2.8"/><circle cx="379" cy="579" r="2.8"/><circle cx="392" cy="579" r="3.3"/>
+    </g>
+    <text x="138" y="699" text-anchor="middle" class="cn ink" font-size="25">萬</text><text x="138" y="733" text-anchor="middle" class="cn ink" font-size="25">事</text><text x="138" y="767" text-anchor="middle" class="cn ink" font-size="25">順</text><text x="138" y="801" text-anchor="middle" class="cn ink" font-size="25">利</text>
+    <text x="393" y="699" text-anchor="middle" class="cn ink" font-size="25">心</text><text x="393" y="733" text-anchor="middle" class="cn ink" font-size="25">想</text><text x="393" y="767" text-anchor="middle" class="cn ink" font-size="25">事</text><text x="393" y="801" text-anchor="middle" class="cn ink" font-size="25">成</text>
+    <text x="265" y="658" text-anchor="middle" class="cn ink" font-size="50">上</text>
+    <text x="265" y="711" text-anchor="middle" class="cn ink" font-size="50">上</text>
+    <text x="265" y="764" text-anchor="middle" class="cn ink" font-size="50">籤</text>
+  </g>
+
+  <!-- Small plum motifs and the red bow -->
+  <g id="icons">
+    <use xlink:href="#plum" x="132" y="640"/>
+    <use xlink:href="#plum" x="397" y="640"/>
+    <use xlink:href="#littleStar" x="138" y="842"/>
+    <use xlink:href="#littleStar" x="393" y="842"/>
+    <use xlink:href="#plum" x="132" y="899"/>
+    <use xlink:href="#plum" x="398" y="899"/>
+    <g id="red_bow" transform="translate(265 580)">
+      <path d="M-3-1 C-14-14-28-19-30-10 C-32-2-20 4-5 3 C-11-2-13-7-12-11 C-8-8-5-4-3-1Z" fill="#f6d8bd" stroke="#cf4a3c" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M3-1 C14-14 28-19 30-10 C32-2 20 4 5 3 C11-2 13-7 12-11 C8-8 5-4 3-1Z" fill="#f6d8bd" stroke="#cf4a3c" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M-3 2 Q-10 12-21 18 M3 2 Q10 12 21 18" fill="none" stroke="#d84b3d" stroke-width="6" stroke-linecap="round"/>
+      <circle r="5.5" fill="#e65341" stroke="#c9493a" stroke-width="1.5"/>
+    </g>
+  </g>
+
+  <!-- Cream-and-brown mascot holding a plum blossom -->
+  <g id="character" class="outline" stroke="#59382a" stroke-width="4" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M221 858 C199 857 185 847 183 832 C181 816 194 806 210 808 C225 810 235 821 239 834Z" fill="#80533d"/>
+    <path d="M302 868 C315 850 333 845 349 851 C365 858 369 875 361 890 C353 906 338 911 320 903Z" fill="#80533d"/>
+    <path d="M217 830 C234 817 258 816 277 825 C300 836 316 858 319 884 L324 917 C330 938 320 958 300 970 L229 972 C206 965 196 950 199 930 C184 920 179 901 187 878 C193 858 203 841 217 830Z" fill="#fff0d7"/>
+    <path d="M218 836 C234 824 253 822 271 828" fill="none" stroke="#dfc49f" stroke-width="2.2"/>
+    <ellipse cx="239" cy="884" rx="5.2" ry="7" fill="#59382a" stroke="none"/>
+    <ellipse cx="286" cy="891" rx="5.2" ry="7" fill="#59382a" stroke="none"/>
+    <ellipse cx="261" cy="896" rx="9" ry="6.3" fill="#754a34" stroke="none"/>
+    <ellipse cx="221" cy="899" rx="12" ry="8" fill="#f0aa8b" stroke="none"/>
+    <ellipse cx="300" cy="911" rx="12" ry="8" fill="#f0aa8b" stroke="none"/>
+    <path d="M240 946 C229 939 218 942 218 954 C218 964 227 969 239 968 M286 946 C298 941 307 948 305 959 C304 966 299 970 291 971" fill="#fff0d7"/>
+    <g transform="translate(263 947) scale(1.2)" stroke-width="2.1">
+      <use xlink:href="#plum"/>
+      <circle cx="-2" cy="-2" r="1.5" fill="#fff9e7" stroke="none"/><circle cx="3" cy="2" r="1.5" fill="#fff9e7" stroke="none"/>
+    </g>
+    <path d="M176 938 Q181 939 186 944 M178 951 185 948 M347 938 353 934 M352 927 354 921" fill="none" stroke="#ba513c" stroke-width="3"/>
+  </g>
+
+  <!-- Raised, softly rounded mouth rim sits in front of the slips -->
+  <g id="raised_rim">
+    <path d="M69 396 Q55 397 55 411 L55 454 Q55 469 72 475 Q92 482 119 484 L406 484 Q438 482 451 475 Q467 468 467 454 L467 412 Q467 397 451 396 Q430 404 408 408 Q265 424 116 408 Q88 405 69 396Z" fill="url(#rim)" stroke="#d7ba94" stroke-width="2.7" class="outline"/>
+    <path d="M68 407 Q72 402 86 403 Q257 421 433 403 Q449 401 454 407" fill="none" stroke="#fffdf2" stroke-width="3.3" stroke-linecap="round"/>
+    <path d="M61 458 Q66 471 84 474 Q255 495 438 473 Q458 470 462 458" fill="none" stroke="#d6b38b" stroke-width="2" opacity=".6"/>
+  </g>
+</svg>
