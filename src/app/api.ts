@@ -12,6 +12,7 @@ import type { Translate } from '../shared/i18n';
 import { withoutDashes } from '../shared/text';
 import { ERROR_KEYS, storedErrorText as storedText } from '../shared/error-copy';
 import { browserStorage, safeGet, safeRemove, safeSet } from '../shared/safe-storage';
+import { appUrl } from './base';
 import { FOLLOW_UP_MAX, QUESTION_MAX, QUESTION_MIN } from './constants';
 
 const PASSWORD_KEY = 'adminPassword';
@@ -75,7 +76,7 @@ export function authHeaders(path = ''): Record<string, string> {
 }
 
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const response = await fetch(path, {
+  const response = await fetch(appUrl(path), {
     ...init,
     headers: {
       ...(init.body ? { 'content-type': 'application/json' } : {}),

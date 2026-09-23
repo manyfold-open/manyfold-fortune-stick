@@ -6,13 +6,14 @@
 
 import type { ApiErrorBody, FollowUpEvent } from '../shared/types';
 import { ApiError, authHeaders } from './api';
+import { appUrl } from './base';
 
 export async function streamFollowUp(
   readingId: string,
   message: string,
   onEvent: (event: FollowUpEvent) => void,
 ): Promise<void> {
-  const response = await fetch(`/api/readings/${encodeURIComponent(readingId)}/follow-up`, {
+  const response = await fetch(appUrl(`/api/readings/${encodeURIComponent(readingId)}/follow-up`), {
     method: 'POST',
     headers: { 'content-type': 'application/json', ...authHeaders() },
     body: JSON.stringify({ message }),
