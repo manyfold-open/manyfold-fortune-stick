@@ -20,6 +20,7 @@ export default function SettingsModal({
 }: SettingsModalProps) {
   const t = useT();
   const dialogRef = useRef<HTMLDivElement | null>(null);
+  const closeRef = useRef<HTMLButtonElement | null>(null);
 
   // Close on Escape key
   useEffect(() => {
@@ -30,6 +31,32 @@ export default function SettingsModal({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [open, onClose]);
+
+  // Move focus into the dialog, keep Tab inside it, and hand focus back to whatever opened it
+  useEffect(() => {
+    if (!open) return;
+    const opener = document.activeElement as HTMLElement | null;
+    closeRef.current?.focus();
+    const trap = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab' || !dialogRef.current) return;
+      const items = dialogRef.current.querySelectorAll<HTMLElement>('button, a[href]');
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', trap);
+    return () => {
+      document.removeEventListener('keydown', trap);
+      opener?.focus?.();
+    };
+  }, [open]);
 
   if (!open) return null;
 
@@ -53,6 +80,7 @@ export default function SettingsModal({
           <button
             type="button"
             className="text-action settings-close"
+            ref={closeRef}
             onClick={onClose}
             aria-label={t('settingsClose')}
           >
@@ -65,7 +93,7 @@ export default function SettingsModal({
           <div className="settings-row">
             <div className="settings-label-wrap">
               <span className="settings-label">
-                <span className="settings-icon">🔔</span> {language === 'zh' ? '参拜音效' : 'Shrine Audio'}
+                <span className="settings-icon">🔔</span> {t('settingsSoundTitle')}
               </span>
               <span className="settings-desc">{t('settingsSoundDesc')}</span>
             </div>
@@ -93,7 +121,7 @@ export default function SettingsModal({
           <div className="settings-row">
             <div className="settings-label-wrap">
               <span className="settings-label">
-                <span className="settings-icon">🌸</span> {language === 'zh' ? '落樱与微动' : 'Visual Motion'}
+                <span className="settings-icon">🌸</span> {t('settingsMotionTitle')}
               </span>
               <span className="settings-desc">{t('settingsMotionDesc')}</span>
             </div>
@@ -104,7 +132,7 @@ export default function SettingsModal({
                 onClick={() => updatePrefs({ reducedMotion: false })}
                 aria-pressed={!prefs.reducedMotion}
               >
-                {language === 'zh' ? '灵动' : 'Active'}
+                {t('settingsMotionActive')}
               </button>
               <button
                 type="button"
@@ -112,7 +140,7 @@ export default function SettingsModal({
                 onClick={() => updatePrefs({ reducedMotion: true })}
                 aria-pressed={prefs.reducedMotion}
               >
-                {language === 'zh' ? '宁静' : 'Calm'}
+                {t('settingsMotionCalm')}
               </button>
             </div>
           </div>
@@ -121,7 +149,7 @@ export default function SettingsModal({
           <div className="settings-row">
             <div className="settings-label-wrap">
               <span className="settings-label">
-                <span className="settings-icon">🌐</span> {language === 'zh' ? '界面语言' : 'Language'}
+                <span className="settings-icon">🌐</span> {t('settingsLanguageTitle')}
               </span>
             </div>
             <div className="settings-segment">

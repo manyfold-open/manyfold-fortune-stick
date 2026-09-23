@@ -13,7 +13,7 @@
  * 供给下面所有组件，除此之外不碰任何一张已经印好的签。
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type MouseEvent } from 'react';
 import type { AppState } from '../shared/types';
 import { api, onUnauthorized } from './api';
 import FortuneGame from './components/FortuneGame';
@@ -28,6 +28,17 @@ import { getPrefs, setPrefs, type Prefs } from './storage';
 import { appUrl, BASE } from './base';
 
 type Route = 'game' | 'history' | 'settings' | 'privacy';
+
+/**
+ * 回到求籤頁。#history、#privacy 這種 hash 頁只清 hash，不整頁重載；
+ * /privacy、/settings 是真的路徑（頁腳就連到 /privacy），只清 hash 會留在原頁，
+ * 那就照 href 正常導回挂载点。
+ */
+const goToGame = (event: MouseEvent<HTMLAnchorElement>) => {
+  if (location.pathname.replace(/\/+$/, '') !== BASE) return;
+  event.preventDefault();
+  if (location.hash) location.hash = '';
+};
 
 const routeFromHash = (): Route => {
   const hash = location.hash.replace(/^#\/?/, '');
@@ -173,13 +184,8 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
       <header className="topbar">
         <a
           className="brand"
-          href="#/"
-          onClick={(e) => {
-            if (window.location.hash) {
-              e.preventDefault();
-              window.location.hash = '';
-            }
-          }}
+          href={appUrl('/')}
+          onClick={goToGame}
           aria-label={t('brandTitle')}
         >
           <span className="brand-torii" aria-hidden="true">⛩️</span>
@@ -199,12 +205,7 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
           <a
             className="text-action history-link"
             href={route === 'game' ? '#history' : appUrl('/')}
-            onClick={(e) => {
-              if (route !== 'game') {
-                e.preventDefault();
-                window.location.hash = '';
-              }
-            }}
+            onClick={route === 'game' ? undefined : goToGame}
           >
             {route === 'game' ? t('navHistory') : t('navBackToGame')}
           </a>

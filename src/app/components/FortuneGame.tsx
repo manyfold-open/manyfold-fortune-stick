@@ -14,7 +14,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FollowUpMessage, Reading } from '../../shared/types';
 import { api, ApiError, errorMessage } from '../api';
 import { EJECT_MS, LEVEL_TONE, PRINT_MS, QUESTION_MIN, QUESTION_MAX } from '../constants';
-import { STICKS } from '../../shared/sticks';
 import { useT } from '../i18n';
 import {
   bambooRattle,
@@ -73,24 +72,7 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
     }
     return 'ask';
   });
-  const [reading, setReading] = useState<Reading | null>(() => {
-    try {
-      if (new URL(window.location.href).searchParams.get('dev_reading') === '1') {
-        return {
-          id: 'demo-reading',
-          question: '我該如何面對工作變化？',
-          language: 'zh',
-          status: 'revealed',
-          interpretation: null,
-          stick: STICKS[18],
-          createdAt: new Date().toISOString(),
-        } as unknown as Reading;
-      }
-    } catch {
-      /* ignore */
-    }
-    return null;
-  });
+  const [reading, setReading] = useState<Reading | null>(null);
   const [sheet, setSheet] = useState<Reading | null>(() => {
     try {
       if (new URL(window.location.href).searchParams.get('dev_phase') === 'ejecting') {
@@ -117,13 +99,7 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
   });
   const [interpreting, setInterpreting] = useState(false);
   const [fault, setFault] = useState<Fault | null>(null);
-  const [restoring, setRestoring] = useState(() => {
-    try {
-      return !new URL(window.location.href).searchParams.get('dev_reading');
-    } catch {
-      return true;
-    }
-  });
+  const [restoring, setRestoring] = useState(true);
   /**
    * 器具选择列已经收掉，籤筒 v2 就是这个产品。
    *
@@ -165,11 +141,6 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
 
   // 刷新页面后恢复当前这一支签和已经生成的解读。
   useEffect(() => {
-    try {
-      if (new URL(window.location.href).searchParams.get('dev_reading')) return;
-    } catch {
-      /* ignore */
-    }
     const id = getCurrentReadingId();
     if (!id) {
       setRestoring(false);

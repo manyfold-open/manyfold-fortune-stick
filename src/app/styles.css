@@ -909,6 +909,17 @@ html, body {
   z-index: 9;
 }
 
+/* 例句要壓在遮罩上面：寫字時點另一句要一下就換過去，不能先被遮罩吃掉一下 */
+.suggest-slot {
+  position: relative;
+  z-index: 10;
+}
+
+/* 滑鼠點框外本來就會失焦，遮罩只是給觸控收鍵盤用的；桌機上留著只會吃掉第一下點擊（籤筒、例句） */
+@media (hover: hover) and (pointer: fine) {
+  .ask-backdrop { display: none; }
+}
+
 /* 繪馬/提問區聚焦時浮現的「✓ 完成」收起鍵盤膠囊小按鈕 */
 .ask-done-pill {
   position: absolute;
@@ -4248,6 +4259,11 @@ code {
   box-shadow: 0 1px 4px rgba(60, 40, 20, 0.08);
   letter-spacing: 0.04em;
   transition: all 0.25s ease;
+}
+
+/* 沒有提示時不畫一顆空膠囊，但位置留著，提示出現時籤筒不會跳 */
+.cyl3d-status .roll-hint:empty {
+  visibility: hidden;
 }
 
 .cyl3d-status .roll-hint.highlight {
