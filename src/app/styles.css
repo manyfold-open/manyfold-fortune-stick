@@ -3800,7 +3800,7 @@ html:lang(en) .shell:has(.cyl3d-stage) .ask-zone {
 }
 
 /* 外層：深木邊 */
-:is(.shell:has(.cyl3d-stage) .ask-zone, .ema-card):before {
+:is(.shell:has(.cyl3d-stage) .ask-zone, .ema-card)::before {
   inset: 0;
   background: var(--wood-edge);
 }
@@ -3828,15 +3828,24 @@ html:lang(en) .shell:has(.cyl3d-stage) .ask-zone {
   100% { transform: rotate(-0.5deg); }
 }
 
-:is(.shell:has(.cyl3d-stage) .ask-zone, .ema-card).typing-sway {
-  animation: ema-tick 0.35s ease-out;
+/*
+ * 每寫一筆晃一下（QuestionForm 輪流加 sway-a / sway-b，名字一換動畫就重播）。
+ * 晃的是獨立的 rotate 屬性，不是 transform：聚焦時那條慢慢擺的 ema-sway 佔著 transform，
+ * 兩者疊在一起，打字不會把慢擺打斷、也不會停手時跳回起點。
+ */
+.shell:has(.cyl3d-stage) .ask-zone.sway-a:focus-within { animation: ema-sway 3.6s ease-in-out infinite alternate, ema-tick-a 0.35s ease-out; }
+.shell:has(.cyl3d-stage) .ask-zone.sway-b:focus-within { animation: ema-sway 3.6s ease-in-out infinite alternate, ema-tick-b 0.35s ease-out; }
+
+@keyframes ema-tick-a {
+  0%, 100% { rotate: 0deg; }
+  30% { rotate: -1.5deg; }
+  70% { rotate: 1.1deg; }
 }
 
-@keyframes ema-tick {
-  0% { transform: rotate(0deg); }
-  30% { transform: rotate(-1.5deg); }
-  70% { transform: rotate(1.1deg); }
-  100% { transform: rotate(-0.4deg); }
+@keyframes ema-tick-b {
+  0%, 100% { rotate: 0deg; }
+  30% { rotate: -1.5deg; }
+  70% { rotate: 1.1deg; }
 }
 
 /* 紅繩：從牌頂正中往上分成倒 V，中間一個小結 */

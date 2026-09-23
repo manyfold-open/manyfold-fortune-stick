@@ -181,7 +181,9 @@ export function createCylinderScene(host: HTMLElement): CylinderScene | null {
   renderer.setSize(width, height);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setClearAlpha(0);
-  host.replaceChildren(renderer.domElement);
+  // 只放自己的畫布，不清掉 host 裡別的東西：React 會往同一個 host 裡放出籤時的落櫻畫布（SakuraBloom），
+  // 那是 React 的節點，這裡清掉的話 React 之後移除它就會丟錯。收場時 dispose 也只拿走自己這一張。
+  host.prepend(renderer.domElement);
 
   const scene = new THREE.Scene();
 

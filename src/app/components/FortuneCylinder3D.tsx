@@ -529,7 +529,7 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
         tabIndex={disabled ? -1 : 0}
         aria-label={en ? 'Stir the sticks in the 3D fortune cylinder' : '攪動籤筒裡的籤'}
       >
-        <SakuraBloom active={blooming} reducedMotion={calmRef.current} />
+        <SakuraBloom active={blooming} reducedMotion={reducedMotion ?? false} />
       </div>
       <div className="roll-action-area">
         {fault ? (

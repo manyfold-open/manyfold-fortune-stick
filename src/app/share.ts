@@ -27,45 +27,6 @@ import type { Interpretation } from '../shared/types';
 import { LEVEL_TONE } from './constants';
 import { CREAM, ROUND, SEAL, SEAL_DEEP, drawEma, drawSakuraMark, drawSeal, drawWashiTape, paintShrine, spacedText } from './shrineArt';
 
-export const LUCKY_ITEMS: Record<number, { zh: string; en: string }> = {
-  1: { zh: '草莓大福', en: 'Strawberry Daifuku' },
-  2: { zh: '熱焙茶', en: 'Hot Hojicha' },
-  3: { zh: '手作御守', en: 'Handmade Omamori' },
-  4: { zh: '晨間散步', en: 'Morning Walk' },
-  5: { zh: '白桃煎茶', en: 'Peach Sencha' },
-  6: { zh: '香氛蠟燭', en: 'Scented Candle' },
-  7: { zh: '整理書桌', en: 'Tidy Workspace' },
-  8: { zh: '抹茶拿鐵', en: 'Matcha Latte' },
-  9: { zh: '翻一本好書', en: 'Reading a Book' },
-  10: { zh: '溫暖熱湯', en: 'Warm Miso Soup' },
-  11: { zh: '看天空雲朵', en: 'Cloud Watching' },
-  12: { zh: '聽一首慢歌', en: 'Soft Lo-Fi Song' },
-  13: { zh: '熱柚子茶', en: 'Warm Yuzu Tea' },
-  14: { zh: '隨手筆記', en: 'Quick Journaling' },
-  15: { zh: '曬曬太陽', en: 'Warm Sunshine' },
-  16: { zh: '一杯溫水', en: 'Cup of Warm Water' },
-  17: { zh: '伸個懶腰', en: 'Gentle Stretch' },
-  18: { zh: '買一朵花', en: 'A Fresh Flower' },
-  19: { zh: '清爽深呼吸', en: 'Deep Breaths' },
-  20: { zh: '吃一顆糖', en: 'Sweet Candy' },
-  21: { zh: '寫下感恩', en: 'Gratitude Note' },
-  22: { zh: '整理相簿', en: 'Organizing Photos' },
-  23: { zh: '品一口咖啡', en: 'Sip of Coffee' },
-  24: { zh: '換上乾淨被單', en: 'Fresh Bedding' },
-  25: { zh: '漫步樹蔭下', en: 'Tree Shade Stroll' },
-  26: { zh: '欣賞落日', en: 'Sunset Glow' },
-  27: { zh: '床頭小夜燈', en: 'Warm Bedside Lamp' },
-  28: { zh: '給植物澆水', en: 'Watering Plants' },
-  29: { zh: '煎一顆荷包蛋', en: 'Sunny-side Egg' },
-  30: { zh: '吹吹傍晚的風', en: 'Evening Breeze' },
-  31: { zh: '對鏡子笑笑', en: 'Smile in Mirror' },
-  32: { zh: '泡個熱水澡', en: 'Warm Bath' },
-  33: { zh: '聽窗外雨聲', en: 'Sound of Rain' },
-  34: { zh: '仰望夜空微星', en: 'Night Stargazing' },
-  35: { zh: '收拾隨身包', en: 'Tidying Your Bag' },
-  36: { zh: '說聲辛苦了', en: 'Gentle Goodnight' },
-};
-
 const WIDTH = 1080;
 const HEIGHT = 1350;
 const APP_NAME = 'AI Fortune Stick';
@@ -336,8 +297,9 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
   const SEAL_R = compact ? 74 : 88;
   const SEAL_BLOCK = SEAL_R * 2 + (compact ? 40 : 44);
   const TITLE = compact ? 70 : 78;
-  // 底部放吉色与二维码（扫了回到游戏）：二维码 104 加一行说明
-  const FOOT = qrImage ? 150 : 84;
+  // 底部放吉色、开运两颗胶囊与二维码（扫了回到游戏）：二维码 104 加一行说明；
+  // 没有二维码时也要放得下两颗胶囊（共 84px）再上下各留一点，不然上面那颗会压在签诗的下框线上
+  const FOOT = qrImage ? 150 : 112;
   const FIXED = PAD + BAND + NO + SEAL_BLOCK + TITLE + FOOT + 18;
   const BODY_MAX = 360;
 
@@ -435,7 +397,8 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
     g.lineTo(innerX + innerW, ly);
     g.stroke();
   }
-  const soulMeaning = en ? `“${meaning}”` : `「${meaning}」`;
+  // 直排是一格一格正著畫的：引號要用直排的形（﹁﹂），橫排的「」立起來會是兩個歪掉的角
+  const soulMeaning = en ? `“${meaning}”` : `﹁${meaning}﹂`;
   if (en) {
     drawHorizontal(
       g,
@@ -462,10 +425,9 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
   y += BODY;
 
   // 今日幸運指南（Lucky Guide：吉色 + 開運小物）
-  const luckyItem = LUCKY_ITEMS[stick.no] ?? { zh: '草莓大福', en: 'Strawberry Daifuku' };
   g.font = `600 21px ${face}`;
   const luckyText = en ? `Lucky tone · ${lucky.en}` : `吉色 · ${lucky.zh}`;
-  const itemText = en ? `Lucky charm · ${luckyItem.en}` : `開運 · ${luckyItem.zh}`;
+  const itemText = en ? `Lucky charm · ${text.luckyItem}` : `开运 · ${text.luckyItem}`;
   const lw1 = g.measureText(luckyText).width + 64;
   const lw2 = g.measureText(itemText).width + 64;
   const guideCx = qrImage ? paperX + (paperW - QR_SIZE - PAD) / 2 : center;

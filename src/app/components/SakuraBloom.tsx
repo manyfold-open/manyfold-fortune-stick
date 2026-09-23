@@ -2,7 +2,10 @@
  * 出籤瞬間的「金光微粒與落櫻綻放」慶祝特效（Sakura & Golden Bloom）。
  *
  * 當籤抽出定格、籤頭浮現號碼時觸發，從籤頭位置向外輕柔綻放一圈金色星芒與櫻花花瓣，
- * 伴隨空靈鈴聲，儀式感與萌感滿滿。
+ * 鈴聲不在這裡：籤筒在同一格（pullCues 的 reveal）搖鈴，這裡只管畫。
+ *
+ * 物理照真實時間走（毫秒），不是照幀數：120Hz 的螢幕不會快一倍，節流的分頁也不會慢一倍。
+ * 下面的係數都是「每 1/60 秒」的量，用 dt 換算。
  */
 
 import { useEffect, useRef } from 'react';
@@ -16,6 +19,7 @@ interface Particle {
   vRot: number;
   size: number;
   alpha: number;
+  /** 已經活了幾毫秒 */
   life: number;
   maxLife: number;
   kind: 'sparkle' | 'petal';
@@ -62,7 +66,7 @@ export default function SakuraBloom(props: { active: boolean; reducedMotion?: bo
         size: isSparkle ? 2.5 + Math.random() * 3.5 : 5.5 + Math.random() * 4.5,
         alpha: 1,
         life: 0,
-        maxLife: 60 + Math.floor(Math.random() * 45), // 約 1~1.8 秒
+        maxLife: 1000 + Math.random() * 750, // 1~1.75 秒
         kind: isSparkle ? 'sparkle' : 'petal',
         color: isSparkle
           ? Math.random() > 0.4 ? '#f5d580' : '#fff3d1'
@@ -103,21 +107,28 @@ export default function SakuraBloom(props: { active: boolean; reducedMotion?: bo
       ctx.restore();
     };
 
-    const render = () => {
+    const FRAME = 1000 / 60;
+    let last: number | null = null;
+
+    const render = (now: number) => {
+      // 一幀最多算 4 格（約 67ms）：分頁切回來時粒子不要一口氣飛出畫面
+      const k = last === null ? 1 : Math.min(now - last, FRAME * 4) / FRAME;
+      last = now;
       ctx.clearRect(0, 0, width, height);
       let alive = 0;
+      const drag = 0.95 ** k;
 
       for (const p of particles) {
-        p.life += 1;
+        p.life += k * FRAME;
         if (p.life >= p.maxLife) continue;
         alive += 1;
 
         // 物理更新：空氣阻力與緩緩重力下落
-        p.vx *= 0.95;
-        p.vy = p.vy * 0.95 + 0.06; // 輕微重力
-        p.x += p.vx;
-        p.y += p.vy;
-        p.rot += p.vRot;
+        p.vx *= drag;
+        p.vy = p.vy * drag + 0.06 * k; // 輕微重力
+        p.x += p.vx * k;
+        p.y += p.vy * k;
+        p.rot += p.vRot * k;
 
         // 淡出曲線
         const progress = p.life / p.maxLife;
