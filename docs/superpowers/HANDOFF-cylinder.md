@@ -86,6 +86,14 @@
 手機上偏小 —— 還沒處理；一個候選是讓被抽出那支的籤頭圓盤直接印號碼（「十三」），
 圓盤是整支籤上最大、最好認的字。
 
+**神社日光主題**（使用者給了參考拼貼、選了「繪馬 + 木札」與「一律白天」）已做完，
+設計 [`specs/2026-09-23-shrine-theme-design.md`](specs/2026-09-23-shrine-theme-design.md)、
+計畫 [`plans/2026-09-23-shrine-theme.md`](plans/2026-09-23-shrine-theme.md)：
+`ShrineBackdrop`（鳥居柱、櫻花枝、canvas 花瓣，動力學在 `src/shared/sakura.ts`）、
+題目寫在繪馬上（`Ema.tsx`）、例句是木札、拿掉深色模式。AGENTS.md 第 7、8 條跟著改了。
+驗證花瓣時注意：面板是 `document.hidden = true`，花瓣迴圈不會啟動 —— 用
+`Object.defineProperty(document, 'hidden', { get: () => false })` 墊掉，再切一次「动画」開關讓它重跑。
+
 還沒做：擲筊確認；`src/app/roll/scene.ts` 的 `PCFSoftShadowMap` 警告（使用者說先擱著）。
 
 ## 驗證技巧（內建瀏覽器面板）
