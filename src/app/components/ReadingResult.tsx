@@ -41,6 +41,7 @@ export default function ReadingResult(props: {
   const { interpretation } = reading;
   // 重新整理時已經解過的籤直接停在背面：使用者離開時看的就是解籤
   const [flipped, setFlipped] = useState(Boolean(interpretation));
+  const [settled, setSettled] = useState(Boolean(interpretation));
   const [panel, setPanel] = useState<Panel>(null);
   const displayQuestion = withoutDashes(reading.question);
   const displayInterpretation = interpretation
@@ -62,11 +63,24 @@ export default function ReadingResult(props: {
   /** 背面有東西可看：解好了，或正在解（先放骨架） */
   const hasBack = Boolean(interpretation) || props.interpreting;
   const showBack = flipped && hasBack;
+  const isSettled = showBack && settled;
 
   // 一按「解签」就翻到背面，骨架在背面等著
   useEffect(() => {
-    if (props.interpreting) setFlipped(true);
+    if (props.interpreting) {
+      setSettled(false);
+      setFlipped(true);
+    }
   }, [props.interpreting]);
+
+  useEffect(() => {
+    if (flipped) {
+      const timer = window.setTimeout(() => setSettled(true), 750);
+      return () => window.clearTimeout(timer);
+    } else {
+      setSettled(false);
+    }
+  }, [flipped]);
 
   useEffect(() => {
     if (!panel) return;
@@ -80,7 +94,34 @@ export default function ReadingResult(props: {
   const flip = (toBack: boolean) => {
     if (props.sound) paperSettleSound(0.2);
     setPanel(null);
-    setFlipped(toBack);
+    if (!toBack) {
+      setSettled(false);
+      requestAnimationFrame(() => {
+        setFlipped(false);
+      });
+    } else {
+      setSettled(false);
+      setFlipped(true);
+    }
+  };
+
+  const handleTransitionEnd = (e: React.TransitionEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget && e.propertyName === 'transform') {
+      if (flipped) {
+        setSettled(true);
+      }
+    }
+  };
+
+  const handleScrollWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    if (el.scrollHeight > el.clientHeight) {
+      const before = el.scrollTop;
+      el.scrollTop += e.deltaY;
+      if (el.scrollTop !== before) {
+        e.stopPropagation();
+      }
+    }
   };
 
   const togglePanel = (next: Exclude<Panel, null>) => setPanel((open) => (open === next ? null : next));
@@ -191,8 +232,8 @@ export default function ReadingResult(props: {
             </EmaChrome>
           </div>
 
-          <div className={`omikuji-card${showBack ? ' flipped' : ''}`}>
-            <div className="omikuji-inner">
+          <div className={`omikuji-card${showBack ? ' flipped' : ''}${isSettled ? ' settled' : ''}`}>
+            <div className="omikuji-inner" onTransitionEnd={handleTransitionEnd}>
               <div className="omikuji face face-front" aria-hidden={showBack}>
                 <StickFace stick={reading.stick} language={reading.language} />
                 {hasBack && (
@@ -216,7 +257,9 @@ export default function ReadingResult(props: {
                       </button>
                     </p>
 
-                    <div className="sheet-scroll">{interpretation ? interpretationBlocks : loadingSkeleton}</div>
+                    <div className="sheet-scroll" onWheel={handleScrollWheel}>
+                      {interpretation ? interpretationBlocks : loadingSkeleton}
+                    </div>
 
                     {interpretation && !panel && (
                       <nav className="result-actions" data-lang={reading.language}>
@@ -235,7 +278,7 @@ export default function ReadingResult(props: {
 
                   {/* 分享、追問浮在背面上：一張蓋住解籤的紙，自己捲，不讓頁面往下長 */}
                   {panel && interpretation && (
-                    <div className="sheet-panel" role="dialog" aria-modal="false">
+                    <div className="sheet-panel" role="dialog" aria-modal="false" onWheel={handleScrollWheel}>
                       {panel === 'share' ? (
                         <SharePanel
                           stick={reading.stick}

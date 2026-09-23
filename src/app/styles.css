@@ -4224,6 +4224,33 @@ code {
 .roll-hint.active { color: var(--on-ground); }
 .roll-hint.highlight { color: var(--on-ground); font-weight: 600; }
 
+.cyl3d-status {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.cyl3d-status .roll-hint {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 16px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--ground) 82%, #fff);
+  border: 1px solid color-mix(in srgb, var(--rule) 60%, transparent);
+  color: var(--on-ground);
+  font: 400 13px/1.5 var(--serif);
+  box-shadow: 0 1px 4px rgba(60, 40, 20, 0.08);
+  letter-spacing: 0.04em;
+  transition: all 0.25s ease;
+}
+
+.cyl3d-status .roll-hint.highlight {
+  font-weight: 600;
+  border-color: color-mix(in srgb, var(--seal) 50%, transparent);
+  color: var(--seal);
+}
+
 .roll-fault-pill {
   display: inline-flex;
   align-items: center;
@@ -5136,19 +5163,24 @@ html { overflow-x: clip; }
  */
 .omikuji-card {
   /* 900px 高的螢幕：繪馬 ＋ 卡 ＋ 卡下的「解 签」鈕 ＋ 頁腳剛好放得下 */
-  --card-h: clamp(420px, calc(100dvh - 480px), 600px);
+  --card-h: clamp(420px, calc(100dvh - 460px), 580px);
   width: 100%;
   perspective: 1800px;
 }
 
+.omikuji-card.flipped {
+  /* 翻到背面後，解籤內容較多，動作列內嵌在卡片底部，桌面留足高度讓解籤內文充分展開 */
+  --card-h: clamp(500px, calc(100dvh - 250px), 700px);
+}
+
 @media (max-width: 640px) {
   .omikuji-card {
-    /* 正面未翻開時，留足高度給下方的「解籤」與「再求一籤」按鈕 */
-    --card-h: clamp(380px, calc(100dvh - 300px), 540px);
+    /* 正面未翻開時，留足高度給下方的「解籤」與「再求一籤」按鈕，同時避免籤底吉色被切掉 */
+    --card-h: clamp(415px, calc(100dvh - 270px), 540px);
   }
   .omikuji-card.flipped {
     /* 翻到背面後，解籤內容較多，動作列內嵌在卡片底部，卡片可更充裕高 */
-    --card-h: clamp(460px, calc(100dvh - 240px), 640px);
+    --card-h: clamp(460px, calc(100dvh - 220px), 640px);
   }
 }
 
@@ -5161,6 +5193,18 @@ html { overflow-x: clip; }
 
 .omikuji-card.flipped .omikuji-inner {
   transform: rotateY(180deg);
+}
+
+/* 翻面動畫結束後（settled），移除 3D 旋轉矩陣，徹底解除 Chromium/WebKit 對 3D 容器內的滾動事件鎖定 */
+.omikuji-card.flipped.settled .omikuji-inner {
+  transform: none;
+  transform-style: flat;
+  -webkit-transform-style: flat;
+  transition: none;
+}
+
+.omikuji-card.flipped.settled .omikuji.face-back {
+  transform: none;
 }
 
 .omikuji.face {
@@ -5187,11 +5231,18 @@ html { overflow-x: clip; }
 
 .face-front .slip {
   flex: 1;
+  padding-bottom: 14px;
 }
 
 .face-front .slip-body {
   flex: 1;
   align-items: center;
+}
+
+.face-front .slip-foot {
+  flex: none;
+  padding-top: 6px;
+  padding-bottom: 2px;
 }
 
 .omikuji.face-back {
@@ -5237,20 +5288,40 @@ html { overflow-x: clip; }
   /* 捲軸不要壓到內文，並為底部預留足夠留白避免被按鈕遮擋 */
   margin-right: -10px;
   padding-right: 10px;
-  padding-bottom: 24px;
+  padding-bottom: 20px;
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--seal) 30%, transparent) transparent;
+  scrollbar-color: color-mix(in srgb, var(--seal) 45%, transparent) color-mix(in srgb, var(--ground) 40%, transparent);
+}
+
+.face-back .sheet-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.face-back .sheet-scroll::-webkit-scrollbar-track {
+  background: color-mix(in srgb, var(--seal) 8%, transparent);
+  border-radius: 3px;
+}
+
+.face-back .sheet-scroll::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--seal) 45%, transparent);
+  border-radius: 3px;
+}
+
+.face-back .sheet-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--seal);
 }
 
 .face-back .result-actions {
   flex: none;
-  margin-top: 10px;
-  padding-top: 12px;
+  margin-top: 8px;
+  padding-top: 10px;
   gap: 10px;
   animation: none;
   position: relative;
   z-index: 10;
   pointer-events: auto;
+  border-top: 1px dashed color-mix(in srgb, var(--seal) 25%, transparent);
+  background: linear-gradient(180deg, rgba(251, 247, 240, 0.92) 0%, var(--paper) 100%);
 }
 
 /* 翻面的小木札：兩面紅帶的右端 */
