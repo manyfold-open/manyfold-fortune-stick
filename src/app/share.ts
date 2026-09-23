@@ -34,13 +34,12 @@ const APP_NAME = 'AI Fortune Stick';
 const QR_SIZE = 104;
 const SERIF = '"Noto Serif SC", "Songti SC", "STSong", "SimSun", serif';
 const SERIF_EN = 'Charter, "Charter BT", Georgia, Palatino, "Noto Serif", "Iowan Old Style", "Times New Roman", serif';
-const MONO = 'ui-monospace, "SF Mono", Menlo, Consolas, monospace';
 
 const PAPER = '#fffefa';
 const INK = '#17161a';
 const INK_2 = '#4d4a53';
 
-/** 签运色：只用在印外圈的光晕与吉色色点上。与 styles.css 的 `[data-tone]` 一致。 */
+/** 签运色：只用在吉色那一格（底色、邊框、色点）。与 styles.css 的 `[data-tone]` 一致。 */
 const TONE: Record<StickLevel, string> = {
   上上签: '#3f5f92',
   上签: '#9a7412',
@@ -284,16 +283,20 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
   const paperX = center - paperW / 2;
   const withQuestion = input.includeQuestion && Boolean(question.trim());
 
-  paintShrine(g, WIDTH, HEIGHT);
+  // 鳥居的貫下緣：繪馬的紅繩從那裡垂下來（紅繩長 40px，見 drawEma）
+  const nukiBottom = paintShrine(g, WIDTH, HEIGHT);
   g.textAlign = 'center';
 
   // 纸的各段高度：表头带、签号、大红印、签名、签诗、吉色
   const PAD = 24;
   const BAND = 62;
-  const NO = 52;
-  const SEAL_R = 88;
-  const SEAL_BLOCK = SEAL_R * 2 + 44;
-  const TITLE = 78;
+  // 有繪馬時紙往下讓了一整塊（繪馬掛在鳥居的貫下面）：印、簽號、簽名各收一點，
+  // 簽詩那一格才放得下英文折成四行的兩句 —— 不收的話簽意會壓到吉色那條線上
+  const compact = withQuestion;
+  const NO = compact ? 46 : 52;
+  const SEAL_R = compact ? 74 : 88;
+  const SEAL_BLOCK = SEAL_R * 2 + (compact ? 40 : 44);
+  const TITLE = compact ? 70 : 78;
   // 底部放吉色与二维码（扫了回到游戏）：二维码 104 加一行说明
   const FOOT = qrImage ? 150 : 84;
   const FIXED = PAD + BAND + NO + SEAL_BLOCK + TITLE + FOOT + 18;
@@ -312,13 +315,14 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
       while (last && g.measureText(`${last}…`).width > paperW - 110) last = [...last].slice(0, -1).join('');
       lines[1] = `${last.trimEnd()}…`;
     }
-    const emaBottom = drawEma(g, center, 120, paperW, lines, qFont, 52, en ? 'EMA · MAKE A WISH' : '絵馬 · 心願');
+    const emaBottom = drawEma(g, center, nukiBottom + 40, paperW, lines, qFont, 52, en ? 'EMA · MAKE A WISH' : '絵馬 · 心願');
     paperTop = emaBottom + 34;
   } else {
-    paperTop = Math.round((HEIGHT - 70 - (FIXED + BODY_MAX)) / 2);
+    // 沒有繪馬：紙放在鳥居的貫與畫面下緣之間的正中
+    paperTop = Math.round(nukiBottom + (HEIGHT - nukiBottom - (FIXED + BODY_MAX)) / 2);
   }
-  // 問題折成兩行時繪馬變高：籤詩那一格讓出空間，頁腳才不會貼著紙
-  const BODY = Math.max(300, Math.min(BODY_MAX, HEIGHT - 96 - paperTop - FIXED));
+  // 問題折成兩行時繪馬變高：籤詩那一格讓出空間，紙才不會貼著畫面下緣
+  const BODY = Math.max(300, Math.min(BODY_MAX, HEIGHT - 40 - paperTop - FIXED));
   const paperH = FIXED + BODY;
 
   // 纸：阴影、纸色、朱红双线框
@@ -360,7 +364,7 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
   // 等级大红印：三个字的等级小一号，英文两个词各一行
   const sealLines = en ? level.split(' ') : [level];
   const sealFont = en ? `700 24px ${face}` : `800 ${[...level].length >= 3 ? 40 : 54}px ${SERIF}`;
-  drawSeal(g, center, y + SEAL_BLOCK / 2, SEAL_R, sealLines, sealFont, en ? 30 : 54, tone);
+  drawSeal(g, center, y + SEAL_BLOCK / 2, SEAL_R, sealLines, sealFont, en ? 30 : 54);
   y += SEAL_BLOCK;
 
   // 签名，左右各一条朱红细线
@@ -448,13 +452,8 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
     g.fillText(en ? 'SCAN TO PLAY' : '扫码再玩一签', qx + QR_SIZE / 2, qy + QR_SIZE + 20);
   }
 
-  // 页脚
-  g.fillStyle = 'rgba(59, 42, 30, 0.62)';
-  g.font = `500 22px ${en ? face : ROUND}`;
-  spacedText(g, en ? 'A STICK IS A REFERENCE · THE WALKING IS YOURS' : '问一签 · 签为参考，路要自己走', center, HEIGHT - 58, en ? 2 : 6);
-  g.fillStyle = 'rgba(59, 42, 30, 0.45)';
-  g.font = `400 22px ${MONO}`;
-  g.fillText(location.host, center, HEIGHT - 24);
+  // 以前紙下面還有兩行頁腳（「签为参考，路要自己走」和網址），使用者要拿掉；
+  // 回到遊戲的路是右下角的二維碼
 
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(

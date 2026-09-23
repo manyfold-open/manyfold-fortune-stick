@@ -16,25 +16,26 @@ import {
   BRANCH_VIEW,
   FLOWER_EYE,
   FLOWER_PINK,
+  ROPE_SAG,
+  ROPE_Y0,
+  SHIDE_AT,
+  SHIDE_D,
+  SHIDE_VIEW,
+  TORII_KASAGI_D,
+  TORII_KASAGI_VIEW,
+  TORII_LACQUER,
+  TORII_RED,
+  TORII_SHIMAKI_D,
   drawPetal,
+  ropeY,
 } from '../shrineArt';
-
-/**
- * 注連繩的下垂：二次 Bézier 控制點在正中，x 對 t 是線性的，所以 y 直接寫成 u 的拋物線。
- * 紙垂要掛在繩子上，位置得跟 SVG 裡那條繩子用同一條式子算。
- */
-const ROPE_Y0 = 8;
-const ROPE_SAG = 8;
-const ropeY = (u: number): number => ROPE_Y0 + 4 * ROPE_SAG * u * (1 - u);
-/** 紙垂掛在繩上的位置（繩長的比例）。只掛兩旁：正中是繪馬的紅繩垂下來的地方 */
-const SHIDE_AT = [0.1, 0.24, 0.76, 0.9];
 
 /**
  * 鳥居：黑色笠木（兩端上翹）＋朱紅島木，兩根柱子，一根貫，笠木與貫之間掛注連繩與紙垂。
  * 橫木全在繪馬上方（使用者：「中間輸入框跟神社打架」—— 以前注連繩與貫從繪馬後面穿過去）：
  * 由上而下 笠木＋島木 52～93px → 注連繩 96～104px → 貫 116～130px → 繪馬的紅繩從貫垂下 → 繪馬 156px。
  * 笠木、繩子用 preserveAspectRatio="none" 撐滿寬度：只在水平方向拉，弧線還是順的；
- * 紙垂不能被拉，另外用 HTML 定位。
+ * 紙垂不能被拉，另外用 HTML 定位。形狀跟分享圖共用（shrineArt.ts），尺寸寫在 styles.css。
  */
 function Torii() {
   return (
@@ -49,22 +50,24 @@ function Torii() {
           <path d={`M0 ${ROPE_Y0} Q500 ${ROPE_Y0 + 2 * ROPE_SAG} 1000 ${ROPE_Y0}`} className="rope-twist" vectorEffect="non-scaling-stroke" />
         </svg>
         {SHIDE_AT.map((u) => (
-          <svg key={u} className="shide" viewBox="0 0 14 38" style={{ left: `${u * 100}%`, top: ropeY(u) - 2 }} aria-hidden>
-            {/* 一條紙摺成閃電形：一格一格左右錯開往下 */}
-            <path d="M6 0h2v5h-2z M5 4h8v8h-8z M1 11h8v8h-8z M5 18h8v8h-8z M1 25h8v8h-8z M5 32h6l-3 5z" />
+          <svg key={u} className="shide" viewBox={`0 0 ${SHIDE_VIEW.w} ${SHIDE_VIEW.h}`} style={{ left: `${u * 100}%`, top: ropeY(u) - 2 }} aria-hidden>
+            <path d={SHIDE_D} />
           </svg>
         ))}
       </div>
-      <svg className="torii-kasagi" viewBox="0 0 1000 44" preserveAspectRatio="none" aria-hidden>
-        {/* 島木：朱紅，貼在笠木下緣 */}
-        <path d="M0 12 C150 26 350 32 500 32 C650 32 850 26 1000 12 L1000 21 C850 35 650 41 500 41 C350 41 150 35 0 21 Z" fill="#b8321f" />
-        {/* 笠木：黑漆，中間厚、兩端薄而上翹 */}
-        <path d="M0 0 C150 10 350 12 500 12 C650 12 850 10 1000 0 L1000 12 C850 26 650 32 500 32 C350 32 150 26 0 12 Z" fill="url(#kasagi-lacquer)" />
+      <svg
+        className="torii-kasagi"
+        viewBox={`0 0 ${TORII_KASAGI_VIEW.w} ${TORII_KASAGI_VIEW.h}`}
+        preserveAspectRatio="none"
+        aria-hidden
+      >
+        <path d={TORII_SHIMAKI_D} fill={TORII_RED} />
+        <path d={TORII_KASAGI_D} fill="url(#kasagi-lacquer)" />
         <defs>
           <linearGradient id="kasagi-lacquer" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#4a372d" />
-            <stop offset="0.35" stopColor="#2c211c" />
-            <stop offset="1" stopColor="#1f1713" />
+            <stop offset="0" stopColor={TORII_LACQUER[0]} />
+            <stop offset="0.35" stopColor={TORII_LACQUER[1]} />
+            <stop offset="1" stopColor={TORII_LACQUER[2]} />
           </linearGradient>
         </defs>
       </svg>
