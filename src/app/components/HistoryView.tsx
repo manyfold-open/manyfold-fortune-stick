@@ -9,6 +9,7 @@
 
 import { useState } from 'react';
 import { detectLanguage } from '../../shared/lang';
+import { withoutDashes } from '../../shared/text';
 import { stickByNo } from '../../shared/sticks';
 import { api } from '../api';
 import { copyFor, useT } from '../i18n';
@@ -87,7 +88,7 @@ export default function HistoryView() {
             <button className="history-summary" onClick={() => setOpenId(open ? null : record.id)}>
               <StickFace stick={stick} language={language} size="small" />
               <span className="history-meta">
-                <span className="history-question">{record.question}</span>
+                <span className="history-question">{withoutDashes(record.question)}</span>
                 <span className="muted small">{formatTime(record.createdAt)}</span>
               </span>
               <span className="history-toggle" aria-hidden>
@@ -99,17 +100,17 @@ export default function HistoryView() {
               <div className="history-body">
                 {record.interpretation ? (
                   <>
-                    <p className="lead">{record.interpretation.meaning}</p>
-                    <p>{record.interpretation.answer}</p>
+                    <p className="lead">{withoutDashes(record.interpretation.meaning)}</p>
+                    <p>{withoutDashes(record.interpretation.answer)}</p>
                     {record.interpretation.notice && (
                       <p>
                         <strong>{own.historyNoticeLabel}</strong>
-                        {record.interpretation.notice}
+                        {withoutDashes(record.interpretation.notice)}
                       </p>
                     )}
                     <p>
                       <strong>{own.historyActionLabel}</strong>
-                      {record.interpretation.action}
+                      {withoutDashes(record.interpretation.action)}
                     </p>
                   </>
                 ) : (
@@ -121,7 +122,10 @@ export default function HistoryView() {
                     <h4>{t('historyFollowUps')}</h4>
                     {record.followUps.map((message, index) => (
                       <div key={index} className={`bubble ${message.role}`}>
-                        {message.content}
+                        <span className="bubble-role" aria-hidden="true">
+                          {t(message.role === 'user' ? 'followUpRoleUser' : 'followUpRoleAgent')}
+                        </span>
+                        {withoutDashes(message.content)}
                       </div>
                     ))}
                   </div>

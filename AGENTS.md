@@ -69,7 +69,11 @@ Rules for anyone — human or AI agent — iterating on it. These are the load-b
    inside the `interpretation` JSON blob, which needs no schema.
 11. **Error copy lives in the browser, keyed by the API's `code`.** The worker's own message
    strings are a developer-readable fallback; `readings.error` stores a code. An unknown
-   code falls through to the server's sentence, so a new route's error is never swallowed.
+   code falls through to the server's sentence, so a new route's error is never swallowed —
+   that fall-through is the whole point, and it is what tells you an agent-side failure apart
+   from every other one. The map and both fall-throughs live in `src/shared/error-copy.ts`.
+   A failed parse stores `unparseable` followed by the start of what the agent actually said
+   (redacted, truncated); the paper shows only the copy, the raw text is for whoever debugs it.
 12. **Never commit secrets.** New secrets get a commented entry in `.dev.vars.example` and an
    instruction to run `npx wrangler secret put NAME`. `.dev.vars` is git-ignored; keep it so.
 13. **Respect the runtime split.** `src/worker/` runs in workerd only (no Node-built-ins),
@@ -82,8 +86,12 @@ Rules for anyone — human or AI agent — iterating on it. These are the load-b
      (`probeAgentAuth`), never `message/send` — a real turn bills the user;
    - agent-supplied URLs go through `validateA2AUrl` before use (SSRF guard);
    - error strings pass through `safeErrorText` before leaving the worker;
-   - A2A `messageId`s are derived from stored rows, not random, so retries cannot
-     double-bill (`src/worker/fortune.ts`).
+   - A2A `messageId`s are derived from stored rows, not random, so a double-submit cannot
+     double-bill — but they must move when the row does. `interpretMessageId` derives one
+     from the row's `updated_at`: two clicks inside the same attempt read the same cursor
+     and stay one message, while a deliberate 重试解签 (the row has been written since) is a
+     new one. A messageId fixed per reading makes every retry byte-identical to the first,
+     and the agent answers it with an empty stream — that button then never works.
 15. **Keep new routes behind the admin gate.** Any route added under `/api/` is protected by
    the `ADMIN_PASSWORD` middleware automatically — do not add exceptions beyond `/api/health`
    and `/api/state` without a reason as good as theirs.

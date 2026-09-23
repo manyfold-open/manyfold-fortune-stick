@@ -8,7 +8,7 @@
  *   user opens authUrl, checks that userCode matches, ticks the agents to share
  *   POST {base}/api/connect/a2a/poll   {deviceCode}
  *        → pending | denied | expired
- *        | approved { userEmail, agents[{ agentId, name, rpcUrl, cardUrl, token, expiresAt }] }
+ *        | approved { agents[{ agentId, name, rpcUrl, cardUrl, token, expiresAt }] }
  *
  * Security invariants, each for a reason:
  *  - deviceCode is the *only* thing that can redeem agent tokens, so it stays on the
@@ -39,7 +39,7 @@ import { seal, unseal } from './crypto';
 import { now } from './db';
 
 const DEFAULT_API_BASE = 'https://api.manyfold.ai';
-const CLIENT_NAME = '问一签 Fortune Sticks';
+const CLIENT_NAME = 'AI Fortune Stick';
 const START_TIMEOUT_MS = 20_000;
 const POLL_TIMEOUT_MS = 30_000;
 const SESSION_TTL_MS = 15 * 60_000;
@@ -182,7 +182,7 @@ type PollResponse =
   | { status: 'pending' }
   | { status: 'denied' }
   | { status: 'expired' }
-  | { status: 'approved'; userEmail: string | null; agents: PollAgent[] };
+  | { status: 'approved'; agents: PollAgent[] };
 
 export async function pollConnect(env: Env, connectId: string): Promise<PollOutcome> {
   const row = await env.DB.prepare(
@@ -258,7 +258,9 @@ export async function pollConnect(env: Env, connectId: string): Promise<PollOutc
     }
   }
 
-  return { status: 'approved', userEmail: result.userEmail ?? null, agents: saved, failed };
+  // Manyfold may include the approving account email, but this app does not use it.
+  // Do not forward an unnecessary personal identifier to the browser.
+  return { status: 'approved', agents: saved, failed };
 }
 
 async function saveConnectedAgent(env: Env, entry: PollAgent): Promise<ConnectedAgent> {

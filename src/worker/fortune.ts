@@ -26,6 +26,8 @@ import {
   stickText,
   type FortuneStick,
 } from '../shared/sticks';
+import { UNPARSEABLE } from '../shared/error-copy';
+import { withoutDashes } from '../shared/text';
 import { HttpError, type AgentCredential, type Env } from './types';
 import { A2AError, consumeA2AStream, safeErrorText } from './a2a';
 import { credentialFor, listConnectedAgents } from './connect';
@@ -68,33 +70,41 @@ interface ReadingRow {
   context_id: string | null;
   active_task_id: string | null;
   created_at: string;
+  updated_at: string | null;
 }
 
 const READING_COLUMNS =
-  'id, question, stick_no, status, interpretation, error, context_id, active_task_id, created_at';
+  'id, question, stick_no, status, interpretation, error, context_id, active_task_id, created_at, updated_at';
 
 function toReading(row: ReadingRow): Reading {
   const stick = stickByNo(row.stick_no);
   if (!stick) throw new HttpError(500, 'unknown_stick', '这条求签记录指向了一支不存在的签。');
   // 语言由问题推导，不落库：question 写进去之后就不再改，所以这里算出来的
   // 永远是当初印出来的那张纸的语言。这个库没有迁移步骤，能不加列就不加列。
-  const language = detectLanguage(row.question);
+  const question = withoutDashes(row.question);
   let interpretation: Interpretation | null = null;
   if (row.interpretation) {
     try {
-      interpretation = JSON.parse(row.interpretation) as Interpretation;
+      const parsed = JSON.parse(row.interpretation) as Interpretation;
+      interpretation = {
+        ...parsed,
+        meaning: withoutDashes(parsed.meaning ?? ''),
+        answer: withoutDashes(parsed.answer ?? ''),
+        notice: withoutDashes(parsed.notice ?? ''),
+        action: withoutDashes(parsed.action ?? ''),
+      };
     } catch {
       interpretation = null;
     }
   }
   return {
     id: row.id,
-    question: row.question,
+    question,
     stick,
     status: (row.status as ReadingStatus) ?? 'drawn',
     interpretation,
     error: row.error,
-    language,
+    language: detectLanguage(question),
     createdAt: row.created_at,
   };
 }
@@ -111,7 +121,7 @@ async function readRow(env: Env, id: string): Promise<ReadingRow> {
 
 /** 校验问题。长度按「字符」数，中文一个字算一个。 */
 export function normalizeQuestion(raw: unknown): string {
-  const question = typeof raw === 'string' ? raw.trim().replace(/\s+/g, ' ') : '';
+  const question = typeof raw === 'string' ? withoutDashes(raw.trim().replace(/\s+/g, ' ')) : '';
   const length = [...question].length;
   if (length === 0) throw new HttpError(400, 'question_required', '先写下你想问的事，再开始摇签。');
   if (length < QUESTION_MIN_CHARS) {
@@ -156,14 +166,29 @@ const FALLBACK_NOTICE: Record<Language, string> = {
   en: 'This is the stick\u2019s general reading. It has not been matched to your question yet.',
 };
 
+/** 存进 readings.error 的 agent 原文最多留这么长：够看出它回了什么，又不至于占满一行。 */
+const UNPARSEABLE_SNIPPET_CHARS = 200;
+
+/**
+ * 解析不出解读时存的那一条。
+ *
+ * 只存一个 `unparseable`，事后就只知道「没解析出来」，不知道 agent 到底回了什么 ——
+ * 是散文、是半截 JSON、还是一句「我没配模型」。所以把原文的开头一起存上（脱敏、截断）。
+ * 纸上不印这一段，浏览器认出这个前缀就只说人话（src/shared/error-copy.ts）。
+ */
+export function unparseableError(raw: string): string {
+  const snippet = withoutDashes(safeErrorText(raw).trim()).slice(0, UNPARSEABLE_SNIPPET_CHARS);
+  return snippet ? `${UNPARSEABLE}: ${snippet}` : UNPARSEABLE;
+}
+
 /** AI 不可用时显示的内容：这支签预先写好的通用解释，永远可用。 */
 export function fallbackInterpretation(stick: FortuneStick, language: Language): Interpretation {
   const text = stickText(stick, language);
   return {
-    meaning: text.meaning,
-    answer: text.general,
-    notice: FALLBACK_NOTICE[language],
-    action: text.action,
+    meaning: withoutDashes(text.meaning),
+    answer: withoutDashes(text.general),
+    notice: withoutDashes(FALLBACK_NOTICE[language]),
+    action: withoutDashes(text.action),
     source: 'fallback',
     language,
   };
@@ -175,6 +200,69 @@ const FIELD_LIMITS: Record<keyof Omit<Interpretation, 'source' | 'language'>, nu
   notice: 200,
   action: 120,
 };
+
+/** 按键切片时认得的键，和下面 pick 用的那几组别名保持一致。 */
+const SALVAGE_KEYS = [
+  'meaning',
+  'summary',
+  'answer',
+  'response',
+  'content',
+  'text',
+  'notice',
+  'caveat',
+  'insight',
+  'action',
+  'suggestion',
+  'nextStep',
+];
+
+/** 救回来的是人话不是代码，转义只还原这几种。 */
+function unescapeJsonish(raw: string): string {
+  return raw
+    .replace(/\\n/g, '\n')
+    .replace(/\\t/g, '\t')
+    .replace(/\\(["\\/])/g, '$1');
+}
+
+/**
+ * 严格解析失败之后的保底：**只切片，不改字**。
+ *
+ * 值的起止由**键**决定，不由引号决定 —— 模型很爱把中文引号写成没转义的半角引号
+ *（线上就有一条 `"notice":"容易把"谨慎"当成拖延"`），一个这样的引号就让整份写得
+ * 好好的解读被判成坏 JSON，用户拿到的是通用解释。按键切边界不会被值里的引号带偏，
+ * 也永远不会生出 agent 没写过的字：每个值都是原文里的一整段，最多去掉收尾的
+ * `"`、`,`、`}`。顺带把被截断的回覆也救了 —— 最后一段没写完，前面写完的照样能用。
+ *
+ * 一个认得的键都没有就返回 null，调用方照旧落回通用解释 —— 保底不是什么都吞。
+ */
+function salvageFields(text: string): Record<string, unknown> | null {
+  const anchor = new RegExp(`"(${SALVAGE_KEYS.join('|')})"\\s*:\\s*"`, 'g');
+  const found: { key: string; at: number; from: number }[] = [];
+  for (let match = anchor.exec(text); match; match = anchor.exec(text)) {
+    found.push({ key: match[1], at: match.index, from: match.index + match[0].length });
+  }
+  if (found.length === 0) return null;
+
+  const salvaged: Record<string, unknown> = {};
+  found.forEach((field, index) => {
+    // 这个值一直延伸到下一个键为止，中间有多少引号都不管。
+    const end = found[index + 1]?.at ?? text.length;
+    const value = unescapeJsonish(
+      text
+        .slice(field.from, end)
+        .replace(/\s+$/, '')
+        .replace(/[}\]]+$/, '')
+        .replace(/\s+$/, '')
+        .replace(/,$/, '')
+        .replace(/\s+$/, '')
+        .replace(/"$/, ''),
+    ).trim();
+    // 同一个键出现多次（串流里重复的快照）只认第一次写满的那一份。
+    if (value && !salvaged[field.key]) salvaged[field.key] = value;
+  });
+  return Object.keys(salvaged).length > 0 ? salvaged : null;
+}
 
 /**
  * 把 agent 返回的文本解析成四段解读。
@@ -188,34 +276,117 @@ export function parseInterpretation(
   language: Language,
 ): Interpretation | null {
   const preset = stickText(stick, language);
-  const unfenced = raw.replace(/```(?:json)?/gi, '').trim();
-  const start = unfenced.indexOf('{');
-  const end = unfenced.lastIndexOf('}');
-  if (start < 0 || end <= start) return null;
+  // Manyfold agents are plain-text A2A agents. The prompt asks for JSON, but the
+  // agent may still return a perfectly useful prose answer (or JSON with a
+  // slightly different envelope). Prefer the structured form, then degrade
+  // gracefully to the text the agent actually returned instead of throwing away
+  // a valid reading and showing the generic fallback.
+  const unfenced = raw.replace(/```(?:json|text|plain)?/gi, '').replace(/```/g, '').trim();
 
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(unfenced.slice(start, end + 1));
-  } catch {
+  const findObject = (value: unknown): Record<string, unknown> | null => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+    const object = value as Record<string, unknown>;
+    if (
+      Object.keys(object).some((key) => ['answer', 'response', 'content', 'text'].includes(key))
+    ) {
+      return object;
+    }
+    for (const key of ['data', 'result', 'output']) {
+      const nested = findObject(object[key]);
+      if (nested) return nested;
+    }
     return null;
-  }
-  if (!parsed || typeof parsed !== 'object') return null;
-  const value = parsed as Record<string, unknown>;
-
-  const pick = (key: keyof typeof FIELD_LIMITS): string => {
-    const text = typeof value[key] === 'string' ? (value[key] as string).trim() : '';
-    return text.slice(0, FIELD_LIMITS[key]);
   };
 
-  const answer = pick('answer');
-  // answer 是这一页的主体，它空了就等于没解签 —— 宁可落回通用解释。
-  if (!answer) return null;
+  const parseJsonCandidate = (candidate: string): unknown => {
+    try {
+      return JSON.parse(candidate);
+    } catch {
+      // Some models emit typographic JSON quotes. This is deliberately a small
+      // compatibility pass; arbitrary repair would risk changing the answer.
+      try {
+        return JSON.parse(candidate.replace(/[“”]/g, '"').replace(/[‘’]/g, "'"));
+      } catch {
+        return null;
+      }
+    }
+  };
 
+  // A streaming provider can expose more than one artifact snapshot in the
+  // final text. Parse balanced objects independently and use the one that has
+  // an answer, rather than requiring the entire accumulated stream to be one
+  // JSON document.
+  const parsedCandidates: unknown[] = [];
+  for (let start = 0; start < unfenced.length; start += 1) {
+    if (unfenced[start] !== '{') continue;
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+    for (let end = start; end < unfenced.length; end += 1) {
+      const character = unfenced[end];
+      if (inString) {
+        if (escaped) escaped = false;
+        else if (character === '\\') escaped = true;
+        else if (character === '"') inString = false;
+        continue;
+      }
+      if (character === '"') inString = true;
+      else if (character === '{') depth += 1;
+      else if (character === '}') {
+        depth -= 1;
+        if (depth === 0) {
+          const parsed = parseJsonCandidate(unfenced.slice(start, end + 1));
+          if (parsed !== null) parsedCandidates.push(parsed);
+          break;
+        }
+      }
+    }
+  }
+
+  // 严格解析优先；一个都解不出来，再按键切片救一次。
+  const value = parsedCandidates.map(findObject).find(Boolean) ?? salvageFields(unfenced);
+
+  const pick = (source: Record<string, unknown> | null, keys: string[], limit: number): string => {
+    if (!source) return '';
+    const text = keys
+      .map((key) => source[key])
+      .find((candidate): candidate is string => typeof candidate === 'string' && candidate.trim().length > 0);
+    const trimmed = withoutDashes(text?.trim() ?? '');
+    return trimmed.slice(0, limit);
+  };
+
+  const answer = pick(value, ['answer', 'response', 'content', 'text'], FIELD_LIMITS.answer);
+  if (answer) {
+    return {
+      meaning: pick(value, ['meaning', 'summary'], FIELD_LIMITS.meaning) || withoutDashes(preset.meaning),
+      answer,
+      notice: pick(value, ['notice', 'caveat', 'insight'], FIELD_LIMITS.notice),
+      action:
+        pick(value, ['action', 'suggestion', 'nextStep'], FIELD_LIMITS.action) || withoutDashes(preset.action),
+      source: 'ai',
+      language,
+    };
+  }
+
+  // A parsed JSON object that explicitly lacks a usable answer is not prose;
+  // keep the old safety behaviour and let the caller show the preset reading.
+  if (value) return null;
+
+  // A response containing a JSON-looking brace pair but invalid JSON is also
+  // more likely a malformed structured response than an intentional prose one.
+  if (unfenced.includes('{') || unfenced.includes('}')) return null;
+
+  // Last resort: a normal prose answer is still an AI reading. Keep the fixed
+  // meaning/action and place the agent's response in the main answer field.
+  const prose = unfenced.trim();
+  if (!prose) return null;
+  const text = withoutDashes(prose).slice(0, FIELD_LIMITS.answer);
+  if (!text) return null;
   return {
-    meaning: pick('meaning') || preset.meaning,
-    answer,
-    notice: pick('notice') || '',
-    action: pick('action') || preset.action,
+    meaning: preset.meaning,
+    answer: text,
+    notice: '',
+    action: preset.action,
     source: 'ai',
     language,
   };
@@ -230,8 +401,8 @@ function stickBlock(stick: FortuneStick, language: Language): string {
     return [
       `No. ${stick.no} · ${level} · ${text.title}`,
       `Couplet: ${text.poem[0]} / ${text.poem[1]}`,
-      `What this stick fixedly means: ${text.meaning}`,
-      `This stick's general reading: ${text.general}`,
+      `The stick's central meaning: ${text.meaning}`,
+      `A general reading of this stick: ${text.general}`,
     ].join('\n');
   }
   return [
@@ -251,13 +422,13 @@ const TONE_BY_LEVEL: Record<Language, Record<FortuneStick['level'], string>> = {
   },
   en: {
     上上签:
-      'This is the best level. You may talk about opportunity and about moving with the current, while reminding them not to drop the habits that got them here just because things got easier.',
+      'This is the strongest level. You can talk about opportunity and making good use of the momentum, while reminding them not to abandon the habits that got them here just because things are getting easier.',
     上签:
-      'This is a good level. Keep the tone positive and talk about where they can push one step further, but promise no outcome.',
+      'This is a favourable level. Keep the tone positive and point to one place where they can take the next step, without promising a particular outcome.',
     中签:
-      'This is a middling level. Keep the tone neutral and talk about pacing, conditions, and what needs establishing first.',
+      'This is a mixed level. Keep the tone balanced and talk about pace, conditions, and what needs to be clarified first.',
     下签:
-      'This is the lowest level. Talk about slowing down, observing and adjusting. Stay warm and never frightening: no alarming language, and no predicting a bad outcome.',
+      'This is a cautionary level. Talk about slowing down, looking carefully, and adjusting course. Stay warm, never frightening, and do not predict a bad outcome.',
   },
 };
 
@@ -277,13 +448,16 @@ ${stickBlock(stick, 'en')}
 
 [How to write it]
 1. Warm, specific and conversational, like a friend who understands their situation. No mystical register, no fortune-teller voice.
-2. Do not predict that anything will certainly happen. Never write "you will definitely", "inevitably" or "it is fated". What you give is a way of seeing the question and advice they can act on.
-3. ${TONE_BY_LEVEL.en[stick.level]}
-4. If the question touches health, money or legal decisions, help them see which conditions matter rather than ruling on it, and suggest a professional where that is the honest answer.
-5. Reply in English throughout. No markdown headings and no bullet characters.
+2. Write idiomatic, natural English, as if you grew up speaking it. Do not translate Chinese sentence structures or metaphors literally. If a sentence sounds poetic but unclear, rewrite it in plain everyday English. Prefer clarity over symmetry.
+3. Do not predict that anything will certainly happen. Never write "you will definitely", "inevitably" or "it is fated". What you give is a way of seeing the question and advice they can act on.
+4. ${TONE_BY_LEVEL.en[stick.level]}
+5. If the question touches health, money or legal decisions, help them see which conditions matter rather than ruling on it, and suggest a professional where that is the honest answer.
+6. Reply in English throughout. No markdown headings and no bullet characters.
+7. Do not use em dashes, en dashes, or any dash punctuation. Use commas, full stops, or parentheses instead.
 
 [Output format]
-Output one JSON object and nothing else. Do not wrap it in a code block:
+Output one JSON object and nothing else. Do not wrap it in a code block. Never put a raw
+double quote inside a string value. Use single quotes if you need to quote something:
 {"meaning":"one sentence on what this stick means for their question, plain words, under 30 words","answer":"written against their actual question, 60 to 110 words","notice":"one angle they may be overlooking, under 30 words","action":"one concrete thing they can do today, under 20 words"}`;
   }
 
@@ -301,9 +475,11 @@ ${stickBlock(stick, 'zh')}
 3. ${TONE_BY_LEVEL.zh[stick.level]}
 4. 如果问题涉及健康、财务、法律等重要决定，帮他梳理该考虑哪些条件，不下武断结论，必要时建议咨询专业人士。
 5. 全部用中文，不要使用 markdown 标题或列表符号。
+6. 不要使用破折号、长横线或其他 dash 符号，改用逗号、句号或括号。
 
 【输出格式】
-只输出一个 JSON 对象，不要输出任何其它文字，也不要用代码块包起来：
+只输出一个 JSON 对象，不要输出任何其它文字，也不要用代码块包起来。字符串里不要出现
+半角双引号，要加引号就用「」：
 {"meaning":"一句话签意，用浅显的话说这支签对他这个问题意味着什么，40 字以内","answer":"结合他的问题展开，80 到 150 字","notice":"指出一个他可能忽略的角度，40 字以内","action":"一件具体的、今天就能做的小事，30 字以内"}`;
 }
 
@@ -321,13 +497,14 @@ Their original question: ${reading.question}
 The stick they drew: ${stickBlock(reading.stick, 'en')}
 The reading you already gave:
 - Meaning: ${interpretation.meaning}
-- On their question: ${interpretation.answer}
-- Worth noticing: ${interpretation.notice}
-- Suggested: ${interpretation.action}
+- How it relates to their question: ${interpretation.answer}
+- One thing to keep in mind: ${interpretation.notice}
+- One useful next step: ${interpretation.action}
 
 [Rules]
 This turn is a follow-up. It does not draw a new stick, and it does not change this stick's level or the reading above. Keep talking about the same stick.
-Keep the answer under 120 words. Say it directly, do not restate the above, no JSON, no markdown. Reply in English.
+Keep the answer under 120 words. Say it directly, do not restate the above, no JSON, no markdown. Reply in natural, idiomatic English. Do not translate Chinese sentence patterns or use vague poetic phrases when a plain sentence would be clearer.
+Do not use em dashes, en dashes, or any dash punctuation. Use commas, full stops, or parentheses instead.
 
 [Their follow-up]
 ${question}`;
@@ -347,6 +524,7 @@ ${question}`;
 【规则】
 这一轮是追问，不重新抽签，也不改变这支签的等级和上面的解读。就着同一支签往下说。
 回答控制在 150 字以内，直接讲，不要复述上面的内容，不要用 JSON，不要用 markdown。
+不要使用破折号、长横线或其他 dash 符号，改用逗号、句号或括号。
 
 【他的追问】
 ${question}`;
@@ -427,6 +605,24 @@ async function askAgent(
 }
 
 /**
+ * 一轮解签的 A2A messageId。
+ *
+ * 拿这一行的 updated_at 当游标，而不是固定值，也不是随机值：
+ *  · 同一次尝试里连点两下 —— 两个请求读到同一个 updated_at，送出同一个 messageId，
+ *    agent 那边不会把它算成两轮（这是 AGENTS.md 第 14 条要守的事）；
+ *  · 上一次尝试写完之后（updated_at 已经前进）按「重试解签」—— 新的 messageId，
+ *    才是一则新的消息。
+ *
+ * 固定成 `qianyi-<id>-interpret` 的话，重试送出的是跟第一次一字不差的 messageId，
+ * agent 认得这则消息，开了串流就直接关掉，一个事件都不回 —— 线上三次重试三次空串流
+ * 都是这么来的，「重试解签」那颗按钮从来没成功过。
+ */
+export function interpretMessageId(readingId: string, updatedAt: string | null): string {
+  const cursor = (updatedAt ?? '').replace(/[^0-9A-Za-z]/g, '');
+  return cursor ? `qianyi-${readingId}-interpret-${cursor}` : `qianyi-${readingId}-interpret`;
+}
+
+/**
  * 解签。成功写入个性化解读；失败写入这支签的通用解释并记下原因，
  * 让「重试解签」还能再试一次 —— 无论走哪条路，签都不变。
  */
@@ -446,8 +642,8 @@ export async function interpretReading(env: Env, id: string): Promise<Reading> {
     const cred = await pickInterpreter(env);
     const answer = await askAgent(
       cred,
-      // 由存储行推导，不用随机值：重试同一次求签不会被当成新的一轮计费。
-      `qianyi-${reading.id}-interpret`,
+      // 由存储行推导，不用随机值 —— 连点两下是同一则消息，刻意的重试是新的一则。
+      interpretMessageId(reading.id, row.updated_at),
       buildInterpretPrompt(reading.question, reading.stick, reading.language),
       { contextId, taskId: null },
       INTERPRET_TIMEOUT_MS,
@@ -462,7 +658,8 @@ export async function interpretReading(env: Env, id: string): Promise<Reading> {
       interpretation = fallbackInterpretation(reading.stick, reading.language);
       status = 'failed';
       // 存码不存句子：文案在浏览器那边，跟着界面语言走（src/shared/i18n）。
-      error = 'unparseable';
+      // 码后面跟着 agent 原文的开头，是留给排查的人的，纸上不印。
+      error = unparseableError(answer.text);
     }
   } catch (cause) {
     interpretation = fallbackInterpretation(reading.stick, reading.language);
@@ -473,8 +670,8 @@ export async function interpretReading(env: Env, id: string): Promise<Reading> {
       cause instanceof HttpError
         ? cause.code
         : cause instanceof Error
-          ? safeErrorText(cause.message)
-          : safeErrorText(cause);
+          ? withoutDashes(safeErrorText(cause.message))
+          : withoutDashes(safeErrorText(cause));
   }
 
   await env.DB.prepare(
@@ -499,7 +696,11 @@ export async function listFollowUps(env: Env, id: string): Promise<FollowUpMessa
   )
     .bind(id, FOLLOW_UP_HISTORY_LIMIT)
     .all<FollowUpMessage>();
-  return (results ?? []).reverse();
+  return (results ?? []).reverse().map((message) => ({
+    ...message,
+    content: withoutDashes(message.content),
+    error: message.error ? withoutDashes(message.error) : null,
+  }));
 }
 
 async function insertFollowUp(
@@ -511,7 +712,14 @@ async function insertFollowUp(
     `INSERT INTO reading_messages (reading_id, role, content, status, error, created_at)
      VALUES (?, ?, ?, ?, ?, ?)`,
   )
-    .bind(readingId, fields.role, fields.content, fields.status ?? 'complete', fields.error ?? null, now())
+    .bind(
+      readingId,
+      fields.role,
+      withoutDashes(fields.content),
+      fields.status ?? 'complete',
+      fields.error ? withoutDashes(fields.error) : null,
+      now(),
+    )
     .run();
   return Number(result.meta.last_row_id);
 }
@@ -527,7 +735,7 @@ export async function handleFollowUp(options: {
   waitUntil: (promise: Promise<unknown>) => void;
 }): Promise<Response> {
   const { env, readingId } = options;
-  const message = options.message.trim();
+  const message = withoutDashes(options.message.trim());
   if (!message) throw new HttpError(400, 'message_required', '写点什么再发送。');
   if ([...message].length > FOLLOW_UP_MAX_CHARS) {
     throw new HttpError(400, 'message_too_long', `追问请控制在 ${FOLLOW_UP_MAX_CHARS} 个字以内。`);
@@ -581,16 +789,16 @@ export async function handleFollowUp(options: {
         },
         signal: controller.signal,
         onSnapshot: async (current) => {
-          partial = current.text;
+          partial = withoutDashes(current.text);
           const timestamp = Date.now();
           if (current.text && (timestamp - lastTextSent >= TEXT_EVENT_INTERVAL_MS || current.terminal)) {
             lastTextSent = timestamp;
-            await send({ type: 'text', text: current.text });
+            await send({ type: 'text', text: partial });
           }
         },
       });
 
-      const text = snapshot.text.trim();
+      const text = withoutDashes(snapshot.text.trim());
       if (!text) {
         throw new A2AError(
           snapshot.state && snapshot.state !== 'completed'
@@ -607,7 +815,9 @@ export async function handleFollowUp(options: {
         .run();
       await send({ type: 'done', text });
     } catch (cause) {
-      const detail = cause instanceof Error ? safeErrorText(cause.message) : safeErrorText(cause);
+      const detail = withoutDashes(
+        cause instanceof Error ? safeErrorText(cause.message) : safeErrorText(cause),
+      );
       await insertFollowUp(env, readingId, {
         role: 'agent',
         content: partial,

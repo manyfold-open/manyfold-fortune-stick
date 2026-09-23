@@ -3,13 +3,13 @@
  *
  * Route map (all responses JSON unless noted):
  *   GET    /api/health                       open   deploy-verification contract
- *   GET    /api/state                        open   bootstrap: agents + handshake + admin flags
- *   POST   /api/readings                     admin  摇签完成 → 抽一支签并落库
- *   GET    /api/readings/:id                 admin  刷新页面后恢复同一支签
- *   POST   /api/readings/:id/interpret       admin  解签（失败落回通用解释，可重试）
- *   DELETE /api/readings/:id                 admin  删除一条求签记录
- *   GET    /api/readings/:id/messages        admin  追问历史
- *   POST   /api/readings/:id/follow-up       admin  一轮追问 (text/event-stream)
+ *   GET    /api/state                        open   bootstrap: game status + admin flags (settings data when authorized)
+ *   POST   /api/readings                     open   摇签完成 → 抽一支签并落库
+ *   GET    /api/readings/:id                 open   刷新页面后恢复同一支签
+ *   POST   /api/readings/:id/interpret       open   解签（失败落回通用解释，可重试）
+ *   DELETE /api/readings/:id                 open   删除一条求签记录
+ *   GET    /api/readings/:id/messages        open   追问历史
+ *   POST   /api/readings/:id/follow-up       open   一轮追问 (text/event-stream)
  *   POST   /api/connect                      admin  start a Manyfold handshake
  *   POST   /api/connect/:id/poll             admin  poll it (2s cadence from the browser)
  *   DELETE /api/connect/:id                  admin  cancel it
@@ -17,13 +17,14 @@
  *   POST   /api/agents/:agentId/verify       admin  re-run the non-billing auth probe
  *   DELETE /api/agents/:agentId              admin  disconnect
  *
- * "admin" routes require the x-admin-password header — but only when the
- * ADMIN_PASSWORD secret is set. Without it the app is open, which is what makes
- * zero-config deploys work; set the secret before sharing the URL.
+ * "admin" routes require the x-admin-password header when the ADMIN_PASSWORD
+ * secret is set. The game stays public; the password only protects the settings
+ * operations that connect, verify and disconnect the deployment's agents.
  */
 
 import { Hono } from 'hono';
 import type { AppState } from '../shared/types';
+import { isSettingsApiPath } from './auth';
 import { HttpError, type Env } from './types';
 import { ensureSchema } from './db';
 import { ConfigError, safeEqual } from './crypto';
@@ -84,12 +85,11 @@ const adminHeaderOk = (c: { env: Env; req: { header: (name: string) => string | 
   return safeEqual(c.req.header('x-admin-password') ?? '', required);
 };
 
-// Everything except /api/health and /api/state needs the password (when one is set).
-// Note this locks the game too, not just the settings page — that is the point of the
-// secret: an open deployment spends the owner's agent credits on every visitor.
+// The game is public. Only the agent-management API behind /settings is gated,
+// so visitors can play while the deployment owner keeps the Manyfold connection private.
 app.use('/api/*', async (c, next) => {
   const path = new URL(c.req.url).pathname;
-  if (path !== '/api/health' && path !== '/api/state' && !adminHeaderOk(c)) {
+  if (isSettingsApiPath(path) && !adminHeaderOk(c)) {
     throw new HttpError(401, 'admin_password_invalid', 'This deployment requires the admin password.');
   }
   await next();
@@ -120,14 +120,14 @@ app.get('/api/health', (c) =>
 );
 
 app.get('/api/state', async (c) => {
-  const [session, agents] = await Promise.all([
-    getConnectSession(c.env),
-    listConnectedAgents(c.env),
-  ]);
+  const adminOk = adminHeaderOk(c);
+  const [session, agents] = adminOk
+    ? await Promise.all([getConnectSession(c.env), listConnectedAgents(c.env)])
+    : [null, []];
   const state: AppState = {
     service: SERVICE,
     adminRequired: adminPassword(c.env) !== null,
-    adminOk: adminHeaderOk(c),
+    adminOk,
     connect: { session },
     agents,
     interpreterReady: await interpreterReady(c.env),

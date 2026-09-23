@@ -767,3 +767,99 @@ export function woodblockPress(gain = 0.24): void {
   grain.connect(grainFilter).connect(grainGain).connect(audio.destination);
   grain.start(start);
 }
+
+/**
+ * 撕纸音效：模拟沿齿孔撕下热敏纸/宣纸的脆裂摩擦质感
+ * 包含：
+ * 1. 纤维撕裂带通噪声扫频 (High-to-mid frequency paper rip friction)
+ * 2. 齿孔连续断裂微爆破 (Granular snap impulses as perforation breaks)
+ * 3. 纸张脱离空气摩擦轻微尾韵
+ */
+export function tearPaperSound(gain = 0.28): void {
+  const audio = ctx();
+  if (!audio) return;
+  const start = audio.currentTime;
+  const duration = 0.42;
+
+  // 1. 纸张撕扯主要摩擦声 (Swept bandpass noise)
+  const tearBuffer = noiseBuffer(audio, duration, 1.2);
+  const tearSource = audio.createBufferSource();
+  tearSource.buffer = tearBuffer;
+
+  const tearFilter = audio.createBiquadFilter();
+  tearFilter.type = 'bandpass';
+  tearFilter.frequency.setValueAtTime(3600, start);
+  tearFilter.frequency.exponentialRampToValueAtTime(1400, start + duration);
+  tearFilter.Q.setValueAtTime(2.2, start);
+
+  const tearGain = audio.createGain();
+  tearGain.gain.setValueAtTime(0.0001, start);
+  tearGain.gain.exponentialRampToValueAtTime(gain * 0.95, start + 0.04);
+  tearGain.gain.setValueAtTime(gain * 0.95, start + duration * 0.65);
+  tearGain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+
+  tearSource.connect(tearFilter).connect(tearGain).connect(audio.destination);
+  tearSource.start(start);
+
+  // 2. 齿孔崩断微颗粒脉冲 (Perforation teeth snapping sequence)
+  const snapCount = 14;
+  for (let i = 0; i < snapCount; i++) {
+    const snapTime = start + (i / snapCount) * (duration * 0.85) + (Math.random() * 0.015 - 0.007);
+    if (snapTime < start) continue;
+
+    const snapNoise = audio.createBufferSource();
+    snapNoise.buffer = noiseBuffer(audio, 0.015, 35);
+
+    const snapFilter = audio.createBiquadFilter();
+    snapFilter.type = 'bandpass';
+    snapFilter.frequency.setValueAtTime(2800 + Math.random() * 1600, snapTime);
+    snapFilter.Q.setValueAtTime(4.0, snapTime);
+
+    const snapGain = audio.createGain();
+    const snapVol = gain * (0.35 + Math.random() * 0.35);
+    snapGain.gain.setValueAtTime(snapVol, snapTime);
+    snapGain.gain.exponentialRampToValueAtTime(0.0001, snapTime + 0.014);
+
+    snapNoise.connect(snapFilter).connect(snapGain).connect(audio.destination);
+    snapNoise.start(snapTime);
+  }
+
+  // 3. 撕开瞬间的纸张微颤音 (Low resonance rustle)
+  const rustle = audio.createOscillator();
+  rustle.type = 'triangle';
+  rustle.frequency.setValueAtTime(180, start + 0.05);
+  rustle.frequency.exponentialRampToValueAtTime(75, start + duration * 0.7);
+
+  const rustleGain = audio.createGain();
+  rustleGain.gain.setValueAtTime(0.0001, start);
+  rustleGain.gain.exponentialRampToValueAtTime(gain * 0.22, start + 0.08);
+  rustleGain.gain.exponentialRampToValueAtTime(0.0001, start + duration * 0.8);
+
+  rustle.connect(rustleGain).connect(audio.destination);
+  rustle.start(start + 0.05);
+  rustle.stop(start + duration);
+}
+
+/** 贴回/纸张复位轻柔抚平声 */
+export function paperSettleSound(gain = 0.18): void {
+  const audio = ctx();
+  if (!audio) return;
+  const start = audio.currentTime;
+  const duration = 0.25;
+
+  const rustle = audio.createBufferSource();
+  rustle.buffer = noiseBuffer(audio, duration, 4.5);
+
+  const filter = audio.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.setValueAtTime(1200, start);
+  filter.frequency.exponentialRampToValueAtTime(400, start + duration);
+
+  const vol = audio.createGain();
+  vol.gain.setValueAtTime(0.0001, start);
+  vol.gain.exponentialRampToValueAtTime(gain * 0.8, start + 0.02);
+  vol.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+
+  rustle.connect(filter).connect(vol).connect(audio.destination);
+  rustle.start(start);
+}

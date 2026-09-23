@@ -10,6 +10,7 @@
 
 import { useEffect, useRef, useState, useMemo } from 'react';
 import type { FollowUpMessage } from '../../shared/types';
+import { withoutDashes } from '../../shared/text';
 import { api, errorMessage } from '../api';
 import { FOLLOW_UP_MAX } from '../constants';
 import { copyFor, useT } from '../i18n';
@@ -51,8 +52,13 @@ export default function FollowUp(props: {
     void api<{ messages: FollowUpMessage[] }>(`/api/readings/${encodeURIComponent(readingId)}/messages`)
       .then((body) => {
         if (cancelled) return;
-        setMessages(body.messages);
-        onMessages(body.messages);
+        const clean = body.messages.map((message) => ({
+          ...message,
+          content: withoutDashes(message.content),
+          error: message.error ? withoutDashes(message.error) : null,
+        }));
+        setMessages(clean);
+        onMessages(clean);
       })
       .catch(() => undefined);
     return () => {
@@ -105,7 +111,7 @@ export default function FollowUp(props: {
   };
 
   const ask = async (text: string) => {
-    const question = text.trim();
+    const question = withoutDashes(text.trim());
     if (!question || live !== null) return;
     setDraft('');
     if (textareaRef.current) {
@@ -126,8 +132,8 @@ export default function FollowUp(props: {
     setLive('');
     try {
       await streamFollowUp(readingId, question, (event) => {
-        if (event.type === 'text') setLive(event.text);
-        if (event.type === 'error') setError(event.message);
+        if (event.type === 'text') setLive(withoutDashes(event.text));
+        if (event.type === 'error') setError(withoutDashes(event.message));
       });
     } catch (cause) {
       setError(errorMessage(cause, t));
@@ -136,15 +142,20 @@ export default function FollowUp(props: {
       // 以服务端存下的为准重新拉一次
       await api<{ messages: FollowUpMessage[] }>(`/api/readings/${encodeURIComponent(readingId)}/messages`)
         .then((body) => {
-          setMessages(body.messages);
-          onMessages(body.messages);
+          const clean = body.messages.map((message) => ({
+            ...message,
+            content: withoutDashes(message.content),
+            error: message.error ? withoutDashes(message.error) : null,
+          }));
+          setMessages(clean);
+          onMessages(clean);
         })
         .catch(() => undefined);
     }
   };
 
   const handleDraftChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setDraft(event.target.value);
+    setDraft(withoutDashes(event.target.value));
     const el = textareaRef.current;
     if (el) {
       el.style.height = 'auto';
@@ -180,19 +191,34 @@ export default function FollowUp(props: {
                 >
                   <span className="ticket-idx">{roundOrdinal(index + 1, props.language)}</span>
                   <span className="ticket-q-truncate">{round.user.content}</span>
-                  <span className="ticket-toggle-badge">{isExpanded ? '收起 ▴' : '展開 ▾'}</span>
+                  <span className="ticket-toggle-badge">
+                    {isExpanded ? `${t('historyCollapse')} ▴` : `${t('historyExpand')} ▾`}
+                  </span>
                 </button>
               ) : null}
 
               {isExpanded && (
                 <div className="followup-round-content">
-                  <div className="bubble user">{round.user.content}</div>
+                  <div className="bubble user">
+                    <span className="bubble-role" aria-hidden="true">
+                      {t('followUpRoleUser')}
+                    </span>
+                    {round.user.content}
+                  </div>
                   {round.agent ? (
                     <div className="bubble agent">
+                      <span className="bubble-role" aria-hidden="true">
+                        {t('followUpRoleAgent')}
+                      </span>
                       {round.agent.content || round.agent.error || ''}
                     </div>
                   ) : isStreamingThisRound ? (
-                    <div className="bubble agent streaming">{live || '…'}</div>
+                    <div className="bubble agent streaming">
+                      <span className="bubble-role" aria-hidden="true">
+                        {t('followUpRoleAgent')}
+                      </span>
+                      {live || '…'}
+                    </div>
                   ) : null}
                 </div>
               )}

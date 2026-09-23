@@ -1,6 +1,6 @@
 /**
- * 外壳：加载一次 /api/state，用 location.hash 在三个页面之间切换（没有 router 依赖），
- * 并在部署设了密码而本浏览器还没给出时升起密码门。
+ * 外壳：加载一次 /api/state，用 location.hash 在三个页面之间切换（没有 router 依赖）。
+ * 游戏页公开可玩；密码门只在部署者打开设置页时出现。
  *
  * 外壳自己几乎不占地方 —— 一行牌记、一行页脚，中间全是机器和纸。两侧曾经立过
  * 两条竖排的装饰铭牌，撤掉了：它们把视线往外拉，而这一屏要看的只有中间那台机器。
@@ -16,19 +16,23 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { AppState } from '../shared/types';
 import { api, onUnauthorized } from './api';
+import AmbientMotes from './components/AmbientMotes';
 import FortuneGame from './components/FortuneGame';
 import HistoryView from './components/HistoryView';
 import PasswordGate from './components/PasswordGate';
+import PrivacyView from './components/PrivacyView';
 import SettingsView from './components/SettingsView';
 import ShrineBackdrop from './components/ShrineBackdrop';
 import { LanguageProvider, useT, useUiLanguage } from './i18n';
 import { getPrefs, setPrefs, type Prefs } from './storage';
 
-type Route = 'game' | 'history' | 'settings';
+type Route = 'game' | 'history' | 'settings' | 'privacy';
 
 const routeFromHash = (): Route => {
   const hash = location.hash.replace(/^#\/?/, '');
-  if (hash === 'settings') return 'settings';
+  const pathname = location.pathname.replace(/\/+$/, '') || '/';
+  if (pathname === '/privacy' || hash === 'privacy') return 'privacy';
+  if (pathname === '/settings' || hash === 'settings') return 'settings';
   if (hash === 'history') return 'history';
   return 'game';
 };
@@ -64,23 +68,52 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
       const next = await api<AppState>('/api/state');
       setState(next);
       setLoadError('');
-      setGateOpen(next.adminRequired && !next.adminOk);
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : String(error));
     }
   }, []);
 
   useEffect(() => {
-    onUnauthorized(() => setGateOpen(true));
+    onUnauthorized(() => {
+      if (route === 'settings') setGateOpen(true);
+    });
     void refreshState();
     return () => onUnauthorized(null);
-  }, [refreshState]);
+  }, [refreshState, route]);
 
   useEffect(() => {
     const onHash = () => setRoute(routeFromHash());
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
+
+  useEffect(() => {
+    setGateOpen(route === 'settings' && Boolean(state?.adminRequired && !state.adminOk));
+  }, [route, state]);
+
+  // 滑鼠與觸控動態燈光視差：在桌面模擬真實頭頂燈的微小光影流轉
+  useEffect(() => {
+    if (prefs.reducedMotion) return;
+    const onPointerMove = (e: PointerEvent) => {
+      const w = window.innerWidth || 1;
+      const h = window.innerHeight || 1;
+      const nx = Math.max(0, Math.min(1, e.clientX / w));
+      const ny = Math.max(0, Math.min(1, e.clientY / h));
+      const lampX = 43 + (nx - 0.5) * 14;
+      const lampY = 28 + (ny - 0.5) * 10;
+      const foilPos = Math.round(15 + nx * 70);
+      document.documentElement.style.setProperty('--lamp-x', `${lampX.toFixed(2)}%`);
+      document.documentElement.style.setProperty('--lamp-y', `${lampY.toFixed(2)}%`);
+      document.documentElement.style.setProperty('--lamp-foil', `${foilPos}%`);
+    };
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      document.documentElement.style.removeProperty('--lamp-x');
+      document.documentElement.style.removeProperty('--lamp-y');
+      document.documentElement.style.removeProperty('--lamp-foil');
+    };
+  }, [prefs.reducedMotion]);
 
   // <html lang> 决定读屏软件怎么念这一页，所以它得跟着界面语言走，不能钉死在 zh-CN。
   // 标题和描述同理 —— 标签页上显示的是当前这个人看得懂的那个名字。
@@ -114,7 +147,8 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
 
   return (
     <main className={`shell${prefs.reducedMotion ? ' calm' : ''}`}>
-      {route === 'game' && <ShrineBackdrop calm={prefs.reducedMotion} />}
+      {/* 求籤頁是神社場景（櫻花瓣）；記錄與設定頁留著原本的浮塵 */}
+      {route === 'game' ? <ShrineBackdrop calm={prefs.reducedMotion} /> : <AmbientMotes reducedMotion={prefs.reducedMotion} />}
       <header className="topbar">
         <span className="topbar-actions">
           {/* 只换界面。已经印出来的签一个字都不会动。 */}
@@ -126,13 +160,13 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
           >
             {t('langSwitch')}
           </button>
-          <a className="text-action" href={route === 'game' ? '#history' : '#/'}>
+          <a className="text-action" href={route === 'game' ? '#history' : '/'}>
             {route === 'game' ? t('navHistory') : t('navBackToGame')}
           </a>
         </span>
       </header>
 
-      {route === 'settings' && (
+      {route === 'settings' && state.adminOk && (
         <SettingsView
           agents={state.agents}
           initialSession={state.connect.session}
@@ -140,11 +174,14 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
         />
       )}
       {route === 'history' && <HistoryView />}
+      {route === 'privacy' && <PrivacyView />}
       {route === 'game' && (
         <FortuneGame prefs={prefs} interpreterReady={state.interpreterReady} />
       )}
 
       <footer className="footer">
+        <span className="footer-note">{t('footerNote')}</span>
+
         <div className="footer-prefs">
           <button
             type="button"
@@ -197,7 +234,9 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
           </a>
         </div>
 
-        <span className="footer-note">{t('footerNote')}</span>
+        <a className="footer-credit-link footer-privacy" href="/privacy">
+          {t('privacyNav')}
+        </a>
       </footer>
 
       {gateOpen && <PasswordGate onSubmitted={refreshState} />}

@@ -12,7 +12,9 @@
  * 四种签运不再换底色，只留在印外圈的光晕与吉色色点上，跟页面一致。
  */
 
+import QRCode from 'qrcode';
 import type { Language } from '../shared/lang';
+import { withoutDashes } from '../shared/text';
 import {
   LEVEL_LABEL,
   STICK_COUNT,
@@ -27,6 +29,9 @@ import { CREAM, ROUND, SEAL, SEAL_DEEP, drawEma, drawSakuraMark, drawSeal, paint
 
 const WIDTH = 1080;
 const HEIGHT = 1350;
+const APP_NAME = 'AI Fortune Stick';
+/** 二维码边长（px）。扫了回到游戏首页。 */
+const QR_SIZE = 104;
 const SERIF = '"Noto Serif SC", "Songti SC", "STSong", "SimSun", serif';
 const SERIF_EN = 'Charter, "Charter BT", Georgia, Palatino, "Noto Serif", "Iowan Old Style", "Times New Roman", serif';
 const MONO = 'ui-monospace, "SF Mono", Menlo, Consolas, monospace';
@@ -211,6 +216,30 @@ function drawHorizontal(
   }
 }
 
+/** 生成回到游戏首页的二维码。分享图可能离开当前页面，所以不保留 hash 路由。 */
+async function loadShareQr(): Promise<HTMLImageElement | null> {
+  try {
+    const url = new URL(window.location.href);
+    url.hash = '';
+    const dataUrl = await QRCode.toDataURL(url.toString(), {
+      errorCorrectionLevel: 'M',
+      margin: 1,
+      width: QR_SIZE,
+      color: { dark: INK, light: PAPER },
+    });
+    const image = new Image();
+    image.decoding = 'async';
+    await new Promise<void>((resolve, reject) => {
+      image.onload = () => resolve();
+      image.onerror = () => reject(new Error('二维码加载失败。'));
+      image.src = dataUrl;
+    });
+    return image;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * canvas 不会等 webfont：字体还没到就直接用后备字体画完了，于是第一次分享出来的图
  * 和页面上看到的不是同一副长相。所以先把要用到的字重加载出来再下笔。
@@ -247,11 +276,13 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
   const tone = TONE[stick.level];
   const lucky = LEVEL_TONE[stick.level].luckyColor;
   const level = LEVEL_LABEL[language][stick.level];
-  const meaning = input.interpretation?.meaning ?? text.meaning;
+  const meaning = withoutDashes(input.interpretation?.meaning ?? text.meaning);
+  const question = withoutDashes(input.question);
+  const qrImage = await loadShareQr();
   const center = WIDTH / 2;
   const paperW = 680;
   const paperX = center - paperW / 2;
-  const withQuestion = input.includeQuestion && Boolean(input.question.trim());
+  const withQuestion = input.includeQuestion && Boolean(question.trim());
 
   paintShrine(g, WIDTH, HEIGHT);
   g.textAlign = 'center';
@@ -263,7 +294,8 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
   const SEAL_R = 88;
   const SEAL_BLOCK = SEAL_R * 2 + 44;
   const TITLE = 78;
-  const FOOT = 84;
+  // 底部放吉色与二维码（扫了回到游戏）：二维码 104 加一行说明
+  const FOOT = qrImage ? 150 : 84;
   const FIXED = PAD + BAND + NO + SEAL_BLOCK + TITLE + FOOT + 18;
   const BODY_MAX = 360;
 
@@ -272,7 +304,7 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
   if (withQuestion) {
     const qFont = `500 36px ${face}`;
     g.font = qFont;
-    const all = wrapFor(language)(g, input.question, paperW - 110);
+    const all = wrapFor(language)(g, question, paperW - 110);
     const lines = all.slice(0, 2);
     // 繪馬只寫得下兩行：多出來的收成刪節號，不要在句子中間無聲無息地斷掉
     if (all.length > 2) {
@@ -387,21 +419,34 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
   const luckyText = en ? `Lucky tone · ${lucky.en}` : `吉色 · ${lucky.zh}`;
   const lw = g.measureText(luckyText).width + 70;
   const ly = y + FOOT / 2;
+  // 有二维码时吉色往左让：放在二维码左边那一段的正中
+  const luckyCx = qrImage ? paperX + (paperW - QR_SIZE - PAD) / 2 : center;
   g.fillStyle = `${tone}14`;
   g.strokeStyle = `${tone}4d`;
   g.lineWidth = 1.5;
   g.beginPath();
-  g.roundRect(center - lw / 2, ly - 24, lw, 48, 24);
+  g.roundRect(luckyCx - lw / 2, ly - 24, lw, 48, 24);
   g.fill();
   g.stroke();
   g.fillStyle = tone;
   g.beginPath();
-  g.arc(center - lw / 2 + 28, ly, 7, 0, Math.PI * 2);
+  g.arc(luckyCx - lw / 2 + 28, ly, 7, 0, Math.PI * 2);
   g.fill();
   g.textAlign = 'left';
-  g.fillText(luckyText, center - lw / 2 + 46, ly + 9);
+  g.fillText(luckyText, luckyCx - lw / 2 + 46, ly + 9);
   g.textAlign = 'center';
-  drawSakuraMark(g, paperX + paperW - 44, ly + 10, 18, SEAL);
+  drawSakuraMark(g, qrImage ? paperX + 46 : paperX + paperW - 44, ly + 10, 18, SEAL);
+
+  // 二维码：扫了回到游戏首页，放在纸的右下角
+  if (qrImage) {
+    const qx = paperX + paperW - PAD - QR_SIZE - 8;
+    const qy = y + (FOOT - QR_SIZE - 26) / 2;
+    g.drawImage(qrImage, qx, qy, QR_SIZE, QR_SIZE);
+    g.fillStyle = INK_2;
+    g.font = `500 17px ${en ? face : ROUND}`;
+    g.textAlign = 'center';
+    g.fillText(en ? 'SCAN TO PLAY' : '扫码再玩一签', qx + QR_SIZE / 2, qy + QR_SIZE + 20);
+  }
 
   // 页脚
   g.fillStyle = 'rgba(59, 42, 30, 0.62)';
@@ -432,7 +477,7 @@ export async function shareImage(
   const file = new File([blob], name, { type: 'image/png' });
   const shareData = {
     files: [file],
-    title: en ? 'Fortune Printer' : '问一签',
+    title: APP_NAME,
     text: en
       ? `No. ${stick.no} · ${LEVEL_LABEL.en[stick.level]}`
       : `第 ${stick.no} 签 · ${stick.level}`,
@@ -444,6 +489,7 @@ export async function shareImage(
     } catch (error) {
       // 用户自己取消了，不算失败，也不该再触发一次下载。
       if ((error as Error)?.name === 'AbortError') return 'shared';
+      throw error;
     }
   }
   const url = URL.createObjectURL(blob);
@@ -460,8 +506,9 @@ export async function shareImage(
 /** 分享全都失败时的最后一招：一段可以直接粘的短文字。 */
 export const shareText = (stick: FortuneStick, meaning: string, language: Language): string => {
   const text = stickText(stick, language);
+  const cleanMeaning = withoutDashes(meaning);
   if (language === 'en') {
-    return `Fortune Printer · No. ${stick.no} · ${LEVEL_LABEL.en[stick.level]}\n${text.poem[0]} / ${text.poem[1]}\n${meaning}`;
+    return `${APP_NAME} · No. ${stick.no} · ${LEVEL_LABEL.en[stick.level]}\n${text.poem[0]} / ${text.poem[1]}\n${cleanMeaning}`;
   }
-  return `问一签 · 第 ${stick.no} 签 · ${stick.level}\n${text.poem[0]}，${text.poem[1]}\n${meaning}`;
+  return `${APP_NAME} · 第 ${stick.no} 签 · ${stick.level}\n${text.poem[0]}，${text.poem[1]}\n${cleanMeaning}`;
 };

@@ -8,9 +8,10 @@ import type { Copy } from './zh';
 
 export const en = {
   /* ── shell ── */
-  brandSub: 'FORTUNE PRINTER',
+  brandSub: 'AI FORTUNE STICK',
   navHistory: 'Your slips',
   navBackToGame: 'Back to the machine',
+  privacyNav: 'Privacy & data',
   railLeft: 'MODEL WY-36 · MADE IN CHINA',
   railRight: 'T H I R T Y - S I X   S T I C K S',
   footerSound: 'Sound {state}',
@@ -19,19 +20,19 @@ export const en = {
   footerMotion: 'Motion {state}',
   footerMotionReduced: 'reduced',
   footerMotionNormal: 'normal',
-  footerNote: 'A stick is a reference. The walking is yours.',
+  footerNote: 'The stick offers a perspective. What you do next is up to you.',
   langSwitch: '中文',
   langSwitchLabel: '切换到简体中文',
   loading: 'Warming up the printer…',
   loadFailed: 'Cannot reach the service: {detail}',
   retry: 'Try again',
   restoring: 'Fetching your slip…',
-  documentTitle: 'Fortune Printer',
+  documentTitle: 'AI Fortune Stick',
   documentDescription:
-    'Write down what is on your mind, press the key on the printer, and it prints a fortune stick for you. A small online fortune-stick game.',
+    'AI Fortune Stick: write down what is on your mind, press the printer key, and receive one fixed reading to think with.',
 
   /* ── asking ── */
-  askLabel: 'What you want to ask',
+  askLabel: 'What would you like to ask?',
   askGhost: 'Write down the thing on your mind',
   emaCaption: 'EMA · MAKE A WISH',
   example1: 'How should I handle the recent changes at work?',
@@ -47,7 +48,7 @@ export const en = {
   faultTooShort: 'A few more characters (at least {min})',
   faultTooLong: 'Too long — keep it under {max} characters',
   printKeyCap: 'PRINT',
-  printKeyIdle: 'Press the key to print this stick',
+  printKeyIdle: 'Press the key to draw a stick',
   printKeyBusy: 'Printing',
 
   /* ── the result page ── */
@@ -56,21 +57,26 @@ export const en = {
   reinterpreting: 'Reading it again',
   retryInterpret: 'Try reading again',
   retrying: 'Retrying…',
-  fallbackNote: 'This one could not be read against your question.',
+  fallbackNote: 'This reading could not be tailored to your question.',
   /** 解籤續頁頂上那條朱紅帶。跟四個小標題一樣，跟這一局的語言走。 */
   sheetBand: 'READING',
-  blockMeaning: 'What the stick says',
-  blockAnswer: 'On your question',
-  blockNotice: 'Worth noticing',
-  blockAction: 'One small thing you can do',
+  blockMeaning: 'What this stick points to',
+  blockAnswer: 'How it speaks to your question',
+  blockNotice: 'One thing to keep in mind',
+  blockAction: 'One thing you can do today',
   actionShare: 'Share',
   actionShareClose: 'Close sharing',
+  actionTearShare: 'Tear & share',
+  tearHint: 'Tear along perforation to keep or share',
+  tearPullTab: 'TEAR',
+  actionReattach: 'Re-attach',
+  shareTalisman: 'Fortune card',
   actionFollowUp: 'Ask a follow-up',
   actionFollowUpClose: 'Close follow-up',
   actionRestart: 'Draw another',
 
   /* ── follow-up ── */
-  followUpEmpty: 'Keep asking about this same stick. Neither it nor the reading will change.',
+  followUpEmpty: 'Ask another question about this same stick. The stick and its reading will stay the same.',
   followUpQuick1: 'What should I be paying attention to right now?',
   followUpQuick2: 'Where would I start?',
   followUpQuick3: 'What happens if I leave it for now?',
@@ -78,6 +84,8 @@ export const en = {
   followUpAnswering: 'Answering…',
   followUpLabel: 'Ask a follow-up',
   followUpSend: 'Send',
+  followUpRoleUser: 'ASK',
+  followUpRoleAgent: 'ANS',
 
   /* ── sharing ── */
   shareTitle: 'Share',
@@ -93,7 +101,7 @@ export const en = {
 
   /* ── history ── */
   historyTitle: 'Your slips',
-  historyEmpty: 'Nothing on this device yet. The sticks you draw will stay here.',
+  historyEmpty: 'No slips yet. Draw one and it will stay here on this device.',
   historyGoDraw: 'Go draw one',
   historyClear: 'Clear all',
   historyClearConfirm: 'Confirm clear',
@@ -107,9 +115,50 @@ export const en = {
   historyNoticeLabel: 'Worth noticing: ',
   historyActionLabel: 'One small thing you can do: ',
 
+  /* ── privacy & data ── */
+  privacyTitle: 'Privacy & data',
+  privacyIntro:
+    'This deployment does not use cookies, advertising trackers, pixels, or analytics. The notes below describe what this code actually stores and sends.',
+  privacyStoredTitle: 'What the browser stores',
+  privacyStoredRecords:
+    'localStorage key wenyiqian.records: up to 100 reading records, including questions, stick numbers, readings, follow-up content, and timestamps.',
+  privacyStoredPrefs:
+    'localStorage keys wenyiqian.current and wenyiqian.prefs: the current reading ID, plus sound, motion, and interface-language preferences.',
+  privacyStoredPassword:
+    'sessionStorage key adminPassword: present only when ADMIN_PASSWORD is set for the deployment. It disappears when the tab closes and is sent in a request header, never in a cookie or URL.',
+  privacyServerTitle: 'What the server stores',
+  privacyServerReadings:
+    'Cloudflare D1 tables readings and reading_messages: the question, fixed stick number, interpretation, interpretation error, follow-ups, statuses, and creation/update times.',
+  privacyServerAgents:
+    'D1 tables agents and connect_sessions: connected-agent names, descriptions, RPC URLs, verification state, expiry, and encrypted credentials plus short-lived authorization-flow data. Credentials are never returned to the browser.',
+  privacyServerRetention:
+    'Readings and follow-ups have no automatic application-level expiry. They remain until you delete them from History or the deployment operator clears the database. Authorization sessions normally expire after about 15 minutes; disconnecting an agent deletes its connection data.',
+  privacyThirdPartyTitle: 'Third-party services',
+  privacyManyfold:
+    'When you ask for a reading, your question, the stick content, the existing reading, and follow-ups are sent to the Manyfold agent you connected. The connection flow also sends the app name and HTTPS site URL to Manyfold; agent tokens never reach the browser.',
+  privacyFonts:
+    'The page requests Noto Serif fonts from Google Fonts. Google handles those font requests; this app does not put your question or reading into a font request.',
+  privacyCloudflare:
+    'The site, Worker, and D1 run on Cloudflare. wrangler.jsonc also enables Cloudflare Worker observability, so Cloudflare may process request metadata, logs, and metrics under its platform service; this app adds no analytics or behavioral tracking.',
+  privacyCookiesTitle: 'Cookies and analytics',
+  privacyCookies:
+    'This app does not set, read, or depend on cookies. It does not need an anonymous cross-request identifier, so there is no cookie expiry or cookie withdrawal action.',
+  privacyAnalytics:
+    'There is currently no Google Analytics, GTM, Meta Pixel, Sentry, Hotjar, PostHog, or other analytics script. Without a measurement ID, no analytics script or event is sent, so no extra consent banner is shown.',
+  privacySharingTitle: 'What sharing exposes',
+  privacySharing:
+    'Sharing generates an image in your browser and hands it to the system share sheet or downloads it; this app has no public sharing service. The image may contain the stick number, level, poem, one-line meaning, an optional question, and a QR code. Whoever receives the image can see whatever you included, and the receiving platform has its own handling.',
+  privacyControlsTitle: 'Controls, withdrawal, and deletion',
+  privacyControls:
+    'You can delete one or all records from History. You can also clear this device’s reading records, current ID, preferences, and tab-scoped admin password here. Clearing browser data does not delete records already on the server; History separately attempts to delete the matching D1 records.',
+  privacyClearButton: 'Clear local data',
+  privacyClearConfirm: 'Confirm clear',
+  privacyClearCancel: 'Keep data',
+  privacyCleared: 'Local data cleared.',
+
   /* ── password gate ── */
   gateTitle: 'Admin password required',
-  gateBody: 'This deployment has ADMIN_PASSWORD set. Enter it to continue.',
+  gateBody: 'This deployment protects agent management with ADMIN_PASSWORD. Enter it to continue.',
   gateLabel: 'Admin password',
   gateWrong: 'That password is not right.',
   gateSubmit: 'Unlock',
@@ -138,7 +187,7 @@ export const en = {
     'Re-authorizing an agent that is already connected swaps its token in place — useful when an authorization expires.',
   settingsAboutTitle: 'About this deployment',
   settingsAboutBody:
-    'Agent tokens are AES-GCM encrypted in D1 and are never sent to the browser. Setting ADMIN_PASSWORD locks the whole site, game included, behind a password. Setting CONFIG_ENCRYPTION_KEY keeps the encryption key out of the database. See the README.',
+    'Agent tokens are AES-GCM encrypted in D1 and are never sent to the browser. ADMIN_PASSWORD protects agent-management operations on this settings page only; the game remains public. Setting CONFIG_ENCRYPTION_KEY keeps the encryption key out of the database. See the README.',
 
   /* ── connecting to Manyfold ── */
   connectStart: 'Connect a Manyfold agent',

@@ -35,7 +35,6 @@ export type PollStatus = 'pending' | 'denied' | 'expired' | 'approved';
 
 export interface PollOutcome {
   status: PollStatus;
-  userEmail?: string | null;
   agents?: ConnectedAgent[];
   failed?: { name: string; error: string }[];
 }

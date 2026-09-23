@@ -15,7 +15,7 @@ export interface Env {
   ENVIRONMENT?: string;
   /** Optional: >=32 chars. Without it a key is generated and kept in D1. */
   CONFIG_ENCRYPTION_KEY?: string;
-  /** Optional: when set, all routes except /api/health and /api/state require x-admin-password. */
+  /** Optional: when set, settings/agent-management routes require x-admin-password. */
   ADMIN_PASSWORD?: string;
 }
 

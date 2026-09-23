@@ -8,6 +8,7 @@
 
 import { useState } from 'react';
 import type { ConnectedAgent, ConnectSession } from '../../shared/types';
+import { withoutDashes } from '../../shared/text';
 import { api, errorMessage } from '../api';
 import { useT } from '../i18n';
 import ConnectPanel from './ConnectPanel';
@@ -63,7 +64,7 @@ export default function SettingsView(props: {
           <div className="agent-card" key={agent.agentId}>
             <div className="agent-card-main">
               <div className="agent-card-title">
-                <strong>{agent.name}</strong>
+                <strong>{withoutDashes(agent.name)}</strong>
                 {agent.verified ? (
                   <span className="badge ok">{t('settingsVerified')}</span>
                 ) : (
@@ -72,7 +73,7 @@ export default function SettingsView(props: {
                   </span>
                 )}
               </div>
-              {agent.description && <p className="muted">{agent.description}</p>}
+              {agent.description && <p className="muted">{withoutDashes(agent.description)}</p>}
               <p className="muted small">
                 {t('settingsConnectedAt', {
                   host: new URL(agent.rpcUrl).host,
@@ -82,7 +83,7 @@ export default function SettingsView(props: {
                   ? t('settingsExpiresAt', { time: new Date(agent.expiresAt).toLocaleString() })
                   : ''}
               </p>
-              {agent.warning && <p className="warn small">⚠ {agent.warning}</p>}
+              {agent.warning && <p className="warn small">⚠ {withoutDashes(agent.warning)}</p>}
             </div>
             <div className="agent-card-actions">
               <button

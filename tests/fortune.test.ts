@@ -4,8 +4,10 @@ import {
   buildInterpretPrompt,
   drawStickNo,
   fallbackInterpretation,
+  interpretMessageId,
   normalizeQuestion,
   parseInterpretation,
+  unparseableError,
 } from '../src/worker/fortune';
 import { LEVEL_LABEL, STICKS, stickByNo, stickText } from '../src/shared/sticks';
 import { detectLanguage } from '../src/shared/lang';
@@ -110,6 +112,16 @@ describe('parseInterpretation', () => {
     expect(parsed).toMatchObject({ ...good, source: 'ai' });
   });
 
+  it('解析后不会把 dash 带进解读内容', () => {
+    const parsed = parseInterpretation(
+      JSON.stringify({ ...good, answer: '先做这一步——再观察结果。' }),
+      stick,
+      'zh',
+    );
+    expect(parsed?.answer).toBe('先做这一步 再观察结果。');
+    expect(parsed?.answer).not.toMatch(/[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]/);
+  });
+
   it('剥掉 markdown 代码块和前后客套话', () => {
     const raw = `好的，这是解读：\n\`\`\`json\n${JSON.stringify(good)}\n\`\`\`\n希望有帮助。`;
     expect(parseInterpretation(raw, stick, 'zh')?.answer).toBe(good.answer);
@@ -117,7 +129,6 @@ describe('parseInterpretation', () => {
 
   it('answer 为空时返回 null —— 宁可落回通用解释', () => {
     expect(parseInterpretation(JSON.stringify({ ...good, answer: '   ' }), stick, 'zh')).toBeNull();
-    expect(parseInterpretation('完全不是 JSON', stick, 'zh')).toBeNull();
     expect(parseInterpretation('{ 坏掉的 json', stick, 'zh')).toBeNull();
   });
 
@@ -135,6 +146,32 @@ describe('parseInterpretation', () => {
       'zh',
     );
     expect(parsed!.answer.length).toBe(600);
+  });
+
+  it('agent 回普通文字时也保留解读，不退回通用解释', () => {
+    const parsed = parseInterpretation('前面的准备已经够了，今天可以先迈出第一步。', stick, 'zh');
+    expect(parsed).toMatchObject({
+      answer: '前面的准备已经够了，今天可以先迈出第一步。',
+      source: 'ai',
+    });
+    expect(parsed?.meaning).toBe(stickText(stick, 'zh').meaning);
+  });
+
+  it('接受常见的 response/content JSON 包装', () => {
+    const parsed = parseInterpretation(
+      JSON.stringify({ response: '先把最小的一步做出来。' }),
+      stick,
+      'zh',
+    );
+    expect(parsed?.answer).toBe('先把最小的一步做出来。');
+  });
+
+  it('串流重复多个 JSON 物件时仍取出有效解读', () => {
+    const raw = `${JSON.stringify(good)}${JSON.stringify(good)}`;
+    expect(parseInterpretation(raw, stick, 'zh')).toMatchObject({
+      answer: good.answer,
+      source: 'ai',
+    });
   });
 });
 
@@ -225,6 +262,24 @@ describe('英文签库', () => {
     }
   });
 
+  it('英文文案不带明显的逐字翻译腔', () => {
+    const forbidden = [
+      'the walking is yours',
+      'fixedly means',
+      'fix your direction',
+      'the thing is moving underneath',
+      'what it lacks is contact with the outside',
+      'the answer is more direct than you think',
+    ];
+    for (const entry of STICKS) {
+      const text = stickText(entry, 'en');
+      const joined = `${text.title} ${text.poem.join(' ')} ${text.meaning} ${text.general} ${text.action}`.toLowerCase();
+      for (const phrase of forbidden) {
+        expect(joined, `第 ${entry.no} 签仍含有直译腔：${phrase}`).not.toContain(phrase);
+      }
+    }
+  });
+
   it('36 个英文签名互不重复', () => {
     const titles = STICKS.map((entry) => stickText(entry, 'en').title);
     expect(new Set(titles).size).toBe(36);
@@ -245,6 +300,12 @@ describe('英文签库', () => {
     expect(LEVEL_LABEL.en['中签']).toBe('MIDDLING');
     expect(LEVEL_LABEL.en['下签']).toBe('POOR FORTUNE');
     expect(LEVEL_LABEL.zh['上上签']).toBe('上上签');
+  });
+
+  it('英文珍藏卡使用英文等级名，而不是内部中文等级键', () => {
+    for (const entry of STICKS) {
+      expect(LEVEL_LABEL.en[entry.level]).not.toBe(entry.level);
+    }
   });
 });
 
@@ -323,5 +384,85 @@ describe('按问题的语言解签', () => {
     expect(prompt).toContain('does not draw a new stick');
     expect(prompt).toContain('Where do I start?');
     expect(prompt).not.toContain('不重新抽签');
+  });
+});
+
+describe('unparseableError', () => {
+  it('把 agent 原文的开头一起存下来 —— 只存「解析失败」的话，事后没人知道它到底回了什么', () => {
+    expect(unparseableError('好的，我来帮你看看这支签')).toBe(
+      'unparseable: 好的，我来帮你看看这支签',
+    );
+  });
+
+  it('原文是空的就只存码', () => {
+    expect(unparseableError('   ')).toBe('unparseable');
+  });
+
+  it('原文很长就截断 —— 这一条会进 D1，也会回到浏览器', () => {
+    expect(unparseableError('x'.repeat(2000)).length).toBeLessThanOrEqual(240);
+  });
+
+  it('原文照样过脱敏', () => {
+    expect(unparseableError('Bearer nca_secret_token')).not.toContain('nca_secret_token');
+  });
+});
+
+describe('interpretMessageId', () => {
+  const FIRST = '2026-09-22T06:27:35.118Z';
+  const AFTER_FIRST = '2026-09-22T06:36:52.693Z';
+
+  it('同一次尝试里是稳定的 —— 连点两下不该被算成两轮', () => {
+    expect(interpretMessageId('r1', FIRST)).toBe(interpretMessageId('r1', FIRST));
+  });
+
+  it('上一次尝试写完之后重试，是一则新的消息 —— 同一个 id 会被 agent 当成同一则，直接关掉串流', () => {
+    expect(interpretMessageId('r1', FIRST)).not.toBe(interpretMessageId('r1', AFTER_FIRST));
+  });
+
+  it('不同的签不会撞在一起', () => {
+    expect(interpretMessageId('r1', FIRST)).not.toBe(interpretMessageId('r2', FIRST));
+  });
+
+  it('没有 updated_at 也给得出一个带签号的稳定值', () => {
+    expect(interpretMessageId('r1', null)).toBe(interpretMessageId('r1', null));
+    expect(interpretMessageId('r1', null)).toContain('r1');
+  });
+});
+
+// 线上 6747829e 那一条：agent 把中文引号写成没转义的半角引号，一整份写得好好的解读
+// 就被当成坏 JSON 丢掉，用户看到的是通用解释。
+describe('parseInterpretation：坏 JSON 的保底（按键切片）', () => {
+  it('值里有没转义的半角引号，仍旧救得回来', () => {
+    const reply =
+      '{"meaning":"这件事可以开始","answer":"通常就那么一两个环节最要紧。",' +
+      '"notice":"容易把"谨慎"当成拖延","action":"指出最不可逆的一步"}';
+    expect(parseInterpretation(reply, stick, 'zh')).toMatchObject({
+      meaning: '这件事可以开始',
+      answer: '通常就那么一两个环节最要紧。',
+      notice: '容易把"谨慎"当成拖延',
+      action: '指出最不可逆的一步',
+      source: 'ai',
+    });
+  });
+
+  it('救回来的值里，转义过的引号还原成引号', () => {
+    const reply = '{"answer":"他说\\"好\\"就够了","notice":"容易把"谨慎"当成拖延"}';
+    expect(parseInterpretation(reply, stick, 'zh')?.answer).toBe('他说"好"就够了');
+  });
+
+  it('最后一段被截断，前面已经写完的字段照样救回来', () => {
+    const reply = '{"meaning":"到了关键的一小段","answer":"分清楚哪一步最要紧。","notice":"容易把';
+    expect(parseInterpretation(reply, stick, 'zh')?.answer).toBe('分清楚哪一步最要紧。');
+  });
+
+  it('只有括号、没有认得的字段，还是落回通用解释 —— 保底不是什么都吞', () => {
+    expect(parseInterpretation('{ 我觉得这支签还行 }', stick, 'zh')).toBeNull();
+  });
+});
+
+describe('提示词：少制造坏 JSON', () => {
+  it('明确要求字符串里不要用半角引号 —— 那是线上唯一见过的坏 JSON 成因', () => {
+    expect(buildInterpretPrompt('我该不该换工作', stick, 'zh')).toContain('「」');
+    expect(buildInterpretPrompt('should I switch jobs', stick, 'en')).toMatch(/double quote/i);
   });
 });

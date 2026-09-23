@@ -10,6 +10,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { ConnectSession, PollOutcome } from '../../shared/types';
+import { withoutDashes } from '../../shared/text';
 import { api, errorMessage } from '../api';
 import { useT } from '../i18n';
 
@@ -133,11 +134,11 @@ export default function ConnectPanel(props: {
           </strong>
           {(result.agents ?? []).map((agent) => (
             <div className="connect-result-row" key={agent.agentId}>
-              <span>✓ {agent.name}</span>
+              <span>✓ {withoutDashes(agent.name)}</span>
               {!agent.verified && (
                 <em className="warn">
                   {t('settingsUnverified')}
-                  {agent.warning ? ` — ${agent.warning}` : ''}
+                  {agent.warning ? `, ${withoutDashes(agent.warning)}` : ''}
                 </em>
               )}
             </div>
@@ -145,7 +146,7 @@ export default function ConnectPanel(props: {
           {(result.failed ?? []).map((entry) => (
             <div className="connect-result-row failed" key={entry.name}>
               <span>✗ {entry.name}</span>
-              <em className="warn">{entry.error}</em>
+              <em className="warn">{withoutDashes(entry.error)}</em>
             </div>
           ))}
         </div>

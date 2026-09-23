@@ -35,6 +35,6 @@
     "ENVIRONMENT": "production"
   }
   // Optional hardening, neither is required to deploy:
-  //   npx wrangler secret put ADMIN_PASSWORD          # locks the app behind a password
+  //   npx wrangler secret put ADMIN_PASSWORD          # protects agent management in /settings
   //   npx wrangler secret put CONFIG_ENCRYPTION_KEY   # >=32 chars; otherwise a key is generated and stored in D1
 }
