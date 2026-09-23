@@ -19,6 +19,7 @@ import {
   bambooRattle,
   motor,
   paperRollRumble,
+  paperSettleSound,
   press as pressSound,
   stampSound,
   suzu,
@@ -164,6 +165,13 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
     };
   }, []);
 
+  // 恢復簽或回首頁提問時，確保滾動位置在頂部
+  useEffect(() => {
+    if (!restoring && phase === 'ask' && !reading) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }
+  }, [restoring, phase, reading]);
+
   const triggerHaptic = useCallback((pattern: number | number[]) => {
     if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
       try {
@@ -305,20 +313,30 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
 
   /** 再求一签：清空上一次的问题，回到打印机前，开启全新一轮。 */
   const restart = useCallback(() => {
+    if (props.prefs.sound) paperSettleSound(0.22);
+    triggerHaptic(20);
     clearTimers();
+    stopMotor.current?.();
+    pendingReading.current = null;
     setCurrentReadingId(null);
     setReading(null);
     setSheet(null);
     setQuestion('');
     setFault(null);
     setPhase('ask');
-    window.scrollTo({ top: 0, behavior: props.prefs.reducedMotion ? 'auto' : 'smooth' });
-  }, [clearTimers, props.prefs.reducedMotion]);
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }, [clearTimers, props.prefs.sound, triggerHaptic]);
 
   if (restoring) {
     return (
       <section className="stage">
-        <p className="stage-loading">{t('restoring')}</p>
+        <div className="loading-shrine" role="status" aria-live="polite">
+          <div className="loading-shrine-emblem" aria-hidden="true">
+            <span className="loading-shrine-torii">⛩️</span>
+            <span className="loading-shrine-sakura">🌸</span>
+          </div>
+          <p className="loading-shrine-text">{t('restoring')}</p>
+        </div>
       </section>
     );
   }
@@ -362,28 +380,31 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
      高度跟着视口变。留在原地淡出，高度就永远是它自己那么高。
      退场时按钮要一起 disabled，否则看不见却还能被 Tab 选中。 */
   const suggestions = (
-    <div className="suggest-slot">
+    <div className={`suggest-slot${printing ? ' spent' : ''}`}>
       <ul
-        className={`suggestions${typed === 0 ? '' : ' spent'}`}
-        aria-hidden={typed !== 0}
+        className={`suggestions${printing ? ' spent' : ''}`}
+        aria-hidden={printing}
         data-lang={props.prefs.language}
       >
-        {[t('example1'), t('example2'), t('example3')].map((example) => (
-          <li key={example}>
-            <button
-              type="button"
-              className="text-action"
-              disabled={typed !== 0}
-              onClick={() => {
-                if (props.prefs.sound) typeTick(0.08);
-                setQuestion(example);
-                askField.current?.focus();
-              }}
-            >
-              {example}
-            </button>
-          </li>
-        ))}
+        {[t('example1'), t('example2'), t('example3')].map((example) => {
+          const isSelected = question === example;
+          return (
+            <li key={example}>
+              <button
+                type="button"
+                className={`text-action${isSelected ? ' selected' : ''}`}
+                disabled={printing}
+                onClick={() => {
+                  if (props.prefs.sound) typeTick(0.08);
+                  setQuestion(example);
+                  askField.current?.focus();
+                }}
+              >
+                {example}
+              </button>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

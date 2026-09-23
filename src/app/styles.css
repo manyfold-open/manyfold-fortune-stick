@@ -88,8 +88,9 @@
   box-sizing: border-box;
 }
 
-body {
+html, body {
   margin: 0;
+  overscroll-behavior-y: none;
   background: var(--ground-wash), var(--ground);
   background-attachment: fixed;
   color: var(--on-ground);
@@ -100,13 +101,15 @@ body {
 
 .shell {
   position: relative;
+  isolation: isolate;
   max-width: 1120px;
   margin: 0 auto;
-  padding: 20px 28px 30px;
+  padding: max(20px, env(safe-area-inset-top, 20px)) max(28px, calc(env(safe-area-inset-right, 0px) + 24px)) max(32px, calc(env(safe-area-inset-bottom, 0px) + 24px)) max(28px, calc(env(safe-area-inset-left, 0px) + 24px));
   min-height: 100vh;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 }
 
 /* ── 牌记与页脚 ── */
@@ -114,80 +117,103 @@ body {
 .topbar {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 12px;
   margin-bottom: 8px;
+  position: relative;
+  z-index: 20;
 }
 
 .topbar-actions {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 8px;
+  flex: 0 0 auto;
 }
 
-/* 语言开关：和「求签记录」一样是一行字，不是一个按钮。 */
-.lang-switch {
-  font: 11px/1 var(--mono);
-  letter-spacing: 0.18em;
+.topbar-actions .text-action {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(184, 50, 31, 0.15);
+  box-shadow: 0 1px 3px rgba(80, 40, 20, 0.05);
+  color: var(--on-ground);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+  line-height: 1.2;
+}
+
+.topbar-actions .text-action:hover,
+.topbar-actions .text-action:focus-visible {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(184, 50, 31, 0.35);
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+
+.topbar-actions .lang-switch {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+}
+
+.settings-trigger {
+  cursor: pointer;
+}
+
+.settings-trigger-icon {
+  font-size: 12px;
+  line-height: 1;
 }
 
 .brand {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 9px;
+  gap: 7px;
   text-decoration: none;
   color: inherit;
-}
-
-.brand-chips {
-  display: flex;
-  gap: 2px;
-}
-
-.brand-chips i {
-  width: 7px;
-  height: 14px;
-}
-
-.brand-chips i:nth-child(1) { background: #e8007d; }
-.brand-chips i:nth-child(2) { background: #c3dd4e; }
-.brand-chips i:nth-child(3) { background: #28a9e0; }
-.brand-chips i:nth-child(4) { background: #f2cf3f; }
-
-.brand-name {
   font-family: var(--serif);
-  font-size: 19px;
   font-weight: 700;
-  letter-spacing: 0.2em;
+  font-size: 15px;
+  letter-spacing: 0.16em;
+  opacity: 0.92;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
-.brand-sub {
-  font: 10px/1 var(--mono);
-  letter-spacing: 0.16em;
-  color: var(--on-ground-2);
+.brand:hover {
+  opacity: 1;
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+
+.brand-torii {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.brand-title {
+  letter-spacing: 0.18em;
+  color: var(--on-ground);
 }
 
 .footer {
   margin-top: auto;
-  padding-top: 36px;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: 16px;
-}
-
-.footer-prefs {
+  padding-top: 24px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: center;
+  gap: 20px;
+  position: relative;
+  z-index: 10;
 }
 
 .footer-credits {
-  grid-column: 2;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 3px;
+  gap: 16px;
   text-align: center;
 }
 
@@ -222,50 +248,230 @@ body {
   color: var(--on-ground);
 }
 
-.footer-note {
-  position: absolute;
-  top: 20px;
-  left: 0;
-  font: 11px/1 var(--mono);
-  letter-spacing: 0.1em;
-  color: var(--on-ground-2);
-  text-align: left;
-}
-
 .footer-privacy {
-  grid-column: 3;
-  justify-self: end;
-  text-align: right;
+  text-align: center;
 }
 
-@media (max-width: 820px) {
-  .footer {
-    grid-template-columns: 1fr;
-    justify-items: center;
-    text-align: center;
-    gap: 14px;
-    padding-top: 20px;
-  }
+/* ── 神社參拜設置面板（Settings Drawer / Sheet）── */
 
-  .footer-prefs {
-    grid-column: 1;
-    justify-content: center;
-  }
+.settings-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: rgba(30, 18, 12, 0.48);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: settings-fade-in 0.25s ease-out;
+}
 
-  .footer-credits,
-  .footer-privacy {
-    grid-column: 1;
-  }
+@keyframes settings-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 
-  .footer-note {
-    top: 14px;
-    left: 0;
-    text-align: left;
-  }
+.settings-sheet {
+  width: 100%;
+  max-width: 460px;
+  background: var(--paper);
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -12px 36px rgba(40, 20, 10, 0.22);
+  border-top: 1px solid color-mix(in srgb, var(--seal) 40%, transparent);
+  padding: 20px 22px calc(24px + env(safe-area-inset-bottom, 12px));
+  position: relative;
+  animation: settings-slide-up 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+  box-sizing: border-box;
+}
 
-  .footer-privacy {
-    justify-self: end;
-  }
+@keyframes settings-slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.settings-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 14px;
+  border-bottom: 1px dashed color-mix(in srgb, var(--seal) 25%, transparent);
+  margin-bottom: 16px;
+}
+
+.settings-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-torii-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.settings-title {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--on-ground);
+}
+
+.settings-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  padding: 0;
+  cursor: pointer;
+  color: var(--on-ground-2);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.settings-close:hover {
+  background: rgba(0, 0, 0, 0.1);
+  transform: scale(1.05);
+  text-decoration: none;
+}
+
+.settings-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.settings-label-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.settings-label {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 14.5px;
+  letter-spacing: 0.05em;
+  color: var(--on-ground);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.settings-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.settings-desc {
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--on-ground-2);
+  opacity: 0.85;
+}
+
+.settings-segment {
+  display: inline-flex;
+  padding: 3px;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 8px;
+  gap: 2px;
+}
+
+.segment-btn {
+  border: 0;
+  background: none;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  letter-spacing: 0.04em;
+  color: var(--on-ground-2);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.segment-btn.active {
+  background: #fff;
+  color: var(--on-ground);
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+.settings-links-card {
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid color-mix(in srgb, var(--seal) 20%, transparent);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.settings-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 14px;
+  text-decoration: none;
+  color: var(--on-ground);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  transition: background 0.15s ease;
+}
+
+.settings-link:not(:last-child) {
+  border-bottom: 1px solid color-mix(in srgb, var(--seal) 12%, transparent);
+}
+
+.settings-link:hover {
+  background: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+}
+
+.settings-link-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-link-arrow {
+  color: var(--on-ground-2);
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.settings-motto-seal {
+  margin-top: 6px;
+  padding: 10px 14px;
+  text-align: center;
+  color: var(--seal);
+  font-family: var(--serif);
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  opacity: 0.88;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.motto-marks {
+  font-weight: 700;
+  color: var(--accent);
 }
 
 /* ── 唯一的动作样式：纸上的一行字 ── */
@@ -285,6 +491,10 @@ body {
   text-decoration: none;
   text-underline-offset: 6px;
   transition: opacity 0.15s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .text-action:hover:not(:disabled),
@@ -461,6 +671,95 @@ body {
   color: var(--on-ground-2);
 }
 
+/* ── 神社載入中畫面（桌面與手機通用） ── */
+.loading-shrine {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  position: relative;
+  z-index: 10;
+  animation: loading-fade-in 0.4s ease both;
+}
+
+@keyframes loading-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.loading-shrine-emblem {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 40% 35%, #fffdf8 0%, #fbf3e6 65%, #f2e2cb 100%);
+  border: 1.5px solid rgba(192, 50, 31, 0.4);
+  box-shadow:
+    0 8px 24px rgba(138, 42, 30, 0.14),
+    0 2px 6px rgba(138, 42, 30, 0.08),
+    inset 0 0 14px rgba(255, 255, 255, 0.9);
+  animation: shrine-pulse 2.8s ease-in-out infinite alternate;
+}
+
+@keyframes shrine-pulse {
+  0% {
+    transform: translateY(0) scale(1);
+    box-shadow: 0 6px 18px rgba(138, 42, 30, 0.1), inset 0 0 10px rgba(255, 255, 255, 0.8);
+  }
+  100% {
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 0 14px 28px rgba(138, 42, 30, 0.2), inset 0 0 16px rgba(255, 255, 255, 0.95);
+  }
+}
+
+.loading-shrine-torii {
+  font-size: 34px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(138, 42, 30, 0.22));
+}
+
+.loading-shrine-sakura {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  font-size: 18px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 3px rgba(200, 65, 44, 0.3));
+  animation: sakura-orbit 3.6s ease-in-out infinite alternate;
+}
+
+@keyframes sakura-orbit {
+  0% { transform: rotate(-10deg) scale(0.9); }
+  100% { transform: rotate(18deg) scale(1.15) translate(2px, -2px); }
+}
+
+.loading-shrine-text {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 15.5px;
+  letter-spacing: 0.14em;
+  color: #8b3224;
+  font-weight: 500;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.85);
+  animation: text-breathe 2.4s ease-in-out infinite alternate;
+}
+
+@keyframes text-breathe {
+  0% { opacity: 0.8; }
+  100% { opacity: 1; }
+}
+
+.shell.calm .loading-shrine-emblem,
+.shell.calm .loading-shrine-sakura,
+.shell.calm .loading-shrine-text {
+  animation: none !important;
+}
+
 /* ── 提问：只有字，没有框 ── */
 
 /* 高度按**两行**问题预留（实测：一行 128、两行 172）。
@@ -596,6 +895,82 @@ body {
 
 .ask-counter.over { color: var(--accent); }
 
+/* 提問輸入時的全螢幕透明遮罩：吸收背景手勢、點擊任意處安全收起鍵盤 */
+.ask-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 8;
+  background: transparent;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ask {
+  position: relative;
+  z-index: 9;
+}
+
+/* 例句要壓在遮罩上面：寫字時點另一句要一下就換過去，不能先被遮罩吃掉一下 */
+.suggest-slot {
+  position: relative;
+  z-index: 10;
+}
+
+/* 滑鼠點框外本來就會失焦，遮罩只是給觸控收鍵盤用的；桌機上留著只會吃掉第一下點擊（籤筒、例句） */
+@media (hover: hover) and (pointer: fine) {
+  .ask-backdrop { display: none; }
+}
+
+/* 繪馬/提問區聚焦時浮現的「✓ 完成」收起鍵盤膠囊小按鈕 */
+.ask-done-pill {
+  position: absolute;
+  right: 14px;
+  bottom: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px 4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(187, 42, 28, 0.32);
+  background: linear-gradient(180deg, #fffbf2, #fbf1e2);
+  box-shadow: 0 2px 5px rgba(120, 84, 46, 0.16), 0 0 0 1px rgba(255, 255, 255, 0.9) inset;
+  color: var(--accent);
+  font-family: var(--serif);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  z-index: 10;
+  animation: ask-done-appear 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.ask-done-pill:hover,
+.ask-done-pill:active {
+  background: linear-gradient(180deg, #fef1e8, #fbe3d5);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(187, 42, 28, 0.22);
+}
+
+.ask-done-check {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+@keyframes ask-done-appear {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 /* ── 机器下方的三句例句 ── */
 
 /* 例句写了字就退场，但它一直在这儿占着位置（见下面的 .spent）—— 所以这里
@@ -629,6 +1004,11 @@ body {
 .suggestions .text-action:hover:not(:disabled),
 .suggestions .text-action:focus-visible {
   opacity: 0.92;
+}
+
+.suggestions .text-action.selected {
+  opacity: 1;
+  font-weight: 600;
 }
 
 @keyframes suggest-in {
@@ -1416,12 +1796,9 @@ body {
 .slip-body p { margin: 0; }
 
 .slip-grid-columns {
-  display: flex;
   writing-mode: vertical-rl;
-  /* 直排時 row 是由上往下；column 才是一欄一欄由右往左排 */
-  flex-direction: column;
-  align-items: flex-start;
   height: 150px;
+  /* 不使用 display: flex（flex 會受 ltr 影響變成由左向右）；原生 vertical-rl 區塊自然依正統「由右向左」排欄 */
 }
 
 .slip-column {
@@ -2592,23 +2969,229 @@ html:lang(en) .history .history-plaque h2 {
 .history .muted,
 .panel .muted { color: var(--on-ground-2); }
 
-.privacy > p,
-.privacy > ul {
-  color: var(--on-ground-2);
-  font-size: 14px;
-  line-height: 1.8;
+/* ── 隐私与数据页 ── */
+
+.panel.privacy {
+  max-width: 580px;
+  margin: 86px auto 44px;
+  padding: 0 16px;
+  position: relative;
+  z-index: 2;
 }
 
-.privacy > ul {
+.privacy-card {
+  position: relative;
+  background: rgba(255, 252, 245, 0.95);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 1px solid rgba(160, 110, 60, 0.28);
+  border-radius: 12px;
+  box-shadow:
+    0 4px 24px rgba(92, 62, 32, 0.09),
+    0 1px 4px rgba(0, 0, 0, 0.04);
+  padding: 24px 22px 26px;
+  overflow: hidden;
+}
+
+/* 和风纸边内框 */
+.privacy-card::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border: 1px dashed rgba(192, 50, 31, 0.18);
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+.privacy-head {
+  text-align: center;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.privacy-badge {
+  display: inline-block;
+  font: 600 11px/1.2 var(--mono);
+  letter-spacing: 0.18em;
+  color: var(--seal, #c0321f);
+  background: rgba(192, 50, 31, 0.08);
+  border: 1px solid rgba(192, 50, 31, 0.22);
+  border-radius: 12px;
+  padding: 3px 10px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.panel.privacy h2 {
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--ink);
+  margin: 0;
+  text-align: center;
+}
+
+.privacy-divider {
+  width: 110px;
+  height: 1px;
+  margin: 10px auto 0;
+  background: linear-gradient(90deg, transparent, rgba(192, 50, 31, 0.38), transparent);
+}
+
+.privacy-intro {
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--ink-2);
+  margin: 0 0 16px;
+  text-align: justify;
+  text-justify: inter-ideograph;
+}
+
+.privacy-section {
+  margin-top: 14px;
+}
+
+.panel.privacy .privacy-section h3 {
+  font-family: var(--serif);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  margin: 0 0 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.panel.privacy .privacy-section h3::before {
+  content: '✦';
+  font-size: 9px;
+  color: var(--seal, #c0321f);
+}
+
+.privacy-section ul {
   margin: 0 0 8px;
-  padding-left: 22px;
+  padding-left: 20px;
 }
 
-.privacy > ul > li { margin: 6px 0; }
+.privacy-section li,
+.privacy-section p {
+  font-size: 12.5px;
+  line-height: 1.62;
+  color: var(--ink-2);
+  margin: 4px 0;
+}
+
+.privacy-section p {
+  margin: 4px 0 8px;
+}
+
+.privacy-controls-action {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.privacy-controls-action .text-action {
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 6px;
+  background: rgba(192, 50, 31, 0.06);
+  border: 1px solid rgba(192, 50, 31, 0.2);
+}
+
+.privacy-controls-action .text-action:hover {
+  background: rgba(192, 50, 31, 0.12);
+}
+
+/* 窄萤幕与手机适配 */
+@media (max-width: 640px) {
+  .panel.privacy {
+    margin: 54px auto 28px;
+    padding: 0 16px;
+  }
+
+  .privacy-card {
+    padding: 16px 14px 20px;
+    border-radius: 10px;
+  }
+
+  .privacy-card::before {
+    inset: 4px;
+    border-radius: 6px;
+  }
+
+  .privacy-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    margin-bottom: 6px;
+  }
+
+  .panel.privacy h2 {
+    font-size: 16px;
+    letter-spacing: 0.14em;
+  }
+
+  .privacy-divider {
+    width: 90px;
+    margin: 8px auto 0;
+  }
+
+  .privacy-intro {
+    font-size: 12px;
+    line-height: 1.58;
+    margin-bottom: 12px;
+  }
+
+  .privacy-section {
+    margin-top: 12px;
+  }
+
+  .panel.privacy .privacy-section h3 {
+    font-size: 12.5px;
+    margin-bottom: 4px;
+  }
+
+  .privacy-section ul {
+    padding-left: 17px;
+    margin-bottom: 6px;
+  }
+
+  .privacy-section li,
+  .privacy-section p {
+    font-size: 11.5px;
+    line-height: 1.55;
+    margin: 3px 0;
+  }
+}
+
+@media (max-width: 360px) {
+  .panel.privacy {
+    padding: 0 10px;
+    margin-top: 48px;
+  }
+
+  .privacy-card {
+    padding: 14px 10px 16px;
+  }
+
+  .panel.privacy h2 {
+    font-size: 15px;
+  }
+
+  .privacy-section li,
+  .privacy-section p {
+    font-size: 11px;
+    line-height: 1.5;
+  }
+}
 
 /* ── 设置页（只有部署者从 #settings 进来） ── */
 
-.panel h3 {
+.panel:not(.privacy) h3 {
   margin: 22px 0 8px;
   font: 600 11px/1 var(--mono);
   letter-spacing: 0.18em;
@@ -2775,7 +3358,10 @@ code {
 
 /* 适配 13 寸 MacBook Pro 等笔电屏幕高（视窗通常在 650px - 820px 之间） */
 @media (max-height: 820px) {
-  .shell { padding-top: 10px; padding-bottom: 14px; }
+  .shell {
+    padding-top: max(12px, env(safe-area-inset-top, 12px));
+    padding-bottom: max(24px, calc(env(safe-area-inset-bottom, 0px) + 20px));
+  }
   .stage { padding: 0 0 16px; }
   .stage.result { padding: 4px 0 12px; justify-content: flex-start; }
   .ask-slot { min-height: 144px; }
@@ -2789,39 +3375,46 @@ code {
   .ask-zone { padding: 20px 18px; }
 }
 
-/* 顶栏现在有三样东西（牌记、语言开关、记录），窄屏上挤不下就会折行 ——
-   「问一签」被拆成两行看起来像坏了。先收起装饰性的副标，再压小间距。 */
+@media (max-width: 640px) {
+  .shell {
+    padding-top: max(16px, env(safe-area-inset-top, 16px));
+    padding-bottom: max(16px, env(safe-area-inset-bottom, 16px));
+    padding-inline: max(18px, calc(env(safe-area-inset-left, 0px) + 16px));
+  }
+
+  .topbar {
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .brand-title {
+    font-size: 14.5px;
+  }
+}
+
+/* 顶栏小屏幕适配：收紧间距，避免折行 */
 @media (max-width: 480px) {
-  .topbar { gap: 10px; }
-  .topbar-actions { gap: 12px; }
-  .topbar-actions > * { white-space: nowrap; }
-  .brand-name { white-space: nowrap; }
-  .brand-sub { display: none; }
+  .topbar { gap: 6px; }
+  .topbar-actions { gap: 6px; }
+  .topbar-actions .text-action {
+    padding: 3px 8px;
+    font-size: 11.5px;
+    white-space: nowrap;
+  }
 }
 
 @media (max-width: 400px) {
-  .shell { padding: 14px 16px 26px; }
+  .shell {
+    padding-top: max(14px, env(safe-area-inset-top, 14px));
+    padding-bottom: max(14px, env(safe-area-inset-bottom, 14px));
+    padding-inline: max(16px, calc(env(safe-area-inset-left, 0px) + 14px));
+  }
   .ask-zone { --mark-len: 14px; padding: 16px 12px; }
-  .footer { gap: 12px; }
-  .footer-note { top: 14px; left: 0; }
 }
 
-/* 左上那句小字是 absolute 的，沒有寬度上限：手機上英文那句一路穿到右邊「中文 Your slips」底下，
-   左邊也貼著螢幕邊。收在左半邊、留出頁邊，放不下就在自己那塊折成兩行（鳥居的笠木從 52px 才開始） */
-@media (max-width: 640px) {
-  .footer-note {
-    left: 16px;
-    max-width: calc(100% - 160px);
-    line-height: 1.4;
-    letter-spacing: 0.02em;
-  }
-
-  /* 記錄頁右上角是「中文 Back to the machine」，比求籤頁的「Your slips」長一大截，160px 讓不開 */
-  html:lang(en) .shell:has(.history) .footer-note {
-    max-width: calc(100% - 236px);
-    font-size: 10px;
-    line-height: 1.2;
-  }
+@media (max-width: 360px) {
+  .brand-title { display: none; }
+  .settings-trigger-label { display: none; }
 }
 
 /* ==========================================================================
@@ -3647,6 +4240,38 @@ code {
 .roll-hint.active { color: var(--on-ground); }
 .roll-hint.highlight { color: var(--on-ground); font-weight: 600; }
 
+.cyl3d-status {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.cyl3d-status .roll-hint {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 16px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--ground) 82%, #fff);
+  border: 1px solid color-mix(in srgb, var(--rule) 60%, transparent);
+  color: var(--on-ground);
+  font: 400 13px/1.5 var(--serif);
+  box-shadow: 0 1px 4px rgba(60, 40, 20, 0.08);
+  letter-spacing: 0.04em;
+  transition: all 0.25s ease;
+}
+
+/* 沒有提示時不畫一顆空膠囊，但位置留著，提示出現時籤筒不會跳 */
+.cyl3d-status .roll-hint:empty {
+  visibility: hidden;
+}
+
+.cyl3d-status .roll-hint.highlight {
+  font-weight: 600;
+  border-color: color-mix(in srgb, var(--seal) 50%, transparent);
+  color: var(--seal);
+}
+
 .roll-fault-pill {
   display: inline-flex;
   align-items: center;
@@ -3788,6 +4413,14 @@ html:lang(en) .shell:has(.cyl3d-stage) .ask-zone {
   filter: drop-shadow(0 6px 10px rgba(92, 62, 32, 0.22));
   transform-origin: 50% -26px;
   transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@media (max-width: 640px) {
+  :is(.shell:has(.cyl3d-stage) .ask-zone, .ema-card) {
+    /* 手機上掛在鳥居貫木下方，紅繩自然銜接，頂部完全避開貫木與注連繩紙垂 */
+    margin: 80px auto 0;
+    padding: 12px 18px 6px;
+  }
 }
 
 :is(.shell:has(.cyl3d-stage) .ask-zone, .ema-card)::before,
@@ -3946,6 +4579,15 @@ html:lang(en) .shell:has(.cyl3d-stage) .ask-zone {
   text-decoration: none;
   transform: translateY(-2px) rotate(-1deg);
   box-shadow: inset 0 0 0 1px var(--wood-edge), 0 5px 8px rgba(92, 62, 32, 0.22);
+}
+
+.shell:has(.cyl3d-stage) .suggestions .text-action.selected {
+  background: linear-gradient(180deg, #fff2db, #edd1a4);
+  box-shadow: inset 0 0 0 1.5px var(--seal), 0 3px 6px rgba(192, 50, 31, 0.22);
+  color: var(--seal-deep);
+  font-weight: 600;
+  opacity: 1;
+  transform: translateY(-1px);
 }
 
 /* 直排（窄螢幕）：每塊一樣寬 —— 寬度要給 li，li 預設會縮成字那麼寬 */
@@ -4122,7 +4764,7 @@ html { overflow-x: clip; }
   overflow: visible;
 }
 
-.shimenawa path { fill: none; stroke-linecap: round; }
+.shimenawa > svg:first-child path { fill: none; stroke-linecap: round; }
 .shimenawa .rope-under { stroke: #9c7f4a; stroke-width: 13px; }
 .shimenawa .rope { stroke: #dcc48e; stroke-width: 11px; }
 /* 斜的一段一段：麻繩擰起來的紋 */
@@ -4131,14 +4773,26 @@ html { overflow-x: clip; }
 .shide {
   position: absolute;
   width: 20px;
-  height: 54px;
+  height: 55px;
   margin-left: -10px;
-  fill: #fffdf6;
-  stroke: #b9ad94;
-  stroke-width: 0.7;
-  filter: drop-shadow(0 1px 1px rgba(60, 40, 20, 0.15));
+  filter: drop-shadow(0 2px 3px rgba(60, 40, 20, 0.18));
   transform-origin: top center;
   animation: shide-sway 7.2s ease-in-out infinite alternate;
+}
+
+.shide .shide-body {
+  fill: #fffdf8;
+  stroke: #b9ad94;
+  stroke-width: 0.7px;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.shide .shide-folds {
+  fill: none;
+  stroke: #c8beaa;
+  stroke-width: 0.6px;
+  stroke-linecap: round;
 }
 
 .shide:nth-child(2) {
@@ -4186,12 +4840,40 @@ html { overflow-x: clip; }
 
 /* 窄螢幕：鳥居收成貼邊的細柱（繪馬幾乎撐滿寬度，柱子只能站在留白裡） */
 @media (max-width: 899px) {
-  .shrine-torii { --pillar-w: 14px; --pillar-x: 2px; }
+  .shrine-torii { --pillar-w: 12px; --pillar-x: 2px; }
 }
 
-/* 手機上枝子收小、貼邊，不壓到題目 */
+/* 手機版：鳥居與枝子微型化並隨 safe-area 頂在頂欄下方，避開頂欄文字 */
 @media (max-width: 640px) {
-  .shrine-branch { width: 30vw; top: 40px; }
+  .shrine-torii {
+    --torii-top: calc(max(16px, env(safe-area-inset-top, 16px)) + 30px);
+    --pillar-w: 10px;
+    --pillar-x: 2px;
+  }
+  .torii-kasagi {
+    height: 30px;
+  }
+  .shrine-pillar::after {
+    height: 28px;
+  }
+  .shimenawa {
+    top: calc(var(--torii-top) + 22px);
+    height: 26px;
+  }
+  .shide {
+    width: 14px;
+    height: 38px;
+    margin-left: -7px;
+  }
+  .torii-nuki {
+    top: calc(var(--torii-top) + 44px);
+    height: 10px;
+  }
+  .shrine-branch {
+    width: 22vw;
+    max-width: 85px;
+    top: calc(var(--torii-top) - 6px);
+  }
   .shrine-branch.left { left: -14px; }
   .shrine-branch.right { right: -14px; }
 }
@@ -4212,6 +4894,12 @@ html { overflow-x: clip; }
   width: 100%;
   /* 繪馬上緣落在 156px，跟求籤頁同一個高度，紅繩從鳥居的貫垂下來 */
   margin: 73px auto 0;
+}
+
+@media (max-width: 640px) {
+  .result .sheet-stack .ema-card {
+    margin: 62px auto 0;
+  }
 }
 
 .sheet-stack .slip {
@@ -4501,19 +5189,48 @@ html { overflow-x: clip; }
  */
 .omikuji-card {
   /* 900px 高的螢幕：繪馬 ＋ 卡 ＋ 卡下的「解 签」鈕 ＋ 頁腳剛好放得下 */
-  --card-h: clamp(420px, calc(100dvh - 480px), 600px);
+  --card-h: clamp(420px, calc(100dvh - 460px), 580px);
   width: 100%;
   perspective: 1800px;
+}
+
+.omikuji-card.flipped {
+  /* 翻到背面後，解籤內容較多，動作列內嵌在卡片底部，桌面留足高度讓解籤內文充分展開 */
+  --card-h: clamp(500px, calc(100dvh - 250px), 700px);
+}
+
+@media (max-width: 640px) {
+  .omikuji-card {
+    /* 正面未翻開時，留足高度給下方的「解籤」與「再求一籤」按鈕，同時避免籤底吉色被切掉 */
+    --card-h: clamp(410px, calc(100dvh - 240px), 530px);
+  }
+  .omikuji-card.flipped {
+    /* 翻到背面後，解籤內容較多，動作列內嵌在卡片底部，卡片可更充裕高 */
+    --card-h: clamp(460px, calc(100dvh - 220px), 640px);
+  }
 }
 
 .omikuji-inner {
   position: relative;
   transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
   transition: transform 0.72s cubic-bezier(0.45, 0.05, 0.25, 1);
 }
 
 .omikuji-card.flipped .omikuji-inner {
   transform: rotateY(180deg);
+}
+
+/* 翻面動畫結束後（settled），移除 3D 旋轉矩陣，徹底解除 Chromium/WebKit 對 3D 容器內的滾動事件鎖定 */
+.omikuji-card.flipped.settled .omikuji-inner {
+  transform: none;
+  transform-style: flat;
+  -webkit-transform-style: flat;
+  transition: none;
+}
+
+.omikuji-card.flipped.settled .omikuji.face-back {
+  transform: none;
 }
 
 .omikuji.face {
@@ -4526,10 +5243,21 @@ html { overflow-x: clip; }
   display: flex;
   flex-direction: column;
   min-height: var(--card-h);
+  z-index: 2;
+  transform: translateZ(1px);
+  pointer-events: auto;
+  visibility: visible;
+}
+
+.omikuji-card.flipped .face-front {
+  z-index: 1;
+  pointer-events: none;
+  visibility: hidden;
 }
 
 .face-front .slip {
   flex: 1;
+  padding-bottom: 14px;
 }
 
 .face-front .slip-body {
@@ -4537,13 +5265,28 @@ html { overflow-x: clip; }
   align-items: center;
 }
 
+.face-front .slip-foot {
+  flex: none;
+  padding-top: 6px;
+  padding-bottom: 2px;
+}
+
 .omikuji.face-back {
   position: absolute;
   inset: 0;
-  transform: rotateY(180deg);
+  transform: rotateY(180deg) translateZ(1px);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  z-index: 1;
+  pointer-events: none;
+  visibility: hidden;
+  /* 移除直接在 face-back 上的 overflow: hidden，避免壓平 WebKit 3D Context 造成文字鏡像相反或透穿 */
+}
+
+.omikuji-card.flipped .face-back {
+  z-index: 3;
+  pointer-events: auto;
+  visibility: visible;
 }
 
 .result .omikuji.face-back > .sheet {
@@ -4554,6 +5297,8 @@ html { overflow-x: clip; }
   /* 上緣 11px + 外框 2px：「解 签」帶跟正面「御神签」帶落在同一個高度 */
   padding: 11px 22px 12px;
   animation: none;
+  overflow: hidden;
+  border-radius: 4px;
 }
 
 .face-back .sheet-band {
@@ -4566,19 +5311,43 @@ html { overflow-x: clip; }
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  /* 捲軸不要壓到內文 */
+  /* 捲軸不要壓到內文，並為底部預留足夠留白避免被按鈕遮擋 */
   margin-right: -10px;
   padding-right: 10px;
+  padding-bottom: 20px;
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--seal) 30%, transparent) transparent;
+  scrollbar-color: color-mix(in srgb, var(--seal) 45%, transparent) color-mix(in srgb, var(--ground) 40%, transparent);
+}
+
+.face-back .sheet-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.face-back .sheet-scroll::-webkit-scrollbar-track {
+  background: color-mix(in srgb, var(--seal) 8%, transparent);
+  border-radius: 3px;
+}
+
+.face-back .sheet-scroll::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--seal) 45%, transparent);
+  border-radius: 3px;
+}
+
+.face-back .sheet-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--seal);
 }
 
 .face-back .result-actions {
   flex: none;
-  margin-top: 10px;
-  padding-top: 12px;
+  margin-top: 8px;
+  padding-top: 10px;
   gap: 10px;
   animation: none;
+  position: relative;
+  z-index: 10;
+  pointer-events: auto;
+  border-top: 1px dashed color-mix(in srgb, var(--seal) 25%, transparent);
+  background: linear-gradient(180deg, rgba(251, 247, 240, 0.92) 0%, var(--paper) 100%);
 }
 
 /* 翻面的小木札：兩面紅帶的右端 */
@@ -4624,7 +5393,7 @@ html { overflow-x: clip; }
  */
 .sheet-panel {
   position: absolute;
-  z-index: 4;
+  z-index: 25;
   left: 5px;
   right: 5px;
   bottom: 5px;
@@ -4636,6 +5405,7 @@ html { overflow-x: clip; }
   padding: 12px 18px 12px;
   background: var(--paper);
   border-top: 1px solid color-mix(in srgb, var(--seal) 45%, transparent);
+  border-radius: 0 0 4px 4px;
   box-shadow: 0 -10px 22px rgba(38, 26, 18, 0.14);
   animation: sheet-panel-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
@@ -4755,43 +5525,300 @@ html { overflow-x: clip; }
 }
 
 /*
- * 手機上把籤筒的高度拿回來：鳥居（繪馬上緣 156px）和兩行預留把籤筒畫布壓到最小的 200px。
- * - 預留兩行按實際行高算（字是 clamp(18px, 3.4vw, 21px)、行高 1.6；一行的繪馬高 = 65 + 一行字）
- * - 頁腳：「隐私与数据」跟「声音 · 动画」併成一行，少一排
- * - 例句、提示與頁腳之間的空隙收一點
+ * 手機端全面最佳化：
+ * 1. 籤筒與輸入框距離收緊，籤筒成為絕對主角（大幅釋放垂直畫布空間、例句橫向標籤化、輸入後自動折疊零空白）
+ * 2. 解籤結果畫面鎖定整頁高度為 100dvh，只有卡片內部解籤文字獨立捲動，徹底杜絕滑動衝突與外層滾動
  */
 @media (max-width: 640px) {
+  /* 手機端提問與求籤階段：嚴格鎖定 html 與 body 零外層捲動，徹底杜絕 iOS Safari 鍵盤收合與重整捲動偏移 */
+  html.route-game,
+  body.route-game,
+  html:has(.route-game),
+  body:has(.route-game),
+  html:has(.shell:has(.cyl3d-stage)),
+  body:has(.shell:has(.cyl3d-stage)),
+  html:has(.shell:has(.result)),
+  body:has(.shell:has(.result)) {
+    height: 100%;
+    height: 100dvh;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  /* 籤筒求籤階段 */
+  .shell:has(.cyl3d-stage) {
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+    padding-bottom: max(6px, env(safe-area-inset-bottom, 6px));
+  }
+
+  .shell:has(.cyl3d-stage) .stage {
+    flex: 1;
+    min-height: 0;
+    gap: 2px;
+    padding-bottom: 2px;
+  }
+
   .shell:has(.cyl3d-stage) .ask-slot,
   .shell:has(.cyl3d-stage) .ask-slot.printed {
-    min-height: calc(97px + 65px + 2 * 1.6 * clamp(18px, 3.4vw, 21px));
+    min-height: auto;
+    flex-shrink: 0;
   }
 
-  .shell:has(.cyl3d-stage) .suggest-slot { padding-top: 10px; }
-  .shell:has(.cyl3d-stage) .suggestions { gap: 6px; }
-  .shell:has(.cyl3d-stage) .stage { padding-bottom: 12px; }
-
-  .footer {
-    grid-template-columns: 1fr auto;
-    justify-items: stretch;
-    gap: 10px 12px;
-    padding-top: 12px;
+  .ask-done-pill {
+    right: 10px;
+    bottom: 4px;
+    padding: 4px 10px 4px 8px;
+    font-size: 11.5px;
   }
 
-  .footer-prefs {
-    grid-column: 1;
-    grid-row: 1;
+  /* 例句在手機端呈現橫向滑動木札，提供安全觸控層與舒適間距，避免誤觸籤筒籤頭 */
+  .shell:has(.cyl3d-stage) .suggest-slot {
+    position: relative;
+    z-index: 10;
+    padding-top: 6px;
+    margin-bottom: 12px;
+    width: 100%;
+    max-width: 440px;
+    flex-shrink: 0;
+    transition: margin 0.25s ease, padding 0.25s ease;
+  }
+
+  .shell:has(.cyl3d-stage) .suggestions {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 10px;
+    padding: 4px 16px 8px;
+    justify-content: flex-start;
+    touch-action: pan-x;
+    overscroll-behavior-x: contain;
+  }
+
+  .shell:has(.cyl3d-stage) .suggestions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .shell:has(.cyl3d-stage) .suggestions li,
+  .shell:has(.cyl3d-stage) .suggestions[data-lang='en'] li {
+    flex: 0 0 auto;
+    width: auto;
+  }
+
+  .shell:has(.cyl3d-stage) .suggestions .text-action {
+    width: auto;
+    white-space: nowrap;
+    padding: 6px 14px;
+    min-height: 34px;
+    font-size: 13px;
+    touch-action: pan-x;
+  }
+
+  /* 當已有提問或出籤中，例句無縫收起為 0 高度，徹底杜絕留白空隙 */
+  .shell:has(.cyl3d-stage) .suggestions.spent {
+    max-height: 0;
+    margin: 0;
+    padding: 0;
+    opacity: 0;
+    overflow: hidden;
+    pointer-events: none;
+    transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
+  }
+
+  .shell:has(.cyl3d-stage) .suggest-slot:has(.suggestions.spent),
+  .shell:has(.cyl3d-stage) .suggest-slot.spent {
+    padding: 0;
+    margin: 0;
+  }
+
+  /* 籤筒畫布：搶佔正中央全高舞台，微縮放以強化「主角」視覺魄力，位置適度微下移以留出防誤觸呼吸帶 */
+  .shell:has(.cyl3d-stage) .roll-slot,
+  .cyl3d-stage {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    overflow: visible;
+  }
+
+  .cyl3d-stage .cyl3d-canvas-wrapper {
+    flex: 1;
+    height: 100%;
+    min-height: 260px;
+    transform: scale(1.02);
+    transform-origin: 50% 40%;
+  }
+
+  .cyl3d-stage .roll-action-area {
+    margin-top: 10px;
+    margin-bottom: 14px;
+    position: relative;
+    z-index: 10;
+    flex: none;
+  }
+
+  /* 解籤結果階段：鎖定 100dvh 外層零滾動，僅卡片內部內容平滑捲動 */
+  .shell:has(.stage.result),
+  .shell:has(.result) {
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+    padding-top: max(10px, env(safe-area-inset-top, 10px));
+    padding-bottom: max(10px, env(safe-area-inset-bottom, 10px));
+    padding-inline: max(14px, calc(env(safe-area-inset-left, 0px) + 12px));
+  }
+
+  .stage.result {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    padding: 0;
     justify-content: flex-start;
   }
 
-  .footer-privacy {
-    grid-column: 2;
-    grid-row: 1;
-    justify-self: end;
+  .stage.result .result-deck.mode-single {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
   }
 
-  .footer-credits {
-    grid-column: 1 / -1;
-    justify-self: center;
+  .stage.result .sheet-stack {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+    height: 100%;
+  }
+
+  /* 手機端解籤時，繪馬緊湊掛在鳥居下方，為籤卡爭取最大閱讀空間 */
+  .result .sheet-stack .ema-card {
+    margin: 36px auto 0;
+    padding: 8px 16px 4px;
+    flex-shrink: 0;
+  }
+
+  .result .sheet-stack .ema-card .asked {
+    font-size: 15px;
+    line-height: 1.4;
+  }
+
+  /* 籤卡正面內部排版精準收緊，確保在 compact 視口（如 iPhone 14 Safari ~664px）吉色徽章完整露出身段 */
+  .slip-seal-row {
+    padding: 6px 0 4px;
+  }
+
+  .slip-level-box {
+    width: 80px;
+    height: 80px;
+  }
+
+  .slip-level {
+    font-size: 23px;
+  }
+
+  .slip-level-box.long .slip-level {
+    font-size: 19px;
+  }
+
+  .slip-title-row {
+    padding: 2px 0 6px;
+  }
+
+  .slip-title {
+    font-size: 17px;
+  }
+
+  .slip-body {
+    padding: 6px 6px 8px;
+  }
+
+  .slip-grid-columns {
+    height: clamp(118px, 17dvh, 136px);
+  }
+
+  .slip-column {
+    padding: 0 6px;
+  }
+
+  .slip-poem {
+    font-size: 14px;
+  }
+
+  .slip-meaning {
+    font-size: 11.5px;
+  }
+
+  .face-front .slip {
+    padding-bottom: 6px;
+  }
+
+  .face-front .slip-foot {
+    padding-top: 4px;
+    padding-bottom: 2px;
+  }
+
+  /* 籤卡本體：填滿剩餘的所有垂直空間，不再定死固定高度 */
+  .result .sheet-stack .omikuji-card,
+  .result .sheet-stack .omikuji-card.flipped {
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+    --card-h: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .result .sheet-stack .omikuji-inner {
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+  }
+
+  .result .sheet-stack .omikuji.face {
+    height: 100%;
+  }
+
+  .result .sheet-stack .omikuji.face-front {
+    min-height: 0;
+    height: 100%;
+  }
+
+  .result .sheet-stack .omikuji.face-back {
+    height: 100%;
+  }
+
+  /* 解籤背面內容獨立流暢捲動，帶有 iOS momentum scrolling 與邊界防穿透 */
+  .result .face-back .sheet-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 12px;
+  }
+
+  /* 底部動作按鈕固定貼齊卡片底端，隨時可點 */
+  .result .face-back .result-actions {
+    flex: none;
+    margin-top: 6px;
+    padding-top: 8px;
+    padding-bottom: 2px;
+  }
+
+  .footer {
+    display: none !important;
   }
 }
 

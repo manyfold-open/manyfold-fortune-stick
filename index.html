@@ -7,6 +7,12 @@
     <meta name="description" content="AI Fortune Stick：把心里的事写在绘马上，搅一搅签筒，抽一支属于你的签。" />
     <meta name="theme-color" content="#efe2c6" />
     <title>AI Fortune Stick</title>
+    <script>
+      if (typeof window !== 'undefined' && 'scrollRestoration' in window.history) {
+        window.history.scrollRestoration = 'manual';
+      }
+      window.scrollTo(0, 0);
+    </script>
     <!-- 两套衬线：中文的 Noto Serif SC，英文签纸的 Noto Serif（拉丁子集，比前者小得多）。
          一次请求拿两家，让两种签纸看起来像同一台机器印的。
          加载不上时会落回 Songti SC / SimSun 和 Georgia，排版不会散。

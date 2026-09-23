@@ -12,9 +12,20 @@
  */
 export const zh = {
   /* ── 外壳 ── */
+  brandTitle: '御神签',
   brandSub: 'AI FORTUNE STICK',
   navHistory: '求签记录',
   navBackToGame: '回到求签',
+  navSettings: '设置',
+  shrineSettingsTitle: '神社设置',
+  settingsClose: '收起',
+  settingsSoundDesc: '求签与解签时的环境铃声与纸张声',
+  settingsMotionDesc: '落樱飘落与微动摇曳效果',
+  settingsSoundTitle: '参拜音效',
+  settingsMotionTitle: '落樱与微动',
+  settingsMotionActive: '灵动',
+  settingsMotionCalm: '宁静',
+  settingsLanguageTitle: '界面语言',
   privacyNav: '隐私与数据',
   railLeft: 'MODEL WY-36 · MADE IN CHINA',
   railRight: '三 十 六 签 · 一 问 一 答',
@@ -27,17 +38,18 @@ export const zh = {
   footerNote: '签为参考，路要自己走',
   langSwitch: 'EN',
   langSwitchLabel: 'Switch to English',
-  loading: '正在预热打印机…',
+  loading: '神社祈愿准备中…',
   loadFailed: '连不上服务：{detail}',
   retry: '重试',
-  restoring: '正在取回你的签…',
+  restoring: '正在取回你的灵签…',
   documentTitle: 'AI Fortune Stick',
   documentDescription:
-    'AI Fortune Stick：写下心里的事，按下打印机上的按钮，印一张已经固定的签。',
+    'AI Fortune Stick：写下心里的事，摇动神签筒，抽出一张属于你的灵签。',
 
   /* ── 提问 ── */
   askLabel: '你想问的事',
   askGhost: '在这里写下你心里的那件事',
+  askDone: '完成',
   emaCaption: '絵馬 · 心願',
   example1: '我该如何面对最近的工作变化？',
   example2: '这段关系还值得我继续投入吗？',
@@ -116,6 +128,7 @@ export const zh = {
   historyActionLabel: '可以做的一件小事：',
 
   /* ── 隐私与数据 ── */
+  privacyBadge: '御神签 · 隐私',
   privacyTitle: '隐私与数据',
   privacyIntro:
     '这个部署不使用 Cookie、广告追踪、像素或 analytics。以下说明只描述这份代码实际会保存和传送的资料。',

@@ -55,65 +55,124 @@ export default function QuestionForm(props: {
       window.clearTimeout(off);
     };
   }, [props.nudge]);
+
   const field = props.inputRef;
   const length = [...props.value.trim()].length;
   const empty = props.value.length === 0;
 
   const sway = strokes === 0 ? '' : strokes % 2 === 1 ? ' sway-a' : ' sway-b';
 
-  return (
-    // 没有框，就把整块区域都做成可以落笔的地方：点哪里都开始写。
-    <div className="ask" onClick={() => field.current?.focus()}>
-      <div className={`ask-zone${focused ? ' focused' : ''}${!empty ? ' has-content' : ''}${sway}${nudging ? ' nudge' : ''}`}>
-        <EmaChrome>
-          {/* 用 data-value 撑开高度：输入区自己长高，不需要 JS，也不会出现滚动条。 */}
-          <div className="ask-grow" data-value={props.value}>
-            <textarea
-              className="ask-input"
-              ref={field}
-              value={props.value}
-              onChange={(event) => {
-                props.onChange(withoutDashes(event.target.value));
-                setStrokes((n) => n + 1);
-              }}
-              onFocus={() => setFocused(true)}
-              onBlur={() => {
-                setFocused(false);
-                // 下次聚焦不要先补晃一下上次留下的那笔
-                setStrokes(0);
-              }}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' && !event.shiftKey) {
-                  event.preventDefault();
-                  props.onSubmit();
-                } else if (props.sound && !event.ctrlKey && !event.metaKey && !event.altKey && event.key !== 'Shift') {
-                  typeTick();
-                }
-              }}
-              rows={1}
-              maxLength={QUESTION_MAX + 40}
-              aria-label={t('askLabel')}
-            />
-            {empty && !focused && (
-              <p className="ask-ghost" aria-hidden>
-                {/* 一支筆：沒有框，就讓這行字自己說「這裡是寫字的地方」 */}
-                <svg className="ask-pen" viewBox="0 0 20 20">
-                  <path d="M13.6 2.8 17.2 6.4 7.4 16.2 3 17 3.8 12.6Z" />
-                  <path d="M11.6 4.8 15.2 8.4" />
-                </svg>
-                {t('askGhost')}
-                <span className="ask-caret" />
-              </p>
-            )}
-          </div>
-        </EmaChrome>
-      </div>
+  const dismiss = (e?: React.SyntheticEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    field.current?.blur();
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  };
 
-      {length > QUESTION_MAX - 20 && (
-        <p className={`ask-counter${length > QUESTION_MAX ? ' over' : ''}`}>
-          {length} / {QUESTION_MAX}
-        </p>
+  // 監聽可視視口還原（iOS Safari 鍵盤收起），重置任何殘留的 window.scrollY
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const onResize = () => {
+      if (!focused && Math.abs(window.scrollY) > 0) {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      }
+    };
+    vv.addEventListener('resize', onResize);
+    return () => vv.removeEventListener('resize', onResize);
+  }, [focused]);
+
+  return (
+    <>
+      {focused && (
+        <div
+          className="ask-backdrop"
+          aria-hidden="true"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            dismiss(e);
+          }}
+          onTouchStart={dismiss}
+        />
       )}
-    </div>
+      <div
+        className="ask"
+        onClick={(e) => {
+          if (!focused && e.target !== field.current) {
+            field.current?.focus();
+          }
+        }}
+      >
+        <div className={`ask-zone${focused ? ' focused' : ''}${!empty ? ' has-content' : ''}${sway}${nudging ? ' nudge' : ''}`}>
+          <EmaChrome>
+            {/* 用 data-value 撑开高度：输入区自己长高，不需要 JS，也不会出现滚动条。 */}
+            <div className="ask-grow" data-value={props.value}>
+              <textarea
+                className="ask-input"
+                ref={field}
+                value={props.value}
+                onChange={(event) => {
+                  props.onChange(withoutDashes(event.target.value));
+                  setStrokes((n) => n + 1);
+                }}
+                onFocus={() => setFocused(true)}
+                onBlur={() => {
+                  setFocused(false);
+                  // 下次聚焦不要先补晃一下上次留下的那笔
+                  setStrokes(0);
+                  window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    dismiss();
+                    props.onSubmit();
+                  } else if (props.sound && !event.ctrlKey && !event.metaKey && !event.altKey && event.key !== 'Shift') {
+                    typeTick();
+                  }
+                }}
+                rows={1}
+                maxLength={QUESTION_MAX + 40}
+                aria-label={t('askLabel')}
+                enterKeyHint="done"
+              />
+              {empty && !focused && (
+                <p className="ask-ghost" aria-hidden>
+                  {/* 一支筆：沒有框，就讓這行字自己說「這裡是寫字的地方」 */}
+                  <svg className="ask-pen" viewBox="0 0 20 20">
+                    <path d="M13.6 2.8 17.2 6.4 7.4 16.2 3 17 3.8 12.6Z" />
+                    <path d="M11.6 4.8 15.2 8.4" />
+                  </svg>
+                  {t('askGhost')}
+                  <span className="ask-caret" />
+                </p>
+              )}
+            </div>
+
+            {focused && (
+              <button
+                type="button"
+                className="ask-done-pill"
+                onMouseDown={(e) => e.preventDefault()}
+                onTouchEnd={dismiss}
+                onClick={dismiss}
+                aria-label={t('askDone')}
+              >
+                <span className="ask-done-check" aria-hidden="true">✓</span>
+                <span>{t('askDone')}</span>
+              </button>
+            )}
+          </EmaChrome>
+        </div>
+
+        {length > QUESTION_MAX - 20 && (
+          <p className={`ask-counter${length > QUESTION_MAX ? ' over' : ''}`}>
+            {length} / {QUESTION_MAX}
+          </p>
+        )}
+      </div>
+    </>
   );
 }

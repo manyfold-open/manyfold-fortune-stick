@@ -66,7 +66,14 @@ export default function HistoryView() {
         <Plaque caption={t('historyCaption')} title={t('historyTitle')} />
         <div className="history-empty">
           <p className="muted">{t('historyEmpty')}</p>
-          <a className="text-action history-go" href="#/">
+          <a
+            className="text-action history-go"
+            href="#/"
+            onClick={(e) => {
+              e.preventDefault();
+              window.location.hash = '';
+            }}
+          >
             {t('historyGoDraw')}
           </a>
         </div>

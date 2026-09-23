@@ -8,9 +8,20 @@ import type { Copy } from './zh';
 
 export const en = {
   /* ── shell ── */
+  brandTitle: 'Omikuji',
   brandSub: 'AI FORTUNE STICK',
   navHistory: 'Your slips',
   navBackToGame: 'Back to the machine',
+  navSettings: 'Settings',
+  shrineSettingsTitle: 'Shrine Settings',
+  settingsClose: 'Close',
+  settingsSoundDesc: 'Ambient bells and paper sounds',
+  settingsMotionDesc: 'Falling petals and gentle sway effects',
+  settingsSoundTitle: 'Shrine audio',
+  settingsMotionTitle: 'Visual motion',
+  settingsMotionActive: 'Active',
+  settingsMotionCalm: 'Calm',
+  settingsLanguageTitle: 'Language',
   privacyNav: 'Privacy & data',
   railLeft: 'MODEL WY-36 · MADE IN CHINA',
   railRight: 'T H I R T Y - S I X   S T I C K S',
@@ -23,17 +34,18 @@ export const en = {
   footerNote: 'The stick offers a perspective. What you do next is up to you.',
   langSwitch: '中文',
   langSwitchLabel: '切换到简体中文',
-  loading: 'Warming up the printer…',
+  loading: 'Preparing the shrine…',
   loadFailed: 'Cannot reach the service: {detail}',
   retry: 'Try again',
-  restoring: 'Fetching your slip…',
+  restoring: 'Fetching your sacred slip…',
   documentTitle: 'AI Fortune Stick',
   documentDescription:
-    'AI Fortune Stick: write down what is on your mind, press the printer key, and receive one fixed reading to think with.',
+    'AI Fortune Stick: write down what is on your mind, stir the fortune cylinder, and receive one fixed slip to think with.',
 
   /* ── asking ── */
   askLabel: 'What would you like to ask?',
   askGhost: 'Write the thing on your mind here',
+  askDone: 'Done',
   emaCaption: 'EMA · MAKE A WISH',
   /* 例句寫短：手機上一句要擠進一塊木札（約 290px），太長會折兩行、三塊疊起來把籤筒擠小 */
   example1: 'How do I face the changes at work?',
@@ -114,6 +126,7 @@ export const en = {
   historyActionLabel: 'One small thing you can do: ',
 
   /* ── privacy & data ── */
+  privacyBadge: 'SHRINE · PRIVACY',
   privacyTitle: 'Privacy & data',
   privacyIntro:
     'This deployment does not use cookies, advertising trackers, pixels, or analytics. The notes below describe what this code actually stores and sends.',

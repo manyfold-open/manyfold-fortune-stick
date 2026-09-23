@@ -13,14 +13,14 @@
  * 供给下面所有组件，除此之外不碰任何一张已经印好的签。
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type MouseEvent } from 'react';
 import type { AppState } from '../shared/types';
 import { api, onUnauthorized } from './api';
-import AmbientMotes from './components/AmbientMotes';
 import FortuneGame from './components/FortuneGame';
 import HistoryView from './components/HistoryView';
 import PasswordGate from './components/PasswordGate';
 import PrivacyView from './components/PrivacyView';
+import SettingsModal from './components/SettingsModal';
 import SettingsView from './components/SettingsView';
 import ShrineBackdrop from './components/ShrineBackdrop';
 import { LanguageProvider, useT, useUiLanguage } from './i18n';
@@ -28,6 +28,17 @@ import { getPrefs, setPrefs, type Prefs } from './storage';
 import { appUrl, BASE } from './base';
 
 type Route = 'game' | 'history' | 'settings' | 'privacy';
+
+/**
+ * 回到求籤頁。#history、#privacy 這種 hash 頁只清 hash，不整頁重載；
+ * /privacy、/settings 是真的路徑（頁腳就連到 /privacy），只清 hash 會留在原頁，
+ * 那就照 href 正常導回挂载点。
+ */
+const goToGame = (event: MouseEvent<HTMLAnchorElement>) => {
+  if (location.pathname.replace(/\/+$/, '') !== BASE) return;
+  event.preventDefault();
+  if (location.hash) location.hash = '';
+};
 
 const routeFromHash = (): Route => {
   const hash = location.hash.replace(/^#\/?/, '');
@@ -63,6 +74,7 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
   const [loadError, setLoadError] = useState('');
   const [route, setRoute] = useState<Route>(routeFromHash);
   const [gateOpen, setGateOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const refreshState = useCallback(async () => {
     try {
@@ -87,6 +99,18 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
+
+  // 切換路由時確保視窗頂天立地，並標記 route-game 以供手機端鎖定外層零捲動
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    const isGame = route === 'game';
+    document.documentElement.classList.toggle('route-game', isGame);
+    document.body.classList.toggle('route-game', isGame);
+    return () => {
+      document.documentElement.classList.remove('route-game');
+      document.body.classList.remove('route-game');
+    };
+  }, [route]);
 
   useEffect(() => {
     setGateOpen(route === 'settings' && Boolean(state?.adminRequired && !state.adminOk));
@@ -140,17 +164,34 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
   }
   if (!state) {
     return (
-      <main className="shell">
-        <p className="stage-loading">{t('loading')}</p>
+      <main className={`shell${prefs.reducedMotion ? ' calm' : ''}`}>
+        <ShrineBackdrop calm={prefs.reducedMotion} />
+        <div className="loading-shrine" role="status" aria-live="polite">
+          <div className="loading-shrine-emblem" aria-hidden="true">
+            <span className="loading-shrine-torii">⛩️</span>
+            <span className="loading-shrine-sakura">🌸</span>
+          </div>
+          <p className="loading-shrine-text">{t('loading')}</p>
+        </div>
       </main>
     );
   }
 
   return (
     <main className={`shell${prefs.reducedMotion ? ' calm' : ''}`}>
-      {/* 求籤頁與求籤記錄是同一座神社（鳥居、櫻花瓣）；設定與隱私頁留著原本的浮塵 */}
-      {route === 'game' || route === 'history' ? <ShrineBackdrop calm={prefs.reducedMotion} /> : <AmbientMotes reducedMotion={prefs.reducedMotion} />}
+      {/* 神社（鳥居、注連繩、落櫻花瓣）貫穿整個御神籤體驗，任何頁面皆沉浸如初 */}
+      <ShrineBackdrop calm={prefs.reducedMotion} />
       <header className="topbar">
+        <a
+          className="brand"
+          href={appUrl('/')}
+          onClick={goToGame}
+          aria-label={t('brandTitle')}
+        >
+          <span className="brand-torii" aria-hidden="true">⛩️</span>
+          <span className="brand-title">{t('brandTitle')}</span>
+        </a>
+
         <span className="topbar-actions">
           {/* 只换界面。已经印出来的签一个字都不会动。 */}
           <button
@@ -161,9 +202,22 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
           >
             {t('langSwitch')}
           </button>
-          <a className="text-action" href={route === 'game' ? '#history' : appUrl('/')}>
+          <a
+            className="text-action history-link"
+            href={route === 'game' ? '#history' : appUrl('/')}
+            onClick={route === 'game' ? undefined : goToGame}
+          >
             {route === 'game' ? t('navHistory') : t('navBackToGame')}
           </a>
+          <button
+            type="button"
+            className="text-action settings-trigger"
+            aria-label={t('navSettings')}
+            onClick={() => setSettingsOpen(true)}
+          >
+            <span className="settings-trigger-icon" aria-hidden="true">⚙️</span>
+            <span className="settings-trigger-label">{t('navSettings')}</span>
+          </button>
         </span>
       </header>
 
@@ -181,29 +235,6 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
       )}
 
       <footer className="footer">
-        <span className="footer-note">{t('footerNote')}</span>
-
-        <div className="footer-prefs">
-          <button
-            type="button"
-            className="text-action tiny"
-            aria-pressed={prefs.sound}
-            onClick={() => updatePrefs({ sound: !prefs.sound })}
-          >
-            {t('footerSound', { state: prefs.sound ? t('footerSoundOn') : t('footerSoundOff') })}
-          </button>
-          <button
-            type="button"
-            className="text-action tiny"
-            aria-pressed={prefs.reducedMotion}
-            onClick={() => updatePrefs({ reducedMotion: !prefs.reducedMotion })}
-          >
-            {t('footerMotion', {
-              state: prefs.reducedMotion ? t('footerMotionReduced') : t('footerMotionNormal'),
-            })}
-          </button>
-        </div>
-
         <div className="footer-credits">
           <a
             href="https://manyfold.ai/"
@@ -239,6 +270,14 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
           {t('privacyNav')}
         </a>
       </footer>
+
+      <SettingsModal
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        prefs={prefs}
+        updatePrefs={updatePrefs}
+        language={language}
+      />
 
       {gateOpen && <PasswordGate onSubmitted={refreshState} />}
     </main>
