@@ -62,3 +62,21 @@ export const drawStartSound = (vessel: Vessel): 'printer' | 'rattle' | 'rumble' 
  * 等到籤紙出來才響就晚了將近三秒 —— 這正是「聲音跟畫面沒對齊」。蓋章聲照舊留給籤紙。
  */
 export const chimeAtSlip = (vessel: Vessel): boolean => vessel !== 'cylinder3d';
+
+/**
+ * 在題目框裡按 Enter 算不算抽籤。
+ *
+ * 印表機這些器具：Enter 等於按印鍵。3D 籤筒不行 —— 它的籤只能攪出來：Enter 直接抽，
+ * 伺服器定了籤、phase 進 ejecting，籤筒卻從沒要過籤，拿籤的條件（攪夠了要過籤）永遠不成立，
+ * ejecting 又不再記攪動量，就卡在「先攪一下再放手」出不去，只能重整。
+ */
+export const enterDraws = (vessel: Vessel): boolean => !isGestureDriven(vessel);
+
+/**
+ * 攪夠了去要籤、這一抽卻失敗了（題目太短、網路或 API 出錯）：要不要讓籤筒重新能攪。
+ *
+ * 以前「要過籤」一設就永遠不清，一次失敗之後怎麼攪都不會再抽，只能重整。
+ * 籤已經到了（drawn）就絕不重來 —— 那支籤已經落庫，只能照它演完（AGENTS.md 第 4 條）。
+ */
+export const shouldRearmStir = (s: { requested: boolean; fault: boolean; drawn: boolean }): boolean =>
+  s.requested && s.fault && !s.drawn;

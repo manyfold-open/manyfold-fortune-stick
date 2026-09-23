@@ -51,6 +51,7 @@ import {
   pullPose,
   riseProgress,
 } from '../../shared/cylinder/pull';
+import { shouldRearmStir } from '../../shared/cylinder/interaction';
 import { createCylinderScene, type CylinderScene } from '../cylinder/scene';
 import { cylinderArt, loadCylinderArt } from '../cylinder/art';
 import { STICK_VARIANTS, createNumberedStickCanvas, paintNumberedStick } from '../cylinder/materials';
@@ -68,11 +69,31 @@ export interface FortuneCylinder3DProps {
   onShake: () => void;
   /** 整段演完（籤抽出來、鏡頭看清籤號）才回報 —— 攪多久是使用者決定的，不能用固定計時器。 */
   onRevealed?: () => void;
+  /** 還沒寫問題就來攪籤：交給上層把人帶回繪馬（晃一下、游標送進去）。 */
+  onNeedQuestion?: () => void;
   disabled?: boolean;
 }
 
 /** 交棒给签纸前的淡出时长，跟 styles.css 的 transition 对齐。 */
 const HANDOFF_FADE_MS = 460;
+
+/** 沒寫問題就攪籤時，「先寫下心事」那行字留多久。 */
+const ASK_FIRST_MS = 2600;
+
+/**
+ * 示範手勢的那隻手：食指按下、繞一圈、抬起。指尖在 (22, 4)，CSS 用它對準籤。
+ * 同一組形狀畫兩次 —— 底下一層只描粗邊、上面一層只填色 —— 拼起來只剩外輪廓，
+ * 手指和手掌交疊的地方不會多出線。
+ */
+const HAND_SHAPES = (
+  <>
+    <rect x="17.5" y="3" width="9" height="30" rx="4.5" />
+    <rect x="25.5" y="18" width="8" height="18" rx="4" />
+    <rect x="32" y="21" width="7.5" height="16" rx="3.75" />
+    <rect x="11" y="24" width="29" height="26" rx="11" />
+    <rect x="5" y="27" width="8" height="15" rx="4" transform="rotate(-28 9 34)" />
+  </>
+);
 
 type Stage = 'rest' | 'shaking' | 'pulling' | 'done';
 
@@ -123,7 +144,7 @@ interface Drive {
 }
 
 export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
-  const { state, sheet, fault, language, soundEnabled, reducedMotion, onShake, onRevealed, disabled } = props;
+  const { state, sheet, fault, language, soundEnabled, reducedMotion, onShake, onRevealed, onNeedQuestion, disabled } = props;
   const en = language === 'en';
 
   const hostRef = useRef<HTMLDivElement | null>(null);
@@ -139,6 +160,13 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
   /** 手還按著嗎 —— 提示要分「繼續攪」與「可以放手了」。 */
   const [dragging, setDragging] = useState(false);
   const [blooming, setBlooming] = useState(false);
+  /** 沒寫問題就來攪：短暫說一聲「先寫下心事」，過一會兒自己收掉（使用者不要常駐的提示）。 */
+  const [askFirst, setAskFirst] = useState(false);
+  const askFirstTimer = useRef(0);
+  /** 示範的手，位置每格跟著要被拿起來那支籤投影到畫面上。 */
+  const guideRef = useRef<HTMLDivElement | null>(null);
+  const needQuestionCb = useRef(onNeedQuestion);
+  needQuestionCb.current = onNeedQuestion;
 
   const d = useRef<Drive>({
     stage: 'rest',
@@ -179,6 +207,16 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
   calmRef.current = reducedMotion ?? false;
   shakeCb.current = onShake;
   revealCb.current = onRevealed;
+
+  /* ── 這一抽失敗了（題目太短、網路錯）：清掉「要過籤」，讓使用者改完再攪一次 ── */
+  useEffect(() => {
+    const dr = d.current;
+    if (!shouldRearmStir({ requested: dr.requested, fault: Boolean(fault), drawn: dr.stickNo > 0 })) return;
+    dr.requested = false;
+    dr.stir.work = 0;
+    dr.reported = -1;
+    setProgress(0);
+  }, [fault]);
 
   /* ── 籤到了：記下號碼。號碼只從這裡來（伺服器），動畫不決定它 ── */
   useEffect(() => {
@@ -423,6 +461,19 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
       rig.camera.position.set(0, dr.camY, dr.camZ);
       rig.camera.lookAt(0, dr.lookY, 0);
 
+      // 示範的手對準中間那支籤露在筒外的一段 —— 畫布長寬比一變籤筒就縮放，寫死百分比會對不準
+      const guide = guideRef.current;
+      if (guide && dr.stage === 'rest') {
+        rig.camera.updateMatrixWorld();
+        headV.set(0, STICK_LEN * 0.3, 0);
+        rig.sticks[PULL_INDEX].mesh.localToWorld(headV).project(rig.camera);
+        const cv = rig.renderer.domElement;
+        const gx = host.offsetLeft + ((headV.x + 1) / 2) * cv.clientWidth;
+        const gy = host.offsetTop + ((1 - headV.y) / 2) * cv.clientHeight;
+        guide.style.left = `${gx.toFixed(1)}px`;
+        guide.style.top = `${gy.toFixed(1)}px`;
+      }
+
       rig.render();
     };
     raf = requestAnimationFrame(frame);
@@ -433,6 +484,7 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
     return () => {
       cancelAnimationFrame(raf);
       if (d.current.handoff) window.clearTimeout(d.current.handoff);
+      window.clearTimeout(askFirstTimer.current);
       d.current.numberTex?.dispose();
       observer.disconnect();
       rig.dispose();
@@ -476,8 +528,17 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
   }, [disabled]);
 
   const endDrag = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const wasDragging = d.current.dragging;
     d.current.dragging = false;
     setDragging(false);
+    // 還沒寫問題：籤照樣跟手動，但抽不出來 —— 放手時把人帶回繪馬，別讓他對著籤筒乾攪。
+    // 放在放手這一刻而不是按下：按下時畫布會搶走焦點，游標送不進繪馬
+    if (wasDragging && stateRef.current === 'idle') {
+      needQuestionCb.current?.();
+      setAskFirst(true);
+      window.clearTimeout(askFirstTimer.current);
+      askFirstTimer.current = window.setTimeout(() => setAskFirst(false), ASK_FIRST_MS);
+    }
     try {
       if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
         e.currentTarget.releasePointerCapture(e.pointerId);
@@ -502,8 +563,11 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
   const hint = fault
     ? null
     : state === 'idle'
-      ? // 還沒寫問題時不放提示：題目框和例句就在上面，再說一次「請先寫下」是多的（使用者要求拿掉）
-        null
+      ? // 還沒寫問題時不放常駐提示：題目框和例句就在上面，再說一次「請先寫下」是多的（使用者要求拿掉）。
+        // 只有真的來攪了，才短暫說一聲
+        askFirst
+        ? en ? 'Write your question on the ema above first' : '先在上面的繪馬寫下心事'
+        : null
       : stageLabel === 'pulling' || stageLabel === 'done'
         ? en ? '✦ Your stick is drawn ✦' : '✦ 神籤已出 ✦'
         : stageLabel === 'shaking'
@@ -515,6 +579,13 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
               ? en ? 'Stir them round…' : '攪一攪…'
               : en ? 'Give them a real stir first' : '先攪一下再放手'
           : en ? 'Press on the sticks and stir. Let go whenever you like' : '按住籤攪一攪，想攪多久都可以，放手就抽';
+
+  /*
+   * 題目寫了、還沒真的攪過，就放一隻手示範「按住、繞圈、放開」—— 使用者回饋：不知道要
+   * 按著攪、放手才抽。手指一按下就收掉；只點一下沒攪就放開，手會再回來示範。
+   * 真的攪起來（stage 離開 rest）之後就不再出現，不擋著看籤。
+   */
+  const showGuide = state === 'ready' && stageLabel === 'rest' && !dragging && !disabled;
 
   return (
     <div className="roll-stage cyl3d-stage">
@@ -531,6 +602,17 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
       >
         <SakuraBloom active={blooming} reducedMotion={reducedMotion ?? false} />
       </div>
+      <div ref={guideRef} className={`stir-guide${showGuide ? ' shown' : ''}`} aria-hidden>
+        <svg className="stir-guide-path" viewBox="-40 -6 80 34">
+          <ellipse cx="0" cy="10" rx="30" ry="9" />
+          <path d="M 22 2.6 L 30 5.6 L 24 11" />
+        </svg>
+        <span className="stir-guide-ripple" />
+        <svg className="stir-guide-hand" viewBox="0 0 48 56">
+          <g className="stir-guide-hand-edge">{HAND_SHAPES}</g>
+          <g className="stir-guide-hand-fill">{HAND_SHAPES}</g>
+        </svg>
+      </div>
       <div className="roll-action-area">
         {fault ? (
           <div className="roll-fault-pill" role="alert">
@@ -539,7 +621,11 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
           </div>
         ) : (
           <div className="cyl3d-status">
-            <p className={`roll-hint${stageLabel === 'pulling' || stageLabel === 'done' ? ' highlight' : ''}`}>
+            <p
+              className={`roll-hint${stageLabel === 'pulling' || stageLabel === 'done' ? ' highlight' : ''}${
+                state === 'idle' && askFirst ? ' ask-first' : ''
+              }`}
+            >
               {hint}
             </p>
           </div>
