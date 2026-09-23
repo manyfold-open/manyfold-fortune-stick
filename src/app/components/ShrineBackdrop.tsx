@@ -20,6 +20,7 @@ import {
   ROPE_Y0,
   SHIDE_AT,
   SHIDE_D,
+  SHIDE_FOLDS_D,
   SHIDE_VIEW,
   TORII_KASAGI_D,
   TORII_KASAGI_VIEW,
@@ -51,7 +52,8 @@ function Torii() {
         </svg>
         {SHIDE_AT.map((u) => (
           <svg key={u} className="shide" viewBox={`0 0 ${SHIDE_VIEW.w} ${SHIDE_VIEW.h}`} style={{ left: `${u * 100}%`, top: ropeY(u) - 2 }} aria-hidden>
-            <path d={SHIDE_D} />
+            <path className="shide-body" d={SHIDE_D} />
+            <path className="shide-folds" d={SHIDE_FOLDS_D} />
           </svg>
         ))}
       </div>

@@ -41,10 +41,12 @@ export const ROPE_SAG = 8;
 export const ropeY = (u: number): number => ROPE_Y0 + 4 * ROPE_SAG * u * (1 - u);
 /** 紙垂掛在繩上的位置（繩長的比例）。只掛兩旁：正中是繪馬的紅繩垂下來的地方 */
 export const SHIDE_AT = [0.1, 0.24, 0.76, 0.9];
-/** 紙垂：viewBox 0 0 14 38，一條紙摺成閃電形，一格一格左右錯開往下；頁面上畫成 20×54 */
-export const SHIDE_VIEW = { w: 14, h: 38 };
-export const SHIDE_D = 'M6 0h2v5h-2z M5 4h8v8h-8z M1 11h8v8h-8z M5 18h8v8h-8z M1 25h8v8h-8z M5 32h6l-3 5z';
-export const SHIDE_SIZE = { w: 20, h: 54 };
+/** 紙垂：viewBox 0 0 16 44，日本神社正統折込紙垂（白川/吉田流），折面垂落；頁面上畫成 20×55 */
+export const SHIDE_VIEW = { w: 16, h: 44 };
+export const SHIDE_D =
+  'M7 0 H9 V4 L14 7 V14 L9 11 L2 15 V23 L7 20 L14 24 V32 L9 30 L2 34 V40 L5 42 L9 37 L7 29 L9 20 L7 10 L7 0 Z';
+export const SHIDE_FOLDS_D = 'M7 10 L14 14 M9 20 L2 23 M7 29 L14 32';
+export const SHIDE_SIZE = { w: 20, h: 55 };
 /** 貫的上緣與厚度（離笠木頂） */
 export const NUKI_TOP = 64;
 export const NUKI_H = 14;
@@ -110,6 +112,7 @@ function drawTorii(g: CanvasRenderingContext2D, w: number, h: number, top: numbe
 
   // 紙垂：掛在繩上，垂過貫的前面
   const shide = new Path2D(SHIDE_D);
+  const shideFolds = new Path2D(SHIDE_FOLDS_D);
   const sw = SHIDE_SIZE.w * k;
   const sh = SHIDE_SIZE.h * k;
   for (const u of SHIDE_AT) {
@@ -124,7 +127,12 @@ function drawTorii(g: CanvasRenderingContext2D, w: number, h: number, top: numbe
     g.shadowColor = 'transparent';
     g.strokeStyle = '#b9ad94';
     g.lineWidth = 0.7;
+    g.lineJoin = 'round';
+    g.lineCap = 'round';
     g.stroke(shide);
+    g.strokeStyle = '#c8beaa';
+    g.lineWidth = 0.6;
+    g.stroke(shideFolds);
     g.restore();
   }
 

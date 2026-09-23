@@ -4711,7 +4711,7 @@ html { overflow-x: clip; }
   overflow: visible;
 }
 
-.shimenawa path { fill: none; stroke-linecap: round; }
+.shimenawa > svg:first-child path { fill: none; stroke-linecap: round; }
 .shimenawa .rope-under { stroke: #9c7f4a; stroke-width: 13px; }
 .shimenawa .rope { stroke: #dcc48e; stroke-width: 11px; }
 /* 斜的一段一段：麻繩擰起來的紋 */
@@ -4720,14 +4720,26 @@ html { overflow-x: clip; }
 .shide {
   position: absolute;
   width: 20px;
-  height: 54px;
+  height: 55px;
   margin-left: -10px;
-  fill: #fffdf6;
-  stroke: #b9ad94;
-  stroke-width: 0.7;
-  filter: drop-shadow(0 1px 1px rgba(60, 40, 20, 0.15));
+  filter: drop-shadow(0 2px 3px rgba(60, 40, 20, 0.18));
   transform-origin: top center;
   animation: shide-sway 7.2s ease-in-out infinite alternate;
+}
+
+.shide .shide-body {
+  fill: #fffdf8;
+  stroke: #b9ad94;
+  stroke-width: 0.7px;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.shide .shide-folds {
+  fill: none;
+  stroke: #c8beaa;
+  stroke-width: 0.6px;
+  stroke-linecap: round;
 }
 
 .shide:nth-child(2) {
@@ -4797,7 +4809,7 @@ html { overflow-x: clip; }
   }
   .shide {
     width: 14px;
-    height: 32px;
+    height: 38px;
     margin-left: -7px;
   }
   .torii-nuki {
