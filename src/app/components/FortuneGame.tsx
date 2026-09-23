@@ -371,7 +371,7 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
      高度跟着视口变。留在原地淡出，高度就永远是它自己那么高。
      退场时按钮要一起 disabled，否则看不见却还能被 Tab 选中。 */
   const suggestions = (
-    <div className="suggest-slot">
+    <div className={`suggest-slot${typed === 0 ? '' : ' spent'}`}>
       <ul
         className={`suggestions${typed === 0 ? '' : ' spent'}`}
         aria-hidden={typed !== 0}

@@ -5171,12 +5171,16 @@ html { overflow-x: clip; }
     flex-shrink: 0;
   }
 
-  /* 例句在手機端呈現橫向滑動木札，僅佔單行高度 */
+  /* 例句在手機端呈現橫向滑動木札，提供安全觸控層與舒適間距，避免誤觸籤筒籤頭 */
   .shell:has(.cyl3d-stage) .suggest-slot {
+    position: relative;
+    z-index: 10;
     padding-top: 6px;
+    margin-bottom: 22px;
     width: 100%;
     max-width: 440px;
     flex-shrink: 0;
+    transition: margin 0.25s ease, padding 0.25s ease;
   }
 
   .shell:has(.cyl3d-stage) .suggestions {
@@ -5186,9 +5190,11 @@ html { overflow-x: clip; }
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
-    gap: 8px;
-    padding: 2px 14px;
+    gap: 10px;
+    padding: 4px 16px 8px;
     justify-content: flex-start;
+    touch-action: pan-x;
+    overscroll-behavior-x: contain;
   }
 
   .shell:has(.cyl3d-stage) .suggestions::-webkit-scrollbar {
@@ -5204,8 +5210,10 @@ html { overflow-x: clip; }
   .shell:has(.cyl3d-stage) .suggestions .text-action {
     width: auto;
     white-space: nowrap;
-    padding: 4px 10px;
-    font-size: 12px;
+    padding: 6px 14px;
+    min-height: 34px;
+    font-size: 13px;
+    touch-action: pan-x;
   }
 
   /* 當已有提問或出籤中，例句無縫收起為 0 高度，徹底杜絕留白空隙 */
@@ -5219,12 +5227,13 @@ html { overflow-x: clip; }
     transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
   }
 
-  .shell:has(.cyl3d-stage) .suggest-slot:has(.suggestions.spent) {
+  .shell:has(.cyl3d-stage) .suggest-slot:has(.suggestions.spent),
+  .shell:has(.cyl3d-stage) .suggest-slot.spent {
     padding: 0;
     margin: 0;
   }
 
-  /* 籤筒畫布：搶佔正中央全高舞台，微縮放以強化「主角」視覺魄力 */
+  /* 籤筒畫布：搶佔正中央全高舞台，微縮放以強化「主角」視覺魄力，位置適度微下移以留出防誤觸呼吸帶 */
   .shell:has(.cyl3d-stage) .roll-slot,
   .cyl3d-stage {
     flex: 1;
@@ -5239,8 +5248,8 @@ html { overflow-x: clip; }
     flex: 1;
     height: 100%;
     min-height: 260px;
-    transform: scale(1.12);
-    transform-origin: 50% 62%;
+    transform: scale(1.06) translateY(8px);
+    transform-origin: 50% 50%;
   }
 
   .cyl3d-stage .roll-action-area {
