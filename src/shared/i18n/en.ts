@@ -34,6 +34,7 @@ export const en = {
   /* ── asking ── */
   askLabel: 'What would you like to ask?',
   askGhost: 'Write down the thing on your mind',
+  emaCaption: 'EMA · MAKE A WISH',
   example1: 'How should I handle the recent changes at work?',
   example2: 'Is this relationship still worth putting myself into?',
   example3: 'Is now the time to start the thing I keep thinking about?',
@@ -57,6 +58,8 @@ export const en = {
   retryInterpret: 'Try reading again',
   retrying: 'Retrying…',
   fallbackNote: 'This reading could not be tailored to your question.',
+  /** 解籤續頁頂上那條朱紅帶。跟四個小標題一樣，跟這一局的語言走。 */
+  sheetBand: 'READING',
   blockMeaning: 'What this stick points to',
   blockAnswer: 'How it speaks to your question',
   blockNotice: 'One thing to keep in mind',

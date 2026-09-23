@@ -4,6 +4,9 @@
  * 揭晓时只有签纸本身 —— 签号、等级、四字签名、签诗。解签是另外按一下：让用户先看签、
  * 先自己猜，再决定什么时候揭晓（产品文档第三步）。
  *
+ * 版面是神社裡的一張御神籤：問題寫在上方跟紙同寬的繪馬上；籤紙與解籤是**同一張長紙條**
+ * （`.omikuji` 畫外框，「解 签」帶是紙中間的分段）。分成兩張的時候使用者說「感覺像是分了三段」。
+ *
  * 解签后支持拟真撕纸动效：
  * 用户可点击「撕下分享」或沿齿孔拉断纸条，整张解签内容伴随物理断裂声与触感震动，
  * 脱离并向前浮现为一张立体的「灵签珍藏卡」，可直接保存分享，或随时贴回。
@@ -16,6 +19,7 @@ import { storedErrorText } from '../api';
 import { LEVEL_TONE } from '../constants';
 import { copyFor, useT } from '../i18n';
 import { withoutDashes } from '../../shared/text';
+import { EmaChrome } from './Ema';
 import { paperSettleSound, tearPaperSound } from '../sound';
 import FollowUp from './FollowUp';
 import SharePanel from './SharePanel';
@@ -212,6 +216,7 @@ export default function ReadingResult(props: {
 
   const loadingSkeleton = (
     <article className="sheet sheet-loading" data-lang={reading.language}>
+      <p className="sheet-band" aria-hidden>{sheet.sheetBand}</p>
       <div className="interpreting-header">
         <span className="interpreting-spinner" aria-hidden="true" />
         <p className="interpreting-status">
@@ -258,15 +263,40 @@ export default function ReadingResult(props: {
       <div className="result-deck mode-single">
         {/* 上半部：紙卷本體（所求之事 + 籤面） */}
         <div className={`sheet-stack${tearState === 'torn' ? ' slip-stub' : ''}`}>
-          {/* 所求之事：神諭紙卷抬頭 */}
-          <div className="scroll-head" data-lang={reading.language}>
-            <span className="scroll-head-label">
-              {reading.language === 'en' ? 'QUESTION' : '所求之事'}
-            </span>
-            <p className="scroll-head-text">{displayQuestion}</p>
+          {/* 所求之事：寫在繪馬上。小字跟這一局的語言走（紙上說問題的語言），不跟界面 */}
+          <div className="ema-card" data-lang={reading.language}>
+            <EmaChrome caption={sheet.emaCaption}>
+              <p className="asked">{displayQuestion}</p>
+            </EmaChrome>
           </div>
 
-          <StickFace stick={reading.stick} language={reading.language} />
+          {/* 籤紙與解籤是同一張長紙條：外框畫在 .omikuji 上。撕下分享時，下半截才離開這張紙 */}
+          <div className="omikuji">
+            <StickFace stick={reading.stick} language={reading.language} />
+
+            {!interpretation && props.interpreting && loadingSkeleton}
+
+            {/* 解籤後未撕下：呈現齒孔撕線 */}
+            {interpretation && tearState !== 'torn' && (
+              <TearLine onTear={handleTear} isTearing={tearState === 'tearing'} />
+            )}
+
+            {/* 若已撕下，上半紙卷底部露出自然撕斷毛邊 */}
+            {interpretation && tearState === 'torn' && (
+              <TearEdge position="bottom" className="stub-bottom-edge" />
+            )}
+
+            {/* 未撕下時，解籤內容接在同一卷紙下方 */}
+            {interpretation && tearState !== 'torn' && (
+              <article
+                className={`sheet${props.interpreting ? ' sheet-loading' : ''}${tearState === 'tearing' ? ' sheet-tearing' : ''}`}
+                data-lang={reading.language}
+              >
+                <p className="sheet-band" aria-hidden>{sheet.sheetBand}</p>
+                {interpretationContent}
+              </article>
+            )}
+          </div>
 
           {!interpretation && !props.interpreting && (
             <div className="sheet-actions" data-lang={reading.language}>
@@ -281,28 +311,6 @@ export default function ReadingResult(props: {
               {props.error && <p className="fault">{props.error}</p>}
             </div>
           )}
-
-          {!interpretation && props.interpreting && loadingSkeleton}
-
-          {/* 解籤後未撕下：呈現齒孔撕線 */}
-          {interpretation && tearState !== 'torn' && (
-            <TearLine onTear={handleTear} isTearing={tearState === 'tearing'} />
-          )}
-
-          {/* 若已撕下，上半紙卷底部露出自然撕斷毛邊 */}
-          {interpretation && tearState === 'torn' && (
-            <TearEdge position="bottom" className="stub-bottom-edge" />
-          )}
-
-          {/* 未撕下時，解籤內容接在同一卷紙下方 */}
-          {interpretation && tearState !== 'torn' && (
-            <article
-              className={`sheet${props.interpreting ? ' sheet-loading' : ''}${tearState === 'tearing' ? ' sheet-tearing' : ''}`}
-              data-lang={reading.language}
-            >
-              {interpretationContent}
-            </article>
-          )}
         </div>
 
         {/* 若已撕下，解籤內容向前浮起，成為立體的「靈籤珍藏卡」 */}
@@ -313,6 +321,7 @@ export default function ReadingResult(props: {
               data-lang={reading.language}
             >
               <TearEdge position="top" className="card-top-edge" />
+              <p className="sheet-band" aria-hidden>{sheet.sheetBand}</p>
               <div className="torn-card-header">
                 <span className="torn-card-badge">
                   {reading.language === 'en'

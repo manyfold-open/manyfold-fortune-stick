@@ -22,6 +22,7 @@ import HistoryView from './components/HistoryView';
 import PasswordGate from './components/PasswordGate';
 import PrivacyView from './components/PrivacyView';
 import SettingsView from './components/SettingsView';
+import ShrineBackdrop from './components/ShrineBackdrop';
 import { LanguageProvider, useT, useUiLanguage } from './i18n';
 import { getPrefs, setPrefs, type Prefs } from './storage';
 
@@ -146,7 +147,8 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
 
   return (
     <main className={`shell${prefs.reducedMotion ? ' calm' : ''}`}>
-      <AmbientMotes reducedMotion={prefs.reducedMotion} />
+      {/* 求籤頁是神社場景（櫻花瓣）；記錄與設定頁留著原本的浮塵 */}
+      {route === 'game' ? <ShrineBackdrop calm={prefs.reducedMotion} /> : <AmbientMotes reducedMotion={prefs.reducedMotion} />}
       <header className="topbar">
         <span className="topbar-actions">
           {/* 只换界面。已经印出来的签一个字都不会动。 */}

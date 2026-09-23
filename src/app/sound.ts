@@ -186,6 +186,215 @@ export function motor(ms: number): () => void {
   };
 }
 
+/**
+ * 摇签筒：竹签在生漆木筒内相互撞击的真实「沙沙沙、嗒嗒嗒」竹木碰撞回声
+ */
+export function bambooRattle(ms: number): () => void {
+  const audio = ctx();
+  if (!audio) return () => undefined;
+  const start = Math.max(0, audio.currentTime);
+  const seconds = ms / 1000;
+  let active = true;
+
+  try {
+    // 1. 竹签密集细碎摩擦声（以白噪声经过窄带滤波调制）
+    const noise = audio.createBufferSource();
+    noise.buffer = noiseBuffer(audio, seconds, 0.35);
+    const noiseFilter = audio.createBiquadFilter();
+    noiseFilter.type = 'bandpass';
+    noiseFilter.frequency.setValueAtTime(1800, start);
+    noiseFilter.Q.setValueAtTime(2.2, start);
+
+    const noiseGain = audio.createGain();
+    noiseGain.gain.setValueAtTime(0.0001, start);
+    noiseGain.gain.linearRampToValueAtTime(0.042, start + 0.1);
+    noiseGain.gain.setValueAtTime(0.042, Math.max(start + 0.1, start + seconds - 0.15));
+    noiseGain.gain.exponentialRampToValueAtTime(0.0001, start + seconds);
+
+    noise.connect(noiseFilter).connect(noiseGain).connect(audio.destination);
+    noise.start(start);
+
+    // 2. 规律而有机的竹木碰撞微脉冲（敲击共鸣）
+    const clicks = Math.floor(ms / 60);
+    for (let i = 0; i < clicks; i++) {
+      const clickTime = Math.max(start, start + (i * 60 + ((i * 17) % 25)) / 1000);
+      if (clickTime >= start + seconds) break;
+
+      const osc = audio.createOscillator();
+      osc.type = 'sine';
+      const pitch = 650 + ((i * 31) % 400);
+      osc.frequency.setValueAtTime(pitch, clickTime);
+      osc.frequency.exponentialRampToValueAtTime(180, clickTime + 0.02);
+
+      const filter = audio.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(1200 + ((i * 43) % 600), clickTime);
+      filter.Q.setValueAtTime(5.0, clickTime);
+
+      const gain = audio.createGain();
+      const vol = 0.03 + ((i * 13) % 30) / 1000;
+      gain.gain.setValueAtTime(vol, clickTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, clickTime + 0.025);
+
+      osc.connect(filter).connect(gain).connect(audio.destination);
+      osc.start(clickTime);
+      osc.stop(clickTime + 0.03);
+    }
+
+    return () => {
+      if (!active) return;
+      active = false;
+      try {
+        noise.stop();
+      } catch {
+        /* ignore */
+      }
+    };
+  } catch {
+    return () => undefined;
+  }
+}
+
+/**
+ * 搅动/划过竹签：单次短促轻快的竹木刮擦微碰声（极低延迟，用于鼠标/手指搅动时）
+ */
+export function bambooRustle(intensity = 0.5): void {
+  const audio = ctx();
+  if (!audio) return;
+  const start = audio.currentTime;
+
+  // 1. 竹木微敲击
+  const osc = audio.createOscillator();
+  osc.type = 'triangle';
+  const pitch = 750 + Math.random() * 450;
+  osc.frequency.setValueAtTime(pitch, start);
+  osc.frequency.exponentialRampToValueAtTime(180, start + 0.02);
+
+  const filter = audio.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.setValueAtTime(1400 + Math.random() * 600, start);
+  filter.Q.setValueAtTime(4.0, start);
+
+  const gain = audio.createGain();
+  const vol = Math.min(0.05, 0.02 * intensity);
+  gain.gain.setValueAtTime(vol, start);
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.022);
+
+  osc.connect(filter).connect(gain).connect(audio.destination);
+  osc.start(start);
+  osc.stop(start + 0.025);
+
+  // 2. 竹皮轻微摩擦微噪
+  const noise = audio.createBufferSource();
+  noise.buffer = noiseBuffer(audio, 0.035, 0.2);
+  const nFilter = audio.createBiquadFilter();
+  nFilter.type = 'bandpass';
+  nFilter.frequency.setValueAtTime(2200 + Math.random() * 400, start);
+  nFilter.Q.setValueAtTime(2.5, start);
+
+  const nGain = audio.createGain();
+  nGain.gain.setValueAtTime(vol * 0.7, start);
+  nGain.gain.exponentialRampToValueAtTime(0.0001, start + 0.03);
+
+  noise.connect(nFilter).connect(nGain).connect(audio.destination);
+  noise.start(start);
+}
+
+/**
+ * 抽出一签：竹签从密实竹群中滑出拉升的木质摩擦滑音
+ */
+export function bambooDrawSound(): void {
+  const audio = ctx();
+  if (!audio) return;
+  const start = audio.currentTime;
+
+  // 1. 竹竿滑动上升音
+  const osc = audio.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(320, start);
+  osc.frequency.exponentialRampToValueAtTime(880, start + 0.28);
+
+  const filter = audio.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.setValueAtTime(1100, start);
+  filter.frequency.linearRampToValueAtTime(2200, start + 0.28);
+  filter.Q.setValueAtTime(2.5, start);
+
+  const gain = audio.createGain();
+  gain.gain.setValueAtTime(0.0001, start);
+  gain.gain.linearRampToValueAtTime(0.04, start + 0.05);
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.32);
+
+  osc.connect(filter).connect(gain).connect(audio.destination);
+  osc.start(start);
+  osc.stop(start + 0.35);
+
+  // 2. 伴随摩擦微白噪
+  const noise = audio.createBufferSource();
+  noise.buffer = noiseBuffer(audio, 0.3, 0.25);
+  const nFilter = audio.createBiquadFilter();
+  nFilter.type = 'bandpass';
+  nFilter.frequency.setValueAtTime(1800, start);
+  nFilter.frequency.linearRampToValueAtTime(2800, start + 0.28);
+  nFilter.Q.setValueAtTime(2.0, start);
+
+  const nGain = audio.createGain();
+  nGain.gain.setValueAtTime(0.0001, start);
+  nGain.gain.linearRampToValueAtTime(0.035, start + 0.06);
+  nGain.gain.exponentialRampToValueAtTime(0.0001, start + 0.3);
+
+  noise.connect(nFilter).connect(nGain).connect(audio.destination);
+  noise.start(start);
+}
+
+/**
+ * 放回竹签：竹签顺着竹群滑落入筒底，发出清脆沉稳的竹木落底轻敲声
+ */
+export function bambooDropSound(): void {
+  const audio = ctx();
+  if (!audio) return;
+  const start = audio.currentTime;
+
+  // 1. 竹竿向下滑动摩擦微音
+  const slide = audio.createOscillator();
+  slide.type = 'triangle';
+  slide.frequency.setValueAtTime(620, start);
+  slide.frequency.exponentialRampToValueAtTime(240, start + 0.12);
+
+  const sFilter = audio.createBiquadFilter();
+  sFilter.type = 'bandpass';
+  sFilter.frequency.setValueAtTime(900, start);
+  sFilter.Q.setValueAtTime(2.2, start);
+
+  const sGain = audio.createGain();
+  sGain.gain.setValueAtTime(0.0001, start);
+  sGain.gain.linearRampToValueAtTime(0.025, start + 0.03);
+  sGain.gain.exponentialRampToValueAtTime(0.0001, start + 0.13);
+
+  slide.connect(sFilter).connect(sGain).connect(audio.destination);
+  slide.start(start);
+  slide.stop(start + 0.15);
+
+  // 2. 落底敲击木击点
+  const tapTime = start + 0.11;
+  const knock = audio.createOscillator();
+  knock.type = 'sine';
+  knock.frequency.setValueAtTime(420, tapTime);
+  knock.frequency.exponentialRampToValueAtTime(95, tapTime + 0.07);
+
+  const kFilter = audio.createBiquadFilter();
+  kFilter.type = 'lowpass';
+  kFilter.frequency.setValueAtTime(800, tapTime);
+
+  const kGain = audio.createGain();
+  kGain.gain.setValueAtTime(0.06, tapTime);
+  kGain.gain.exponentialRampToValueAtTime(0.0001, tapTime + 0.08);
+
+  knock.connect(kFilter).connect(kGain).connect(audio.destination);
+  knock.start(tapTime);
+  knock.stop(tapTime + 0.09);
+}
+
 /** 打印完成/定签：按等级演绎不同的东方铜磬、颂钵与古寺晨钟 */
 export function chime(level?: StickLevel): void {
   const audio = ctx();
@@ -435,6 +644,128 @@ export function stampSound(level?: StickLevel, gain = 0.22): void {
     jade.start(start + 0.01);
     jade.stop(start + 0.055);
   }
+}
+
+/**
+ * 滚印签纸机：沉重木滚筒碾过案几的低频隆隆 + 宣纸被压出来的连续沙沙。
+ * 返回一个停止函数，用法和 motor / bambooRattle 一样。
+ */
+export function paperRollRumble(ms: number): () => void {
+  const audio = ctx();
+  if (!audio) return () => undefined;
+  const start = audio.currentTime;
+  const seconds = ms / 1000;
+
+  // 1. 实木滚筒碾过案几的低频体震
+  const body = audio.createOscillator();
+  body.type = 'sine';
+  body.frequency.setValueAtTime(52, start);
+  body.frequency.linearRampToValueAtTime(63, start + seconds * 0.35);
+  body.frequency.linearRampToValueAtTime(46, start + seconds);
+  const bodyGain = audio.createGain();
+  bodyGain.gain.setValueAtTime(0.0001, start);
+  bodyGain.gain.exponentialRampToValueAtTime(0.07, start + 0.12);
+  bodyGain.gain.setValueAtTime(0.07, Math.max(start + 0.12, start + seconds - 0.18));
+  bodyGain.gain.exponentialRampToValueAtTime(0.0001, start + seconds);
+
+  // 2. 木轴与铜箍的摩擦嗡鸣
+  const axle = audio.createOscillator();
+  axle.type = 'sawtooth';
+  axle.frequency.setValueAtTime(122, start);
+  axle.frequency.linearRampToValueAtTime(138, start + seconds);
+  const axleFilter = audio.createBiquadFilter();
+  axleFilter.type = 'lowpass';
+  axleFilter.frequency.setValueAtTime(320, start);
+  axleFilter.Q.setValueAtTime(1.1, start);
+  const axleGain = audio.createGain();
+  axleGain.gain.setValueAtTime(0.0001, start);
+  axleGain.gain.exponentialRampToValueAtTime(0.026, start + 0.16);
+  axleGain.gain.setValueAtTime(0.026, Math.max(start + 0.16, start + seconds - 0.14));
+  axleGain.gain.exponentialRampToValueAtTime(0.0001, start + seconds);
+
+  // 3. 宣纸被碾出来的连续沙沙
+  const paper = audio.createBufferSource();
+  paper.buffer = noiseBuffer(audio, seconds, 0.2);
+  const paperFilter = audio.createBiquadFilter();
+  paperFilter.type = 'bandpass';
+  paperFilter.frequency.setValueAtTime(1900, start);
+  paperFilter.Q.setValueAtTime(0.75, start);
+  const paperGain = audio.createGain();
+  paperGain.gain.setValueAtTime(0.0001, start);
+  paperGain.gain.exponentialRampToValueAtTime(0.03, start + 0.2);
+  paperGain.gain.setValueAtTime(0.03, Math.max(start + 0.2, start + seconds - 0.12));
+  paperGain.gain.exponentialRampToValueAtTime(0.0001, start + seconds);
+
+  body.connect(bodyGain).connect(audio.destination);
+  axle.connect(axleFilter).connect(axleGain).connect(audio.destination);
+  paper.connect(paperFilter).connect(paperGain).connect(audio.destination);
+
+  body.start(start);
+  body.stop(start + seconds + 0.05);
+  axle.start(start);
+  axle.stop(start + seconds + 0.05);
+  paper.start(start);
+
+  return () => {
+    try {
+      body.stop();
+      axle.stop();
+      paper.stop();
+    } catch {
+      /* 已经停止 */
+    }
+  };
+}
+
+/** 长卷铺开：宣纸从滚筒底下舒展出去、落定在案几上的一声轻响。 */
+export function paperUnfurl(): void {
+  const audio = ctx();
+  if (!audio) return;
+  const start = audio.currentTime;
+
+  const noise = audio.createBufferSource();
+  noise.buffer = noiseBuffer(audio, 0.5, 0.9);
+  const filter = audio.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.setValueAtTime(900, start);
+  filter.frequency.exponentialRampToValueAtTime(2600, start + 0.34);
+  filter.Q.setValueAtTime(1.3, start);
+  const gain = audio.createGain();
+  gain.gain.setValueAtTime(0.0001, start);
+  gain.gain.linearRampToValueAtTime(0.045, start + 0.07);
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.46);
+  noise.connect(filter).connect(gain).connect(audio.destination);
+  noise.start(start);
+}
+
+/** 雕版落印：实木压上宣纸的一记闷实顿挫。 */
+export function woodblockPress(gain = 0.24): void {
+  const audio = ctx();
+  if (!audio) return;
+  const start = audio.currentTime;
+
+  const thud = audio.createOscillator();
+  thud.type = 'sine';
+  thud.frequency.setValueAtTime(128, start);
+  thud.frequency.exponentialRampToValueAtTime(41, start + 0.075);
+  const thudGain = audio.createGain();
+  thudGain.gain.setValueAtTime(gain, start);
+  thudGain.gain.exponentialRampToValueAtTime(0.0001, start + 0.085);
+  thud.connect(thudGain).connect(audio.destination);
+  thud.start(start);
+  thud.stop(start + 0.1);
+
+  const grain = audio.createBufferSource();
+  grain.buffer = noiseBuffer(audio, 0.05, 22);
+  const grainFilter = audio.createBiquadFilter();
+  grainFilter.type = 'bandpass';
+  grainFilter.frequency.setValueAtTime(1050, start);
+  grainFilter.Q.setValueAtTime(1.6, start);
+  const grainGain = audio.createGain();
+  grainGain.gain.setValueAtTime(gain * 0.55, start);
+  grainGain.gain.exponentialRampToValueAtTime(0.0001, start + 0.05);
+  grain.connect(grainFilter).connect(grainGain).connect(audio.destination);
+  grain.start(start);
 }
 
 /**

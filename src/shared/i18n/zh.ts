@@ -38,6 +38,7 @@ export const zh = {
   /* ── 提问 ── */
   askLabel: '你想问的事',
   askGhost: '写下你心里的那件事',
+  emaCaption: '絵馬 · 心願',
   example1: '我该如何面对最近的工作变化？',
   example2: '这段关系还值得我继续投入吗？',
   example3: '现在是开始做那件想了很久的事的时候吗？',
@@ -61,6 +62,8 @@ export const zh = {
   retryInterpret: '重试解签',
   retrying: '重试中…',
   fallbackNote: '这次没能结合你的问题解读。',
+  /** 解籤續頁頂上那條朱紅帶。跟四個小標題一樣，跟這一局的語言走。 */
+  sheetBand: '解 签',
   blockMeaning: '一句话签意',
   blockAnswer: '回应你的问题',
   blockNotice: '值得留意',

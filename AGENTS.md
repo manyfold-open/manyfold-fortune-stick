@@ -44,14 +44,16 @@ Rules for anyone — human or AI agent — iterating on it. These are the load-b
    the poem visible — never leave the user with an empty page.
 6. **Settings stays URL-only** (`#settings`). It is for whoever deployed the game; do not add
    a link to it from the game UI.
-7. **Keep the interface frameless.** The game screen shows the printer and one line of step
-   text on its LCD — nothing else. The question is typed straight onto the page (no input
-   box, no rule under it), every action is a line of type (`.text-action`), and the only
-   physical control is the printer's own key (`.print-key`). New UI goes on the machine or on
-   the paper, not into a new box.
+7. **Keep the interface frameless — no generic input boxes.** The game screen shows the
+   vessel and one line of step text. On the 3D cylinder stage the question is written on a
+   hanging wooden ema (`Ema.tsx`) and the examples are wooden tags — objects in the shrine
+   scene, not form fields. Every action is a line of type (`.text-action`) or such an object;
+   the only other physical control is the machine's own key (`.print-key`). New UI goes on the
+   machine, on the paper, or into the shrine scene as an object — not into a new box.
 8. **Two ink scales, and they are not interchangeable.** `--ink*` is for text on paper (the
    slip, the continuation sheet, record cards); `--on-ground*` is for text printed straight
-   onto the background. They invert in dark mode — mixing them is what makes text vanish.
+   onto the background. The site is daylight-only for now (no dark mode); keep the two scales separate anyway,
+   or a future night theme will make text vanish.
 9. **The machine speaks the interface language, the paper speaks the question's language.**
    The switch in the top-right corner sets the interface language (default 简体中文, kept in
    `localStorage`). It moves the LCD, the actions, errors, history chrome and settings — and
