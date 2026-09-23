@@ -489,7 +489,7 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
 
   if (failed) {
     return (
-      <div className="roll-stage">
+      <div className="roll-stage cyl3d-stage">
         <p className="roll-fallback">
           {en
             ? 'This browser cannot run the 3D cylinder. Switch to the retro printer above.'

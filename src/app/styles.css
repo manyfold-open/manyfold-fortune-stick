@@ -1416,12 +1416,9 @@ body {
 .slip-body p { margin: 0; }
 
 .slip-grid-columns {
-  display: flex;
   writing-mode: vertical-rl;
-  /* 直排時 row 是由上往下；column 才是一欄一欄由右往左排 */
-  flex-direction: column;
-  align-items: flex-start;
   height: 150px;
+  /* 不使用 display: flex（flex 會受 ltr 影響變成由左向右）；原生 vertical-rl 區塊自然依正統「由右向左」排欄 */
 }
 
 .slip-column {
@@ -2803,24 +2800,31 @@ code {
   .shell { padding: 14px 16px 26px; }
   .ask-zone { --mark-len: 14px; padding: 16px 12px; }
   .footer { gap: 12px; }
-  .footer-note { top: 14px; left: 0; }
 }
 
-/* 左上那句小字是 absolute 的，沒有寬度上限：手機上英文那句一路穿到右邊「中文 Your slips」底下，
-   左邊也貼著螢幕邊。收在左半邊、留出頁邊，放不下就在自己那塊折成兩行（鳥居的笠木從 52px 才開始） */
+/* 左上那句小字是 absolute 的：在手機上限制最大寬度與單行省略，避免穿到右邊操作按鈕底下；超小螢幕隱藏避免擁擠 */
 @media (max-width: 640px) {
   .footer-note {
+    top: 14px;
     left: 16px;
-    max-width: calc(100% - 160px);
-    line-height: 1.4;
+    max-width: calc(100% - 180px);
+    font-size: 10.5px;
+    line-height: 1.35;
     letter-spacing: 0.02em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  /* 記錄頁右上角是「中文 Back to the machine」，比求籤頁的「Your slips」長一大截，160px 讓不開 */
-  html:lang(en) .shell:has(.history) .footer-note {
-    max-width: calc(100% - 236px);
-    font-size: 10px;
-    line-height: 1.2;
+  html:lang(en) .footer-note {
+    max-width: calc(100% - 210px);
+    font-size: 9.5px;
+  }
+}
+
+@media (max-width: 380px) {
+  .footer-note {
+    display: none;
   }
 }
 
@@ -3790,6 +3794,14 @@ html:lang(en) .shell:has(.cyl3d-stage) .ask-zone {
   transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+@media (max-width: 640px) {
+  :is(.shell:has(.cyl3d-stage) .ask-zone, .ema-card) {
+    /* 手機上鳥居橫木與紙垂更緊湊（貫木下緣在 96px），繪馬在 120px，紅繩 24px 剛好連上貫木，紙垂絕不遮擋輸入字 */
+    margin: 72px auto 0;
+    padding: 16px 20px 8px;
+  }
+}
+
 :is(.shell:has(.cyl3d-stage) .ask-zone, .ema-card)::before,
 :is(.shell:has(.cyl3d-stage) .ask-zone, .ema-card)::after {
   content: '';
@@ -4190,12 +4202,36 @@ html { overflow-x: clip; }
 
 /* 窄螢幕：鳥居收成貼邊的細柱（繪馬幾乎撐滿寬度，柱子只能站在留白裡） */
 @media (max-width: 899px) {
-  .shrine-torii { --pillar-w: 14px; --pillar-x: 2px; }
+  .shrine-torii { --pillar-w: 12px; --pillar-x: 2px; }
 }
 
-/* 手機上枝子收小、貼邊，不壓到題目 */
+/* 手機版：鳥居與枝子微型化並上提，避免橫木與紙垂壓到繪馬題目 */
 @media (max-width: 640px) {
-  .shrine-branch { width: 30vw; top: 40px; }
+  .shrine-torii {
+    --torii-top: 38px;
+    --pillar-w: 10px;
+    --pillar-x: 2px;
+  }
+  .torii-kasagi {
+    height: 32px;
+  }
+  .shrine-pillar::after {
+    height: 28px;
+  }
+  .shimenawa {
+    top: calc(var(--torii-top) + 24px);
+    height: 28px;
+  }
+  .shide {
+    width: 14px;
+    height: 34px;
+    margin-left: -7px;
+  }
+  .torii-nuki {
+    top: calc(var(--torii-top) + 48px);
+    height: 10px;
+  }
+  .shrine-branch { width: 25vw; top: 34px; }
   .shrine-branch.left { left: -14px; }
   .shrine-branch.right { right: -14px; }
 }
@@ -4216,6 +4252,12 @@ html { overflow-x: clip; }
   width: 100%;
   /* 繪馬上緣落在 156px，跟求籤頁同一個高度，紅繩從鳥居的貫垂下來 */
   margin: 73px auto 0;
+}
+
+@media (max-width: 640px) {
+  .result .sheet-stack .ema-card {
+    margin: 62px auto 0;
+  }
 }
 
 .sheet-stack .slip {
@@ -4510,9 +4552,17 @@ html { overflow-x: clip; }
   perspective: 1800px;
 }
 
+@media (max-width: 640px) {
+  .omikuji-card {
+    /* 手機上繪馬較矮（~90px），給籤卡更充裕高度，內容不被壓扁，解籤可讀區大幅提升 */
+    --card-h: clamp(460px, calc(100dvh - 240px), 640px);
+  }
+}
+
 .omikuji-inner {
   position: relative;
   transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
   transition: transform 0.72s cubic-bezier(0.45, 0.05, 0.25, 1);
 }
 
@@ -4523,6 +4573,8 @@ html { overflow-x: clip; }
 .omikuji.face {
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
 }
 
 /* 正面：籤身撐滿卡高，籤詩那一段吃掉多出來的高度、內容置中 */
@@ -4530,6 +4582,13 @@ html { overflow-x: clip; }
   display: flex;
   flex-direction: column;
   min-height: var(--card-h);
+  z-index: 2;
+  transform: translateZ(1px);
+}
+
+.omikuji-card.flipped .face-front {
+  z-index: 1;
+  pointer-events: none;
 }
 
 .face-front .slip {
@@ -4544,10 +4603,15 @@ html { overflow-x: clip; }
 .omikuji.face-back {
   position: absolute;
   inset: 0;
-  transform: rotateY(180deg);
+  transform: rotateY(180deg) translateZ(1px);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  z-index: 1;
+  /* 移除直接在 face-back 上的 overflow: hidden，避免壓平 WebKit 3D Context 造成文字鏡像相反或透穿 */
+}
+
+.omikuji-card.flipped .face-back {
+  z-index: 2;
 }
 
 .result .omikuji.face-back > .sheet {
@@ -4558,6 +4622,8 @@ html { overflow-x: clip; }
   /* 上緣 11px + 外框 2px：「解 签」帶跟正面「御神签」帶落在同一個高度 */
   padding: 11px 22px 12px;
   animation: none;
+  overflow: hidden;
+  border-radius: 4px;
 }
 
 .face-back .sheet-band {
@@ -4570,9 +4636,10 @@ html { overflow-x: clip; }
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  /* 捲軸不要壓到內文 */
+  /* 捲軸不要壓到內文，並為底部預留足夠留白避免被按鈕遮擋 */
   margin-right: -10px;
   padding-right: 10px;
+  padding-bottom: 24px;
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--seal) 30%, transparent) transparent;
 }
@@ -4640,6 +4707,7 @@ html { overflow-x: clip; }
   padding: 12px 18px 12px;
   background: var(--paper);
   border-top: 1px solid color-mix(in srgb, var(--seal) 45%, transparent);
+  border-radius: 0 0 4px 4px;
   box-shadow: 0 -10px 22px rgba(38, 26, 18, 0.14);
   animation: sheet-panel-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
