@@ -53,10 +53,10 @@ describe('櫻花瓣', () => {
     expect(S.petalAt(p, 2.4, W, H)).toEqual(S.petalAt(p, 2.4, W, H));
   });
 
-  it('大小有差異但不誇張：8～16px', () => {
+  it('大小有差異但不誇張：11～19px（再小就跟奶油底色糊成一片，看不到）', () => {
     for (const p of petals) {
-      expect(p.size).toBeGreaterThanOrEqual(8);
-      expect(p.size).toBeLessThanOrEqual(16);
+      expect(p.size).toBeGreaterThanOrEqual(11);
+      expect(p.size).toBeLessThanOrEqual(19);
     }
   });
 

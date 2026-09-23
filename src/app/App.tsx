@@ -20,6 +20,7 @@ import FortuneGame from './components/FortuneGame';
 import HistoryView from './components/HistoryView';
 import PasswordGate from './components/PasswordGate';
 import SettingsView from './components/SettingsView';
+import ShrineBackdrop from './components/ShrineBackdrop';
 import { LanguageProvider, useT, useUiLanguage } from './i18n';
 import { getPrefs, setPrefs, type Prefs } from './storage';
 
@@ -113,6 +114,7 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
 
   return (
     <main className={`shell${prefs.reducedMotion ? ' calm' : ''}`}>
+      {route === 'game' && <ShrineBackdrop calm={prefs.reducedMotion} />}
       <header className="topbar">
         <span className="topbar-actions">
           {/* 只换界面。已经印出来的签一个字都不会动。 */}

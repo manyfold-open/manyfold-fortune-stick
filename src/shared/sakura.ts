@@ -40,7 +40,7 @@ export function createPetals(count: number, seed: number): Petal[] {
   const rand = pseudoRandom(seed * 7919 + 17);
   return Array.from({ length: Math.max(0, Math.floor(count)) }, (_, i) => ({
     seed: seed * 1000 + i + 1,
-    size: 8 + rand() * 8,
+    size: 11 + rand() * 8,
     y0: rand(),
     vy: 20 + rand() * 40,
     amp: 12 + rand() * 30,

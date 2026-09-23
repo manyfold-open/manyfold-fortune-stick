@@ -16,8 +16,8 @@
   --ground-wash:
     radial-gradient(130% 80% at 50% -10%, rgba(255, 250, 238, 0.95), rgba(255, 250, 238, 0) 62%),
     radial-gradient(90% 60% at 50% 115%, rgba(150, 116, 74, 0.22), rgba(150, 116, 74, 0) 70%);
-  /* --ink* 只用在纸上（签纸、续页、记录卡）。直接落在底色上的字用 --on-ground*，
-     这两套在深色模式里是反过来的：纸永远是白的，底永远跟着主题走。 */
+  /* --ink* 只用在纸上（签纸、续页、记录卡、繪馬、木札）。直接落在底色上的字用 --on-ground*。
+     目前只有白天版；兩套仍然分開用，將來要加夜晚版時才不會混。 */
   --ink: #17161a;
   --ink-2: #4d4a53;
   --ink-3: #85818d;
@@ -56,7 +56,7 @@
   --serif-en: Charter, 'Charter BT', Georgia, Palatino, 'Noto Serif', 'Iowan Old Style', 'Times New Roman', serif;
   --sans: system-ui, -apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
   --mono: ui-monospace, 'SF Mono', 'SFMono-Regular', Menlo, Consolas, monospace;
-  color-scheme: light dark;
+  color-scheme: light;
 }
 
 [data-tone='best'] {
@@ -76,55 +76,6 @@
 [data-tone='low'] {
   --tone: #854432;
   --tone-bg: rgba(133, 68, 50, 0.08);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --ground: #221b15;
-    --ground-wash:
-      radial-gradient(130% 80% at 50% -10%, rgba(94, 74, 54, 0.55), rgba(94, 74, 54, 0) 62%),
-      radial-gradient(90% 60% at 50% 115%, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0) 70%);
-    --ink: #14131a;
-    --ink-2: #4d4a53;
-    --ink-3: #85818d;
-    --paper: #f8f5ed;
-    --paper-2: #ebe5d8;
-    --case-hi: #d8cfba;
-    --case: #c4b9a0;
-    --case-lo: #a99c81;
-    --case-shadow: #5c4e3e;
-    --on-ground: rgba(246, 243, 236, 0.92);
-    --on-ground-2: rgba(246, 243, 236, 0.68);
-    --on-ground-3: rgba(246, 243, 236, 0.48);
-  }
-
-  .stage::before {
-    background:
-      /* 夜深案几上的柔和暖琥珀燈籠/燭光，自然對齊印表機左上光源 */
-      radial-gradient(ellipse 85% 72% at 43% 28%, rgba(255, 215, 160, 0.09) 0%, rgba(255, 205, 140, 0.02) 46%, transparent 78%),
-      /* 深沉夜色環境暗角，專注聚攏於中央案面 */
-      radial-gradient(ellipse 110% 95% at 50% 48%, transparent 48%, rgba(10, 8, 7, 0.65) 100%),
-      var(--ground);
-  }
-
-  .stage[data-tone]::before {
-    background:
-      radial-gradient(ellipse 85% 70% at 46% 36%, color-mix(in srgb, var(--tone) 15%, transparent) 0%, color-mix(in srgb, var(--tone) 3%, transparent) 55%, transparent 80%),
-      radial-gradient(ellipse 85% 72% at 43% 28%, rgba(255, 215, 160, 0.07) 0%, transparent 70%),
-      radial-gradient(ellipse 110% 95% at 50% 48%, transparent 48%, rgba(10, 8, 7, 0.65) 100%),
-      var(--ground);
-  }
-
-  .stage::after {
-    opacity: 0.038;
-    mix-blend-mode: screen;
-  }
-
-  .slip,
-  .sheet,
-  .sheet-stack {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 20px 50px rgba(0, 0, 0, 0.65);
-  }
 }
 
 * {
@@ -1697,18 +1648,6 @@ body {
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  .skeleton-title::after,
-  .skeleton-line::after {
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      rgba(255, 255, 255, 0.15) 50%,
-      transparent 100%
-    );
-  }
-}
-
 .working {
   margin: 0;
   font: 13px/1.6 var(--mono);
@@ -3259,3 +3198,80 @@ code {
   width: 100%;
 }
 
+/* ── 神社日光（ShrineBackdrop）── 在 .stage::before（z -2）之上、內容之下 */
+.shrine {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.shrine-light {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(60% 55% at 14% -4%, rgba(255, 244, 214, 0.95), rgba(255, 244, 214, 0) 70%),
+    radial-gradient(45% 40% at 90% 4%, rgba(255, 226, 190, 0.55), rgba(255, 226, 190, 0) 70%),
+    linear-gradient(180deg, rgba(255, 232, 196, 0.25), rgba(255, 232, 196, 0) 40%);
+}
+
+/* 景深外的鳥居柱：朱紅、模糊、淡，只在寬螢幕 */
+.shrine-pillar {
+  position: absolute;
+  top: -4vh;
+  bottom: -4vh;
+  width: 58px;
+  background: linear-gradient(90deg, #a3281b, #d2482f 45%, #ad2e1e);
+  filter: blur(2px);
+  opacity: 0.62;
+}
+
+.shrine-pillar::before {
+  /* 上方一截笠木的影子，往畫面內伸 */
+  content: '';
+  position: absolute;
+  top: 9vh;
+  width: 220px;
+  height: 26px;
+  background: linear-gradient(180deg, #2c211c, #3a2a22);
+  border-radius: 3px;
+}
+
+.shrine-pillar.left { left: 2.2vw; }
+.shrine-pillar.left::before { left: -30px; }
+.shrine-pillar.right { right: 2.2vw; }
+.shrine-pillar.right::before { right: -30px; }
+
+.shrine-branch {
+  position: absolute;
+  /* 從頂欄底下探出來：放在最頂端會橫過右上角的「EN 求签记录」 */
+  top: 46px;
+  width: clamp(180px, 25vw, 360px);
+  height: auto;
+  opacity: 0.92;
+}
+
+.shrine-branch.left { left: -24px; }
+.shrine-branch.right { right: -24px; }
+
+.shrine-petals {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* 解籤頁：花瓣淡一半，不干擾讀籤 */
+.shell:not(:has(.cyl3d-stage)) .shrine-petals { opacity: 0.45; }
+
+@media (max-width: 899px) {
+  .shrine-pillar { display: none; }
+}
+
+/* 手機上枝子收小、貼邊，不壓到題目 */
+@media (max-width: 640px) {
+  .shrine-branch { width: 30vw; top: 40px; }
+  .shrine-branch.left { left: -14px; }
+  .shrine-branch.right { right: -14px; }
+}
