@@ -15,7 +15,7 @@
  * 这里不提交任何东西：写完之后按打印机上的键才开始（校验也在那一步，错在屏上说）。
  */
 
-import { useState, type RefObject } from 'react';
+import { useEffect, useState, type RefObject } from 'react';
 import { withoutDashes } from '../../shared/text';
 import { QUESTION_MAX } from '../constants';
 import { useT } from '../i18n';
@@ -50,7 +50,21 @@ export default function QuestionForm(props: {
       e.stopPropagation();
     }
     field.current?.blur();
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   };
+
+  // 監聽可視視口還原（iOS Safari 鍵盤收起），重置任何殘留的 window.scrollY
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const onResize = () => {
+      if (!focused && Math.abs(window.scrollY) > 0) {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      }
+    };
+    vv.addEventListener('resize', onResize);
+    return () => vv.removeEventListener('resize', onResize);
+  }, [focused]);
 
   return (
     <>
@@ -90,6 +104,7 @@ export default function QuestionForm(props: {
                   setFocused(false);
                   // 下次聚焦不要先补晃一下上次留下的那笔
                   setStrokes(0);
+                  window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
                 }}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter' && !event.shiftKey) {

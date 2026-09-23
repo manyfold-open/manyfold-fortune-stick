@@ -5518,6 +5518,21 @@ html { overflow-x: clip; }
  * 2. 解籤結果畫面鎖定整頁高度為 100dvh，只有卡片內部解籤文字獨立捲動，徹底杜絕滑動衝突與外層滾動
  */
 @media (max-width: 640px) {
+  /* 手機端提問與求籤階段：嚴格鎖定 html 與 body 零外層捲動，徹底杜絕 iOS Safari 鍵盤收合與重整捲動偏移 */
+  html.route-game,
+  body.route-game,
+  html:has(.route-game),
+  body:has(.route-game),
+  html:has(.shell:has(.cyl3d-stage)),
+  body:has(.shell:has(.cyl3d-stage)),
+  html:has(.shell:has(.result)),
+  body:has(.shell:has(.result)) {
+    height: 100%;
+    height: 100dvh;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
   /* 籤筒求籤階段 */
   .shell:has(.cyl3d-stage) {
     height: 100dvh;

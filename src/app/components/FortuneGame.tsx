@@ -192,6 +192,13 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
     };
   }, []);
 
+  // 恢復簽或回首頁提問時，確保滾動位置在頂部
+  useEffect(() => {
+    if (!restoring && phase === 'ask' && !reading) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }
+  }, [restoring, phase, reading]);
+
   const triggerHaptic = useCallback((pattern: number | number[]) => {
     if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
       try {
