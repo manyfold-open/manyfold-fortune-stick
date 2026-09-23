@@ -33,6 +33,7 @@ export const en = {
   /* ── asking ── */
   askLabel: 'What you want to ask',
   askGhost: 'Write down the thing on your mind',
+  emaCaption: 'EMA · MAKE A WISH',
   example1: 'How should I handle the recent changes at work?',
   example2: 'Is this relationship still worth putting myself into?',
   example3: 'Is now the time to start the thing I keep thinking about?',

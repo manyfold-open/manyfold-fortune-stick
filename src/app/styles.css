@@ -3083,49 +3083,136 @@ code {
 }
 
 /*
- * 題目框與例句：同一個寬度（--ask-w），框的四個角正好落在例句那一排的兩端。
- *
- * 之前框是 600 × 62（將近 10:1）、例句那排 716px 比框還寬、兩者只隔 15px、例句用黑體
- * 還拉開字距 —— 使用者說「看起來很怪，比例也很怪」。現在：
- *   - 例句那排撐滿 --ask-w，第一句貼左角、最後一句貼右角，中間用間隔點；
- *   - 框跟它一樣寬，上下留白加大（約 8:1），角線收到 16px；
- *   - 例句跟題目同一套明體，只是小一號、淡一點；
- *   - 框到例句 18px。
- * 英文三句加起來約 1100px 放不進一排，英文介面與窄螢幕維持直排。
+ * 題目寫在一塊掛著的繪馬上（Ema.tsx）。使用者：「更有日式感覺…對話框可以小一點」。
+ * 形狀用 px 定角的 clip-path，寫到兩行、牌子變高時角不會被拉歪；clip-path 會吃掉
+ * box-shadow，所以陰影用 filter: drop-shadow，而且裁切只做在兩層偽元素上 ——
+ * 紅繩在牌子外面，不能跟著被裁掉。
  */
+.ema-cord,
+.ema-caption,
+.ema-mizuhiki {
+  display: none;
+}
+
 .shell:has(.cyl3d-stage) {
-  --ask-w: min(720px, 100%);
+  --wood-edge: #8f6a43;
+  --wood: #ecd9b8;
+  --wood-hi: #f5e8cf;
+  --wood-ink: #3b2a1e;
+  --ema-cut: 22px;
 }
 
 .shell:has(.cyl3d-stage) .ask-slot,
 .shell:has(.cyl3d-stage) .ask-slot.printed {
-  /* 兩行 24px × 1.6 + 上下 22px 的框距 ≈ 121：寫到第二行時框往上長，籤筒不會跳 */
-  min-height: 122px;
+  /* 兩行字的繪馬高 133 + 上方掛紅繩的 26 = 159：一行時紅繩落在這段預留空間裡，寫到兩行籤筒也不跳 */
+  min-height: 160px;
   padding: 0;
 }
 
 .shell:has(.cyl3d-stage) .ask-zone {
-  --mark-len: 16px;
+  position: relative;
+  isolation: isolate;
+  width: min(420px, 100%);
   max-width: none;
-  width: var(--ask-w);
-  box-sizing: border-box;
-  padding: 22px clamp(18px, 3vw, 40px);
+  margin: 26px auto 0;
+  padding: 18px 26px 10px;
+  background: none;
+  filter: drop-shadow(0 6px 10px rgba(92, 62, 32, 0.22));
+  transition: transform 0.3s ease;
+}
+
+.shell:has(.cyl3d-stage) .ask-zone::before,
+.shell:has(.cyl3d-stage) .ask-zone::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  /* 直接寫在偽元素上：--ema-cut 在內層改成 20px 才會生效（寫成另一個自訂屬性會在父層就被算死） */
+  clip-path: polygon(0 var(--ema-cut), var(--ema-cut) 0, calc(100% - var(--ema-cut)) 0, 100% var(--ema-cut), 100% 100%, 0 100%);
+}
+
+/* 外層：深木邊 */
+.shell:has(.cyl3d-stage) .ask-zone::before {
+  inset: 0;
+  background: var(--wood-edge);
+}
+
+/* 內層：淺木面加細木紋 */
+.shell:has(.cyl3d-stage) .ask-zone::after {
+  inset: 3px;
+  --ema-cut: 20px;
+  background:
+    repeating-linear-gradient(92deg, rgba(120, 84, 46, 0.05) 0 2px, transparent 2px 9px),
+    linear-gradient(180deg, var(--wood-hi), var(--wood));
 }
 
 .shell:has(.cyl3d-stage) .ask-zone:hover,
 .shell:has(.cyl3d-stage) .ask-zone:focus-within {
-  --mark-len: 20px;
+  transform: rotate(-0.6deg);
+}
+
+/* 紅繩：從牌頂正中往上分成倒 V，中間一個小結 */
+.shell:has(.cyl3d-stage) .ema-cord {
+  display: block;
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  width: 70px;
+  height: 26px;
+  transform: translateX(-50%);
+  background:
+    linear-gradient(to top right, transparent calc(50% - 1px), #b8321f calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)) left / 50% 100% no-repeat,
+    linear-gradient(to top left, transparent calc(50% - 1px), #b8321f calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)) right / 50% 100% no-repeat;
+}
+
+.shell:has(.cyl3d-stage) .ema-cord::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -3px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  background: #b8321f;
+}
+
+.shell:has(.cyl3d-stage) .ema-caption {
+  display: block;
+  margin: 0 0 2px;
+  text-align: center;
+  font: 600 10.5px/1.4 "Yuanti SC", "Yuanti TC", "Hiragino Maru Gothic ProN", "PingFang SC", sans-serif;
+  letter-spacing: 0.3em;
+  color: var(--accent);
+}
+
+.shell:has(.cyl3d-stage) .ema-mizuhiki {
+  display: block;
+  width: 150px;
+  height: 17px;
+  margin: 4px auto 0;
 }
 
 .shell:has(.cyl3d-stage) .ask-grow > .ask-input,
 .shell:has(.cyl3d-stage) .ask-grow > .ask-ghost,
 .shell:has(.cyl3d-stage) .ask-grow::after {
-  font-size: clamp(19px, 3.6vw, 24px);
+  font-size: clamp(18px, 3.4vw, 21px);
   line-height: 1.6;
+  color: var(--wood-ink);
+}
+
+.shell:has(.cyl3d-stage) .ask-ghost {
+  color: color-mix(in srgb, var(--wood-ink) 55%, transparent);
+}
+
+.shell:has(.cyl3d-stage) .asked {
+  /* 折行時兩行差不多長，不會剩一個「吗？」掛在第二行 */
+  text-wrap: balance;
+  color: var(--wood-ink);
+  font-size: clamp(16px, 3.2vw, 19px);
 }
 
 .shell:has(.cyl3d-stage) .suggest-slot {
-  padding-top: 18px;
+  padding-top: 16px;
 }
 
 .shell:has(.cyl3d-stage) .suggestions .text-action {
@@ -3231,8 +3318,9 @@ code {
   /* 上方一截笠木的影子，往畫面內伸 */
   content: '';
   position: absolute;
-  top: 9vh;
-  width: 220px;
+  /* 壓在頂欄下面：太高會橫過右上角的「EN 求签记录」 */
+  top: 15vh;
+  width: 200px;
   height: 26px;
   background: linear-gradient(180deg, #2c211c, #3a2a22);
   border-radius: 3px;

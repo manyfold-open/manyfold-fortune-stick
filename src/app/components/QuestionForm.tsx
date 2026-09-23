@@ -3,6 +3,7 @@
  *
  * 但「没有框」不等于「看不出能写」：这里用两样东西说明这是落笔的地方 ——
  *  1. 四个角上的裁切线（.ask-zone），印刷品上圈定版心的老办法，不是一个框；
+ *     3D 籤筒台上换成一块挂着的繪馬（Ema.tsx），题目写在牌上；
  *  2. 没写字又没聚焦时，占位文字后面跟着一根会闪的光标。
  * 一聚焦，这两样都让位给真正的光标，版面立刻干净。
  *
@@ -18,6 +19,7 @@ import { useState, type RefObject } from 'react';
 import { QUESTION_MAX } from '../constants';
 import { useT } from '../i18n';
 import { typeTick } from '../sound';
+import { EmaChrome } from './Ema';
 
 export default function QuestionForm(props: {
   value: string;
@@ -38,34 +40,36 @@ export default function QuestionForm(props: {
     // 没有框，就把整块区域都做成可以落笔的地方：点哪里都开始写。
     <div className="ask" onClick={() => field.current?.focus()}>
       <div className="ask-zone">
-        {/* 用 data-value 撑开高度：输入区自己长高，不需要 JS，也不会出现滚动条。 */}
-        <div className="ask-grow" data-value={props.value}>
-          <textarea
-            className="ask-input"
-            ref={field}
-            value={props.value}
-            onChange={(event) => props.onChange(event.target.value)}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault();
-                props.onSubmit();
-              } else if (props.sound && !event.ctrlKey && !event.metaKey && !event.altKey && event.key !== 'Shift') {
-                typeTick();
-              }
-            }}
-            rows={1}
-            maxLength={QUESTION_MAX + 40}
-            aria-label={t('askLabel')}
-          />
-          {empty && !focused && (
-            <p className="ask-ghost" aria-hidden>
-              {t('askGhost')}
-              <span className="ask-caret" />
-            </p>
-          )}
-        </div>
+        <EmaChrome>
+          {/* 用 data-value 撑开高度：输入区自己长高，不需要 JS，也不会出现滚动条。 */}
+          <div className="ask-grow" data-value={props.value}>
+            <textarea
+              className="ask-input"
+              ref={field}
+              value={props.value}
+              onChange={(event) => props.onChange(event.target.value)}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                  event.preventDefault();
+                  props.onSubmit();
+                } else if (props.sound && !event.ctrlKey && !event.metaKey && !event.altKey && event.key !== 'Shift') {
+                  typeTick();
+                }
+              }}
+              rows={1}
+              maxLength={QUESTION_MAX + 40}
+              aria-label={t('askLabel')}
+            />
+            {empty && !focused && (
+              <p className="ask-ghost" aria-hidden>
+                {t('askGhost')}
+                <span className="ask-caret" />
+              </p>
+            )}
+          </div>
+        </EmaChrome>
       </div>
 
       {length > QUESTION_MAX - 20 && (

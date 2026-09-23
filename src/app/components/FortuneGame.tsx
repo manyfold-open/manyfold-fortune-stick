@@ -36,6 +36,7 @@ import { acceptsGesture, chimeAtSlip, drawStartSound } from '../../shared/cylind
 import FortuneCylinder3D from './FortuneCylinder3D';
 import FortunePaperRoll from './FortunePaperRoll';
 import Printer from './Printer';
+import { EmaChrome } from './Ema';
 import QuestionForm from './QuestionForm';
 import ReadingResult from './ReadingResult';
 import StickFace from './StickFace';
@@ -374,7 +375,15 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
     <section className="stage" data-tone={sheet ? LEVEL_TONE[sheet.stick.level].key : undefined}>
       <div className={`ask-slot${printing ? ' printed' : ''}`}>
         {printing ? (
-          <p className="asked">{question}</p>
+          vessel === 'cylinder3d' ? (
+            <div className="ask-zone">
+              <EmaChrome>
+                <p className="asked">{question}</p>
+              </EmaChrome>
+            </div>
+          ) : (
+            <p className="asked">{question}</p>
+          )
         ) : (
           <QuestionForm
             value={question}
