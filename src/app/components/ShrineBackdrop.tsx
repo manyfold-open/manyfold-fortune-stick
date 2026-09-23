@@ -8,53 +8,34 @@
 
 import { useEffect, useRef } from 'react';
 import { createPetals, petalAt, petalCount, type Petal } from '../../shared/sakura';
-
-const PINK_HI = '#fde3ea';
-const PINK_LO = '#f19fb3';
-
-/** 一片櫻花瓣：尖端有個小缺口，原點在中心，長邊沿 y。 */
-function drawPetal(g: CanvasRenderingContext2D, s: number): void {
-  const w = s * 0.62;
-  const h = s;
-  g.beginPath();
-  g.moveTo(0, h / 2);
-  g.bezierCurveTo(w * 0.9, h * 0.25, w * 0.75, -h * 0.45, w * 0.18, -h / 2);
-  g.lineTo(0, -h * 0.36);
-  g.lineTo(-w * 0.18, -h / 2);
-  g.bezierCurveTo(-w * 0.75, -h * 0.45, -w * 0.9, h * 0.25, 0, h / 2);
-  g.closePath();
-  const grad = g.createLinearGradient(0, h / 2, 0, -h / 2);
-  grad.addColorStop(0, PINK_LO);
-  grad.addColorStop(1, PINK_HI);
-  g.fillStyle = grad;
-  g.fill();
-  // 一圈淡淡的深粉邊：沒有它，花瓣在奶油底上會糊掉
-  g.strokeStyle = 'rgba(212, 110, 136, 0.55)';
-  g.lineWidth = 0.8;
-  g.stroke();
-}
+import {
+  BRANCH_COLOR,
+  BRANCH_FLOWERS,
+  BRANCH_STROKES,
+  BRANCH_VIEW,
+  FLOWER_EYE,
+  FLOWER_PINK,
+  drawPetal,
+} from '../shrineArt';
 
 function SakuraBranch({ side }: { side: 'left' | 'right' }) {
-  // 右邊那枝是左邊鏡像過去的
-  const flowers: Array<[number, number, number]> = [
-    [70, 58, 15], [118, 40, 12], [150, 88, 14], [205, 60, 11], [42, 104, 12], [236, 104, 9],
-  ];
+  // 形狀跟分享圖共用（shrineArt.ts）；右邊那枝是左邊鏡像過去的
   return (
     <svg
       className={`shrine-branch ${side}`}
-      viewBox="0 0 280 180"
+      viewBox={`0 0 ${BRANCH_VIEW.w} ${BRANCH_VIEW.h}`}
       aria-hidden
       style={side === 'right' ? { transform: 'scaleX(-1)' } : undefined}
     >
-      <path d="M-10 20 C 60 34, 120 30, 170 62 S 250 96, 282 118" stroke="#6b4a36" strokeWidth="5" fill="none" strokeLinecap="round" />
-      <path d="M96 38 C 110 58, 130 70, 150 88" stroke="#6b4a36" strokeWidth="3" fill="none" strokeLinecap="round" />
-      <path d="M40 30 C 44 60, 42 84, 42 104" stroke="#6b4a36" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-      {flowers.map(([cx, cy, r], i) => (
+      {BRANCH_STROKES.map((st) => (
+        <path key={st.d} d={st.d} stroke={BRANCH_COLOR} strokeWidth={st.width} fill="none" strokeLinecap="round" />
+      ))}
+      {BRANCH_FLOWERS.map(([cx, cy, r], i) => (
         <g key={i} transform={`translate(${cx} ${cy}) rotate(${i * 23})`}>
           {[0, 72, 144, 216, 288].map((a) => (
-            <ellipse key={a} cx="0" cy={-r * 0.55} rx={r * 0.42} ry={r * 0.58} fill={i % 2 ? '#f7c6d1' : '#fbd9e0'} transform={`rotate(${a})`} />
+            <ellipse key={a} cx="0" cy={-r * 0.55} rx={r * 0.42} ry={r * 0.58} fill={FLOWER_PINK[i % 2]} transform={`rotate(${a})`} />
           ))}
-          <circle r={r * 0.2} fill="#d9576f" />
+          <circle r={r * 0.2} fill={FLOWER_EYE} />
         </g>
       ))}
     </svg>

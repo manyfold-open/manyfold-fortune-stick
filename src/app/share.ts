@@ -1,11 +1,15 @@
 /**
- * 分享图：把页面上那张签纸原样画成一张竖图，适合手机保存和转发。
+ * 分享图：把页面上那张御神籤原样画成一张竖图，适合手机保存和转发。
  *
- * 默认只放牌记、签号、等级、四字签名、签诗和一句话签意 —— 不放用户的问题、
- * 完整解读和追问，免得他把私密内容顺手转出去（产品文档第五节）。想放问题必须自己勾选。
+ * 背景是跟页面同一个神社场景（shrineArt.ts）：暖色日光、鸟居柱、樱花枝、散落的花瓣。
+ * 勾了「在图片中显示我的问题」，问题写在上方一块挂着的绘马上；中间是一张御神籤 ——
+ * 朱红双线框、「御神签」表头、国字签号、等级大红印、签名、直排签诗与一句话签意、吉色。
  *
- * 这里的四个等级配色是 styles.css 里 `[data-tone]` 那一组的浅色版，写死在这
- * 是有意的：分享图不该跟着看图的人是深色还是浅色模式变样，谁分享出去都是同一张。
+ * 默认只放签号、等级、签名、签诗和一句话签意 —— 不放用户的问题、完整解读和追问，
+ * 免得他把私密内容顺手转出去（产品文档第五节）。想放问题必须自己勾选。
+ *
+ * 颜色写死在这里与 shrineArt.ts，不读 CSS 变量：谁分享出去都是同一张。
+ * 四种签运不再换底色，只留在印外圈的光晕与吉色色点上，跟页面一致。
  */
 
 import type { Language } from '../shared/lang';
@@ -16,8 +20,10 @@ import {
   type FortuneStick,
   type StickLevel,
 } from '../shared/sticks';
+import { hanNumber } from '../shared/numerals';
 import type { Interpretation } from '../shared/types';
 import { LEVEL_TONE } from './constants';
+import { CREAM, ROUND, SEAL, SEAL_DEEP, drawEma, drawSakuraMark, drawSeal, paintShrine, spacedText } from './shrineArt';
 
 const WIDTH = 1080;
 const HEIGHT = 1350;
@@ -28,14 +34,13 @@ const MONO = 'ui-monospace, "SF Mono", Menlo, Consolas, monospace';
 const PAPER = '#fffefa';
 const INK = '#17161a';
 const INK_2 = '#4d4a53';
-const INK_3 = '#85818d';
 
-/** 与 styles.css 的 `[data-tone]` 保持一致（浅色那一组）。 */
-const TONE: Record<StickLevel, { tone: string; ground: string }> = {
-  上上签: { tone: '#3f5f92', ground: '#6c8bb6' },
-  上签: { tone: '#9a7412', ground: '#cbab45' },
-  中签: { tone: '#237a56', ground: '#4a9e79' },
-  下签: { tone: '#8d5540', ground: '#ad7d68' },
+/** 签运色：只用在印外圈的光晕与吉色色点上。与 styles.css 的 `[data-tone]` 一致。 */
+const TONE: Record<StickLevel, string> = {
+  上上签: '#3f5f92',
+  上签: '#9a7412',
+  中签: '#237a56',
+  下签: '#8d5540',
 };
 
 export interface ShareInput {
@@ -98,25 +103,21 @@ function wrapWords(context: CanvasRenderingContext2D, text: string, maxWidth: nu
 /** 按语言选折行方式。中文逐字，英文按词。 */
 const wrapFor = (language: Language) => (language === 'en' ? wrapWords : wrapChars);
 
-/** 横排的字，字间加空。canvas 的 letterSpacing 支持还不齐，所以自己逐字排。 */
-function spaced(
-  context: CanvasRenderingContext2D,
-  text: string,
-  centerX: number,
-  y: number,
-  gap: number,
-): void {
-  const chars = [...text];
-  const widths = chars.map((char) => context.measureText(char).width);
-  const total = widths.reduce((sum, w) => sum + w, 0) + gap * (chars.length - 1);
-  let x = centerX - total / 2;
-  const align = context.textAlign;
-  context.textAlign = 'left';
-  chars.forEach((char, index) => {
-    context.fillText(char, x, y);
-    x += widths[index] + gap;
-  });
-  context.textAlign = align;
+/**
+ * 折成幾行就讓每行差不多長：先照寬度折，再把寬度往內收到行數剛好不會多一行為止。
+ * 不這樣做，英文籤詩常常剩一個字掛在第二行（「…finds its own way / through」）。
+ */
+function wrapBalanced(context: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+  const lines = wrapWords(context, text, maxWidth);
+  if (lines.length < 2) return lines;
+  let lo = maxWidth / lines.length;
+  let hi = maxWidth;
+  for (let k = 0; k < 14; k += 1) {
+    const mid = (lo + hi) / 2;
+    if (wrapWords(context, text, mid).length > lines.length) lo = mid;
+    else hi = mid;
+  }
+  return wrapWords(context, text, hi);
 }
 
 interface VerticalBlock {
@@ -210,90 +211,6 @@ function drawHorizontal(
   }
 }
 
-/** 底色上的那层格纹，和页面上是同一套图形。 */
-function paintGround(context: CanvasRenderingContext2D, ground: string): void {
-  context.fillStyle = ground;
-  context.fillRect(0, 0, WIDTH, HEIGHT);
-
-  const tile = 108;
-  context.save();
-  context.strokeStyle = 'rgba(255,255,255,0.42)';
-  context.globalAlpha = 0.5;
-  context.lineWidth = 1.4;
-  for (let y = 0; y < HEIGHT + tile; y += tile) {
-    for (let x = 0; x < WIDTH + tile; x += tile) {
-      const cx = x + tile / 2;
-      const cy = y + tile / 2;
-      context.beginPath();
-      context.moveTo(cx, y + 4);
-      context.lineTo(x + tile - 4, cy);
-      context.lineTo(cx, y + tile - 4);
-      context.lineTo(x + 4, cy);
-      context.closePath();
-      context.stroke();
-
-      context.beginPath();
-      context.arc(cx, cy, tile * 0.17, 0, Math.PI * 2);
-      context.stroke();
-      context.strokeRect(cx - tile * 0.09, cy - tile * 0.09, tile * 0.18, tile * 0.18);
-    }
-  }
-  context.restore();
-}
-
-/** 纸票上的纹章，和 StickFace 里那枚是同一个形状。 */
-function drawEmblem(context: CanvasRenderingContext2D, cx: number, cy: number, r: number, tone: string): void {
-  const diamond = (radius: number) => {
-    context.beginPath();
-    context.moveTo(cx, cy - radius);
-    context.lineTo(cx + radius, cy);
-    context.lineTo(cx, cy + radius);
-    context.lineTo(cx - radius, cy);
-    context.closePath();
-  };
-
-  context.save();
-  context.fillStyle = tone;
-  context.globalAlpha = 0.14;
-  diamond(r);
-  context.fill();
-  context.restore();
-
-  context.strokeStyle = tone;
-  context.lineWidth = r * 0.06;
-  diamond(r * 0.78);
-  context.stroke();
-  diamond(r * 0.5);
-  context.stroke();
-
-  context.fillStyle = tone;
-  context.fillRect(cx - r * 0.25, cy - r * 0.25, r * 0.5, r * 0.5);
-}
-
-/** 四个角上的小三角，和签纸上那格等级是同一处细节。 */
-function drawCorners(
-  context: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  size: number,
-): void {
-  context.fillStyle = INK;
-  const corner = (cx: number, cy: number, dx: number, dy: number) => {
-    context.beginPath();
-    context.moveTo(cx, cy);
-    context.lineTo(cx + dx * size, cy);
-    context.lineTo(cx, cy + dy * size);
-    context.closePath();
-    context.fill();
-  };
-  corner(x, y, 1, 1);
-  corner(x + width, y, -1, 1);
-  corner(x, y + height, 1, -1);
-  corner(x + width, y + height, -1, -1);
-}
-
 /**
  * canvas 不会等 webfont：字体还没到就直接用后备字体画完了，于是第一次分享出来的图
  * 和页面上看到的不是同一副长相。所以先把要用到的字重加载出来再下笔。
@@ -320,160 +237,179 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
   const canvas = document.createElement('canvas');
   canvas.width = WIDTH;
   canvas.height = HEIGHT;
-  const context = canvas.getContext('2d');
-  if (!context) throw new Error('这个浏览器不支持生成图片。');
+  const g = canvas.getContext('2d');
+  if (!g) throw new Error('这个浏览器不支持生成图片。');
 
   const { stick, language } = input;
   const en = language === 'en';
   const face = en ? SERIF_EN : SERIF;
   const text = stickText(stick, language);
-  const { tone, ground } = TONE[stick.level];
+  const tone = TONE[stick.level];
+  const lucky = LEVEL_TONE[stick.level].luckyColor;
+  const level = LEVEL_LABEL[language][stick.level];
+  const meaning = input.interpretation?.meaning ?? text.meaning;
   const center = WIDTH / 2;
+  const paperW = 680;
+  const paperX = center - paperW / 2;
   const withQuestion = input.includeQuestion && Boolean(input.question.trim());
 
-  paintGround(context, ground);
-  context.textAlign = 'center';
+  paintShrine(g, WIDTH, HEIGHT);
+  g.textAlign = 'center';
 
-  // 问题印在纸的外面，和页面上一样 —— 纸是纸，问的事是问的事。
+  // 纸的各段高度：表头带、签号、大红印、签名、签诗、吉色
+  const PAD = 24;
+  const BAND = 62;
+  const NO = 52;
+  const SEAL_R = 88;
+  const SEAL_BLOCK = SEAL_R * 2 + 44;
+  const TITLE = 78;
+  const FOOT = 84;
+  const FIXED = PAD + BAND + NO + SEAL_BLOCK + TITLE + FOOT + 18;
+  const BODY_MAX = 360;
+
+  // 问题写在绘马上，挂在纸的正上方、跟纸一样宽
+  let paperTop: number;
   if (withQuestion) {
-    context.fillStyle = 'rgba(22,21,25,0.72)';
-    context.font = `500 34px ${face}`;
-    let y = 122;
-    for (const line of wrapFor(language)(context, input.question, WIDTH - 260).slice(0, 3)) {
-      context.fillText(line, center, y);
-      y += 46;
+    const qFont = `500 36px ${face}`;
+    g.font = qFont;
+    const all = wrapFor(language)(g, input.question, paperW - 110);
+    const lines = all.slice(0, 2);
+    // 繪馬只寫得下兩行：多出來的收成刪節號，不要在句子中間無聲無息地斷掉
+    if (all.length > 2) {
+      let last = lines[1];
+      while (last && g.measureText(`${last}…`).width > paperW - 110) last = [...last].slice(0, -1).join('');
+      lines[1] = `${last.trimEnd()}…`;
     }
-  }
-
-  const cardTop = withQuestion ? 240 : 172;
-  const cardHeight = 1044;
-  context.fillStyle = 'rgba(0,0,0,0.16)';
-  context.fillRect(96, cardTop + 16, WIDTH - 192, cardHeight);
-  context.fillStyle = PAPER;
-  context.fillRect(90, cardTop, WIDTH - 180, cardHeight);
-
-  context.fillStyle = INK;
-  context.font = `700 44px ${SERIF}`;
-  spaced(context, '问一签', center, cardTop + 104, 16);
-
-  context.fillStyle = INK_3;
-  context.font = `500 19px ${MONO}`;
-  spaced(context, 'WEN YI QIAN · FORTUNE PRINTER', center, cardTop + 146, 3);
-
-  drawEmblem(context, center, cardTop + 216, 46, tone);
-
-  const cellX = 150;
-  const cellWidth = WIDTH - 300;
-
-  // 一格等级
-  const levelY = cardTop + 286;
-  const levelH = 130;
-  context.strokeStyle = INK;
-  context.lineWidth = 2;
-  context.strokeRect(cellX, levelY, cellWidth, levelH);
-  drawCorners(context, cellX, levelY, cellWidth, levelH, 18);
-
-  context.fillStyle = INK_3;
-  context.font = `400 26px ${face}`;
-  context.textAlign = 'left';
-  context.fillText(en ? `NO. ${stick.no}` : `第 ${stick.no} 签`, cellX + 34, levelY + levelH / 2 + 10);
-  context.textAlign = 'right';
-  context.fillText(
-    en ? `OF ${STICK_COUNT}` : '之 签 运',
-    cellX + cellWidth - 34,
-    levelY + levelH / 2 + 10,
-  );
-  context.textAlign = 'center';
-
-  // 英文等级是一个词：92px 配 20 的字距会直接顶出格子，所以收到 52 和 8。
-  context.fillStyle = INK;
-  context.font = en ? `700 52px ${face}` : `700 92px ${SERIF}`;
-  spaced(
-    context,
-    LEVEL_LABEL[language][stick.level],
-    center,
-    levelY + levelH / 2 + (en ? 20 : 34),
-    en ? 8 : 20,
-  );
-
-  // 一格四字签名
-  const titleY = levelY + levelH;
-  const titleH = 100;
-  context.strokeRect(cellX, titleY, cellWidth, titleH);
-  context.fillStyle = INK_2;
-  if (en) {
-    // 英文签名是一个短语：先按一行试，撑不下就换小一号折两行。
-    context.font = `500 40px ${face}`;
-    if (context.measureText(text.title).width > cellWidth - 80) {
-      context.font = `500 32px ${face}`;
-      const lines = wrapWords(context, text.title, cellWidth - 80).slice(0, 2);
-      let y = titleY + titleH / 2 - (lines.length - 1) * 17 + 10;
-      for (const line of lines) {
-        context.fillText(line, center, y);
-        y += 34;
-      }
-    } else {
-      spaced(context, text.title, center, titleY + titleH / 2 + 15, 4);
-    }
+    const emaBottom = drawEma(g, center, 120, paperW, lines, qFont, 52, en ? 'EMA · MAKE A WISH' : '絵馬 · 心願');
+    paperTop = emaBottom + 34;
   } else {
-    context.font = `500 50px ${SERIF}`;
-    spaced(context, text.title, center, titleY + titleH / 2 + 18, 26);
+    paperTop = Math.round((HEIGHT - 70 - (FIXED + BODY_MAX)) / 2);
   }
+  // 問題折成兩行時繪馬變高：籤詩那一格讓出空間，頁腳才不會貼著紙
+  const BODY = Math.max(300, Math.min(BODY_MAX, HEIGHT - 96 - paperTop - FIXED));
+  const paperH = FIXED + BODY;
 
-  // 一格直排签诗与签意
-  const bodyY = titleY + titleH;
-  const bodyH = 458;
-  context.strokeRect(cellX, bodyY, cellWidth, bodyH);
-  const lucky = LEVEL_TONE[stick.level].luckyColor;
+  // 纸：阴影、纸色、朱红双线框
+  g.save();
+  g.shadowColor = 'rgba(38, 26, 18, 0.22)';
+  g.shadowBlur = 36;
+  g.shadowOffsetY = 16;
+  g.fillStyle = PAPER;
+  g.fillRect(paperX, paperTop, paperW, paperH);
+  g.restore();
+  g.strokeStyle = SEAL;
+  g.lineWidth = 4;
+  g.strokeRect(paperX + 2, paperTop + 2, paperW - 4, paperH - 4);
+  g.lineWidth = 1.6;
+  g.strokeStyle = 'rgba(192, 50, 31, 0.7)';
+  g.strokeRect(paperX + 10, paperTop + 10, paperW - 20, paperH - 20);
+
+  const innerX = paperX + PAD;
+  const innerW = paperW - PAD * 2;
+  let y = paperTop + PAD;
+
+  // 表头带
+  const band = g.createLinearGradient(0, y, 0, y + BAND);
+  band.addColorStop(0, SEAL);
+  band.addColorStop(1, SEAL_DEEP);
+  g.fillStyle = band;
+  g.fillRect(innerX, y, innerW, BAND);
+  g.fillStyle = CREAM;
+  g.font = en ? `700 26px ${face}` : `700 30px ${SERIF}`;
+  spacedText(g, en ? 'OMIKUJI' : '御神签', center, y + BAND / 2 + 11, en ? 14 : 30);
+  y += BAND;
+
+  // 签号
+  g.fillStyle = INK_2;
+  g.font = `400 25px ${face}`;
+  spacedText(g, en ? `NO. ${stick.no} OF ${STICK_COUNT}` : `第${hanNumber(stick.no)}签`, center, y + 38, en ? 4 : 10);
+  y += NO;
+
+  // 等级大红印：三个字的等级小一号，英文两个词各一行
+  const sealLines = en ? level.split(' ') : [level];
+  const sealFont = en ? `700 24px ${face}` : `800 ${[...level].length >= 3 ? 40 : 54}px ${SERIF}`;
+  drawSeal(g, center, y + SEAL_BLOCK / 2, SEAL_R, sealLines, sealFont, en ? 30 : 54, tone);
+  y += SEAL_BLOCK;
+
+  // 签名，左右各一条朱红细线
+  g.fillStyle = INK;
+  g.font = en ? `600 36px ${face}` : `600 40px ${SERIF}`;
+  const titleGap = en ? 2 : 18;
+  const titleW = [...text.title].reduce((w, c) => w + g.measureText(c).width, 0) + titleGap * ([...text.title].length - 1);
+  spacedText(g, text.title, center, y + TITLE / 2 + 12, titleGap);
+  g.strokeStyle = SEAL;
+  g.lineWidth = 2;
+  for (const dir of [-1, 1]) {
+    const x0 = center + dir * (titleW / 2 + 22);
+    g.beginPath();
+    g.moveTo(x0, y + TITLE / 2);
+    g.lineTo(x0 + dir * 40, y + TITLE / 2);
+    g.stroke();
+  }
+  y += TITLE;
+
+  // 签诗：上下两条淡朱红线
+  g.strokeStyle = 'rgba(192, 50, 31, 0.35)';
+  g.lineWidth = 1.6;
+  for (const ly of [y, y + BODY]) {
+    g.beginPath();
+    g.moveTo(innerX, ly);
+    g.lineTo(innerX + innerW, ly);
+    g.stroke();
+  }
   if (en) {
     drawHorizontal(
-      context,
+      g,
       [
-        { text: text.poem[0], font: `500 34px ${face}`, color: INK, step: 46 },
-        { text: text.poem[1], font: `500 34px ${face}`, color: INK, step: 46 },
-        { text: input.interpretation?.meaning ?? text.meaning, font: `400 27px ${face}`, color: INK_2, step: 38 },
-        { text: `Lucky colour: ${lucky.en}`, font: `400 24px ${face}`, color: tone, step: 34 },
+        { text: text.poem[0], font: `italic 500 32px ${face}`, color: INK, step: 44 },
+        { text: text.poem[1], font: `italic 500 32px ${face}`, color: INK, step: 44 },
+        { text: meaning, font: `400 26px ${face}`, color: INK_2, step: 36 },
       ],
-      {
-        centerX: center,
-        top: bodyY + 44,
-        width: cellWidth - 110,
-        height: bodyH - 88,
-        gap: 26,
-        wrapText: wrapWords,
-      },
+      { centerX: center, top: y + 20, width: innerW - 70, height: BODY - 40, gap: 22, wrapText: wrapBalanced },
     );
   } else {
+    const poemStep = Math.min(42, Math.floor((BODY - 52) / 7));
     drawVertical(
-      context,
+      g,
       [
-        { text: text.poem[0], font: `500 44px ${SERIF}`, color: INK, step: 50 },
-        { text: text.poem[1], font: `500 44px ${SERIF}`, color: INK, step: 50 },
-        {
-          text: input.interpretation?.meaning ?? text.meaning,
-          font: `400 33px ${SERIF}`,
-          color: INK_2,
-          step: 39,
-        },
-        { text: `幸运色：${lucky.zh}`, font: `400 29px ${SERIF}`, color: tone, step: 35 },
+        // 七言一列要放得下：一個字的高度照這一格的高度算（BODY 會因為繪馬變高而縮）
+        { text: text.poem[0], font: `500 ${Math.min(38, poemStep - 4)}px ${SERIF}`, color: INK, step: poemStep },
+        { text: text.poem[1], font: `500 ${Math.min(38, poemStep - 4)}px ${SERIF}`, color: INK, step: poemStep },
+        { text: meaning, font: `400 29px ${SERIF}`, color: INK_2, step: 34 },
       ],
-      { centerX: center, top: bodyY + 44, height: bodyH - 88, gap: 22 },
+      { centerX: center, top: y + 26, height: BODY - 52, gap: 26 },
     );
   }
+  y += BODY;
 
-  context.fillStyle = INK_3;
-  context.font = `400 20px ${MONO}`;
-  spaced(
-    context,
-    en ? 'FORTUNE PRINTER · A REFERENCE, NOT A ROUTE' : '问一签 · 签为参考，路要自己走',
-    center,
-    cardTop + cardHeight - 30,
-    3,
-  );
+  // 吉色胶囊与樱花小印
+  g.font = `600 24px ${face}`;
+  const luckyText = en ? `Lucky tone · ${lucky.en}` : `吉色 · ${lucky.zh}`;
+  const lw = g.measureText(luckyText).width + 70;
+  const ly = y + FOOT / 2;
+  g.fillStyle = `${tone}14`;
+  g.strokeStyle = `${tone}4d`;
+  g.lineWidth = 1.5;
+  g.beginPath();
+  g.roundRect(center - lw / 2, ly - 24, lw, 48, 24);
+  g.fill();
+  g.stroke();
+  g.fillStyle = tone;
+  g.beginPath();
+  g.arc(center - lw / 2 + 28, ly, 7, 0, Math.PI * 2);
+  g.fill();
+  g.textAlign = 'left';
+  g.fillText(luckyText, center - lw / 2 + 46, ly + 9);
+  g.textAlign = 'center';
+  drawSakuraMark(g, paperX + paperW - 44, ly + 10, 18, SEAL);
 
-  context.fillStyle = 'rgba(22,21,25,0.5)';
-  context.font = `400 24px ${MONO}`;
-  context.fillText(location.host, center, HEIGHT - 26);
+  // 页脚
+  g.fillStyle = 'rgba(59, 42, 30, 0.62)';
+  g.font = `500 22px ${en ? face : ROUND}`;
+  spacedText(g, en ? 'A STICK IS A REFERENCE · THE WALKING IS YOURS' : '问一签 · 签为参考，路要自己走', center, HEIGHT - 58, en ? 2 : 6);
+  g.fillStyle = 'rgba(59, 42, 30, 0.45)';
+  g.font = `400 22px ${MONO}`;
+  g.fillText(location.host, center, HEIGHT - 24);
 
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(
