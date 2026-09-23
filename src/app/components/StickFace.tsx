@@ -48,10 +48,9 @@ export default function StickFace(props: {
         <span className="slip-no">{en ? `NO. ${stick.no} OF ${STICK_COUNT}` : `第${hanNumber(stick.no)}签`}</span>
       </header>
 
-      {/* 等級是一顆朱紅大印：落印動畫套在整顆印上，四種籤運的光暈在印後面 */}
+      {/* 等級是一顆朱紅大印：落印動畫套在整顆印上 */}
       <div className="slip-seal-row">
         <div className={`slip-level-box${longLevel ? ' long' : ''}`}>
-          <div className="level-stamp-aura" aria-hidden="true" />
           <strong className="slip-level">{level}</strong>
         </div>
       </div>

@@ -1,5 +1,6 @@
 /**
  * 打印机与交互的拟真音效，使用 WebAudio 纯算法合成，不下载任何音频文件。
+ * 3D 签筒（神社主题）用到的：在绘马上写字 typeTick、竹签 bamboo*、揭晓的铃 suzu、落印 stampSound、签纸翻面 paperSettleSound。
  *
  * AudioContext 只在用户第一次交互时创建 —— 遵守现代浏览器的手势唤醒策略。
  */
@@ -35,41 +36,42 @@ function noiseBuffer(audio: AudioContext, seconds: number, decay: number): Audio
   return buffer;
 }
 
-/** 打字音效：清脆微型机械键帽敲击声，带自然随机音高微动 */
+/**
+ * 在繪馬上寫字：筆尖在木牌上輕輕一劃（以前是機械鍵帽的「喀」，跟神社不搭）。
+ * 一段很短、偏中頻的柔和摩擦，外加一點點木頭的悶響；每一下音色略有不同。
+ */
 export function typeTick(gain = 0.055): void {
   const audio = ctx();
   if (!audio) return;
   const start = audio.currentTime;
+  const stroke = 0.045 + Math.random() * 0.025;
 
-  // 1. 极短暂的高频键帽微碰撞 (Click transient)
-  const click = audio.createBufferSource();
-  click.buffer = noiseBuffer(audio, 0.018, 40);
-  const clickFilter = audio.createBiquadFilter();
-  clickFilter.type = 'bandpass';
-  clickFilter.frequency.setValueAtTime(3100 + (Math.random() * 600 - 300), start);
-  clickFilter.Q.setValueAtTime(3.5, start);
+  // 1. 筆尖擦過木紋
+  const brush = audio.createBufferSource();
+  brush.buffer = noiseBuffer(audio, stroke, 3);
+  const bp = audio.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.setValueAtTime(1500 + Math.random() * 700, start);
+  bp.frequency.exponentialRampToValueAtTime(900 + Math.random() * 300, start + stroke);
+  bp.Q.setValueAtTime(0.9, start);
+  const brushGain = audio.createGain();
+  brushGain.gain.setValueAtTime(0.0001, start);
+  brushGain.gain.exponentialRampToValueAtTime(gain * 1.1, start + 0.008);
+  brushGain.gain.exponentialRampToValueAtTime(0.0001, start + stroke);
+  brush.connect(bp).connect(brushGain).connect(audio.destination);
+  brush.start(start);
 
-  const clickGain = audio.createGain();
-  clickGain.gain.setValueAtTime(gain * 0.9, start);
-  clickGain.gain.exponentialRampToValueAtTime(0.0001, start + 0.016);
-
-  click.connect(clickFilter).connect(clickGain).connect(audio.destination);
-  click.start(start);
-
-  // 2. 键轴底板微共鸣 (Subtle body resonance)
-  const osc = audio.createOscillator();
-  osc.type = 'triangle';
-  const pitch = 750 + Math.random() * 180;
-  osc.frequency.setValueAtTime(pitch, start);
-  osc.frequency.exponentialRampToValueAtTime(pitch * 0.6, start + 0.024);
-
-  const oscGain = audio.createGain();
-  oscGain.gain.setValueAtTime(gain * 0.65, start);
-  oscGain.gain.exponentialRampToValueAtTime(0.0001, start + 0.025);
-
-  osc.connect(oscGain).connect(audio.destination);
-  osc.start(start);
-  osc.stop(start + 0.03);
+  // 2. 木牌本身的一點悶響
+  const body = audio.createOscillator();
+  body.type = 'triangle';
+  const pitch = 320 + Math.random() * 80;
+  body.frequency.setValueAtTime(pitch, start);
+  const bodyGain = audio.createGain();
+  bodyGain.gain.setValueAtTime(gain * 0.25, start);
+  bodyGain.gain.exponentialRampToValueAtTime(0.0001, start + 0.03);
+  body.connect(bodyGain).connect(audio.destination);
+  body.start(start);
+  body.stop(start + 0.035);
 }
 
 /** 按下面板实体按键：深沉机械开关触底与弹簧回弹 */
@@ -395,197 +397,107 @@ export function bambooDropSound(): void {
   knock.stop(tapTime + 0.09);
 }
 
-/** 打印完成/定签：按等级演绎不同的东方铜磬、颂钵与古寺晨钟 */
-export function chime(level?: StickLevel): void {
+/**
+ * 神社的鈴（すず）：拜殿前垂著一條紅白麻繩，繩頭一串黃銅鈴，搖一下「沙啷——」。
+ * 以前這裡是佛寺的銅磬、頌缽與晨鐘 —— 使用者：「音效也要跟日本神社的感覺對齊」。
+ *
+ * 第二版：第一版的小鈴放在 2.3～3.8kHz、瞬間起音、再加一段 6kHz 的鐵丸沙聲，使用者說「鈴聲不太舒服」
+ * （尖、刺耳）。現在鈴放低到 1.2～1.9kHz、起音放軟（8ms）、餘韻拉長，拿掉那段高頻沙聲，
+ * 整串過一道 4kHz 低通，再疊一點點短回聲當作拜殿的空間。籤越好搖得越久；上上签收在一聲低低的大鈴。
+ */
+export function suzu(level?: StickLevel): void {
   const audio = ctx();
   if (!audio) return;
   const start = audio.currentTime;
 
-  if (level === '上上签') {
-    // 上上签【双磬合鸣·天籁吉庆】：D5 (587Hz) + A5 (880Hz) 和弦铃韵，长泛音 2.6s
-    const playChime = (freq: number, vol: number, dur: number) => {
+  // 整串的出口：低通去掉刺的高頻，旁邊接一條短回聲
+  const tone = audio.createBiquadFilter();
+  tone.type = 'lowpass';
+  tone.frequency.setValueAtTime(4000, start);
+  tone.Q.setValueAtTime(0.5, start);
+  const master = audio.createGain();
+  master.gain.setValueAtTime(0.9, start);
+  tone.connect(master).connect(audio.destination);
+
+  const echo = audio.createDelay(0.5);
+  echo.delayTime.setValueAtTime(0.11, start);
+  const echoGain = audio.createGain();
+  echoGain.gain.setValueAtTime(0.22, start);
+  const echoTone = audio.createBiquadFilter();
+  echoTone.type = 'lowpass';
+  echoTone.frequency.setValueAtTime(2200, start);
+  master.connect(echo);
+  echo.connect(echoTone).connect(echoGain).connect(audio.destination);
+  echoGain.connect(echo);
+
+  // 一顆鈴：基音加兩個弱很多的泛音，軟起音、慢慢散掉
+  const ring = (at: number, base: number, vol: number, decay: number) => {
+    [
+      [1, 1],
+      [2.02, 0.22],
+      [2.93, 0.08],
+    ].forEach(([ratio, amp]) => {
       const osc = audio.createOscillator();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, start);
+      osc.frequency.setValueAtTime(base * ratio, at);
+      const g = audio.createGain();
+      g.gain.setValueAtTime(0.0001, at);
+      g.gain.exponentialRampToValueAtTime(vol * amp, at + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + decay / ratio);
+      osc.connect(g).connect(tone);
+      osc.start(at);
+      osc.stop(at + decay + 0.05);
+    });
+  };
 
-      const oscOvertone = audio.createOscillator();
-      oscOvertone.type = 'sine';
-      oscOvertone.frequency.setValueAtTime(freq * 2.5, start);
+  // 搖一下：五、六顆鈴在 120ms 裡錯落響起
+  const shake = (at: number, strength: number) => {
+    const count = 5 + Math.round(Math.random());
+    for (let i = 0; i < count; i += 1) {
+      const t = at + (i / count) * 0.12 + Math.random() * 0.02;
+      ring(t, 1250 + Math.random() * 650, 0.024 * strength * (0.7 + Math.random() * 0.3), 0.55 + Math.random() * 0.3);
+    }
+  };
 
-      const gain = audio.createGain();
-      gain.gain.setValueAtTime(0.0001, start);
-      gain.gain.exponentialRampToValueAtTime(vol, start + 0.012);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+  const plan: Record<StickLevel, number[]> = {
+    上上签: [1, 0.8, 0.9],
+    上签: [1, 0.8],
+    中签: [0.9, 0.65],
+    下签: [0.7],
+  };
+  const shakes = plan[level ?? '中签'];
+  shakes.forEach((strength, i) => shake(start + i * 0.26, strength));
 
-      const otGain = audio.createGain();
-      otGain.gain.setValueAtTime(0.0001, start);
-      otGain.gain.exponentialRampToValueAtTime(vol * 0.35, start + 0.01);
-      otGain.gain.exponentialRampToValueAtTime(0.0001, start + dur * 0.6);
-
-      osc.connect(gain).connect(audio.destination);
-      oscOvertone.connect(otGain).connect(audio.destination);
-
-      osc.start(start);
-      oscOvertone.start(start);
-      osc.stop(start + dur + 0.1);
-      oscOvertone.stop(start + dur * 0.6 + 0.1);
-    };
-
-    playChime(587.33, 0.13, 2.5); // 主音 D5
-    playChime(880.0, 0.09, 2.2);  // 纯五度 A5
-    playChime(1174.66, 0.04, 1.4); // 高八度 D6
-    return;
+  // 上上签：拜殿的大鈴低低一響，把整串收住
+  if (level === '上上签') {
+    const at = start + shakes.length * 0.26;
+    [
+      [523, 0.05],
+      [1046, 0.012],
+    ].forEach(([freq, vol]) => {
+      const osc = audio.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, at);
+      const g = audio.createGain();
+      g.gain.setValueAtTime(0.0001, at);
+      g.gain.exponentialRampToValueAtTime(vol, at + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + 1.8);
+      osc.connect(g).connect(tone);
+      osc.start(at);
+      osc.stop(at + 1.9);
+    });
   }
 
-  if (level === '上签') {
-    // 上签【青铜清磬·旭日澄明】：D5 (587Hz) 清脆纯和，高阶谐波清亮
-    const osc1 = audio.createOscillator();
-    osc1.type = 'sine';
-    osc1.frequency.setValueAtTime(587.33, start);
-
-    const osc2 = audio.createOscillator();
-    osc2.type = 'sine';
-    osc2.frequency.setValueAtTime(1468.3, start); // ~2.5x
-
-    const osc3 = audio.createOscillator();
-    osc3.type = 'sine';
-    osc3.frequency.setValueAtTime(2643.0, start); // ~4.5x
-
-    const vol1 = audio.createGain();
-    vol1.gain.setValueAtTime(0.0001, start);
-    vol1.gain.exponentialRampToValueAtTime(0.15, start + 0.015);
-    vol1.gain.exponentialRampToValueAtTime(0.0001, start + 2.0);
-
-    const vol2 = audio.createGain();
-    vol2.gain.setValueAtTime(0.0001, start);
-    vol2.gain.exponentialRampToValueAtTime(0.05, start + 0.012);
-    vol2.gain.exponentialRampToValueAtTime(0.0001, start + 1.2);
-
-    const vol3 = audio.createGain();
-    vol3.gain.setValueAtTime(0.0001, start);
-    vol3.gain.exponentialRampToValueAtTime(0.025, start + 0.01);
-    vol3.gain.exponentialRampToValueAtTime(0.0001, start + 0.7);
-
-    osc1.connect(vol1).connect(audio.destination);
-    osc2.connect(vol2).connect(audio.destination);
-    osc3.connect(vol3).connect(audio.destination);
-
-    osc1.start(start);
-    osc2.start(start);
-    osc3.start(start);
-    osc1.stop(start + 2.1);
-    osc2.stop(start + 1.3);
-    osc3.stop(start + 0.8);
-    return;
-  }
-
-  if (level === '中签') {
-    // 中签【温润古磬·静水流深】：A4 (440Hz)，圆润平缓，余韵宁静
-    const osc1 = audio.createOscillator();
-    osc1.type = 'sine';
-    osc1.frequency.setValueAtTime(440.0, start);
-
-    const osc2 = audio.createOscillator();
-    osc2.type = 'sine';
-    osc2.frequency.setValueAtTime(1100.0, start); // 2.5x
-
-    const osc3 = audio.createOscillator();
-    osc3.type = 'sine';
-    osc3.frequency.setValueAtTime(1760.0, start); // 4x
-
-    const vol1 = audio.createGain();
-    vol1.gain.setValueAtTime(0.0001, start);
-    vol1.gain.exponentialRampToValueAtTime(0.14, start + 0.02);
-    vol1.gain.exponentialRampToValueAtTime(0.0001, start + 1.8);
-
-    const vol2 = audio.createGain();
-    vol2.gain.setValueAtTime(0.0001, start);
-    vol2.gain.exponentialRampToValueAtTime(0.035, start + 0.015);
-    vol2.gain.exponentialRampToValueAtTime(0.0001, start + 1.0);
-
-    const vol3 = audio.createGain();
-    vol3.gain.setValueAtTime(0.0001, start);
-    vol3.gain.exponentialRampToValueAtTime(0.015, start + 0.01);
-    vol3.gain.exponentialRampToValueAtTime(0.0001, start + 0.6);
-
-    osc1.connect(vol1).connect(audio.destination);
-    osc2.connect(vol2).connect(audio.destination);
-    osc3.connect(vol3).connect(audio.destination);
-
-    osc1.start(start);
-    osc2.start(start);
-    osc3.start(start);
-    osc1.stop(start + 1.9);
-    osc2.stop(start + 1.1);
-    osc3.stop(start + 0.7);
-    return;
-  }
-
-  if (level === '下签') {
-    // 下签【禅寺古钟·暮鼓晨钟】：146.8Hz (D3) 低沉大钟嗡鸣，安神定心、警醒化厄
-    const bellBase = audio.createOscillator();
-    bellBase.type = 'sine';
-    bellBase.frequency.setValueAtTime(146.83, start);
-
-    const bellSecond = audio.createOscillator();
-    bellSecond.type = 'sine';
-    bellSecond.frequency.setValueAtTime(293.66, start);
-
-    const bellThird = audio.createOscillator();
-    bellThird.type = 'sine';
-    bellThird.frequency.setValueAtTime(440.0, start);
-
-    // 钟体轻微颤音（Beat frequency 0.8Hz）
-    const tremolo = audio.createOscillator();
-    tremolo.type = 'sine';
-    tremolo.frequency.setValueAtTime(0.8, start);
-    const tremoloGain = audio.createGain();
-    tremoloGain.gain.setValueAtTime(6.0, start);
-    tremolo.connect(tremoloGain);
-    tremoloGain.connect(bellBase.frequency);
-
-    const vol1 = audio.createGain();
-    vol1.gain.setValueAtTime(0.0001, start);
-    vol1.gain.exponentialRampToValueAtTime(0.18, start + 0.035);
-    vol1.gain.exponentialRampToValueAtTime(0.0001, start + 2.6);
-
-    const vol2 = audio.createGain();
-    vol2.gain.setValueAtTime(0.0001, start);
-    vol2.gain.exponentialRampToValueAtTime(0.06, start + 0.02);
-    vol2.gain.exponentialRampToValueAtTime(0.0001, start + 1.6);
-
-    const vol3 = audio.createGain();
-    vol3.gain.setValueAtTime(0.0001, start);
-    vol3.gain.exponentialRampToValueAtTime(0.025, start + 0.015);
-    vol3.gain.exponentialRampToValueAtTime(0.0001, start + 1.1);
-
-    bellBase.connect(vol1).connect(audio.destination);
-    bellSecond.connect(vol2).connect(audio.destination);
-    bellThird.connect(vol3).connect(audio.destination);
-
-    bellBase.start(start);
-    bellSecond.start(start);
-    bellThird.start(start);
-    tremolo.start(start);
-
-    bellBase.stop(start + 2.7);
-    bellSecond.stop(start + 1.7);
-    bellThird.stop(start + 1.2);
-    tremolo.stop(start + 2.7);
-    return;
-  }
-
-  // 默认单音铜磬
-  const osc1 = audio.createOscillator();
-  osc1.type = 'sine';
-  osc1.frequency.setValueAtTime(587.33, start);
-  const vol1 = audio.createGain();
-  vol1.gain.setValueAtTime(0.0001, start);
-  vol1.gain.exponentialRampToValueAtTime(0.15, start + 0.015);
-  vol1.gain.exponentialRampToValueAtTime(0.0001, start + 2.0);
-  osc1.connect(vol1).connect(audio.destination);
-  osc1.start(start);
-  osc1.stop(start + 2.1);
+  // 回聲迴路自己會衰減，但節點要放掉：最後一聲響完再斷開
+  const end = start + shakes.length * 0.26 + 2.2;
+  window.setTimeout(() => {
+    try {
+      echoGain.disconnect();
+      echo.disconnect();
+    } catch {
+      /* 已經斷開 */
+    }
+  }, (end - start) * 1000);
 }
 
 /** 实木印章落印声：稳重盖在宣纸上的沉实顿挫回弹，按等级定制不同金石厚度 */
@@ -768,79 +680,7 @@ export function woodblockPress(gain = 0.24): void {
   grain.start(start);
 }
 
-/**
- * 撕纸音效：模拟沿齿孔撕下热敏纸/宣纸的脆裂摩擦质感
- * 包含：
- * 1. 纤维撕裂带通噪声扫频 (High-to-mid frequency paper rip friction)
- * 2. 齿孔连续断裂微爆破 (Granular snap impulses as perforation breaks)
- * 3. 纸张脱离空气摩擦轻微尾韵
- */
-export function tearPaperSound(gain = 0.28): void {
-  const audio = ctx();
-  if (!audio) return;
-  const start = audio.currentTime;
-  const duration = 0.42;
-
-  // 1. 纸张撕扯主要摩擦声 (Swept bandpass noise)
-  const tearBuffer = noiseBuffer(audio, duration, 1.2);
-  const tearSource = audio.createBufferSource();
-  tearSource.buffer = tearBuffer;
-
-  const tearFilter = audio.createBiquadFilter();
-  tearFilter.type = 'bandpass';
-  tearFilter.frequency.setValueAtTime(3600, start);
-  tearFilter.frequency.exponentialRampToValueAtTime(1400, start + duration);
-  tearFilter.Q.setValueAtTime(2.2, start);
-
-  const tearGain = audio.createGain();
-  tearGain.gain.setValueAtTime(0.0001, start);
-  tearGain.gain.exponentialRampToValueAtTime(gain * 0.95, start + 0.04);
-  tearGain.gain.setValueAtTime(gain * 0.95, start + duration * 0.65);
-  tearGain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
-
-  tearSource.connect(tearFilter).connect(tearGain).connect(audio.destination);
-  tearSource.start(start);
-
-  // 2. 齿孔崩断微颗粒脉冲 (Perforation teeth snapping sequence)
-  const snapCount = 14;
-  for (let i = 0; i < snapCount; i++) {
-    const snapTime = start + (i / snapCount) * (duration * 0.85) + (Math.random() * 0.015 - 0.007);
-    if (snapTime < start) continue;
-
-    const snapNoise = audio.createBufferSource();
-    snapNoise.buffer = noiseBuffer(audio, 0.015, 35);
-
-    const snapFilter = audio.createBiquadFilter();
-    snapFilter.type = 'bandpass';
-    snapFilter.frequency.setValueAtTime(2800 + Math.random() * 1600, snapTime);
-    snapFilter.Q.setValueAtTime(4.0, snapTime);
-
-    const snapGain = audio.createGain();
-    const snapVol = gain * (0.35 + Math.random() * 0.35);
-    snapGain.gain.setValueAtTime(snapVol, snapTime);
-    snapGain.gain.exponentialRampToValueAtTime(0.0001, snapTime + 0.014);
-
-    snapNoise.connect(snapFilter).connect(snapGain).connect(audio.destination);
-    snapNoise.start(snapTime);
-  }
-
-  // 3. 撕开瞬间的纸张微颤音 (Low resonance rustle)
-  const rustle = audio.createOscillator();
-  rustle.type = 'triangle';
-  rustle.frequency.setValueAtTime(180, start + 0.05);
-  rustle.frequency.exponentialRampToValueAtTime(75, start + duration * 0.7);
-
-  const rustleGain = audio.createGain();
-  rustleGain.gain.setValueAtTime(0.0001, start);
-  rustleGain.gain.exponentialRampToValueAtTime(gain * 0.22, start + 0.08);
-  rustleGain.gain.exponentialRampToValueAtTime(0.0001, start + duration * 0.8);
-
-  rustle.connect(rustleGain).connect(audio.destination);
-  rustle.start(start + 0.05);
-  rustle.stop(start + duration);
-}
-
-/** 贴回/纸张复位轻柔抚平声 */
+/** 纸张轻柔抚平声：签纸翻面时用 */
 export function paperSettleSound(gain = 0.18): void {
   const audio = ctx();
   if (!audio) return;

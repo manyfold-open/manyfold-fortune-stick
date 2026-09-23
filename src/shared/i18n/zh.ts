@@ -69,14 +69,10 @@ export const zh = {
   blockNotice: '值得留意',
   blockAction: '可以做的一件小事',
   actionShare: '分享结果',
-  actionShareClose: '收起分享',
-  actionTearShare: '撕下分享',
-  tearHint: '沿齿孔撕下灵签以珍藏或分享',
-  tearPullTab: '撕开',
-  actionReattach: '贴回签卷',
-  shareTalisman: '灵签珍藏卡',
   actionFollowUp: '继续追问',
-  actionFollowUpClose: '收起追问',
+  /** 籤紙兩面紅帶右端的小木札：正面翻到解籤、背面翻回籤面 */
+  flipToReading: '解签',
+  flipToSlip: '签面',
   actionRestart: '再求一签',
 
   /* ── 追问 ── */
