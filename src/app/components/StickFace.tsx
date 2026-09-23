@@ -6,7 +6,7 @@
  *
  * 印表機走紙時吐出的也是這一張（機身底下只露得出上半截，表頭與大紅印剛好在上半截）。
  *
- * small 版给求签记录用：同样的信息，压成一行，不排直排文字。
+ * small 版给求签记录用：同样的信息压成一张橫放的小籤 —— 朱紅籤頭寫籤號，旁邊是等級徽章與籤名。
  *
  * 语言是这张纸自己的，由问题推导、印出来就定死（src/shared/lang.ts），**不是**
  * 右上角那个界面开关。
@@ -30,11 +30,27 @@ export default function StickFace(props: {
   const en = language === 'en';
 
   if (props.size === 'small') {
+    // 左邊一條朱紅籤頭（中文直排「第五签」），右邊一顆吉色小徽章加籤名。
+    // 外層是 display: contents —— 兩塊各自落進記錄卡的格線（styles.css 的 .history-summary）。
     return (
       <div className="slip-mini" data-tone={tone.key} data-lang={language}>
-        <span className="slip-mini-no">{en ? `NO. ${stick.no}` : `第 ${stick.no} 签`}</span>
-        <span className="slip-mini-level">{level}</span>
-        <span className="slip-mini-title">{text.title}</span>
+        <span className="slip-mini-tab">
+          {en ? (
+            <>
+              <small>NO.</small>
+              {stick.no}
+            </>
+          ) : (
+            `第${hanNumber(stick.no)}签`
+          )}
+        </span>
+        <span className="slip-mini-head">
+          <span className="slip-mini-level">
+            <span className="lucky-pip" aria-hidden="true" />
+            {level}
+          </span>
+          <span className="slip-mini-title">{text.title}</span>
+        </span>
       </div>
     );
   }

@@ -98,6 +98,7 @@ export const en = {
 
   /* ── history ── */
   historyTitle: 'Your slips',
+  historyCaption: 'OMIKUJI',
   historyEmpty: 'No slips yet. Draw one and it will stay here on this device.',
   historyGoDraw: 'Go draw one',
   historyClear: 'Clear all',

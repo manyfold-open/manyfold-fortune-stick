@@ -100,6 +100,7 @@ export const zh = {
 
   /* ── 记录 ── */
   historyTitle: '求签记录',
+  historyCaption: '御神签',
   historyEmpty: '这台设备上还没有记录。求过的签会留在这里。',
   historyGoDraw: '去求一签',
   historyClear: '清空全部',

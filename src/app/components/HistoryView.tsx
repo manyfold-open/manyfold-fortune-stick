@@ -2,6 +2,9 @@
  * 求签记录。数据来自浏览器本地（src/app/storage.ts），所以打开就有，不用等网络。
  * 删除会同时清掉服务端那一行 —— 用户说删就是真的删掉。
  *
+ * 版式跟求籤頁同一座神社：鳥居框住整頁，標題寫在掛在貫下面的木牌上（跟繪馬同一種木頭），
+ * 每一條記錄是一張橫放的小御神籤 —— 朱紅雙線框、左邊籤頭寫籤號，展開是籤紙的背面。
+ *
  * 这一页上有两种语言，别混：页面外壳（标题、展开、清空）跟右上角的界面开关走；
  * 每一条记录里面那几个小标题跟**那一条**自己的语言走，因为它们标的是 agent 当初
  * 用那种语言写下的文字，换个语言重新标注等于说错话。
@@ -12,6 +15,7 @@ import { detectLanguage } from '../../shared/lang';
 import { withoutDashes } from '../../shared/text';
 import { stickByNo } from '../../shared/sticks';
 import { api } from '../api';
+import { LEVEL_TONE } from '../constants';
 import { copyFor, useT } from '../i18n';
 import { clearRecords, deleteRecord, listRecords, type LocalRecord } from '../storage';
 import StickFace from './StickFace';
@@ -20,6 +24,19 @@ const formatTime = (value: string): string => {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? '' : date.toLocaleString();
 };
+
+/** 掛在鳥居貫下面的木牌：紅繩、淺木面、上面一行朱紅小字。 */
+function Plaque({ caption, title }: { caption: string; title: string }) {
+  return (
+    <header className="history-plaque">
+      <span className="history-plaque-cord" aria-hidden />
+      <span className="history-plaque-caption" aria-hidden>
+        {caption}
+      </span>
+      <h2>{title}</h2>
+    </header>
+  );
+}
 
 export default function HistoryView() {
   const t = useT();
@@ -46,19 +63,22 @@ export default function HistoryView() {
   if (records.length === 0) {
     return (
       <section className="history">
-        <h2>{t('historyTitle')}</h2>
-        <p className="muted">{t('historyEmpty')}</p>
-        <a className="text-action" href="#/">
-          {t('historyGoDraw')}
-        </a>
+        <Plaque caption={t('historyCaption')} title={t('historyTitle')} />
+        <div className="history-empty">
+          <p className="muted">{t('historyEmpty')}</p>
+          <a className="text-action history-go" href="#/">
+            {t('historyGoDraw')}
+          </a>
+        </div>
       </section>
     );
   }
 
   return (
     <section className="history">
+      <Plaque caption={t('historyCaption')} title={t('historyTitle')} />
       <div className="history-head">
-        <h2>{t('historyTitle')}</h2>
+        <p className="muted small">{t('historyLocalNote')}</p>
         {confirmClear ? (
           <span className="row">
             <button className="text-action danger" onClick={() => void removeAll()}>
@@ -74,7 +94,6 @@ export default function HistoryView() {
           </button>
         )}
       </div>
-      <p className="muted small">{t('historyLocalNote')}</p>
 
       {records.map((record) => {
         const stick = stickByNo(record.stickNo);
@@ -84,8 +103,12 @@ export default function HistoryView() {
         const language = detectLanguage(record.question);
         const own = copyFor(language);
         return (
-          <article className="history-item" key={record.id}>
-            <button className="history-summary" onClick={() => setOpenId(open ? null : record.id)}>
+          <article
+            className={`history-item${open ? ' open' : ''}`}
+            data-tone={LEVEL_TONE[stick.level].key}
+            key={record.id}
+          >
+            <button className="history-summary" aria-expanded={open} onClick={() => setOpenId(open ? null : record.id)}>
               <StickFace stick={stick} language={language} size="small" />
               <span className="history-meta">
                 <span className="history-question">{withoutDashes(record.question)}</span>
@@ -104,12 +127,12 @@ export default function HistoryView() {
                     <p>{withoutDashes(record.interpretation.answer)}</p>
                     {record.interpretation.notice && (
                       <p>
-                        <strong>{own.historyNoticeLabel}</strong>
+                        <strong className="history-label">{own.historyNoticeLabel}</strong>
                         {withoutDashes(record.interpretation.notice)}
                       </p>
                     )}
                     <p>
-                      <strong>{own.historyActionLabel}</strong>
+                      <strong className="history-label">{own.historyActionLabel}</strong>
                       {withoutDashes(record.interpretation.action)}
                     </p>
                   </>

@@ -1580,33 +1580,6 @@ body {
 }
 
 
-.slip-mini[data-lang='en'] .slip-mini-title { letter-spacing: 0.06em; }
-
-/* 求签记录里的紧凑一行 */
-.slip-mini {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  font-family: var(--serif);
-}
-
-.slip-mini-no {
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-}
-
-.slip-mini-level {
-  font-size: 12px;
-  letter-spacing: 0.1em;
-  color: var(--tone);
-}
-
-.slip-mini-title {
-  font-size: 12px;
-  letter-spacing: 0.3em;
-  color: var(--ink-3);
-}
 
 /* ── 解签续页：接在签纸下面的同一卷纸 ── */
 
@@ -2176,7 +2149,10 @@ body {
   color: var(--accent);
 }
 
-/* ── 求签记录 ── */
+/* ── 求签记录 ──
+   跟求籤頁同一座神社：標題是一塊從鳥居的貫垂下來的木牌（紅繩、木面同繪馬），
+   每條記錄是一張橫放的小御神籤：朱紅雙線框、左邊一條朱紅籤頭寫籤號、吉色小徽章、右下一朵櫻花印。
+   展開是籤紙的背面，折線用朱紅虛線。 */
 
 .history,
 .panel {
@@ -2195,65 +2171,334 @@ body {
   letter-spacing: 0.2em;
 }
 
+.history {
+  --seal: #c0321f;
+  --seal-deep: #9e2517;
+  --round: "Yuanti SC", "Yuanti TC", "Hiragino Maru Gothic ProN", "PingFang SC", sans-serif;
+  /* 鳥居貫的下緣在 130px；木牌上緣落在 156px，中間是 26px 的紅繩 —— 跟求籤頁的繪馬掛在同一個位置 */
+  padding-top: 0;
+}
+
+.history-plaque {
+  position: relative;
+  isolation: isolate;
+  width: min(300px, 100%);
+  margin: 97px auto 0;
+  padding: 14px 24px 12px;
+  text-align: center;
+  filter: drop-shadow(0 6px 10px rgba(92, 62, 32, 0.22));
+  transform-origin: 50% -26px;
+  animation: plaque-sway 5.5s ease-in-out infinite;
+}
+
+@keyframes plaque-sway {
+  0%, 100% { transform: rotate(-0.7deg); }
+  50% { transform: rotate(0.7deg); }
+}
+
+/* 形狀照繪馬：px 定角的五角牌，兩層偽元素一深一淺 */
+.history-plaque::before,
+.history-plaque::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  clip-path: polygon(0 var(--ema-cut), var(--ema-cut) 0, calc(100% - var(--ema-cut)) 0, 100% var(--ema-cut), 100% 100%, 0 100%);
+}
+
+.history-plaque::before {
+  inset: 0;
+  background: var(--wood-edge);
+}
+
+.history-plaque::after {
+  inset: 3px;
+  --ema-cut: 20px;
+  background:
+    repeating-linear-gradient(92deg, rgba(120, 84, 46, 0.05) 0 2px, transparent 2px 9px),
+    linear-gradient(180deg, var(--wood-hi), var(--wood));
+}
+
+.history-plaque-cord {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  width: 70px;
+  height: 26px;
+  transform: translateX(-50%);
+  background:
+    linear-gradient(to top right, transparent calc(50% - 1px), #b8321f calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)) left / 50% 100% no-repeat,
+    linear-gradient(to top left, transparent calc(50% - 1px), #b8321f calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)) right / 50% 100% no-repeat;
+}
+
+.history-plaque-cord::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -3px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  background: #b8321f;
+}
+
+.history-plaque-caption {
+  display: block;
+  font: 600 10.5px/1.4 var(--round);
+  letter-spacing: 0.3em;
+  text-indent: 0.3em;
+  color: var(--accent);
+}
+
+.history .history-plaque h2 {
+  margin: 2px 0 0;
+  font-size: 22px;
+  line-height: 1.4;
+  letter-spacing: 0.32em;
+  text-indent: 0.32em;
+  color: var(--wood-ink);
+}
+
+html:lang(en) .history .history-plaque h2 {
+  font-family: var(--serif-en);
+  letter-spacing: 0.08em;
+  text-indent: 0.08em;
+}
+
+/* 兩條細繩結飾：木牌底下那一道朱紅短線加兩顆小點 */
+.history-plaque h2::after {
+  content: '';
+  display: block;
+  width: 120px;
+  height: 7px;
+  margin: 6px auto 0;
+  background:
+    radial-gradient(circle, var(--seal) 2.5px, transparent 3px) left center / 7px 7px no-repeat,
+    radial-gradient(circle, var(--seal) 2.5px, transparent 3px) right center / 7px 7px no-repeat,
+    linear-gradient(var(--seal), var(--seal)) center / calc(100% - 18px) 1px no-repeat;
+  opacity: 0.8;
+}
+
 .history-head {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   gap: 12px;
+  margin-top: 26px;
+  padding: 0 2px;
 }
 
+.history-head .muted.small {
+  margin: 0;
+  font-family: var(--round);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+}
+
+.history-head .text-action {
+  font-family: var(--round);
+  font-size: 13px;
+}
+
+.history-empty {
+  margin-top: 30px;
+  text-align: center;
+}
+
+.history-empty .muted {
+  font-family: var(--round);
+  font-size: 14px;
+}
+
+/* 「去求一签」是一塊小木札，跟求籤頁的例句同一種 */
+.history .history-go {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 6px;
+  padding: 6px 16px 6px 12px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, var(--wood-hi), var(--wood));
+  box-shadow: inset 0 0 0 1px var(--wood-edge), 0 2px 4px rgba(92, 62, 32, 0.18);
+  font-family: var(--serif);
+  color: var(--wood-ink);
+  text-decoration: none;
+  opacity: 1;
+  transition: transform 0.2s ease;
+}
+
+.history .history-go::before,
+.history-label::before {
+  content: '';
+  flex: none;
+  width: 12px;
+  height: 12px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-10 -10 20 20'%3E%3Cg fill='%23c0321f'%3E%3Cellipse cy='-5' rx='3.4' ry='4.8'/%3E%3Cellipse cy='-5' rx='3.4' ry='4.8' transform='rotate(72)'/%3E%3Cellipse cy='-5' rx='3.4' ry='4.8' transform='rotate(144)'/%3E%3Cellipse cy='-5' rx='3.4' ry='4.8' transform='rotate(216)'/%3E%3Cellipse cy='-5' rx='3.4' ry='4.8' transform='rotate(288)'/%3E%3C/g%3E%3Ccircle r='1.6' fill='%23fbf3e6'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.history .history-go:hover { transform: translateY(-1px) rotate(-1deg); text-decoration: none; }
+
+/* 一張小御神籤 */
 .history-item {
+  position: relative;
   color: var(--ink);
   margin-top: 14px;
+  padding: 5px;
   background: var(--paper);
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.14);
-  overflow: hidden;
+  border: 2px solid var(--seal);
+  border-radius: 3px;
+  box-shadow: 0 2px 6px rgba(38, 26, 18, 0.08), 0 10px 24px rgba(92, 62, 32, 0.14);
   transform-origin: top center;
   animation: history-slip-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+/* 雙線框的內線 */
+.history-item::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border: 1px solid color-mix(in srgb, var(--seal) 60%, transparent);
+  border-radius: 1px;
+  pointer-events: none;
+}
+
+/* 右下角一朵朱紅櫻花小印 */
+.history-item::after {
+  content: '';
+  position: absolute;
+  right: 9px;
+  bottom: 7px;
+  width: 14px;
+  height: 14px;
+  opacity: 0.7;
+  pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-10 -10 20 20'%3E%3Cg fill='%23c0321f'%3E%3Cellipse cy='-5' rx='3.4' ry='4.8'/%3E%3Cellipse cy='-5' rx='3.4' ry='4.8' transform='rotate(72)'/%3E%3Cellipse cy='-5' rx='3.4' ry='4.8' transform='rotate(144)'/%3E%3Cellipse cy='-5' rx='3.4' ry='4.8' transform='rotate(216)'/%3E%3Cellipse cy='-5' rx='3.4' ry='4.8' transform='rotate(288)'/%3E%3C/g%3E%3Ccircle r='1.6' fill='%23fbf3e6'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.history-item:not(.open):hover {
+  transform: translateY(-2px) rotate(-0.25deg);
+  box-shadow: 0 3px 8px rgba(38, 26, 18, 0.1), 0 14px 30px rgba(92, 62, 32, 0.18);
 }
 
 .history-item:nth-of-type(2) { animation-delay: 0.06s; }
 .history-item:nth-of-type(3) { animation-delay: 0.12s; }
 .history-item:nth-of-type(4) { animation-delay: 0.18s; }
+.history-item:nth-of-type(5) { animation-delay: 0.24s; }
 
 @keyframes history-slip-in {
   from {
     opacity: 0;
-    transform: translateY(8px) rotate(0.2deg);
+    transform: translateY(10px) rotate(0.4deg);
   }
 }
 
+/* 籤頭 | 等級與籤名、問題、時間 | 展開。StickFace small 與 .history-meta 都是 display: contents，
+   它們的子元素直接落進這張格線 */
 .history-summary {
+  position: relative;
+  z-index: 1;
   width: 100%;
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'tab head toggle'
+    'tab question toggle'
+    'tab time toggle';
+  column-gap: 16px;
   align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
+  padding: 0 16px 0 0;
   border: 0;
   background: none;
   font: inherit;
   text-align: left;
   color: inherit;
   cursor: pointer;
-  transition: background 0.18s ease, transform 0.18s ease;
 }
 
-.history-summary:hover {
-  background: color-mix(in srgb, var(--tone-bg) 55%, transparent);
-}
+.history-summary:active { transform: translateY(1px); }
 
-.history-summary:active {
-  transform: translateY(1px);
-}
+.slip-mini,
+.history-meta { display: contents; }
 
-.history-meta {
-  flex: 1;
-  min-width: 0;
+.slip-mini-tab {
+  grid-area: tab;
+  align-self: stretch;
   display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  min-height: 96px;
+  padding: 10px 0;
+  background: linear-gradient(180deg, var(--seal), var(--seal-deep));
+  color: #fbf3e6;
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: 15px;
+  writing-mode: vertical-rl;
+  letter-spacing: 0.24em;
+  line-height: 1;
+}
+
+.slip-mini[data-lang='en'] .slip-mini-tab {
+  writing-mode: horizontal-tb;
   flex-direction: column;
+  gap: 3px;
+  font-family: var(--serif-en);
+  font-size: 19px;
+  letter-spacing: 0;
+}
+
+.slip-mini-tab small {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  opacity: 0.85;
+}
+
+.slip-mini-head {
+  grid-area: head;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  padding-top: 12px;
+  min-width: 0;
+}
+
+.slip-mini-level {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 10px 1px 8px;
+  border-radius: 999px;
+  background: var(--tone-bg);
+  border: 0.5px solid color-mix(in srgb, var(--tone) 32%, transparent);
+  font: 600 12px/1.6 var(--round);
+  letter-spacing: 0.1em;
+  color: var(--tone);
+  white-space: nowrap;
+}
+
+.slip-mini[data-lang='en'] .slip-mini-level { font-size: 10.5px; letter-spacing: 0.06em; }
+
+.slip-mini-title {
+  font-family: var(--serif);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  color: var(--ink);
+}
+
+.slip-mini[data-lang='en'] .slip-mini-title {
+  font-family: var(--serif-en);
+  font-weight: 500;
+  font-style: italic;
+  letter-spacing: 0.02em;
 }
 
 .history-question {
+  grid-area: question;
+  margin-top: 4px;
   font-size: 14px;
   color: var(--ink-2);
   overflow: hidden;
@@ -2261,18 +2506,47 @@ body {
   white-space: nowrap;
 }
 
-.history-meta .small { font-size: 11px; color: var(--ink-3); }
-
-.history-toggle {
-  flex: none;
-  font: 11px/1 var(--mono);
-  letter-spacing: 0.1em;
+.history-meta .small {
+  grid-area: time;
+  padding-bottom: 12px;
+  font: 11px/1.6 var(--round);
+  letter-spacing: 0.04em;
   color: var(--ink-3);
 }
 
+/* 展開：朱紅小字加一個會轉的箭頭 */
+.history-toggle {
+  grid-area: toggle;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: 600 12px/1 var(--round);
+  letter-spacing: 0.1em;
+  color: var(--seal);
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.history-toggle::after {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 0.25s ease;
+}
+
+.history-summary[aria-expanded='true'] .history-toggle::after { transform: translateY(1px) rotate(-135deg); }
+.history-summary:hover .history-toggle { opacity: 1; }
+
+/* 籤紙的背面：朱紅虛線是折痕 */
 .history-body {
-  padding: 4px 16px 18px;
-  border-top: 1px dashed var(--hair);
+  position: relative;
+  z-index: 1;
+  margin: 5px 0 0;
+  padding: 8px 18px 24px 58px;
+  border-top: 1px dashed color-mix(in srgb, var(--seal) 45%, transparent);
   animation: history-open 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
@@ -2286,8 +2560,34 @@ body {
 
 .history-body p { font-size: 14.5px; line-height: 1.8; color: var(--ink-2); }
 .history-body .lead { font-family: var(--serif); font-size: 16px; color: var(--ink); }
-.history-body h4 { margin: 14px 0 4px; font: 600 10px/1 var(--mono); letter-spacing: 0.18em; color: var(--tone); }
+.history-body h4 { margin: 14px 0 4px; font: 600 11px/1 var(--round); letter-spacing: 0.18em; color: var(--tone); }
+
+.history-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-right: 2px;
+  font-family: var(--round);
+  font-weight: 600;
+  color: var(--tone);
+}
+
 .history-followups { margin-top: 8px; }
+
+@media (max-width: 560px) {
+  .history-summary { column-gap: 12px; padding-right: 12px; }
+  .slip-mini-tab { width: 36px; font-size: 14px; }
+  .slip-mini-title { font-size: 14px; letter-spacing: 0.14em; }
+  .history-body { padding: 8px 14px 24px 14px; }
+  .history-head { flex-wrap: wrap; }
+  .history-head > :last-child { margin-left: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .history-plaque { animation: none; }
+}
+
+.shell.calm .history-plaque { animation: none; }
 
 .history .muted,
 .panel .muted { color: var(--on-ground-2); }
@@ -2514,6 +2814,13 @@ code {
     max-width: calc(100% - 160px);
     line-height: 1.4;
     letter-spacing: 0.02em;
+  }
+
+  /* 記錄頁右上角是「中文 Back to the machine」，比求籤頁的「Your slips」長一大截，160px 讓不開 */
+  html:lang(en) .shell:has(.history) .footer-note {
+    max-width: calc(100% - 236px);
+    font-size: 10px;
+    line-height: 1.2;
   }
 }
 
