@@ -218,7 +218,7 @@ export default function ReadingResult(props: {
 
                     <div className="sheet-scroll">{interpretation ? interpretationBlocks : loadingSkeleton}</div>
 
-                    {interpretation && (
+                    {interpretation && !panel && (
                       <nav className="result-actions" data-lang={reading.language}>
                         <button type="button" className="text-action strong" onClick={() => togglePanel('share')}>
                           {t('actionShare')}

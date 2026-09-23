@@ -21,6 +21,7 @@ import FortuneGame from './components/FortuneGame';
 import HistoryView from './components/HistoryView';
 import PasswordGate from './components/PasswordGate';
 import PrivacyView from './components/PrivacyView';
+import SettingsModal from './components/SettingsModal';
 import SettingsView from './components/SettingsView';
 import ShrineBackdrop from './components/ShrineBackdrop';
 import { LanguageProvider, useT, useUiLanguage } from './i18n';
@@ -62,6 +63,7 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
   const [loadError, setLoadError] = useState('');
   const [route, setRoute] = useState<Route>(routeFromHash);
   const [gateOpen, setGateOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const refreshState = useCallback(async () => {
     try {
@@ -150,7 +152,11 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
       {/* 求籤頁與求籤記錄是同一座神社（鳥居、櫻花瓣）；設定與隱私頁留著原本的浮塵 */}
       {route === 'game' || route === 'history' ? <ShrineBackdrop calm={prefs.reducedMotion} /> : <AmbientMotes reducedMotion={prefs.reducedMotion} />}
       <header className="topbar">
-        <span className="footer-note">{t('footerNote')}</span>
+        <a className="brand" href="/" aria-label={t('brandTitle')}>
+          <span className="brand-torii" aria-hidden="true">⛩️</span>
+          <span className="brand-title">{t('brandTitle')}</span>
+        </a>
+
         <span className="topbar-actions">
           {/* 只换界面。已经印出来的签一个字都不会动。 */}
           <button
@@ -161,9 +167,18 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
           >
             {t('langSwitch')}
           </button>
-          <a className="text-action" href={route === 'game' ? '#history' : '/'}>
+          <a className="text-action history-link" href={route === 'game' ? '#history' : '/'}>
             {route === 'game' ? t('navHistory') : t('navBackToGame')}
           </a>
+          <button
+            type="button"
+            className="text-action settings-trigger"
+            aria-label={t('navSettings')}
+            onClick={() => setSettingsOpen(true)}
+          >
+            <span className="settings-trigger-icon" aria-hidden="true">⚙️</span>
+            <span className="settings-trigger-label">{t('navSettings')}</span>
+          </button>
         </span>
       </header>
 
@@ -181,28 +196,6 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
       )}
 
       <footer className="footer">
-
-        <div className="footer-prefs">
-          <button
-            type="button"
-            className="text-action tiny"
-            aria-pressed={prefs.sound}
-            onClick={() => updatePrefs({ sound: !prefs.sound })}
-          >
-            {t('footerSound', { state: prefs.sound ? t('footerSoundOn') : t('footerSoundOff') })}
-          </button>
-          <button
-            type="button"
-            className="text-action tiny"
-            aria-pressed={prefs.reducedMotion}
-            onClick={() => updatePrefs({ reducedMotion: !prefs.reducedMotion })}
-          >
-            {t('footerMotion', {
-              state: prefs.reducedMotion ? t('footerMotionReduced') : t('footerMotionNormal'),
-            })}
-          </button>
-        </div>
-
         <div className="footer-credits">
           <a
             href="https://manyfold.ai/"
@@ -238,6 +231,14 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
           {t('privacyNav')}
         </a>
       </footer>
+
+      <SettingsModal
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        prefs={prefs}
+        updatePrefs={updatePrefs}
+        language={language}
+      />
 
       {gateOpen && <PasswordGate onSubmitted={refreshState} />}
     </main>

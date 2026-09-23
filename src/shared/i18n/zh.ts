@@ -12,9 +12,15 @@
  */
 export const zh = {
   /* ── 外壳 ── */
+  brandTitle: '御神签',
   brandSub: 'AI FORTUNE STICK',
   navHistory: '求签记录',
   navBackToGame: '回到求签',
+  navSettings: '设置',
+  shrineSettingsTitle: '神社设置',
+  settingsClose: '收起',
+  settingsSoundDesc: '求签与解签时的环境铃声与纸张声',
+  settingsMotionDesc: '落樱飘落与微动摇曳效果',
   privacyNav: '隐私与数据',
   railLeft: 'MODEL WY-36 · MADE IN CHINA',
   railRight: '三 十 六 签 · 一 问 一 答',

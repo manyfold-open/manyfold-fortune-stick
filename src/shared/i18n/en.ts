@@ -8,9 +8,15 @@ import type { Copy } from './zh';
 
 export const en = {
   /* ── shell ── */
+  brandTitle: 'Omikuji',
   brandSub: 'AI FORTUNE STICK',
   navHistory: 'Your slips',
   navBackToGame: 'Back to the machine',
+  navSettings: 'Settings',
+  shrineSettingsTitle: 'Shrine Settings',
+  settingsClose: 'Close',
+  settingsSoundDesc: 'Ambient bells and paper sounds',
+  settingsMotionDesc: 'Falling petals and gentle sway effects',
   privacyNav: 'Privacy & data',
   railLeft: 'MODEL WY-36 · MADE IN CHINA',
   railRight: 'T H I R T Y - S I X   S T I C K S',

@@ -125,73 +125,93 @@ body {
 .topbar-actions {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 8px;
   flex: 0 0 auto;
 }
 
-/* 语言开关：和「求签记录」一样是一行字，不是一个按钮。 */
-.lang-switch {
-  font: 11px/1 var(--mono);
-  letter-spacing: 0.18em;
+.topbar-actions .text-action {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(184, 50, 31, 0.15);
+  box-shadow: 0 1px 3px rgba(80, 40, 20, 0.05);
+  color: var(--on-ground);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+  line-height: 1.2;
+}
+
+.topbar-actions .text-action:hover,
+.topbar-actions .text-action:focus-visible {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(184, 50, 31, 0.35);
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+
+.topbar-actions .lang-switch {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+}
+
+.settings-trigger {
+  cursor: pointer;
+}
+
+.settings-trigger-icon {
+  font-size: 12px;
+  line-height: 1;
 }
 
 .brand {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 9px;
+  gap: 7px;
   text-decoration: none;
   color: inherit;
-}
-
-.brand-chips {
-  display: flex;
-  gap: 2px;
-}
-
-.brand-chips i {
-  width: 7px;
-  height: 14px;
-}
-
-.brand-chips i:nth-child(1) { background: #e8007d; }
-.brand-chips i:nth-child(2) { background: #c3dd4e; }
-.brand-chips i:nth-child(3) { background: #28a9e0; }
-.brand-chips i:nth-child(4) { background: #f2cf3f; }
-
-.brand-name {
   font-family: var(--serif);
-  font-size: 19px;
   font-weight: 700;
-  letter-spacing: 0.2em;
+  font-size: 15px;
+  letter-spacing: 0.16em;
+  opacity: 0.92;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
-.brand-sub {
-  font: 10px/1 var(--mono);
-  letter-spacing: 0.16em;
-  color: var(--on-ground-2);
+.brand:hover {
+  opacity: 1;
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+
+.brand-torii {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.brand-title {
+  letter-spacing: 0.18em;
+  color: var(--on-ground);
 }
 
 .footer {
   margin-top: auto;
-  padding-top: 36px;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: 16px;
-}
-
-.footer-prefs {
+  padding-top: 24px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: center;
+  gap: 20px;
+  position: relative;
+  z-index: 10;
 }
 
 .footer-credits {
-  grid-column: 2;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 3px;
+  gap: 16px;
   text-align: center;
 }
 
@@ -226,46 +246,230 @@ body {
   color: var(--on-ground);
 }
 
-.footer-note {
-  font: 11.5px/1.4 var(--mono);
-  letter-spacing: 0.08em;
-  color: var(--on-ground-2);
-  text-align: left;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
-  flex: 1 1 auto;
-}
-
 .footer-privacy {
-  grid-column: 3;
-  justify-self: end;
-  text-align: right;
+  text-align: center;
 }
 
-@media (max-width: 820px) {
-  .footer {
-    grid-template-columns: 1fr;
-    justify-items: center;
-    text-align: center;
-    gap: 14px;
-    padding-top: 20px;
-  }
+/* ── 神社參拜設置面板（Settings Drawer / Sheet）── */
 
-  .footer-prefs {
-    grid-column: 1;
-    justify-content: center;
-  }
+.settings-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: rgba(30, 18, 12, 0.48);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: settings-fade-in 0.25s ease-out;
+}
 
-  .footer-credits,
-  .footer-privacy {
-    grid-column: 1;
-  }
+@keyframes settings-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 
-  .footer-privacy {
-    justify-self: end;
-  }
+.settings-sheet {
+  width: 100%;
+  max-width: 460px;
+  background: var(--paper);
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -12px 36px rgba(40, 20, 10, 0.22);
+  border-top: 1px solid color-mix(in srgb, var(--seal) 40%, transparent);
+  padding: 20px 22px calc(24px + env(safe-area-inset-bottom, 12px));
+  position: relative;
+  animation: settings-slide-up 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+  box-sizing: border-box;
+}
+
+@keyframes settings-slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.settings-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 14px;
+  border-bottom: 1px dashed color-mix(in srgb, var(--seal) 25%, transparent);
+  margin-bottom: 16px;
+}
+
+.settings-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-torii-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.settings-title {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--on-ground);
+}
+
+.settings-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  padding: 0;
+  cursor: pointer;
+  color: var(--on-ground-2);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.settings-close:hover {
+  background: rgba(0, 0, 0, 0.1);
+  transform: scale(1.05);
+  text-decoration: none;
+}
+
+.settings-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.settings-label-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.settings-label {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 14.5px;
+  letter-spacing: 0.05em;
+  color: var(--on-ground);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.settings-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.settings-desc {
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--on-ground-2);
+  opacity: 0.85;
+}
+
+.settings-segment {
+  display: inline-flex;
+  padding: 3px;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 8px;
+  gap: 2px;
+}
+
+.segment-btn {
+  border: 0;
+  background: none;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  letter-spacing: 0.04em;
+  color: var(--on-ground-2);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.segment-btn.active {
+  background: #fff;
+  color: var(--on-ground);
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+.settings-links-card {
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid color-mix(in srgb, var(--seal) 20%, transparent);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.settings-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 14px;
+  text-decoration: none;
+  color: var(--on-ground);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  transition: background 0.15s ease;
+}
+
+.settings-link:not(:last-child) {
+  border-bottom: 1px solid color-mix(in srgb, var(--seal) 12%, transparent);
+}
+
+.settings-link:hover {
+  background: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+}
+
+.settings-link-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-link-arrow {
+  color: var(--on-ground-2);
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.settings-motto-seal {
+  margin-top: 6px;
+  padding: 10px 14px;
+  text-align: center;
+  color: var(--seal);
+  font-family: var(--serif);
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  opacity: 0.88;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.motto-marks {
+  font-weight: 700;
+  color: var(--accent);
 }
 
 /* ── 唯一的动作样式：纸上的一行字 ── */
@@ -2796,8 +3000,8 @@ code {
 @media (max-width: 640px) {
   .shell {
     padding-top: max(16px, env(safe-area-inset-top, 16px));
-    padding-bottom: max(32px, calc(env(safe-area-inset-bottom, 0px) + 26px));
-    padding-inline: max(20px, calc(env(safe-area-inset-left, 0px) + 18px));
+    padding-bottom: max(16px, env(safe-area-inset-bottom, 16px));
+    padding-inline: max(18px, calc(env(safe-area-inset-left, 0px) + 16px));
   }
 
   .topbar {
@@ -2805,42 +3009,34 @@ code {
     margin-bottom: 6px;
   }
 
-  .footer-note {
-    font-size: 10.5px;
-    letter-spacing: 0.02em;
-    max-width: calc(100% - 135px);
-  }
-
-  html:lang(en) .footer-note {
-    font-size: 9.5px;
-    max-width: calc(100% - 145px);
+  .brand-title {
+    font-size: 14.5px;
   }
 }
 
-/* 顶栏现在有三样东西（牌记、语言开关、记录），窄屏上挤不下就会折行 ——
-   「问一签」被拆成两行看起来像坏了。先收起装饰性的副标，再压小间距。 */
+/* 顶栏小屏幕适配：收紧间距，避免折行 */
 @media (max-width: 480px) {
-  .topbar { gap: 8px; }
-  .topbar-actions { gap: 10px; }
-  .topbar-actions > * { white-space: nowrap; font-size: 13px; }
-  .brand-name { white-space: nowrap; }
-  .brand-sub { display: none; }
+  .topbar { gap: 6px; }
+  .topbar-actions { gap: 6px; }
+  .topbar-actions .text-action {
+    padding: 3px 8px;
+    font-size: 11.5px;
+    white-space: nowrap;
+  }
 }
 
 @media (max-width: 400px) {
   .shell {
     padding-top: max(14px, env(safe-area-inset-top, 14px));
-    padding-bottom: max(30px, calc(env(safe-area-inset-bottom, 0px) + 24px));
-    padding-inline: max(18px, calc(env(safe-area-inset-left, 0px) + 16px));
+    padding-bottom: max(14px, env(safe-area-inset-bottom, 14px));
+    padding-inline: max(16px, calc(env(safe-area-inset-left, 0px) + 14px));
   }
   .ask-zone { --mark-len: 14px; padding: 16px 12px; }
-  .footer { gap: 12px; }
 }
 
 @media (max-width: 360px) {
-  .footer-note {
-    display: none;
-  }
+  .brand-title { display: none; }
+  .settings-trigger-label { display: none; }
 }
 
 /* ==========================================================================
@@ -4726,7 +4922,7 @@ html { overflow-x: clip; }
  */
 .sheet-panel {
   position: absolute;
-  z-index: 4;
+  z-index: 25;
   left: 5px;
   right: 5px;
   bottom: 5px;
@@ -4874,34 +5070,6 @@ html { overflow-x: clip; }
   .shell:has(.cyl3d-stage) .stage { padding-bottom: 12px; }
 
   .footer {
-    grid-template-columns: 1fr auto;
-    justify-items: stretch;
-    gap: 10px 14px;
-    padding-top: 14px;
-    padding-bottom: max(10px, env(safe-area-inset-bottom, 10px));
-    margin-top: auto;
-    position: relative;
-    z-index: 10;
-  }
-
-  .footer-prefs {
-    grid-column: 1;
-    grid-row: 1;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    justify-content: flex-start;
-  }
-
-  .footer-privacy {
-    grid-column: 2;
-    grid-row: 1;
-    justify-self: end;
-  }
-
-  .footer-credits {
-    grid-column: 1 / -1;
-    justify-self: center;
-    padding-top: 4px;
+    display: none !important;
   }
 }
