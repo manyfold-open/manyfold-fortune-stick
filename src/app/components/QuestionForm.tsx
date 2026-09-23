@@ -44,54 +44,97 @@ export default function QuestionForm(props: {
 
   const sway = strokes === 0 ? '' : strokes % 2 === 1 ? ' sway-a' : ' sway-b';
 
-  return (
-    // 没有框，就把整块区域都做成可以落笔的地方：点哪里都开始写。
-    <div className="ask" onClick={() => field.current?.focus()}>
-      <div className={`ask-zone${focused ? ' focused' : ''}${!empty ? ' has-content' : ''}${sway}`}>
-        <EmaChrome>
-          {/* 用 data-value 撑开高度：输入区自己长高，不需要 JS，也不会出现滚动条。 */}
-          <div className="ask-grow" data-value={props.value}>
-            <textarea
-              className="ask-input"
-              ref={field}
-              value={props.value}
-              onChange={(event) => {
-                props.onChange(withoutDashes(event.target.value));
-                setStrokes((n) => n + 1);
-              }}
-              onFocus={() => setFocused(true)}
-              onBlur={() => {
-                setFocused(false);
-                // 下次聚焦不要先补晃一下上次留下的那笔
-                setStrokes(0);
-              }}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' && !event.shiftKey) {
-                  event.preventDefault();
-                  props.onSubmit();
-                } else if (props.sound && !event.ctrlKey && !event.metaKey && !event.altKey && event.key !== 'Shift') {
-                  typeTick();
-                }
-              }}
-              rows={1}
-              maxLength={QUESTION_MAX + 40}
-              aria-label={t('askLabel')}
-            />
-            {empty && !focused && (
-              <p className="ask-ghost" aria-hidden>
-                {t('askGhost')}
-                <span className="ask-caret" />
-              </p>
-            )}
-          </div>
-        </EmaChrome>
-      </div>
+  const dismiss = (e?: React.SyntheticEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    field.current?.blur();
+  };
 
-      {length > QUESTION_MAX - 20 && (
-        <p className={`ask-counter${length > QUESTION_MAX ? ' over' : ''}`}>
-          {length} / {QUESTION_MAX}
-        </p>
+  return (
+    <>
+      {focused && (
+        <div
+          className="ask-backdrop"
+          aria-hidden="true"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            dismiss(e);
+          }}
+          onTouchStart={dismiss}
+        />
       )}
-    </div>
+      <div
+        className="ask"
+        onClick={(e) => {
+          if (!focused && e.target !== field.current) {
+            field.current?.focus();
+          }
+        }}
+      >
+        <div className={`ask-zone${focused ? ' focused' : ''}${!empty ? ' has-content' : ''}${sway}`}>
+          <EmaChrome>
+            {/* 用 data-value 撑开高度：输入区自己长高，不需要 JS，也不会出现滚动条。 */}
+            <div className="ask-grow" data-value={props.value}>
+              <textarea
+                className="ask-input"
+                ref={field}
+                value={props.value}
+                onChange={(event) => {
+                  props.onChange(withoutDashes(event.target.value));
+                  setStrokes((n) => n + 1);
+                }}
+                onFocus={() => setFocused(true)}
+                onBlur={() => {
+                  setFocused(false);
+                  // 下次聚焦不要先补晃一下上次留下的那笔
+                  setStrokes(0);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    dismiss();
+                    props.onSubmit();
+                  } else if (props.sound && !event.ctrlKey && !event.metaKey && !event.altKey && event.key !== 'Shift') {
+                    typeTick();
+                  }
+                }}
+                rows={1}
+                maxLength={QUESTION_MAX + 40}
+                aria-label={t('askLabel')}
+                enterKeyHint="done"
+              />
+              {empty && !focused && (
+                <p className="ask-ghost" aria-hidden>
+                  {t('askGhost')}
+                  <span className="ask-caret" />
+                </p>
+              )}
+            </div>
+
+            {focused && (
+              <button
+                type="button"
+                className="ask-done-pill"
+                onMouseDown={(e) => e.preventDefault()}
+                onTouchEnd={dismiss}
+                onClick={dismiss}
+                aria-label={t('askDone')}
+              >
+                <span className="ask-done-check" aria-hidden="true">✓</span>
+                <span>{t('askDone')}</span>
+              </button>
+            )}
+          </EmaChrome>
+        </div>
+
+        {length > QUESTION_MAX - 20 && (
+          <p className={`ask-counter${length > QUESTION_MAX ? ' over' : ''}`}>
+            {length} / {QUESTION_MAX}
+          </p>
+        )}
+      </div>
+    </>
   );
 }

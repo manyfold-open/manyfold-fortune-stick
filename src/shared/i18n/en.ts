@@ -40,6 +40,7 @@ export const en = {
   /* ── asking ── */
   askLabel: 'What would you like to ask?',
   askGhost: 'Write down the thing on your mind',
+  askDone: 'Done',
   emaCaption: 'EMA · MAKE A WISH',
   /* 例句寫短：手機上一句要擠進一塊木札（約 290px），太長會折兩行、三塊疊起來把籤筒擠小 */
   example1: 'How do I face the changes at work?',
