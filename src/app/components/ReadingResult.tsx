@@ -73,6 +73,7 @@ export default function ReadingResult(props: {
 
           {!interpretation && props.interpreting && (
             <article className="sheet sheet-loading" data-lang={reading.language}>
+              <p className="sheet-band" aria-hidden>{sheet.sheetBand}</p>
               <div className="interpreting-header">
                 <span className="interpreting-spinner" aria-hidden="true" />
                 <p className="interpreting-status">
@@ -111,6 +112,7 @@ export default function ReadingResult(props: {
 
           {interpretation && (
             <article className={`sheet${props.interpreting ? ' sheet-loading' : ''}`} data-lang={reading.language}>
+              <p className="sheet-band" aria-hidden>{sheet.sheetBand}</p>
               {isFallback && (
                 <p className="sheet-note">
                   {reading.error ? storedErrorText(reading.error, t) : t('fallbackNote')}{' '}

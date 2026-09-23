@@ -3360,3 +3360,190 @@ code {
   transform: translateY(-1px);
   box-shadow: inset 0 0 0 1px rgba(255, 236, 214, 0.3), 0 5px 10px rgba(120, 30, 20, 0.34);
 }
+
+/*
+ * ── 解籤續頁：御神籤的第二頁 ──
+ * 使用者：「下方這解籤分析也還沒改」。同一種和紙、朱紅細框、頂上一條「解 签」帶；
+ * 小標題改朱紅圓體加櫻花小印；動作是木札，「再求一签」是朱紅漆木札。
+ * 全掛在 .result 底下：印表機走紙那些地方不受影響。
+ */
+.result {
+  --seal: #c0321f;
+  --seal-deep: #9e2517;
+  --sakura-mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-10 -10 20 20'%3E%3Cg fill='%23c0321f'%3E%3Cellipse cy='-5' rx='3.4' ry='4.8'/%3E%3Cellipse cy='-5' rx='3.4' ry='4.8' transform='rotate(72)'/%3E%3Cellipse cy='-5' rx='3.4' ry='4.8' transform='rotate(144)'/%3E%3Cellipse cy='-5' rx='3.4' ry='4.8' transform='rotate(216)'/%3E%3Cellipse cy='-5' rx='3.4' ry='4.8' transform='rotate(288)'/%3E%3C/g%3E%3Ccircle r='1.6' fill='%23fbf3e6'/%3E%3C/svg%3E");
+}
+
+.result .sheet {
+  padding: 0 22px 20px;
+  outline: 1px solid color-mix(in srgb, var(--seal) 70%, transparent);
+  outline-offset: -5px;
+}
+
+/* 撕線拿掉：這是另一張紙，不是同一卷 */
+.result .sheet::before { display: none; }
+
+.result .sheet-band {
+  margin: 0 -22px 18px;
+  padding: 6px 0 5px;
+  background: linear-gradient(180deg, var(--seal), var(--seal-deep));
+  color: #fbf3e6;
+  text-align: center;
+  font: 700 13px/1.2 var(--serif);
+  letter-spacing: 0.6em;
+  text-indent: 0.6em;
+}
+
+.result .sheet[data-lang='en'] .sheet-band {
+  font-family: var(--serif-en);
+  letter-spacing: 0.4em;
+  text-indent: 0.4em;
+}
+
+.result .sheet-block h3,
+.result .sheet[data-lang='en'] .sheet-block h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 6px;
+  font: 700 11.5px/1.3 "Yuanti SC", "Yuanti TC", "Hiragino Maru Gothic ProN", "PingFang SC", sans-serif;
+  letter-spacing: 0.2em;
+  text-transform: none;
+  color: var(--seal);
+}
+
+.result .sheet-block h3::before {
+  content: '';
+  flex: none;
+  width: 11px;
+  height: 11px;
+  background: var(--sakura-mark) center / contain no-repeat;
+}
+
+.result .sheet-block-lead {
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid color-mix(in srgb, var(--seal) 35%, transparent);
+}
+
+.result .sheet-lead {
+  font-size: 19px !important;
+}
+
+.result .sheet-pair {
+  gap: 0;
+}
+
+.result .sheet-pair > .sheet-block:first-child:not(:last-child) {
+  padding-right: 14px;
+  border-right: 1px solid color-mix(in srgb, var(--seal) 28%, transparent);
+}
+
+.result .sheet-pair > .sheet-block + .sheet-block {
+  padding-left: 14px;
+}
+
+@media (max-width: 440px) {
+  .result .sheet-pair > .sheet-block:first-child:not(:last-child) {
+    padding: 0 0 12px;
+    border-right: 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--seal) 28%, transparent);
+  }
+  .result .sheet-pair > .sheet-block + .sheet-block { padding: 12px 0 0; }
+}
+
+/* agent 沒連上：淡朱紅便條，「重试解签」是小木札 */
+.result .sheet-note {
+  padding: 10px 12px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--seal) 7%, var(--paper));
+  border: 1px solid color-mix(in srgb, var(--seal) 22%, transparent);
+  color: var(--seal-deep);
+}
+
+/* 木札：續頁裡所有一般動作 */
+.result .sheet-note .text-action,
+.result .result-actions .text-action,
+.result .share-head .text-action,
+.result .quick-asks .text-action,
+.result .followup-composer .text-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, var(--wood-hi), var(--wood));
+  box-shadow: inset 0 0 0 1px var(--wood-edge), 0 2px 4px rgba(92, 62, 32, 0.16);
+  color: var(--wood-ink);
+  font-family: var(--serif);
+  font-size: 13.5px;
+  letter-spacing: 0.08em;
+  opacity: 0.95;
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.result .result-actions .text-action {
+  font-size: 14.5px;
+  padding: 6px 14px;
+}
+
+/* 朱紅漆木札：再求一签、生成并分享 */
+.result .result-actions .text-action.strong,
+.result .share-panel .text-action.strong {
+  display: inline-flex;
+  padding: 6px 18px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #cc412b, #a52a1b);
+  box-shadow: inset 0 0 0 1px rgba(255, 236, 214, 0.25), 0 3px 7px rgba(120, 30, 20, 0.28);
+  color: #fbf3e6;
+  font-family: var(--serif);
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  opacity: 1;
+  text-decoration: none;
+}
+
+.result :is(.sheet-note, .result-actions, .share-head, .quick-asks, .followup-composer, .share-panel) .text-action:hover:not(:disabled),
+.result :is(.sheet-note, .result-actions, .share-head, .quick-asks, .followup-composer, .share-panel) .text-action:focus-visible {
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+
+.result .result-actions {
+  gap: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--seal) 30%, transparent);
+}
+
+.result :is(.share-panel, .followup) {
+  border-top: 1px solid color-mix(in srgb, var(--seal) 30%, transparent);
+}
+
+/* 分享／追問的小標跟續頁同一種 */
+.result .share-head > :first-child {
+  font: 700 13px/1.3 "Yuanti SC", "Yuanti TC", "Hiragino Maru Gothic ProN", "PingFang SC", sans-serif;
+  letter-spacing: 0.2em;
+  color: var(--seal);
+}
+
+.result .check input { accent-color: var(--seal); }
+
+.result .bubble::before { color: var(--seal); }
+
+.result .followup-ticket-summary {
+  background: linear-gradient(180deg, var(--wood-hi), var(--wood));
+  border-color: color-mix(in srgb, var(--wood-edge) 60%, transparent);
+}
+
+.result .ticket-idx {
+  color: var(--seal);
+  background: color-mix(in srgb, var(--seal) 12%, transparent);
+}
+
+/* 解籤中 */
+.result .interpreting-spinner { border-top-color: var(--seal); }
+.result .interpreting-status { color: var(--seal); }
+.result .interpreting-header { border-bottom-color: color-mix(in srgb, var(--seal) 30%, transparent); }
+.result .sheet-loading::after {
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--seal) 80%, transparent) 50%, transparent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--seal) 45%, transparent);
+}

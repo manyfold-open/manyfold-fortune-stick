@@ -61,6 +61,8 @@ export const zh = {
   retryInterpret: '重试解签',
   retrying: '重试中…',
   fallbackNote: '这次没能结合你的问题解读。',
+  /** 解籤續頁頂上那條朱紅帶。跟四個小標題一樣，跟這一局的語言走。 */
+  sheetBand: '解 签',
   blockMeaning: '一句话签意',
   blockAnswer: '回应你的问题',
   blockNotice: '值得留意',

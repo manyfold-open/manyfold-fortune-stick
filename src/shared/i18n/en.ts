@@ -57,6 +57,8 @@ export const en = {
   retryInterpret: 'Try reading again',
   retrying: 'Retrying…',
   fallbackNote: 'This one could not be read against your question.',
+  /** 解籤續頁頂上那條朱紅帶。跟四個小標題一樣，跟這一局的語言走。 */
+  sheetBand: 'READING',
   blockMeaning: 'What the stick says',
   blockAnswer: 'On your question',
   blockNotice: 'Worth noticing',
