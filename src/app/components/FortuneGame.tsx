@@ -349,10 +349,8 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
         aria-hidden={typed !== 0}
         data-lang={props.prefs.language}
       >
-        {[t('example1'), t('example2'), t('example3')].map((example, i) => (
+        {[t('example1'), t('example2'), t('example3')].map((example) => (
           <li key={example}>
-            {/* 橫排時句子之間的間隔點；直排時藏起來（styles.css） */}
-            {i > 0 && <span className="suggest-dot" aria-hidden>·</span>}
             <button
               type="button"
               className="text-action"
