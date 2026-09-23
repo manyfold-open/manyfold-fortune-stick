@@ -16,7 +16,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { AppState } from '../shared/types';
 import { api, onUnauthorized } from './api';
-import AmbientMotes from './components/AmbientMotes';
 import FortuneGame from './components/FortuneGame';
 import HistoryView from './components/HistoryView';
 import PasswordGate from './components/PasswordGate';
@@ -156,8 +155,8 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
 
   return (
     <main className={`shell${prefs.reducedMotion ? ' calm' : ''}`}>
-      {/* 求籤頁與求籤記錄是同一座神社（鳥居、櫻花瓣）；設定與隱私頁留著原本的浮塵 */}
-      {route === 'game' || route === 'history' ? <ShrineBackdrop calm={prefs.reducedMotion} /> : <AmbientMotes reducedMotion={prefs.reducedMotion} />}
+      {/* 神社（鳥居、注連繩、落櫻花瓣）貫穿整個御神籤體驗，任何頁面皆沉浸如初 */}
+      <ShrineBackdrop calm={prefs.reducedMotion} />
       <header className="topbar">
         <a
           className="brand"

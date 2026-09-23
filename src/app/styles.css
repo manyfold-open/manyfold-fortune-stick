@@ -101,6 +101,7 @@ html, body {
 
 .shell {
   position: relative;
+  isolation: isolate;
   max-width: 1120px;
   margin: 0 auto;
   padding: max(20px, env(safe-area-inset-top, 20px)) max(28px, calc(env(safe-area-inset-right, 0px) + 24px)) max(32px, calc(env(safe-area-inset-bottom, 0px) + 24px)) max(28px, calc(env(safe-area-inset-left, 0px) + 24px));
