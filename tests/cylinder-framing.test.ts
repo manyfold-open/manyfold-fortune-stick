@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import * as F from '../src/shared/cylinder/framing';
 import * as G from '../src/shared/cylinder/geometry';
 import * as P from '../src/shared/cylinder/pull';
+import { PICK_LIFT } from '../src/shared/cylinder/pick';
+import { SWIRL_MAX } from '../src/shared/cylinder/stir';
 
 const LANDSCAPE = 4 / 3;
 const PORTRAIT = 3 / 4;
@@ -34,21 +36,46 @@ const idleContent = (): Array<[number, number, number]> => {
   return pts;
 };
 
-const idleFrame = (a: number) => {
-  const cam: V3 = [0, F.IDLE_LOOK_Y, F.idleCameraZ(a)];
-  const look: V3 = [0, F.IDLE_LOOK_Y, 0];
-  return idleContent().map((p) => project(p as V3, cam, look, [0, 1, 0], a));
+/**
+ * 攪的時候籤頭會跑到哪 —— 同樣獨立重算：籤頭被手撥高 PICK_LIFT（沿籤軸），籤束繞筒的垂直軸
+ * 轉到 ±SWIRL_MAX（FortuneCylinder3D 的 place()）。往前轉的籤頭離鏡頭更近，投影更大。
+ */
+const stirContent = (): Array<[number, number, number]> => {
+  const pts: Array<[number, number, number]> = [];
+  for (let i = 0; i < G.STICK_COUNT; i += 1) {
+    const p = G.stickPose(G.bundleSlot(i));
+    const hc = G.STICK_LEN / 2 + G.STICK_HEAD_GAP + PICK_LIFT;
+    for (const phi of [-SWIRL_MAX, 0, SWIRL_MAX]) {
+      const c = Math.cos(phi);
+      const sn = Math.sin(phi);
+      for (const [dx, dy, dz] of [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]]) {
+        const R = G.STICK_HEAD_R;
+        const x = p.cx + p.ax * hc + dx * R;
+        const z = p.cz + p.az * hc + dz * R;
+        pts.push([G.RIG_X + x * c + z * sn, G.RIG_Y + p.cy + p.ay * hc + dy * R, -x * sn + z * c]);
+      }
+    }
+  }
+  return pts;
 };
 
+const frameOf = (pts: Array<[number, number, number]>, a: number) => {
+  const cam: V3 = [0, F.IDLE_LOOK_Y, F.idleCameraZ(a)];
+  const look: V3 = [0, F.IDLE_LOOK_Y, 0];
+  return pts.map((p) => project(p as V3, cam, look, [0, 1, 0], a));
+};
+const idleFrame = (a: number) => frameOf(idleContent(), a);
+
 describe('待机镜头该站多远', () => {
-  it('任何長寬比，整支籤筒連籤頭都在畫面裡，四邊留一成白 —— **含透視**', () => {
+  it('任何長寬比，整支籤筒連籤頭都在畫面裡，連攪到最極端都不切 —— **含透視**', () => {
     // 上一輪量到下緣只剩 2%：舊算法拿世界尺寸去比樞軸那個距離的視野，
-    // 忘了杯身正面比樞軸更靠近鏡頭，投影出來會更大
+    // 忘了杯身正面比樞軸更靠近鏡頭，投影出來會更大。
+    // 待機余裕只留 IDLE_MARGIN（2%）：攪動的極端（撥高＋轉）也要落在裡面，不然攪的時候籤頭會被切
     for (const a of ASPECTS) {
-      for (const q of idleFrame(a)) {
+      for (const q of [...idleFrame(a), ...frameOf(stirContent(), a)]) {
         expect(q.depth).toBeGreaterThan(0);
-        expect(Math.abs(q.y), `aspect ${a} 縱向`).toBeLessThanOrEqual(1 / F.MARGIN + 1e-9);
-        expect(Math.abs(q.x), `aspect ${a} 橫向`).toBeLessThanOrEqual(1 / F.MARGIN + 1e-9);
+        expect(Math.abs(q.y), `aspect ${a} 縱向`).toBeLessThanOrEqual(1 / F.IDLE_MARGIN + 1e-9);
+        expect(Math.abs(q.x), `aspect ${a} 橫向`).toBeLessThanOrEqual(1 / F.IDLE_MARGIN + 1e-9);
       }
     }
   });

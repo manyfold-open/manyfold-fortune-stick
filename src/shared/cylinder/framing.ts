@@ -31,18 +31,30 @@ import {
   cupRadius,
   stickPose,
 } from './geometry';
+import { PICK_LIFT } from './pick';
 import { PULL_END, pullPose, riseProgress } from './pull';
+import { SWIRL_MAX } from './stir';
 
 /** 与 scene.ts 的 PerspectiveCamera 一致的垂直视角（度）。 */
 export const FOV_DEG = 32;
 
 /**
- * 画面边缘要留多少余裕。
+ * 近拍（拿著看那一鏡）画面边缘要留多少余裕。
  *
- * 1.0 = 籤筒刚好贴满整个画布，四边都擦着边 —— 那正是「被框住、被切掉」的观感。
+ * 1.0 = 籤刚好贴满整个画布，四边都擦着边 —— 那正是「被框住、被切掉」的观感。
  * 留一成，它才像放在页面上，而不是塞在一个盒子里。
  */
 export const MARGIN = 1.1;
+
+/**
+ * 待機鏡頭的余裕。使用者：「籤筒可以再大一點」。
+ *
+ * 以前待機也留一成，那一成其實是在替「攪的時候籤會動」預留 —— 但攪動算下來只多用了 0.4%
+ * （籤頭撥高 PICK_LIFT、籤束轉 SWIRL_MAX 最多到 0.913，靜止 0.909）。現在把這兩個極端直接
+ * 算進 CONTENT，余裕只留 2%：籤筒大約大 7%，攪到最極端也不會被切。
+ * 畫布本身是透明的、四周沒有框，貼近畫布邊緣看不出「被塞在盒子裡」。
+ */
+export const IDLE_MARGIN = 1.02;
 
 /** 杯口那圈領子比杯身寬多少（跟 scene.ts 的 collar 一致）。 */
 const COLLAR = 1.055;
@@ -50,29 +62,47 @@ const COLLAR = 1.055;
 /**
  * 待機時畫面裡所有會被看到的點（世界座標）：杯身外緣上下兩圈，外加每支籤頭圓盤的
  * 外接盒八個角。用外接盒而不是圓盤本身，是寧可多留一點白，也不要算漏一角。
+ *
+ * REST 是靜止時的；CONTENT 再加上攪動的極端 —— 籤頭被手撥高 PICK_LIFT、籤束繞筒軸轉到
+ * ±SWIRL_MAX（跟 FortuneCylinder3D 的 place() 一樣繞垂直軸轉，往前轉的籤頭離鏡頭更近、投影更大）。
  */
+const REST: Array<[number, number, number]> = [];
 const CONTENT: Array<[number, number, number]> = [];
 for (let k = 0; k < 96; k += 1) {
   const th = (k / 96) * Math.PI * 2;
   const r = cupRadius(th) * COLLAR;
-  for (const y of [0, TUBE_H]) CONTENT.push([RIG_X + Math.cos(th) * r, RIG_Y + y, Math.sin(th) * r]);
+  for (const y of [0, TUBE_H]) {
+    const pt: [number, number, number] = [RIG_X + Math.cos(th) * r, RIG_Y + y, Math.sin(th) * r];
+    REST.push(pt);
+    CONTENT.push(pt);
+  }
 }
 for (let i = 0; i < STICK_COUNT; i += 1) {
   const p = stickPose(bundleSlot(i));
-  const hc = STICK_LEN / 2 + STICK_HEAD_GAP;
-  const hx = RIG_X + p.cx + p.ax * hc;
-  const hy = RIG_Y + p.cy + p.ay * hc;
-  const hz = p.cz + p.az * hc;
-  for (const dx of [-1, 1]) for (const dy of [-1, 1]) for (const dz of [-1, 1]) {
-    CONTENT.push([hx + dx * STICK_HEAD_R, hy + dy * STICK_HEAD_R, hz + dz * STICK_HEAD_R]);
+  for (const lift of [0, PICK_LIFT]) {
+    for (const phi of [0, -SWIRL_MAX, SWIRL_MAX]) {
+      const hc = STICK_LEN / 2 + STICK_HEAD_GAP + lift;
+      const c = Math.cos(phi);
+      const sn = Math.sin(phi);
+      for (const dx of [-1, 1]) for (const dy of [-1, 1]) for (const dz of [-1, 1]) {
+        const x = p.cx + p.ax * hc + dx * STICK_HEAD_R;
+        const z = p.cz + p.az * hc + dz * STICK_HEAD_R;
+        const pt: [number, number, number] = [RIG_X + x * c + z * sn, RIG_Y + p.cy + p.ay * hc + dy * STICK_HEAD_R, -x * sn + z * c];
+        CONTENT.push(pt);
+        if (lift === 0 && phi === 0) REST.push(pt);
+      }
+    }
   }
 }
 
-/** 待機鏡頭平視的高度：內容上下緣的正中間，籤筒才會在畫面裡上下置中。 */
+/** 靜止時畫面裡會被看到的點（測試用：待機鏡頭要把它們全部框住） */
+export const IDLE_REST_CONTENT: ReadonlyArray<readonly [number, number, number]> = REST;
+
+/** 待機鏡頭平視的高度：靜止時內容上下緣的正中間，籤筒才會在畫面裡上下置中。 */
 export const IDLE_LOOK_Y = (() => {
   let lo = Infinity;
   let hi = -Infinity;
-  for (const [, y] of CONTENT) {
+  for (const [, y] of REST) {
     lo = Math.min(lo, y);
     hi = Math.max(hi, y);
   }
@@ -87,10 +117,10 @@ export function idleCameraZ(aspect: number): number {
   const a = Number.isFinite(aspect) && aspect > 0 ? Math.min(4, Math.max(0.25, aspect)) : 1;
   const t = Math.tan((FOV_DEG / 2) * (Math.PI / 180));
   // 鏡頭在 (0, IDLE_LOOK_Y, d) 平視 -z：一點 (x, y, z) 的 NDC 是 x / ((d - z)·t·a)。
-  // 要 |NDC| ≤ 1/MARGIN，逐點解出 d 的下限，取最大
+  // 要 |NDC| ≤ 1/IDLE_MARGIN，逐點解出 d 的下限，取最大
   let d = 0;
   for (const [x, y, z] of CONTENT) {
-    d = Math.max(d, (Math.abs(y - IDLE_LOOK_Y) * MARGIN) / t + z, (Math.abs(x) * MARGIN) / (t * a) + z);
+    d = Math.max(d, (Math.abs(y - IDLE_LOOK_Y) * IDLE_MARGIN) / t + z, (Math.abs(x) * IDLE_MARGIN) / (t * a) + z);
   }
   return d;
 }
