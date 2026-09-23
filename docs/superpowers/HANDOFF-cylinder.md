@@ -1,6 +1,6 @@
 # 籤筒 v3 交接（2026-09-23）
 
-分支 `feat/3d-cylinder-rebuild`。**202 個測試全過**（14 個檔），`tsc -b` 與 `npm run check` 通過。
+分支 `feat/3d-cylinder-rebuild`。**213 個測試全過**（15 個檔），`tsc -b` 與 `npm run check` 通過。
 設計文件：[`specs/2026-09-22-cylinder-stir-design.md`](specs/2026-09-22-cylinder-stir-design.md)。
 只在本機做，還沒上線（部署是手動的，見 AGENTS.md）。
 
@@ -24,6 +24,7 @@
 |---|---|
 | `geometry.ts` | 杯身尺寸與截面、**三排扇形**排布（`bundleSlot` / `stickPose`）、被拿起來那支 `PULL_INDEX`、杯身貼圖的弧長 UV（`cupArcU`） |
 | `stir.ts` | 手 → 籤束轉角、強度、攪動量（取代 v2 的 `shake.ts` + `aim.ts`） |
+| `pick.ts` | 攪的時候手撥過哪支籤、那支被撥起來多高；換一支響一聲（「挑到每一支籤」） |
 | `bundle.ts` | 攪的時候籤上下推擠（v2 的棘輪爬升、中籤那支自己爬出去都拿掉了）；放手後其他籤歇下來 `settleStep` |
 | `pull.ts` | 拿籤的時間軸與路徑（單峰 `surge`）、號碼淡入 `numberFade`、旁邊籤被帶動、**聲音 cue**（`pullCues`） |
 | `framing.ts` | 待機鏡頭（含透視）、近拍 `closeUpShot`、拿籤全程鏡頭 `pullCamera`（推近／視線兩個通道） |
@@ -58,7 +59,9 @@
    前排 7 支正面一字排開，中排錯開半格從縫裡探出來。
 8. **待機鏡頭下緣只剩 2%。** 舊算法拿世界尺寸比注視點深度的視野，忘了杯身正面比注視點更靠近鏡頭。
    正解：`idleCameraZ` 逐點用它自己的深度算。
-9. **畫布填滿首屏**由組件量：視窗高 − 畫布頂端 − 下方提示區（CSS 量不到上面還有多少東西）。
+9. **畫布填滿首屏**交給 CSS flex（`.shell:has(.cyl3d-stage)` 釘成一個螢幕高，剩下的給畫布）。
+   以前組件用 JS 量「視窗高 − 畫布頂端 − 提示區」，量不到畫布**下面**的例句和頁腳，
+   它們永遠被推到折線以下，要捲動才看得到。
 10. **分段 ease 接縫處速度歸零 = 頓。** 每段各自先慢後快再慢，接起來就是停一下再走。
    要動的東西用一條曲線走完，其他動作寫成那條曲線的函數疊上去；測試驗速度單峰。
 11. **揭曉那一格才畫畫布、傳貼圖一定掉幀。** 號碼那一面在伺服器回號碼時就先做好、
@@ -66,10 +69,15 @@
 
 ## 下一步（新 session 從這裡接）
 
-拿籤到看籤的絲滑化已做完（計畫與前後對照在
-[`plans/2026-09-23-cylinder-pull-smoothing.md`](plans/2026-09-23-cylinder-pull-smoothing.md)）。
-**等使用者在真瀏覽器上試過再說好不好** —— 使用者這台 Mac 的 swap 接近滿，掉幀也會一頓一頓，
-判斷前先請他關掉幾個大 app。
+使用者試過絲滑化之後說「手感更好、方向正確」，接著要了三件，已做完、**等使用者再試**：
+
+1. **一個螢幕看完、不用捲**：CSS flex 撐畫布（見坑 9）；題目框收小（字 24px、框距 12px）；
+   例句寬螢幕排成一行。1000×640、1440×900、375×812 實測 `scrollHeight == innerHeight`。
+2. **攪動更明顯、「挑到每一支籤」**：`pick.ts` —— 手經過哪支籤頭（投影到畫面的 x），那支沿籤軸
+   被撥起 ≤0.6，兩旁少一點，換一支響一聲 `bambooRustle(2)`（35ms 節流）；另外搖晃加大
+   （0.06 → 0.11×強度）、`JOSTLE_GAIN` 0.8 → 1.3、`PX_PER_RAD` 300 → 230。
+   放手時被拿那支已經被撥高的量由 `heldOffset` 接住、隨上升進度收掉，不會先往下掉。
+3. **籤筒更胖更寬**：`TUBE_ASPECT` 1.4 → 1.2（1.15 那版像罐子，所以沒再低）。
 
 還沒做：擲筊確認；`src/app/roll/scene.ts` 的 `PCFSoftShadowMap` 警告（使用者說先擱著）。
 
@@ -83,7 +91,9 @@
   pointer 事件要在推時間的 hook 裡發（組件用 `performance.now()` 算手速）。
   組件內部從 canvas 的 `__reactFiber` 往上找 `FortuneCylinder3D`，hooks[1] 是 sceneRef（rig），
   有 `motions` 的那個 ref 是 Drive。
-- **面板在背景時截圖會是舊畫面**：截圖前先呼叫一次 `rig.render()`。像素量測則在同一個 task 裡
+- **面板在背景時截圖會是舊畫面**：截圖前先呼叫一次 `rig.render()`，有時要 render 完**再截第二次**
+  才會更新。改過視窗大小（`resize_window`）之後畫布會被清空、rAF 又被節流，看起來籤筒不見了 ——
+  不是 bug，墊好虛擬時鐘、重掛組件再看。像素量測則在同一個 task 裡
   `render()` 完馬上 `readPixels`。
 - 想看某個角落：停住 frame loop 後直接改 `rig.camera` 位置再 `render()`（v3 平頂方塊就是這樣抓到的）。
 

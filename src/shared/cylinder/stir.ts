@@ -35,8 +35,8 @@ const WORK_RATE = 20;
 
 /** 籤束最多轉多少（弧度，約 31°）。再轉籤頭就變側面了。 */
 export const SWIRL_MAX = 0.55;
-/** 手的水平速度多少 px/s 對應籤束每秒轉 1 弧度。 */
-const PX_PER_RAD = 300;
+/** 手的水平速度多少 px/s 對應籤束每秒轉 1 弧度。300 時使用者覺得攪動感不夠明顯。 */
+const PX_PER_RAD = 230;
 /** 按著的時候：籤束往手的轉速靠攏的速率，與把它拉回正面的弱彈簧。 */
 const FOLLOW = 8;
 const K_HELD = 6;
@@ -46,8 +46,8 @@ const C_FREE = 2 * Math.sqrt(K_FREE);
 /** 手的轉速訊號在沒有新移動時衰減得多快（半衰期，秒）。 */
 const HAND_HALFLIFE = 0.08;
 /** 籤束轉速變化 → 籤上下推擠的加速度。 */
-const JOSTLE_GAIN = 0.8;
-const JOSTLE_MAX = 38;
+const JOSTLE_GAIN = 1.3;
+const JOSTLE_MAX = 50;
 
 export interface StirState {
   /** 籤束繞筒軸轉了多少（弧度）。正值 = 正面往 +x（畫面右邊）轉。 */

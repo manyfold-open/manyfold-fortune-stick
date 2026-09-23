@@ -29,9 +29,11 @@ import {
   stepStir,
   type StirState,
 } from '../../shared/cylinder/stir';
+import { createPick, headSpacing, stepPick, type PickState } from '../../shared/cylinder/pick';
 import {
   PULL_INDEX,
   STICK_COUNT,
+  STICK_HEAD_GAP,
   STICK_LEN,
   STICK_T,
   STICK_W,
@@ -47,6 +49,7 @@ import {
   numberFade,
   pullCues,
   pullPose,
+  riseProgress,
 } from '../../shared/cylinder/pull';
 import { createCylinderScene, type CylinderScene } from '../cylinder/scene';
 import { STICK_VARIANTS, createNumberedStickCanvas } from '../cylinder/materials';
@@ -83,6 +86,14 @@ interface Drive {
   cueMs: number;
   /** 手勢 → 籤束轉角、強度與攪動量 —— 邏輯在 shared/cylinder/stir.ts，那邊有測試釘著。 */
   stir: StirState;
+  /** 手撥過哪支籤、那支被撥起來多高（shared/cylinder/pick.ts）。 */
+  pick: PickState;
+  lastTick: number;
+  /**
+   * 放手那一刻被拿的那支已經被攪／撥起來多高。拿籤的路徑從籤底在原位算起，
+   * 不接住這一截的話一放手它會先往下掉一下。它隨上升進度收掉，高度照樣只升不降。
+   */
+  heldOffset: number;
   requested: boolean;
   /** 開始拿籤的時間。 */
   pullAt: number;
@@ -134,6 +145,9 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
     level: undefined,
     cueMs: -1,
     stir: createStir(),
+    pick: createPick(STICK_COUNT),
+    lastTick: 0,
+    heldOffset: 0,
     requested: false,
     pullAt: 0,
     numberFace: null,
@@ -170,26 +184,10 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
   }, [sheet]);
 
   /*
-   * ── 畫布填滿首屏剩下的高度 ──
-   *
-   * 螢幕越大籤筒就該越大（鏡頭距離由 framing.ts 依長寬比算，畫布多高籤筒就多大）。
-   * 但提示文字與進度條必須留在折線以上 —— 使用者要看得到「可以放手了」。
-   * CSS 量不到畫布上面還有多少東西，所以在這裡量：視窗高 − 畫布頂端 − 下方提示區。
+   * 畫布高度交給 CSS（styles.css 的 `.shell:has(.cyl3d-stage)`）：整頁一個螢幕高，
+   * 其他東西各自多高就多高，剩下的全給畫布。以前在這裡用 JS 量，量不到畫布下面的例句
+   * 和頁腳，結果它們永遠被推到折線以下。
    */
-  const actionRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    const host = hostRef.current;
-    if (!host) return;
-    const fit = (): void => {
-      const top = host.getBoundingClientRect().top + window.scrollY;
-      const below = (actionRef.current?.offsetHeight ?? 0) + 28;
-      const floor = window.innerWidth <= 640 ? 320 : 380;
-      host.style.height = `${Math.max(floor, Math.round(window.innerHeight - top - below))}px`;
-    };
-    fit();
-    window.addEventListener('resize', fit);
-    return () => window.removeEventListener('resize', fit);
-  }, []);
 
   /* ── 场景只建一次 ── */
   useEffect(() => {
@@ -211,6 +209,21 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
     const yawQ = new THREE.Quaternion();
     const pullSlot = bundleSlot(PULL_INDEX);
     const spin = new THREE.Quaternion();
+    const headV = new THREE.Vector3();
+    const heads = new Array<number>(STICK_COUNT).fill(0);
+    const frontRow = Array.from({ length: STICK_COUNT }, (_, i) => i).filter((i) => bundleSlot(i).row === 0);
+    const frontXs: number[] = [];
+    /** 每支籤頭現在落在畫布上的哪個 x（像素）—— 手在畫面上碰到哪支是這樣比出來的。 */
+    const projectHeads = (): void => {
+      const w = rig.renderer.domElement.clientWidth;
+      for (let i = 0; i < STICK_COUNT; i += 1) {
+        headV.set(0, STICK_LEN / 2 + STICK_HEAD_GAP, 0);
+        rig.sticks[i].mesh.localToWorld(headV);
+        heads[i] = ((headV.project(rig.camera).x + 1) / 2) * w;
+      }
+      frontXs.length = 0;
+      for (const i of frontRow) frontXs.push(heads[i]);
+    };
     /**
      * 籤束繞筒軸轉 phi：外圈轉得比內圈多一點點，整束才像被攪動的一團，不像一塊板子在轉。
      * 籤心、籤軸、朝向一起轉。
@@ -282,6 +295,19 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
         dr.numberTex = tex;
       }
 
+      // 手撥過哪支籤：只在攪的階段有手；拿籤的時候全部落回原位
+      const stirring = dr.stage === 'rest' || dr.stage === 'shaking';
+      let hand: number | null = null;
+      if (stirring && dr.dragging) {
+        hand = dr.pointerX - rig.renderer.domElement.getBoundingClientRect().left;
+        projectHeads();
+      }
+      const picked = stepPick(dr.pick, dt, hand, heads, headSpacing(frontXs), Math.min(1, 0.45 + sh.intensity));
+      if (picked && soundRef.current && now - dr.lastTick > 35) {
+        dr.lastTick = now;
+        bambooRustle(2);
+      }
+
       /* 1. 攪：筒內籤束。中籤那支不再自己往上爬（-1）—— 它是放手之後被「拿」起來的 */
       if (dr.stage === 'rest' || dr.stage === 'shaking') {
         stepBundle(dr.motions, dr.traits, dt, sh.jostle, sh.intensity);
@@ -290,8 +316,10 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
           const m = dr.motions[i];
           // 籤沿**自己的**軸滑動 —— 扇形散開之後每支的軸都不一樣；再跟著籤束繞筒軸轉
           const p = h.pose;
-          const q = place(h, p.cx + p.ax * m.y, p.cy + p.ay * m.y, p.cz + p.az * m.y, sh.phi);
-          const w = sh.intensity * 0.06;
+          const y = m.y + dr.pick.lift[i];
+          const q = place(h, p.cx + p.ax * y, p.cy + p.ay * y, p.cz + p.az * y, sh.phi);
+          // 攪得越兇籤越晃；被手撥到的那支多晃一點
+          const w = sh.intensity * 0.11 + dr.pick.lift[i] * 0.12;
           wobble.set(Math.sin(t * 9 + i) * w, 0, Math.cos(t * 11 + i * 1.7) * w);
           h.mesh.quaternion.setFromEuler(wobble).premultiply(q).multiply(h.baseQuat);
         }
@@ -299,6 +327,7 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
         if (dr.requested && dr.stickNo > 0 && !dr.dragging) {
           dr.stage = 'pulling';
           dr.pullAt = now;
+          dr.heldOffset = dr.motions[PULL_INDEX].y + dr.pick.lift[PULL_INDEX];
           dr.cueMs = -1;
           setStageLabel('pulling');
         }
@@ -320,6 +349,10 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
         }
         dr.cueMs = ms;
         const hp = pullPose(pullSlot, ms, calm);
+        const off = calm ? 0 : dr.heldOffset * (1 - riseProgress(ms));
+        hp.cx += hp.ax * off;
+        hp.cy += hp.ay * off;
+        hp.cz += hp.az * off;
         // 放手那一刻籤束可能還轉在一邊：拿起來那支跟著它一起轉回正面，才不會一放手就跳一下
         const hq = place(held, hp.cx, hp.cy, hp.cz, sh.phi);
         axisV.set(hp.ax, hp.ay, hp.az);
@@ -334,7 +367,7 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
           const h = rig.sticks[i];
           const m = dr.motions[i];
           settleStep(m, dt);
-          const lift = m.y + (calm ? 0 : neighborNudge(Math.hypot(h.x - pullSlot.x, h.z - pullSlot.z), ms));
+          const lift = m.y + dr.pick.lift[i] + (calm ? 0 : neighborNudge(Math.hypot(h.x - pullSlot.x, h.z - pullSlot.z), ms));
           const p = h.pose;
           const q = place(h, p.cx + p.ax * lift, p.cy + p.ay * lift, p.cz + p.az * lift, sh.phi);
           h.mesh.quaternion.copy(q).multiply(h.baseQuat);
@@ -481,7 +514,7 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
         tabIndex={disabled ? -1 : 0}
         aria-label={en ? 'Stir the sticks in the 3D fortune cylinder' : '攪動籤筒裡的籤'}
       />
-      <div className="roll-action-area" ref={actionRef}>
+      <div className="roll-action-area">
         {fault ? (
           <div className="roll-fault-pill" role="alert">
             <span className="fault-badge">{fault.code}</span>

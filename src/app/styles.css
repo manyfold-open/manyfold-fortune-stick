@@ -3106,6 +3106,85 @@ code {
   opacity: 0;
 }
 
+/*
+ * 籤筒在台上時整頁剛好一個螢幕高、不捲動：題目、籤筒、提示、例句、頁腳一次看完。
+ *
+ * 以前是組件用 JS 量「視窗高 − 畫布頂端 − 提示區」當畫布高度 —— 但例句和頁腳在畫布**下面**，
+ * 那樣量出來畫布永遠剛好把它們推到折線以下（使用者回饋：要往下滑才看得到例句和頁腳）。
+ * 現在交給 flex：shell 釘成一個螢幕高，其他東西各自多高就多高，剩下的全給畫布。
+ * 鏡頭距離由 framing.ts 依畫布長寬比算，畫布多大籤筒就多大，不會被切。
+ * 矮到 560px 以下就不硬塞了，讓頁面捲動。
+ */
+.shell:has(.cyl3d-stage) {
+  height: max(100dvh, 560px);
+  min-height: 0;
+}
+
+.shell:has(.cyl3d-stage) .stage {
+  min-height: 0;
+  justify-content: flex-start;
+  padding-bottom: 0;
+}
+
+.shell:has(.cyl3d-stage) .roll-slot,
+.cyl3d-stage {
+  flex: 1;
+  min-height: 0;
+}
+
+.cyl3d-stage .cyl3d-canvas-wrapper {
+  flex: 1;
+  height: auto;
+  min-height: 200px;
+}
+
+.cyl3d-stage .roll-action-area {
+  margin-top: 6px;
+}
+
+/* 題目框收小一點：畫面要留給籤筒。兩行照樣不跳（min-height 仍然裝得下兩行）。 */
+.shell:has(.cyl3d-stage) .ask-slot,
+.shell:has(.cyl3d-stage) .ask-slot.printed {
+  /* 兩行 24px × 1.6 + 上下 12px 的框距 ≈ 101 */
+  min-height: 104px;
+  padding: 0 0 4px;
+}
+
+.shell:has(.cyl3d-stage) .ask-zone {
+  --mark-len: 14px;
+  padding: 12px clamp(18px, 3vw, 32px);
+}
+
+.shell:has(.cyl3d-stage) .ask-zone:hover,
+.shell:has(.cyl3d-stage) .ask-zone:focus-within {
+  --mark-len: 18px;
+}
+
+.shell:has(.cyl3d-stage) .ask-grow > .ask-input,
+.shell:has(.cyl3d-stage) .ask-grow > .ask-ghost,
+.shell:has(.cyl3d-stage) .ask-grow::after {
+  font-size: clamp(19px, 3.6vw, 24px);
+  line-height: 1.6;
+}
+
+/* 例句寬螢幕上排成一行，省下兩行高度給籤筒 */
+.shell:has(.cyl3d-stage) .suggest-slot {
+  padding-top: 4px;
+}
+
+@media (min-width: 721px) {
+  .shell:has(.cyl3d-stage) .suggestions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    column-gap: 28px;
+  }
+}
+
+.shell:has(.cyl3d-stage) .footer {
+  padding-top: 10px;
+}
+
 .cyl3d-canvas-wrapper:active {
   cursor: grabbing;
 }

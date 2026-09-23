@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest';
 import * as G from '../src/shared/cylinder/geometry';
 
 describe('签筒比例', () => {
-  it('高径比回到 1.4 左右 —— 參考圖本身約 1.5；「胖」交給杯面圖案撐滿與圓角，不是把杯子壓成罐子', () => {
+  it('高径比 1.2 左右 —— 使用者要比 1.4 更胖更寬，但別壓成 1.15 那種罐子', () => {
     const ratio = G.TUBE_H / (2 * G.TUBE_R_OUT);
-    expect(ratio).toBeGreaterThan(1.3);
-    expect(ratio).toBeLessThan(1.5);
+    expect(ratio).toBeGreaterThan(1.16);
+    expect(ratio).toBeLessThan(1.3);
   });
 
   it('要矮胖是靠**加粗**，不是压矮 —— 筒高是物理尺度的基准', () => {
