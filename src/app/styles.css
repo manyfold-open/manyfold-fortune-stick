@@ -3318,7 +3318,7 @@ code {
 
 /* 結果頁：繪馬、籤紙、漆木札、解籤續頁各自是場景裡的物件，不再是一整卷紙 */
 .sheet-stack {
-  max-width: 400px;
+  max-width: 380px;
   background: none;
   box-shadow: none;
   display: flex;
@@ -3326,9 +3326,10 @@ code {
   gap: 18px;
 }
 
-/* 選擇器要比繪馬共用那條（:is(.shell:has(.cyl3d-stage) .ask-zone, …) 三個 class）重，寬度才蓋得過去 */
+/* 選擇器要比繪馬共用那條（:is(.shell:has(.cyl3d-stage) .ask-zone, …) 三個 class）重，寬度才蓋得過去。
+   繪馬跟下面那張紙一樣寬，掛在它正上方 —— 寬度不一樣時看起來是三段各自為政 */
 .result .sheet-stack .ema-card {
-  width: min(360px, 100%);
+  width: 100%;
   margin: 26px auto 0;
 }
 
@@ -3546,4 +3547,48 @@ code {
 .result .sheet-loading::after {
   background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--seal) 80%, transparent) 50%, transparent);
   box-shadow: 0 0 8px color-mix(in srgb, var(--seal) 45%, transparent);
+}
+
+/*
+ * 籤紙與解籤接成同一張長紙條（ReadingResult 的 .omikuji）。
+ * 外框、陰影、紙色都畫在這一層；裡面的籤紙與續頁拿掉自己的框，「解 签」帶變成紙中間的分段。
+ */
+.omikuji {
+  --seal: #c0321f;
+  position: relative;
+  width: 100%;
+  background: var(--paper);
+  border: 2px solid var(--seal);
+  box-shadow: 0 3px 8px rgba(38, 26, 18, 0.08), 0 16px 36px rgba(38, 26, 18, 0.16);
+}
+
+.omikuji::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border: 1px solid color-mix(in srgb, var(--seal) 70%, transparent);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.omikuji .slip,
+.sheet-stack .omikuji .slip {
+  width: 100%;
+  border: 0;
+  box-shadow: none;
+}
+
+.omikuji .slip::before { display: none; }
+
+.omikuji .sheet,
+.result .omikuji .sheet {
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+  padding: 4px 22px 22px;
+}
+
+/* 分段帶跟籤紙表頭那條同寬：籤紙內距 12px，續頁內距 22px，往外推 10px */
+.result .omikuji .sheet-band {
+  margin: 0 -10px 18px;
 }
