@@ -121,6 +121,7 @@ export const en = {
   historyActionLabel: 'One small thing you can do: ',
 
   /* ── privacy & data ── */
+  privacyBadge: 'SHRINE · PRIVACY',
   privacyTitle: 'Privacy & data',
   privacyIntro:
     'This deployment does not use cookies, advertising trackers, pixels, or analytics. The notes below describe what this code actually stores and sends.',

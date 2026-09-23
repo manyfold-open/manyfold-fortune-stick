@@ -17,54 +17,75 @@ export default function PrivacyView() {
 
   return (
     <section className="panel privacy">
-      <h2>{t('privacyTitle')}</h2>
-      <p className="muted">{t('privacyIntro')}</p>
+      <div className="privacy-card">
+        <header className="privacy-head">
+          <span className="privacy-badge">{t('privacyBadge')}</span>
+          <h2>{t('privacyTitle')}</h2>
+          <div className="privacy-divider" />
+        </header>
 
-      <h3>{t('privacyStoredTitle')}</h3>
-      <ul>
-        <li>{t('privacyStoredRecords')}</li>
-        <li>{t('privacyStoredPrefs')}</li>
-        <li>{t('privacyStoredPassword')}</li>
-      </ul>
+        <p className="privacy-intro">{t('privacyIntro')}</p>
 
-      <h3>{t('privacyServerTitle')}</h3>
-      <ul>
-        <li>{t('privacyServerReadings')}</li>
-        <li>{t('privacyServerAgents')}</li>
-        <li>{t('privacyServerRetention')}</li>
-      </ul>
+        <div className="privacy-section">
+          <h3>{t('privacyStoredTitle')}</h3>
+          <ul>
+            <li>{t('privacyStoredRecords')}</li>
+            <li>{t('privacyStoredPrefs')}</li>
+            <li>{t('privacyStoredPassword')}</li>
+          </ul>
+        </div>
 
-      <h3>{t('privacyThirdPartyTitle')}</h3>
-      <ul>
-        <li>{t('privacyManyfold')}</li>
-        <li>{t('privacyFonts')}</li>
-        <li>{t('privacyCloudflare')}</li>
-      </ul>
+        <div className="privacy-section">
+          <h3>{t('privacyServerTitle')}</h3>
+          <ul>
+            <li>{t('privacyServerReadings')}</li>
+            <li>{t('privacyServerAgents')}</li>
+            <li>{t('privacyServerRetention')}</li>
+          </ul>
+        </div>
 
-      <h3>{t('privacyCookiesTitle')}</h3>
-      <p className="muted">{t('privacyCookies')}</p>
-      <p className="muted">{t('privacyAnalytics')}</p>
+        <div className="privacy-section">
+          <h3>{t('privacyThirdPartyTitle')}</h3>
+          <ul>
+            <li>{t('privacyManyfold')}</li>
+            <li>{t('privacyFonts')}</li>
+            <li>{t('privacyCloudflare')}</li>
+          </ul>
+        </div>
 
-      <h3>{t('privacySharingTitle')}</h3>
-      <p className="muted">{t('privacySharing')}</p>
+        <div className="privacy-section">
+          <h3>{t('privacyCookiesTitle')}</h3>
+          <p>{t('privacyCookies')}</p>
+          <p>{t('privacyAnalytics')}</p>
+        </div>
 
-      <h3>{t('privacyControlsTitle')}</h3>
-      <p className="muted">{t('privacyControls')}</p>
-      {!confirming ? (
-        <button type="button" className="text-action danger" onClick={() => setConfirming(true)}>
-          {t('privacyClearButton')}
-        </button>
-      ) : (
-        <span className="row">
-          <button type="button" className="text-action danger" onClick={clear}>
-            {t('privacyClearConfirm')}
-          </button>
-          <button type="button" className="text-action" onClick={() => setConfirming(false)}>
-            {t('privacyClearCancel')}
-          </button>
-        </span>
-      )}
-      {cleared && <p className="notice">{t('privacyCleared')}</p>}
+        <div className="privacy-section">
+          <h3>{t('privacySharingTitle')}</h3>
+          <p>{t('privacySharing')}</p>
+        </div>
+
+        <div className="privacy-section">
+          <h3>{t('privacyControlsTitle')}</h3>
+          <p>{t('privacyControls')}</p>
+          <div className="privacy-controls-action">
+            {!confirming ? (
+              <button type="button" className="text-action danger" onClick={() => setConfirming(true)}>
+                {t('privacyClearButton')}
+              </button>
+            ) : (
+              <span className="row">
+                <button type="button" className="text-action danger" onClick={clear}>
+                  {t('privacyClearConfirm')}
+                </button>
+                <button type="button" className="text-action" onClick={() => setConfirming(false)}>
+                  {t('privacyClearCancel')}
+                </button>
+              </span>
+            )}
+            {cleared && <p className="notice">{t('privacyCleared')}</p>}
+          </div>
+        </div>
+      </div>
     </section>
   );
 }

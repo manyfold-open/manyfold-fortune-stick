@@ -123,6 +123,7 @@ export const zh = {
   historyActionLabel: '可以做的一件小事：',
 
   /* ── 隐私与数据 ── */
+  privacyBadge: '御神签 · 隐私',
   privacyTitle: '隐私与数据',
   privacyIntro:
     '这个部署不使用 Cookie、广告追踪、像素或 analytics。以下说明只描述这份代码实际会保存和传送的资料。',
