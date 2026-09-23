@@ -25,7 +25,7 @@ import {
 import { hanNumber } from '../shared/numerals';
 import type { Interpretation } from '../shared/types';
 import { LEVEL_TONE } from './constants';
-import { CREAM, ROUND, SEAL, SEAL_DEEP, drawEma, drawSakuraMark, drawSeal, paintShrine, spacedText } from './shrineArt';
+import { CREAM, ROUND, SEAL, SEAL_DEEP, drawEma, drawSakuraMark, drawSeal, drawWashiTape, paintShrine, spacedText } from './shrineArt';
 
 const WIDTH = 1080;
 const HEIGHT = 1350;
@@ -297,8 +297,9 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
   const SEAL_R = compact ? 74 : 88;
   const SEAL_BLOCK = SEAL_R * 2 + (compact ? 40 : 44);
   const TITLE = compact ? 70 : 78;
-  // 底部放吉色与二维码（扫了回到游戏）：二维码 104 加一行说明
-  const FOOT = qrImage ? 150 : 84;
+  // 底部放吉色、开运两颗胶囊与二维码（扫了回到游戏）：二维码 104 加一行说明；
+  // 没有二维码时也要放得下两颗胶囊（共 84px）再上下各留一点，不然上面那颗会压在签诗的下框线上
+  const FOOT = qrImage ? 150 : 112;
   const FIXED = PAD + BAND + NO + SEAL_BLOCK + TITLE + FOOT + 18;
   const BODY_MAX = 360;
 
@@ -339,6 +340,9 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
   g.lineWidth = 1.6;
   g.strokeStyle = 'rgba(192, 50, 31, 0.7)';
   g.strokeRect(paperX + 10, paperTop + 10, paperW - 20, paperH - 20);
+
+  // 顶部的和纸胶带：半透明樱粉和纸、微撕边，像贴在手帐里的御神签
+  drawWashiTape(g, center, paperTop + 4, 210, 30, -2.2);
 
   const innerX = paperX + PAD;
   const innerW = paperW - PAD * 2;
@@ -393,13 +397,15 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
     g.lineTo(innerX + innerW, ly);
     g.stroke();
   }
+  // 直排是一格一格正著畫的：引號要用直排的形（﹁﹂），橫排的「」立起來會是兩個歪掉的角
+  const soulMeaning = en ? `“${meaning}”` : `﹁${meaning}﹂`;
   if (en) {
     drawHorizontal(
       g,
       [
         { text: text.poem[0], font: `italic 500 32px ${face}`, color: INK, step: 44 },
         { text: text.poem[1], font: `italic 500 32px ${face}`, color: INK, step: 44 },
-        { text: meaning, font: `400 26px ${face}`, color: INK_2, step: 36 },
+        { text: soulMeaning, font: `400 26px ${face}`, color: INK_2, step: 36 },
       ],
       { centerX: center, top: y + 20, width: innerW - 70, height: BODY - 40, gap: 22, wrapText: wrapBalanced },
     );
@@ -411,35 +417,58 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
         // 七言一列要放得下：一個字的高度照這一格的高度算（BODY 會因為繪馬變高而縮）
         { text: text.poem[0], font: `500 ${Math.min(38, poemStep - 4)}px ${SERIF}`, color: INK, step: poemStep },
         { text: text.poem[1], font: `500 ${Math.min(38, poemStep - 4)}px ${SERIF}`, color: INK, step: poemStep },
-        { text: meaning, font: `400 29px ${SERIF}`, color: INK_2, step: 34 },
+        { text: soulMeaning, font: `400 29px ${SERIF}`, color: INK_2, step: 34 },
       ],
       { centerX: center, top: y + 26, height: BODY - 52, gap: 26 },
     );
   }
   y += BODY;
 
-  // 吉色胶囊与樱花小印
-  g.font = `600 24px ${face}`;
+  // 今日幸運指南（Lucky Guide：吉色 + 開運小物）
+  g.font = `600 21px ${face}`;
   const luckyText = en ? `Lucky tone · ${lucky.en}` : `吉色 · ${lucky.zh}`;
-  const lw = g.measureText(luckyText).width + 70;
-  const ly = y + FOOT / 2;
-  // 有二维码时吉色往左让：放在二维码左边那一段的正中
-  const luckyCx = qrImage ? paperX + (paperW - QR_SIZE - PAD) / 2 : center;
+  const itemText = en ? `Lucky charm · ${text.luckyItem}` : `开运 · ${text.luckyItem}`;
+  const lw1 = g.measureText(luckyText).width + 64;
+  const lw2 = g.measureText(itemText).width + 64;
+  const guideCx = qrImage ? paperX + (paperW - QR_SIZE - PAD) / 2 : center;
+  const ly1 = y + FOOT / 2 - 24;
+  const ly2 = y + FOOT / 2 + 24;
+
+  // 1. 吉色胶囊
   g.fillStyle = `${tone}14`;
-  g.strokeStyle = `${tone}4d`;
-  g.lineWidth = 1.5;
+  g.strokeStyle = `${tone}44`;
+  g.lineWidth = 1.4;
   g.beginPath();
-  g.roundRect(luckyCx - lw / 2, ly - 24, lw, 48, 24);
+  g.roundRect(guideCx - lw1 / 2, ly1 - 18, lw1, 36, 18);
   g.fill();
   g.stroke();
   g.fillStyle = tone;
   g.beginPath();
-  g.arc(luckyCx - lw / 2 + 28, ly, 7, 0, Math.PI * 2);
+  g.arc(guideCx - lw1 / 2 + 22, ly1, 5.5, 0, Math.PI * 2);
   g.fill();
   g.textAlign = 'left';
-  g.fillText(luckyText, luckyCx - lw / 2 + 46, ly + 9);
+  g.fillText(luckyText, guideCx - lw1 / 2 + 36, ly1 + 7);
+
+  // 2. 開運小物膠囊
+  g.fillStyle = 'rgba(192, 50, 31, 0.08)';
+  g.strokeStyle = 'rgba(192, 50, 31, 0.32)';
+  g.lineWidth = 1.4;
+  g.beginPath();
+  g.roundRect(guideCx - lw2 / 2, ly2 - 18, lw2, 36, 18);
+  g.fill();
+  g.stroke();
+  drawSakuraMark(g, guideCx - lw2 / 2 + 22, ly2, 7, SEAL);
+  g.fillStyle = SEAL_DEEP;
+  g.fillText(itemText, guideCx - lw2 / 2 + 36, ly2 + 7);
   g.textAlign = 'center';
-  drawSakuraMark(g, qrImage ? paperX + 46 : paperX + paperW - 44, ly + 10, 18, SEAL);
+
+  // 3. 櫻花小印
+  if (!qrImage) {
+    drawSakuraMark(g, paperX + 46, y + FOOT / 2, 16, SEAL);
+    drawSakuraMark(g, paperX + paperW - 46, y + FOOT / 2, 16, SEAL);
+  } else {
+    drawSakuraMark(g, paperX + 40, y + FOOT / 2, 14, SEAL);
+  }
 
   // 二维码：扫了回到游戏首页，放在纸的右下角
   if (qrImage) {

@@ -408,10 +408,80 @@ export function drawEma(
 }
 
 /**
- * 等級大紅印：朱紅圓印、一圈奶油細環、反白的字。
- * 印外圈的籤運色光暈拿掉了，跟頁面一致（使用者：「這個綠色圓圈特效 remove」）。
+ * 櫻花和紙膠帶（Washi Tape）：半透明櫻粉和紙、微撕邊與細微纖維感，貼在御神籤頂部。
+ */
+export function drawWashiTape(
+  g: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  width: number,
+  height: number,
+  angle = -1.8,
+): void {
+  const rad = (angle * Math.PI) / 180;
+  g.save();
+  g.translate(cx, cy);
+  g.rotate(rad);
+
+  const hw = width / 2;
+  const hh = height / 2;
+
+  // 輕微投影，讓膠帶浮起在紙面與鳥居之間
+  g.shadowColor = 'rgba(60, 30, 20, 0.12)';
+  g.shadowBlur = 6;
+  g.shadowOffsetY = 2;
+
+  // 膠帶主體與微撕裂齒邊（兩端鋸齒）
+  g.beginPath();
+  // 頂部直線
+  g.moveTo(-hw, -hh);
+  g.lineTo(hw, -hh);
+  // 右側撕裂鋸齒
+  const teeth = 6;
+  const tStep = height / teeth;
+  for (let i = 0; i < teeth; i += 1) {
+    const y0 = -hh + i * tStep;
+    const yMid = y0 + tStep * 0.5;
+    const yEnd = y0 + tStep;
+    const jag = i % 2 === 0 ? 3 : -2;
+    g.lineTo(hw + jag, yMid);
+    g.lineTo(hw, yEnd);
+  }
+  // 底部直線
+  g.lineTo(-hw, hh);
+  // 左側撕裂鋸齒
+  for (let i = teeth - 1; i >= 0; i -= 1) {
+    const y0 = -hh + (i + 1) * tStep;
+    const yMid = y0 - tStep * 0.5;
+    const yEnd = y0 - tStep;
+    const jag = i % 2 === 0 ? -3 : 2;
+    g.lineTo(-hw + jag, yMid);
+    g.lineTo(-hw, yEnd);
+  }
+  g.closePath();
+
+  // 櫻粉半透明漸層
+  const tapeGrad = g.createLinearGradient(-hw, -hh, hw, hh);
+  tapeGrad.addColorStop(0, 'rgba(253, 226, 230, 0.82)');
+  tapeGrad.addColorStop(0.5, 'rgba(248, 204, 212, 0.85)');
+  tapeGrad.addColorStop(1, 'rgba(252, 220, 226, 0.8)');
+  g.fillStyle = tapeGrad;
+  g.fill();
+
+  // 膠帶內微弱的櫻花花瓣小印花圖紋
+  g.shadowColor = 'transparent';
+  for (let offset = -hw + 26; offset < hw - 20; offset += 36) {
+    drawSakuraMark(g, offset, 0, 5, 'rgba(255, 255, 255, 0.55)');
+  }
+
+  g.restore();
+}
+
+/**
+ * 等級大紅印：櫻花花瓣輪廓手蓋朱印、手作微傾角、朱紅漸層與反白字。
  *
  * @param lines 印上的字，一行一個元素（英文兩個詞各一行）
+ * @param angle 手蓋微傾斜角度（預設 -3.2 度，更具手作拙樸感）
  */
 export function drawSeal(
   g: CanvasRenderingContext2D,
@@ -421,32 +491,53 @@ export function drawSeal(
   lines: string[],
   font: string,
   lineHeight: number,
+  angle = -3.2,
 ): void {
-  const fill = g.createRadialGradient(cx - r * 0.2, cy - r * 0.25, r * 0.1, cx, cy, r);
-  fill.addColorStop(0, '#d4432c');
+  const rad = (angle * Math.PI) / 180;
+  g.save();
+  g.translate(cx, cy);
+  g.rotate(rad);
+
+  // 櫻花花瓣輪廓外框（五瓣微拱圓弧，構成典雅的神社櫻花朱印）
+  const petalR = r * 0.48;
+  const centerDist = r * 0.58;
+  g.beginPath();
+  for (let i = 0; i < 5; i += 1) {
+    const a = (i * 72 * Math.PI) / 180 - Math.PI / 2;
+    const px = Math.cos(a) * centerDist;
+    const py = Math.sin(a) * centerDist;
+    g.arc(px, py, petalR, a - 0.72, a + 0.72, false);
+  }
+  g.closePath();
+
+  const fill = g.createRadialGradient(-r * 0.2, -r * 0.25, r * 0.1, 0, 0, r);
+  fill.addColorStop(0, '#de4b35');
   fill.addColorStop(0.55, SEAL);
   fill.addColorStop(1, SEAL_DEEP);
-  g.save();
-  g.shadowColor = 'rgba(120, 30, 20, 0.3)';
-  g.shadowBlur = 10;
+
+  g.shadowColor = 'rgba(120, 30, 20, 0.35)';
+  g.shadowBlur = 12;
   g.shadowOffsetY = 4;
   g.fillStyle = fill;
-  g.beginPath();
-  g.arc(cx, cy, r, 0, Math.PI * 2);
   g.fill();
-  g.restore();
 
-  g.strokeStyle = 'rgba(251, 243, 230, 0.85)';
-  g.lineWidth = 3;
+  g.shadowColor = 'transparent';
+
+  // 內圈奶油色細線圈
+  g.strokeStyle = 'rgba(251, 243, 230, 0.88)';
+  g.lineWidth = 2.4;
   g.beginPath();
-  g.arc(cx, cy, r - 10, 0, Math.PI * 2);
+  g.arc(0, 0, r - 12, 0, Math.PI * 2);
   g.stroke();
 
+  // 反白字
   g.fillStyle = CREAM;
   g.font = font;
   g.textAlign = 'center';
-  const top = cy - ((lines.length - 1) * lineHeight) / 2;
+  const top = -((lines.length - 1) * lineHeight) / 2;
   lines.forEach((line, i) => {
-    g.fillText(line, cx, top + i * lineHeight + lineHeight * 0.34);
+    g.fillText(line, 0, top + i * lineHeight + lineHeight * 0.34);
   });
+
+  g.restore();
 }

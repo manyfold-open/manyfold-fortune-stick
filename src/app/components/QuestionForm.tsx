@@ -33,14 +33,21 @@ export default function QuestionForm(props: {
 }) {
   const t = useT();
   const [focused, setFocused] = useState(false);
+  /*
+   * 写了几笔。每一笔轮流换 sway-a / sway-b 两个 class：animation-name 一换，
+   * 那一下晃动就从头再来一次 —— 连续打字也是每个字晃一下，不用计时器。
+   */
+  const [strokes, setStrokes] = useState(0);
   const field = props.inputRef;
   const length = [...props.value.trim()].length;
   const empty = props.value.length === 0;
 
+  const sway = strokes === 0 ? '' : strokes % 2 === 1 ? ' sway-a' : ' sway-b';
+
   return (
     // 没有框，就把整块区域都做成可以落笔的地方：点哪里都开始写。
     <div className="ask" onClick={() => field.current?.focus()}>
-      <div className={`ask-zone${focused ? ' focused' : ''}${!empty ? ' has-content' : ''}`}>
+      <div className={`ask-zone${focused ? ' focused' : ''}${!empty ? ' has-content' : ''}${sway}`}>
         <EmaChrome>
           {/* 用 data-value 撑开高度：输入区自己长高，不需要 JS，也不会出现滚动条。 */}
           <div className="ask-grow" data-value={props.value}>
@@ -48,9 +55,16 @@ export default function QuestionForm(props: {
               className="ask-input"
               ref={field}
               value={props.value}
-              onChange={(event) => props.onChange(withoutDashes(event.target.value))}
+              onChange={(event) => {
+                props.onChange(withoutDashes(event.target.value));
+                setStrokes((n) => n + 1);
+              }}
               onFocus={() => setFocused(true)}
-              onBlur={() => setFocused(false)}
+              onBlur={() => {
+                setFocused(false);
+                // 下次聚焦不要先补晃一下上次留下的那笔
+                setStrokes(0);
+              }}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' && !event.shiftKey) {
                   event.preventDefault();

@@ -3786,7 +3786,8 @@ html:lang(en) .shell:has(.cyl3d-stage) .ask-zone {
   padding: 18px 26px 10px;
   background: none;
   filter: drop-shadow(0 6px 10px rgba(92, 62, 32, 0.22));
-  transition: transform 0.3s ease;
+  transform-origin: 50% -26px;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 :is(.shell:has(.cyl3d-stage) .ask-zone, .ema-card)::before,
@@ -3813,9 +3814,38 @@ html:lang(en) .shell:has(.cyl3d-stage) .ask-zone {
     linear-gradient(180deg, var(--wood-hi), var(--wood));
 }
 
-:is(.shell:has(.cyl3d-stage) .ask-zone, .ema-card):hover,
+:is(.shell:has(.cyl3d-stage) .ask-zone, .ema-card):hover {
+  transform: rotate(-0.8deg);
+}
+
 :is(.shell:has(.cyl3d-stage) .ask-zone, .ema-card):focus-within {
-  transform: rotate(-0.6deg);
+  animation: ema-sway 3.6s ease-in-out infinite alternate;
+}
+
+@keyframes ema-sway {
+  0% { transform: rotate(-0.9deg); }
+  50% { transform: rotate(0.9deg); }
+  100% { transform: rotate(-0.5deg); }
+}
+
+/*
+ * 每寫一筆晃一下（QuestionForm 輪流加 sway-a / sway-b，名字一換動畫就重播）。
+ * 晃的是獨立的 rotate 屬性，不是 transform：聚焦時那條慢慢擺的 ema-sway 佔著 transform，
+ * 兩者疊在一起，打字不會把慢擺打斷、也不會停手時跳回起點。
+ */
+.shell:has(.cyl3d-stage) .ask-zone.sway-a:focus-within { animation: ema-sway 3.6s ease-in-out infinite alternate, ema-tick-a 0.35s ease-out; }
+.shell:has(.cyl3d-stage) .ask-zone.sway-b:focus-within { animation: ema-sway 3.6s ease-in-out infinite alternate, ema-tick-b 0.35s ease-out; }
+
+@keyframes ema-tick-a {
+  0%, 100% { rotate: 0deg; }
+  30% { rotate: -1.5deg; }
+  70% { rotate: 1.1deg; }
+}
+
+@keyframes ema-tick-b {
+  0%, 100% { rotate: 0deg; }
+  30% { rotate: -1.5deg; }
+  70% { rotate: 1.1deg; }
 }
 
 /* 紅繩：從牌頂正中往上分成倒 V，中間一個小結 */
@@ -4111,6 +4141,29 @@ html { overflow-x: clip; }
   stroke: #b9ad94;
   stroke-width: 0.7;
   filter: drop-shadow(0 1px 1px rgba(60, 40, 20, 0.15));
+  transform-origin: top center;
+  animation: shide-sway 7.2s ease-in-out infinite alternate;
+}
+
+.shide:nth-child(2) {
+  animation-duration: 8.5s;
+  animation-delay: -2.3s;
+}
+
+.shide:nth-child(3) {
+  animation-duration: 6.9s;
+  animation-delay: -4.1s;
+}
+
+.shide:nth-child(4) {
+  animation-duration: 7.8s;
+  animation-delay: -5.7s;
+}
+
+@keyframes shide-sway {
+  0% { transform: rotate(-2deg); }
+  50% { transform: rotate(2.4deg); }
+  100% { transform: rotate(-1.2deg); }
 }
 
 .shrine-branch {

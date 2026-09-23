@@ -240,6 +240,7 @@ describe('英文签库', () => {
         expect(text.poem[1].length).toBeGreaterThan(0);
         expect(text.meaning.length).toBeGreaterThan(0);
         expect(text.action.length).toBeGreaterThan(0);
+        expect(text.luckyItem.length).toBeGreaterThan(0);
       }
       // general / action 同时是 AI 不可用时的兜底，必须能独立成话。
       expect(stickText(entry, 'zh').general.length).toBeGreaterThan(20);
@@ -251,7 +252,7 @@ describe('英文签库', () => {
     const han = /[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/;
     for (const entry of STICKS) {
       const text = stickText(entry, 'en');
-      const joined = `${text.title}${text.poem[0]}${text.poem[1]}${text.meaning}${text.general}${text.action}`;
+      const joined = `${text.title}${text.poem[0]}${text.poem[1]}${text.meaning}${text.general}${text.action}${text.luckyItem}`;
       expect(han.test(joined), `第 ${entry.no} 签的英文里还有汉字`).toBe(false);
     }
   });
