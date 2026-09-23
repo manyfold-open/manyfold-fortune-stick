@@ -4515,10 +4515,6 @@ html:lang(en) .shell:has(.cyl3d-stage) .ask-zone {
   color: var(--wood-ink);
 }
 
-.shell:has(.cyl3d-stage) .ask-ghost {
-  color: color-mix(in srgb, var(--wood-ink) 55%, transparent);
-}
-
 :is(.shell:has(.cyl3d-stage), .ema-card) .asked {
   /* 折行時兩行差不多長，不會剩一個「吗？」掛在第二行 */
   text-wrap: balance;
@@ -5807,5 +5803,222 @@ html { overflow-x: clip; }
 
   .footer {
     display: none !important;
+  }
+}
+
+/* ── 看得出能寫、看得出能攪（使用者回饋：不知道在哪輸入、不知道要按著攪放手抽）──
+   繪馬上：一支筆、一條寫字的虛線、淡一點的占位字，沒寫字時隔一陣輕輕晃一下；
+   有人沒寫問題就去攪籤筒，繪馬用力晃一下、游標送進去（QuestionForm 的 nudge）。
+   籤筒上：題目寫了、還沒碰過籤，放一隻手示範「按下、繞圈、放開」（FortuneCylinder3D 的 .stir-guide）。 */
+
+.ask-pen {
+  display: inline-block;
+  width: 0.78em;
+  height: 0.78em;
+  margin-right: 0.35em;
+  vertical-align: -0.06em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+/* 要跟上面設字級的那條（.ask-grow > .ask-ghost）一樣重才蓋得過 —— 以前寫成 .ask-ghost，
+   占位字一直是全黑的木墨色，看起來就是一個標題，沒人想到可以點 */
+.shell:has(.cyl3d-stage) .ask-grow > .ask-ghost {
+  color: color-mix(in srgb, var(--wood-ink) 42%, transparent);
+}
+
+.shell:has(.cyl3d-stage) .ask-ghost .ask-pen {
+  color: var(--accent);
+}
+
+.shell:has(.cyl3d-stage) .ask-caret {
+  width: 2.5px;
+  height: 1.05em;
+  border-radius: 1px;
+}
+
+/* 寫字的那一條線：虛線是「還沒寫」，聚焦後變成一條實的紅線 */
+.shell:has(.cyl3d-stage) .ask-grow {
+  padding-bottom: 3px;
+  background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--wood-edge) 55%, transparent) 0 5px, transparent 5px 10px)
+    bottom center / 82% 1px no-repeat;
+}
+
+.shell:has(.cyl3d-stage) .ask-zone.focused .ask-grow {
+  background: linear-gradient(color-mix(in srgb, var(--accent) 70%, transparent), color-mix(in srgb, var(--accent) 70%, transparent))
+    bottom center / 82% 1.5px no-repeat;
+}
+
+/* 空著的繪馬隔一陣被風吹一下，外加一圈暖光 —— 繞著紅繩的結晃，像真的掛著 */
+.shell:has(.cyl3d-stage) .ask-zone {
+  transform-origin: 50% -26px;
+}
+
+.shell:has(.cyl3d-stage) .ask-zone:not(.focused):not(.has-content):not(.nudge):not(:hover) {
+  animation: ema-beckon 5.2s ease-in-out 1.2s infinite;
+}
+
+.shell:has(.cyl3d-stage) .ask-zone.nudge {
+  animation: ema-nudge 0.8s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+@keyframes ema-beckon {
+  0%, 62%, 100% {
+    transform: rotate(0deg);
+    filter: drop-shadow(0 6px 10px rgba(92, 62, 32, 0.22));
+  }
+  70% {
+    transform: rotate(-1.4deg);
+    filter: drop-shadow(0 6px 10px rgba(92, 62, 32, 0.22)) drop-shadow(0 0 14px rgba(255, 206, 120, 0.75));
+  }
+  80% { transform: rotate(1deg); }
+  90% { transform: rotate(-0.4deg); }
+}
+
+@keyframes ema-nudge {
+  0%, 100% {
+    transform: rotate(0deg);
+    filter: drop-shadow(0 6px 10px rgba(92, 62, 32, 0.22));
+  }
+  15% {
+    transform: rotate(-3.2deg);
+    filter: drop-shadow(0 6px 10px rgba(92, 62, 32, 0.22)) drop-shadow(0 0 16px rgba(187, 42, 28, 0.55));
+  }
+  35% { transform: rotate(2.6deg); }
+  55% { transform: rotate(-1.6deg); }
+  75% { transform: rotate(0.8deg); }
+}
+
+/* 籤筒下那行字：以前 14px 灰字，擠在籤筒底下沒人看見 */
+.cyl3d-stage .roll-hint {
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--on-ground);
+}
+
+.cyl3d-stage .roll-hint.ask-first {
+  color: var(--accent);
+}
+
+/* ── 示範手勢 ── 位置由 FortuneCylinder3D 每格寫進 left/top：中間那支籤露在筒外的一段 */
+.cyl3d-stage {
+  position: relative;
+}
+
+.stir-guide {
+  --guide-loop: 3.8s;
+  position: absolute;
+  left: 50%;
+  top: 30%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.stir-guide.shown {
+  opacity: 1;
+  transition-delay: 0.5s;
+}
+
+/* 繞圈的軌跡：一圈淡淡的虛線加一個箭頭，停著看也知道要繞 */
+.stir-guide-path {
+  position: absolute;
+  left: -44px;
+  top: -2px;
+  width: 88px;
+  height: 37px;
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.8;
+  stroke-dasharray: 4 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  /* 籤是淺木色，紅線外面再描一圈白才浮得出來 */
+  filter: drop-shadow(0 0 1px #fffaf0) drop-shadow(0 0 1.5px #fffaf0);
+}
+
+.stir-guide-path path {
+  stroke-dasharray: none;
+}
+
+/* 指尖按下去那一下的水波 */
+.stir-guide-ripple {
+  position: absolute;
+  left: -14px;
+  top: -14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 250, 238, 0.95);
+  box-shadow: 0 0 6px rgba(59, 42, 30, 0.35);
+  opacity: 0;
+}
+
+/* 指尖在 SVG 的 (22, 4)，這裡把它對到 (0, 0) */
+.stir-guide-hand {
+  position: absolute;
+  left: -22px;
+  top: -4px;
+  width: 48px;
+  height: 56px;
+  transform-origin: 22px 4px;
+  filter: drop-shadow(0 4px 5px rgba(59, 42, 30, 0.35));
+}
+
+.stir-guide-hand-edge {
+  fill: none;
+  stroke: var(--wood-ink);
+  stroke-width: 3.2;
+}
+
+.stir-guide-hand-fill {
+  fill: #fffaf0;
+}
+
+.stir-guide.shown .stir-guide-hand {
+  animation: stir-hand var(--guide-loop) ease-in-out infinite;
+}
+
+.stir-guide.shown .stir-guide-ripple {
+  animation: stir-ripple var(--guide-loop) ease-out infinite;
+}
+
+/* 懸空 → 按下 → 繞一圈 → 抬起（放手）→ 淡掉，再來一次 */
+@keyframes stir-hand {
+  0% { opacity: 0; transform: translate(0, -18px) scale(1.06); }
+  10% { opacity: 1; transform: translate(0, -18px) scale(1.06); }
+  18% { transform: translate(0, 0) scale(0.94); }
+  28% { transform: translate(26px, 8px) scale(0.94); }
+  38% { transform: translate(0, 16px) scale(0.94); }
+  48% { transform: translate(-26px, 8px) scale(0.94); }
+  58% { transform: translate(0, 0) scale(0.94); }
+  68% { opacity: 1; transform: translate(0, -22px) scale(1.06); }
+  78%, 100% { opacity: 0; transform: translate(0, -26px) scale(1.06); }
+}
+
+@keyframes stir-ripple {
+  0%, 16% { opacity: 0; transform: scale(0.4); }
+  19% { opacity: 1; transform: scale(0.6); }
+  30%, 100% { opacity: 0; transform: scale(1.5); }
+}
+
+/* 減少動畫：手停在按下的位置，軌跡照樣畫著 —— 看得懂，只是不動 */
+.shell.calm .ask-zone,
+.shell.calm .stir-guide.shown .stir-guide-hand,
+.shell.calm .stir-guide.shown .stir-guide-ripple {
+  animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell:has(.cyl3d-stage) .ask-zone,
+  .stir-guide.shown .stir-guide-hand,
+  .stir-guide.shown .stir-guide-ripple {
+    animation: none !important;
   }
 }

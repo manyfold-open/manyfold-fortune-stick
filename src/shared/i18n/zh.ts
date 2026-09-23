@@ -43,7 +43,7 @@ export const zh = {
 
   /* ── 提问 ── */
   askLabel: '你想问的事',
-  askGhost: '写下你心里的那件事',
+  askGhost: '在这里写下你心里的那件事',
   askDone: '完成',
   emaCaption: '絵馬 · 心願',
   example1: '我该如何面对最近的工作变化？',

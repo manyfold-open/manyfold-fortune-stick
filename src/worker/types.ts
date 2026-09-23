@@ -13,6 +13,8 @@ export interface Env {
   MANYFOLD_API_BASE_URL?: string;
   /** "production" enables https-only and private-IP checks on agent URLs. */
   ENVIRONMENT?: string;
+  /** Optional path prefix the app is also mounted under, e.g. /fortune-stick. */
+  BASE_PATH?: string;
   /** Optional: >=32 chars. Without it a key is generated and kept in D1. */
   CONFIG_ENCRYPTION_KEY?: string;
   /** Optional: when set, settings/agent-management routes require x-admin-password. */

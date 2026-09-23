@@ -34,7 +34,7 @@ import {
   type Prefs,
 } from '../storage';
 import FortuneCylinder from './FortuneCylinder';
-import { acceptsGesture, chimeAtSlip, drawStartSound } from '../../shared/cylinder/interaction';
+import { acceptsGesture, chimeAtSlip, drawStartSound, enterDraws } from '../../shared/cylinder/interaction';
 import FortuneCylinder3D from './FortuneCylinder3D';
 import FortunePaperRoll from './FortunePaperRoll';
 import Printer from './Printer';
@@ -147,6 +147,8 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
   const stopMotor = useRef<(() => void) | null>(null);
   /** 输入框本体。例句在机器下方，填完字要把光标送回这里，所以 ref 归这一层。 */
   const askField = useRef<HTMLTextAreaElement | null>(null);
+  /** 沒寫問題就去攪籤筒的次數 —— 每加一，繪馬晃一下（QuestionForm 的 nudge）。 */
+  const [askNudge, setAskNudge] = useState(0);
 
   const clearTimers = useCallback(() => {
     timers.current.forEach((id) => window.clearTimeout(id));
@@ -453,9 +455,11 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
           <QuestionForm
             value={question}
             onChange={setQuestion}
-            onSubmit={() => void draw()}
+            // 3D 籤筒的籤只能攪出來：Enter 只是寫完了，收起游標（手機收起鍵盤）
+            onSubmit={() => (enterDraws(vessel) ? void draw() : askField.current?.blur())}
             inputRef={askField}
             sound={props.prefs.sound}
+            nudge={askNudge}
           />
         )}
       </div>
@@ -481,6 +485,10 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
             reducedMotion={props.prefs.reducedMotion}
             onShake={() => void draw()}
             onRevealed={revealDone}
+            onNeedQuestion={() => {
+              setAskNudge((n) => n + 1);
+              askField.current?.focus();
+            }}
             // 籤筒 v2 的籤是摇出来的，不是演完的 —— 出籤途中关掉输入会死锁
             disabled={!acceptsGesture(vessel, phase)}
           />

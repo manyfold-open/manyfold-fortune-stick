@@ -206,4 +206,32 @@ app.all('/api/*', () => {
 // Anything else that reaches the Worker is a static asset (or the SPA fallback).
 app.all('*', (c) => c.env.ASSETS.fetch(c.req.raw));
 
-export default app;
+/* ───────── mount path ───────── */
+
+// The same deployment answers at the root of its workers.dev URL and under
+// BASE_PATH on a shared host (app.manyfold.ai/fortune-stick). Requests under
+// BASE_PATH are served as if they had arrived at the root; root-relative
+// redirects coming back out get the prefix put back on.
+const mountPath = (env: Env): string => (env.BASE_PATH ?? '').trim().replace(/\/+$/, '');
+
+export default {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    const base = mountPath(env);
+    const url = new URL(request.url);
+    if (!base || (url.pathname !== base && !url.pathname.startsWith(`${base}/`))) {
+      return app.fetch(request, env, ctx);
+    }
+    // The page loads its assets relative to itself, so the mount root needs its slash.
+    if (url.pathname === base) {
+      url.pathname = `${base}/`;
+      return Response.redirect(url.toString(), 308);
+    }
+    url.pathname = url.pathname.slice(base.length);
+    const response = await app.fetch(new Request(url.toString(), request), env, ctx);
+    const location = response.headers.get('location');
+    if (!location?.startsWith('/') || location.startsWith('//')) return response;
+    const redirected = new Response(response.body, response);
+    redirected.headers.set('location', base + location);
+    return redirected;
+  },
+} satisfies ExportedHandler<Env>;

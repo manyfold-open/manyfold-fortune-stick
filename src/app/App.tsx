@@ -25,12 +25,13 @@ import SettingsView from './components/SettingsView';
 import ShrineBackdrop from './components/ShrineBackdrop';
 import { LanguageProvider, useT, useUiLanguage } from './i18n';
 import { getPrefs, setPrefs, type Prefs } from './storage';
+import { appUrl, BASE } from './base';
 
 type Route = 'game' | 'history' | 'settings' | 'privacy';
 
 const routeFromHash = (): Route => {
   const hash = location.hash.replace(/^#\/?/, '');
-  const pathname = location.pathname.replace(/\/+$/, '') || '/';
+  const pathname = location.pathname.slice(BASE.length).replace(/\/+$/, '') || '/';
   if (pathname === '/privacy' || hash === 'privacy') return 'privacy';
   if (pathname === '/settings' || hash === 'settings') return 'settings';
   if (hash === 'history') return 'history';
@@ -197,7 +198,7 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
           </button>
           <a
             className="text-action history-link"
-            href={route === 'game' ? '#history' : '#/'}
+            href={route === 'game' ? '#history' : appUrl('/')}
             onClick={(e) => {
               if (route !== 'game') {
                 e.preventDefault();
@@ -264,7 +265,7 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
           </a>
         </div>
 
-        <a className="footer-credit-link footer-privacy" href="/privacy">
+        <a className="footer-credit-link footer-privacy" href={appUrl('/privacy')}>
           {t('privacyNav')}
         </a>
       </footer>

@@ -40,3 +40,20 @@ describe('開始抽籤那一刻放什麼聲音', () => {
     for (const v of ['printer', 'cylinder', 'roll'] as const) expect(chimeAtSlip(v)).toBe(true);
   });
 });
+
+describe('攪籤抽不起來的兩個死結', () => {
+  it('3D 籤筒在繪馬裡按 Enter 不能抽籤 —— 籤是攪出來的，Enter 抽了籤筒卻沒要過籤，會卡在出籤等不到', () => {
+    expect(I.enterDraws('cylinder3d')).toBe(false);
+    for (const v of TIMER_DRIVEN) expect(I.enterDraws(v)).toBe(true);
+  });
+
+  it('攪到要了籤、這一抽卻失敗（題目太短、網路錯），要讓使用者能再攪一次', () => {
+    expect(I.shouldRearmStir({ requested: true, fault: true, drawn: false })).toBe(true);
+  });
+
+  it('籤已經到了就不重來 —— 不能在出籤途中把已經定下的籤作廢', () => {
+    expect(I.shouldRearmStir({ requested: true, fault: true, drawn: true })).toBe(false);
+    expect(I.shouldRearmStir({ requested: true, fault: false, drawn: false })).toBe(false);
+    expect(I.shouldRearmStir({ requested: false, fault: true, drawn: false })).toBe(false);
+  });
+});
