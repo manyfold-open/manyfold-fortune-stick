@@ -304,6 +304,9 @@ import 加 `import { hanNumber } from '../../shared/numerals';`。檔頭註解�
 .slip-grid-columns {
   display: flex;
   writing-mode: vertical-rl;
+  /* 直排時 row 是由上往下；column 才是一欄一欄由右往左排 */
+  flex-direction: column;
+  align-items: flex-start;
   height: 150px;
 }
 

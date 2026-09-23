@@ -14,6 +14,7 @@ import type { FollowUpMessage, Reading } from '../../shared/types';
 import { errorMessage, ApiError } from '../api';
 import { LEVEL_TONE } from '../constants';
 import { copyFor, useT } from '../i18n';
+import { EmaChrome } from './Ema';
 import FollowUp from './FollowUp';
 import SharePanel from './SharePanel';
 import StickFace from './StickFace';
@@ -52,12 +53,11 @@ export default function ReadingResult(props: {
     <section className="stage result" data-tone={LEVEL_TONE[reading.stick.level].key}>
       <div className="result-deck">
         <div className="sheet-stack">
-          {/* 所求之事：神諭紙卷抬頭 */}
-          <div className="scroll-head" data-lang={reading.language}>
-            <span className="scroll-head-label">
-              {reading.language === 'en' ? 'QUESTION' : '所求之事'}
-            </span>
-            <p className="scroll-head-text">{reading.question}</p>
+          {/* 所求之事：寫在繪馬上。小字跟這一局的語言走（紙上說問題的語言），不跟界面 */}
+          <div className="ema-card" data-lang={reading.language}>
+            <EmaChrome caption={sheet.emaCaption}>
+              <p className="asked">{reading.question}</p>
+            </EmaChrome>
           </div>
 
           <StickFace stick={reading.stick} language={reading.language} />

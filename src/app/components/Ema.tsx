@@ -8,12 +8,12 @@
 import type { ReactNode } from 'react';
 import { useT } from '../i18n';
 
-export function EmaChrome({ children }: { children: ReactNode }) {
+export function EmaChrome({ children, caption }: { children: ReactNode; caption?: string }) {
   const t = useT();
   return (
     <>
       <span className="ema-cord" aria-hidden />
-      <p className="ema-caption" aria-hidden>{t('emaCaption')}</p>
+      <p className="ema-caption" aria-hidden>{caption ?? t('emaCaption')}</p>
       {children}
       <svg className="ema-mizuhiki" viewBox="0 0 160 18" aria-hidden>
         <path d="M4 9 H62" stroke="#bb2a1c" strokeWidth="1.2" />

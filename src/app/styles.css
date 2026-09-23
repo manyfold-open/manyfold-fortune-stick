@@ -10,6 +10,12 @@
    两条都要能关掉走纸、出纸和揭晓这三个动作。 */
 
 :root {
+  /* 繪馬與木札的木頭（3D 籤筒台與結果頁共用） */
+  --wood-edge: #8f6a43;
+  --wood: #ecd9b8;
+  --wood-hi: #f5e8cf;
+  --wood-ink: #3b2a1e;
+  --ema-cut: 22px;
   /* 暖木底：参考的日系杂货照就是摆在浅色木桌上拍的，底色带黄比带灰讨喜得多 */
   --ground: #ddcbac;
   /* 上方一片柔光，像窗边打下来的 —— 单一实色会让籤筒像贴在色块上 */
@@ -1003,121 +1009,250 @@ body {
 }
 
 .slip {
+  --seal: #c0321f;
+  --seal-deep: #9e2517;
   position: relative;
-  display: block;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(340px, 100%);
+  margin: 0 auto;
+  padding: 10px 12px 12px;
   background: var(--paper);
   color: var(--ink);
   font-family: var(--serif);
-  padding: 13px 15px 10px;
+  border: 2px solid var(--seal);
   box-shadow: 0 3px 8px rgba(38, 26, 18, 0.08), 0 16px 36px rgba(38, 26, 18, 0.16);
-  border: 1.5px solid var(--rule);
   overflow: hidden;
 }
 
-/* 宣纸内框文武细线 */
+/* 雙線框的內線 */
 .slip::before {
   content: '';
   position: absolute;
-  inset: 3px;
+  inset: 4px;
+  border: 1px solid color-mix(in srgb, var(--seal) 70%, transparent);
   pointer-events: none;
-  border: 0.5px solid color-mix(in srgb, var(--rule) 50%, transparent);
-  z-index: 1;
 }
 
-/* 宣纸自然微纤维与棉质肌理 */
+/* 和紙纖維 */
 .slip::after {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: 0.038;
+  opacity: 0.045;
   mix-blend-mode: multiply;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='paperFiber'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.08 0.04' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23paperFiber)'/%3E%3C/svg%3E");
 }
 
-/* 签纸四角传统回纹角饰 */
-.slip-corner {
-  position: absolute;
-  width: 9px;
-  height: 9px;
-  pointer-events: none;
-  z-index: 2;
-  border: 1.5px solid var(--rule);
-}
-.slip-corner.tc-left { top: 5px; left: 5px; border-right: 0; border-bottom: 0; }
-.slip-corner.tc-right { top: 5px; right: 5px; border-left: 0; border-bottom: 0; }
-.slip-corner.bc-left { bottom: 5px; left: 5px; border-right: 0; border-top: 0; }
-.slip-corner.bc-right { bottom: 5px; right: 5px; border-left: 0; border-top: 0; }
+.slip > * { position: relative; z-index: 1; }
 
-.slip-cell {
-  border: 1px solid var(--rule);
-  border-top-width: 0;
-  padding: 10px 13px;
-  position: relative;
-  z-index: 2;
-}
-
-.slip-cell-level {
-  border-top-width: 1px;
+.slip-head {
+  width: 100%;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 8px 12px;
-  background-color: var(--tone-bg);
-  border-color: color-mix(in srgb, var(--tone) 35%, var(--rule));
-  position: relative;
-  overflow: hidden;
+  gap: 5px;
+  margin-top: 2px;
 }
 
-.slip-rail {
-  flex: none;
-  font-size: 10.5px;
-  letter-spacing: 0.12em;
-  color: var(--ink-3);
-  white-space: nowrap;
+.slip-head-band {
+  width: 100%;
+  padding: 5px 0 4px;
+  background: linear-gradient(180deg, var(--seal), var(--seal-deep));
+  color: #fbf3e6;
+  text-align: center;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.6em;
+  text-indent: 0.6em;
+}
+
+.slip-no {
+  font-size: 12px;
+  letter-spacing: 0.24em;
+  text-indent: 0.24em;
+  color: var(--ink-2);
+}
+
+.slip-seal-row {
+  padding: 12px 0 8px;
 }
 
 .slip-level-box {
-  flex: 1;
+  position: relative;
+  width: 92px;
+  height: 92px;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
+  /* 手蓋的印不是正圓 */
+  border-radius: 49% 51% 50% 48%;
+  background: radial-gradient(circle at 42% 38%, #d4432c, var(--seal) 55%, var(--seal-deep));
+  box-shadow: inset 0 0 0 4px var(--seal), inset 0 0 0 5.5px rgba(251, 243, 230, 0.85), 0 2px 5px rgba(120, 30, 20, 0.25);
 }
 
 .slip-level {
-  font-size: clamp(23px, 5.8vw, 29px);
-  font-weight: 800;
-  line-height: 1.1;
-  letter-spacing: 0.22em;
-  text-indent: 0.22em;
-  color: var(--tone);
-  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.6);
   position: relative;
   z-index: 2;
+  color: #fbf3e6;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: 0.08em;
+  text-indent: 0.08em;
+  text-align: center;
 }
 
-/* 墨晕与落印特效容器 */
+.slip-level-box.long .slip-level { font-size: 21px; letter-spacing: 0.02em; text-indent: 0.02em; }
+
 .level-stamp-aura {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 120px;
-  height: 120px;
-  margin: -60px 0 0 -60px;
+  width: 140px;
+  height: 140px;
+  margin: -70px 0 0 -70px;
   border-radius: 50%;
   pointer-events: none;
-  z-index: 1;
+  z-index: -1;
 }
 
+.slip-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 0 10px;
+}
+
+.slip-title-row::before,
+.slip-title-row::after {
+  content: '';
+  width: 18px;
+  height: 1px;
+  background: var(--seal);
+}
+
+.slip-title {
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: 0.42em;
+  text-indent: 0.42em;
+  color: var(--ink);
+}
+
+.slip-body {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 10px 6px 12px;
+  border-top: 1px solid color-mix(in srgb, var(--seal) 35%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--seal) 35%, transparent);
+}
+
+.slip-body p { margin: 0; }
+
+.slip-grid-columns {
+  display: flex;
+  writing-mode: vertical-rl;
+  /* 直排時 row 是由上往下；column 才是一欄一欄由右往左排 */
+  flex-direction: column;
+  align-items: flex-start;
+  height: 150px;
+}
+
+.slip-column {
+  padding: 0 8px;
+  border-left: 1px dashed color-mix(in srgb, var(--seal) 40%, transparent);
+}
+
+.slip-column:last-child { border-left: none; }
+
+.slip-poem {
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0.18em;
+  color: var(--ink);
+}
+
+.slip-meaning {
+  font-size: 12.5px;
+  line-height: 1.55;
+  letter-spacing: 0.12em;
+  color: var(--ink-2);
+}
+
+.slip-western-poem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  text-align: center;
+}
+
+.slip-foot {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 10px;
+}
+
+.slip-lucky-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border-radius: 10px;
+  background: var(--tone-bg);
+  border: 0.5px solid color-mix(in srgb, var(--tone) 30%, transparent);
+}
+
+.lucky-pip {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tone);
+}
+
+.slip-lucky {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--tone);
+}
+
+/* 右下角一朵朱紅櫻花小印 */
+.slip-sakura {
+  position: absolute;
+  right: 6px;
+  bottom: 2px;
+  width: 16px;
+  height: 16px;
+  opacity: 0.85;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-10 -10 20 20'%3E%3Cg fill='%23c0321f'%3E%3Cellipse cy='-5' rx='3.4' ry='4.8'/%3E%3Cellipse cy='-5' rx='3.4' ry='4.8' transform='rotate(72)'/%3E%3Cellipse cy='-5' rx='3.4' ry='4.8' transform='rotate(144)'/%3E%3Cellipse cy='-5' rx='3.4' ry='4.8' transform='rotate(216)'/%3E%3Cellipse cy='-5' rx='3.4' ry='4.8' transform='rotate(288)'/%3E%3C/g%3E%3Ccircle r='1.6' fill='%23fbf3e6'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+/* 英文籤紙 */
+.slip[data-lang='en'] { font-family: var(--serif-en); }
+.slip[data-lang='en'] .slip-head-band { font-family: var(--serif-en); letter-spacing: 0.5em; text-indent: 0.5em; font-size: 12.5px; }
+.slip[data-lang='en'] .slip-no { font-family: var(--serif-en); letter-spacing: 0.16em; font-size: 11px; }
+.slip[data-lang='en'] .slip-level { font-family: var(--serif-en); font-size: 12.5px; letter-spacing: 0.12em; text-indent: 0.12em; line-height: 1.25; padding: 0 12px; }
+.slip[data-lang='en'] .slip-title { font-family: var(--serif-en); letter-spacing: 0.05em; text-indent: 0; font-size: 18px; }
+.slip[data-lang='en'] .slip-poem { font-family: var(--serif-en); font-size: 15px; font-style: italic; letter-spacing: 0.015em; line-height: 1.5; text-wrap: balance; }
+.slip[data-lang='en'] .slip-meaning { font-family: var(--serif-en); font-size: 13.5px; letter-spacing: 0.01em; text-wrap: balance; margin-top: 6px; }
+.slip[data-lang='en'] .slip-lucky { font-size: 11px; }
+
 /* 默认落印基准 */
-.sheet-stack .slip-level {
+.sheet-stack .slip-level-box {
   animation: stamp 0.44s cubic-bezier(0.2, 1.35, 0.35, 1) both;
 }
 
 /* 上上签：重印 + 鎏金光晕双层扩散 */
-.sheet-stack [data-tone='best'] .slip-level {
+.sheet-stack [data-tone='best'] .slip-level-box {
   animation: stamp-best 0.5s cubic-bezier(0.18, 1.45, 0.3, 1) both;
 }
 
@@ -1150,7 +1285,7 @@ body {
 }
 
 /* 上签：明快琥珀墨晕 */
-.sheet-stack [data-tone='good'] .slip-level {
+.sheet-stack [data-tone='good'] .slip-level-box {
   animation: stamp 0.42s cubic-bezier(0.2, 1.35, 0.35, 1) both;
 }
 .sheet-stack [data-tone='good'] .level-stamp-aura {
@@ -1159,7 +1294,7 @@ body {
 }
 
 /* 中签：双重同心圆碧波水纹涟漪 */
-.sheet-stack [data-tone='fair'] .slip-level {
+.sheet-stack [data-tone='fair'] .slip-level-box {
   animation: stamp-fair 0.46s cubic-bezier(0.25, 1, 0.4, 1) both;
 }
 .sheet-stack [data-tone='fair'] .level-stamp-aura {
@@ -1180,7 +1315,7 @@ body {
 }
 
 /* 下签：沉香化厄微云，安定舒缓 */
-.sheet-stack [data-tone='low'] .slip-level {
+.sheet-stack [data-tone='low'] .slip-level-box {
   animation: stamp-low 0.52s cubic-bezier(0.3, 0.9, 0.5, 1) both;
 }
 .sheet-stack [data-tone='low'] .level-stamp-aura {
@@ -1213,201 +1348,6 @@ body {
   100% { opacity: 0; transform: scale(1.6); }
 }
 
-.slip-cell-title {
-  text-align: center;
-  padding: 6px 14px;
-}
-
-.slip-title-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 4px;
-}
-
-.slip-title-flourish {
-  font-size: 14px;
-  color: var(--ink-3);
-  opacity: 0.55;
-}
-
-.slip-title {
-  font-size: clamp(16px, 4.2vw, 19.5px);
-  line-height: 1.35;
-  font-weight: 600;
-  letter-spacing: 0.48em;
-  text-indent: 0.48em;
-  color: var(--ink);
-}
-
-.slip-cell-body {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 14px 8px;
-}
-
-/* 直排只给中文的签纸：七言两句竖着排在朱丝栏中 */
-.slip[data-lang='zh'] .slip-vertical {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.slip-grid-columns {
-  display: flex;
-}
-
-.slip[data-lang='zh'] .slip-grid-columns {
-  writing-mode: vertical-rl;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  height: 126px;
-  gap: 0;
-}
-
-.slip[data-lang='zh'] .slip-column {
-  padding: 0 7px;
-  border-left: 1px dashed color-mix(in srgb, var(--rule) 65%, transparent);
-  height: 100%;
-  display: flex;
-  align-items: flex-start;
-}
-.slip[data-lang='zh'] .slip-column:first-child {
-  border-right: 1px dashed color-mix(in srgb, var(--rule) 65%, transparent);
-}
-.slip[data-lang='zh'] .slip-col-meaning {
-  border-left: none;
-  padding-left: 9px;
-}
-
-.slip[data-lang='en'] .slip-vertical {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  width: 100%;
-}
-
-.slip-western-poem {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 9px;
-  width: 100%;
-  max-width: 380px;
-  text-align: center;
-  padding: 4px 6px;
-}
-
-.slip-poem-lines {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  width: 100%;
-}
-
-.slip-vertical p { margin: 0; }
-
-.slip-poem {
-  font-size: 14px;
-  letter-spacing: 0.16em;
-  line-height: 1.34;
-  font-weight: 500;
-  color: var(--ink);
-}
-
-.slip-meaning {
-  font-size: 12.5px;
-  letter-spacing: 0.12em;
-  line-height: 1.5;
-  color: var(--ink-2);
-}
-
-.slip-lucky-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 8px;
-  padding: 2px 9px;
-  border-radius: 10px;
-  background: var(--tone-bg);
-  border: 0.5px solid color-mix(in srgb, var(--tone) 30%, transparent);
-}
-
-.lucky-pip {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--tone);
-}
-
-.slip-lucky {
-  font-size: 11.5px;
-  font-family: var(--mono);
-  letter-spacing: 0.08em;
-  color: var(--tone);
-  font-weight: 600;
-  margin: 0;
-}
-
-/* 英文签纸：古典西式活字印刷版式 */
-.slip[data-lang='en'] { font-family: var(--serif-en); }
-
-.slip[data-lang='en'] .slip-poem {
-  font-family: var(--serif-en);
-  font-size: 15px;
-  font-weight: 500;
-  font-style: italic;
-  letter-spacing: 0.015em;
-  line-height: 1.5;
-  text-wrap: balance;
-  color: var(--ink);
-}
-
-.slip[data-lang='en'] .slip-meaning {
-  font-family: var(--serif-en);
-  font-size: 13.5px;
-  letter-spacing: 0.01em;
-  line-height: 1.55;
-  text-wrap: balance;
-  color: var(--ink-2);
-  padding-top: 8px;
-  border-top: 1px dashed color-mix(in srgb, var(--rule) 55%, transparent);
-  width: 90%;
-  margin: 0 auto;
-}
-
-.slip[data-lang='en'] .slip-lucky {
-  font-size: 11px;
-  letter-spacing: 0.08em;
-}
-
-.slip[data-lang='en'] .slip-title {
-  font-family: var(--serif-en);
-  font-size: clamp(16px, 4.2vw, 19.5px);
-  letter-spacing: 0.05em;
-  text-indent: 0;
-  font-weight: 600;
-}
-
-.slip[data-lang='en'] .slip-title-flourish {
-  font-size: 9px;
-  color: var(--tone);
-  opacity: 0.7;
-  vertical-align: 1px;
-}
-
-.slip[data-lang='en'] .slip-level {
-  font-family: var(--serif-en);
-  font-size: clamp(16px, 4.4vw, 22px);
-  letter-spacing: 0.1em;
-  text-indent: 0.1em;
-  font-weight: 800;
-}
 
 .slip-mini[data-lang='en'] .slip-mini-title { letter-spacing: 0.06em; }
 
@@ -2156,12 +2096,6 @@ code {
 @media (max-width: 400px) {
   .shell { padding: 14px 16px 26px; }
   .ask-zone { --mark-len: 14px; padding: 16px 12px; }
-  .slip { padding: 16px 12px 10px; }
-  .slip-cell { padding: 10px; }
-  /* 带上 .slip[data-lang] 是必须的：基础规则现在也带着它，
-     选择器权重比裸 .slip-vertical 高，不写就压不下去。 */
-  .slip[data-lang='zh'] .slip-vertical { height: 186px; gap: 13px; }
-  .slip[data-lang='en'] .slip-vertical { min-height: 186px; gap: 11px; }
   .footer { gap: 12px; }
   .footer-note { width: 100%; margin-left: 0; }
 }
@@ -3094,13 +3028,6 @@ code {
   display: none;
 }
 
-.shell:has(.cyl3d-stage) {
-  --wood-edge: #8f6a43;
-  --wood: #ecd9b8;
-  --wood-hi: #f5e8cf;
-  --wood-ink: #3b2a1e;
-  --ema-cut: 22px;
-}
 
 .shell:has(.cyl3d-stage) .ask-slot,
 .shell:has(.cyl3d-stage) .ask-slot.printed {
@@ -3109,7 +3036,7 @@ code {
   padding: 0;
 }
 
-.shell:has(.cyl3d-stage) .ask-zone {
+:is(.shell:has(.cyl3d-stage) .ask-zone, .ema-card) {
   position: relative;
   isolation: isolate;
   width: min(420px, 100%);
@@ -3121,8 +3048,8 @@ code {
   transition: transform 0.3s ease;
 }
 
-.shell:has(.cyl3d-stage) .ask-zone::before,
-.shell:has(.cyl3d-stage) .ask-zone::after {
+:is(.shell:has(.cyl3d-stage) .ask-zone, .ema-card)::before,
+:is(.shell:has(.cyl3d-stage) .ask-zone, .ema-card)::after {
   content: '';
   position: absolute;
   z-index: -1;
@@ -3131,13 +3058,13 @@ code {
 }
 
 /* 外層：深木邊 */
-.shell:has(.cyl3d-stage) .ask-zone::before {
+:is(.shell:has(.cyl3d-stage) .ask-zone, .ema-card)::before {
   inset: 0;
   background: var(--wood-edge);
 }
 
 /* 內層：淺木面加細木紋 */
-.shell:has(.cyl3d-stage) .ask-zone::after {
+:is(.shell:has(.cyl3d-stage) .ask-zone, .ema-card)::after {
   inset: 3px;
   --ema-cut: 20px;
   background:
@@ -3145,13 +3072,13 @@ code {
     linear-gradient(180deg, var(--wood-hi), var(--wood));
 }
 
-.shell:has(.cyl3d-stage) .ask-zone:hover,
-.shell:has(.cyl3d-stage) .ask-zone:focus-within {
+:is(.shell:has(.cyl3d-stage) .ask-zone, .ema-card):hover,
+:is(.shell:has(.cyl3d-stage) .ask-zone, .ema-card):focus-within {
   transform: rotate(-0.6deg);
 }
 
 /* 紅繩：從牌頂正中往上分成倒 V，中間一個小結 */
-.shell:has(.cyl3d-stage) .ema-cord {
+:is(.shell:has(.cyl3d-stage), .ema-card) .ema-cord {
   display: block;
   position: absolute;
   left: 50%;
@@ -3164,7 +3091,7 @@ code {
     linear-gradient(to top left, transparent calc(50% - 1px), #b8321f calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)) right / 50% 100% no-repeat;
 }
 
-.shell:has(.cyl3d-stage) .ema-cord::after {
+:is(.shell:has(.cyl3d-stage), .ema-card) .ema-cord::after {
   content: '';
   position: absolute;
   left: 50%;
@@ -3176,7 +3103,7 @@ code {
   background: #b8321f;
 }
 
-.shell:has(.cyl3d-stage) .ema-caption {
+:is(.shell:has(.cyl3d-stage), .ema-card) .ema-caption {
   display: block;
   margin: 0 0 2px;
   text-align: center;
@@ -3185,7 +3112,7 @@ code {
   color: var(--accent);
 }
 
-.shell:has(.cyl3d-stage) .ema-mizuhiki {
+:is(.shell:has(.cyl3d-stage), .ema-card) .ema-mizuhiki {
   display: block;
   width: 150px;
   height: 17px;
@@ -3204,7 +3131,7 @@ code {
   color: color-mix(in srgb, var(--wood-ink) 55%, transparent);
 }
 
-.shell:has(.cyl3d-stage) .asked {
+:is(.shell:has(.cyl3d-stage), .ema-card) .asked {
   /* 折行時兩行差不多長，不會剩一個「吗？」掛在第二行 */
   text-wrap: balance;
   color: var(--wood-ink);
@@ -3387,4 +3314,49 @@ code {
   .shrine-branch { width: 30vw; top: 40px; }
   .shrine-branch.left { left: -14px; }
   .shrine-branch.right { right: -14px; }
+}
+
+/* 結果頁：繪馬、籤紙、漆木札、解籤續頁各自是場景裡的物件，不再是一整卷紙 */
+.sheet-stack {
+  max-width: 400px;
+  background: none;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* 選擇器要比繪馬共用那條（:is(.shell:has(.cyl3d-stage) .ask-zone, …) 三個 class）重，寬度才蓋得過去 */
+.result .sheet-stack .ema-card {
+  width: min(360px, 100%);
+  margin: 26px auto 0;
+}
+
+.sheet-stack .slip {
+  box-shadow: 0 3px 8px rgba(38, 26, 18, 0.08), 0 16px 36px rgba(38, 26, 18, 0.16);
+}
+
+.sheet-stack .sheet {
+  box-shadow: 0 3px 8px rgba(38, 26, 18, 0.08), 0 16px 36px rgba(38, 26, 18, 0.16);
+}
+
+/* 解籤：朱紅漆木札 */
+.sheet-actions { padding: 4px 0 6px; }
+
+.sheet-actions .lead-action {
+  padding: 9px 30px 9px 34px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #cc412b, #a52a1b);
+  color: #fbf3e6;
+  text-decoration: none;
+  font-size: 19px;
+  box-shadow: inset 0 0 0 1px rgba(255, 236, 214, 0.25), 0 3px 7px rgba(120, 30, 20, 0.3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sheet-actions .lead-action:hover,
+.sheet-actions .lead-action:focus-visible {
+  text-decoration: none;
+  transform: translateY(-1px);
+  box-shadow: inset 0 0 0 1px rgba(255, 236, 214, 0.3), 0 5px 10px rgba(120, 30, 20, 0.34);
 }

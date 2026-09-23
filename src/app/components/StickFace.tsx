@@ -1,11 +1,10 @@
 /**
  * 一张签纸。揭晓、结果页和求签记录都用同一个组件，所以一支签在任何地方长得都一样。
  *
- * 版式照着老派的运势纸票：上面是牌记与朱砂神印，中间一格金石大字等级，一格古籍四字签名，
- * 下面一格正统「朱丝栏」直排签诗与签意。等级决定色彩（`data-tone`）与落印特效。
+ * 版式照日本神社的御神籤：朱紅雙線框、表頭「御神签」、等級是一顆朱紅大印、籤名、直排籤詩、吉色。
+ * 框與印一律朱紅，四種籤運只留在印後的光暈與吉色色點上（`data-tone`），落印特效也跟著籤運。
  *
- * 这张纸是照着「走纸时要整张露得出来」裁的：机身底下只有 260px 上下，原来的
- * 签有 530px，永远只能吐出一半。保持整体高度紧凑的同时，赋予手工棉纸与雕版文武框质感。
+ * 印表機走紙時吐出的也是這一張（機身底下只露得出上半截，表頭與大紅印剛好在上半截）。
  *
  * small 版给求签记录用：同样的信息，压成一行，不排直排文字。
  *
@@ -16,6 +15,7 @@
 import type { Language } from '../../shared/lang';
 import { LEVEL_LABEL, STICK_COUNT, stickText, type FortuneStick } from '../../shared/sticks';
 import { LEVEL_TONE } from '../constants';
+import { hanNumber } from '../../shared/numerals';
 
 export default function StickFace(props: {
   stick: FortuneStick;
@@ -39,66 +39,52 @@ export default function StickFace(props: {
     );
   }
 
+  // 三個字（上上签）的印要小一號才放得下
+  const longLevel = [...level].length >= 3 || en;
   return (
     <article className="slip" data-tone={tone.key} data-lang={language}>
-      {/* 签纸古典回纹角饰 */}
-      <div className="slip-corner tc-left" aria-hidden="true" />
-      <div className="slip-corner tc-right" aria-hidden="true" />
-      <div className="slip-corner bc-left" aria-hidden="true" />
-      <div className="slip-corner bc-right" aria-hidden="true" />
+      <header className="slip-head">
+        <span className="slip-head-band">{en ? 'OMIKUJI' : '御神签'}</span>
+        <span className="slip-no">{en ? `NO. ${stick.no} OF ${STICK_COUNT}` : `第${hanNumber(stick.no)}签`}</span>
+      </header>
 
-      {/* 等级印章核心格：金石印泥质感 + 专属四阶光晕 */}
-      <div className="slip-cell slip-cell-level">
-        <span className="slip-rail">{en ? `NO. ${stick.no}` : `第 ${stick.no} 签`}</span>
-        <div className="slip-level-box">
-          <strong className="slip-level">{level}</strong>
+      {/* 等級是一顆朱紅大印：落印動畫套在整顆印上，四種籤運的光暈在印後面 */}
+      <div className="slip-seal-row">
+        <div className={`slip-level-box${longLevel ? ' long' : ''}`}>
           <div className="level-stamp-aura" aria-hidden="true" />
-        </div>
-        <span className="slip-rail">{en ? `OF ${STICK_COUNT}` : '之 签 运'}</span>
-      </div>
-
-      {/* 签名：中文用传统角括弧，英文用精致星芒 */}
-      <div className="slip-cell slip-cell-title">
-        <div className="slip-title-row">
-          <span className="slip-title-flourish" aria-hidden="true">{en ? '✦' : '「'}</span>
-          <strong className="slip-title">{text.title}</strong>
-          <span className="slip-title-flourish" aria-hidden="true">{en ? '✦' : '」'}</span>
+          <strong className="slip-level">{level}</strong>
         </div>
       </div>
 
-      {/* 签诗区：中文正统「朱丝栏」直排，英文西式古典活字印刷排版 */}
-      <div className="slip-cell slip-cell-body">
-        <div className="slip-vertical">
-          {language === 'zh' ? (
-            <div className="slip-grid-columns">
-              <div className="slip-column slip-col-poem">
-                <p className="slip-poem">{text.poem[0]}</p>
-              </div>
-              <div className="slip-column slip-col-poem">
-                <p className="slip-poem">{text.poem[1]}</p>
-              </div>
-              <div className="slip-column slip-col-meaning">
-                <p className="slip-meaning">{text.meaning}</p>
-              </div>
-            </div>
-          ) : (
-            <div className="slip-western-poem">
-              <div className="slip-poem-lines">
-                <p className="slip-poem">{text.poem[0]}</p>
-                <p className="slip-poem">{text.poem[1]}</p>
-              </div>
-              <p className="slip-meaning">{text.meaning}</p>
-            </div>
-          )}
+      <div className="slip-title-row">
+        <strong className="slip-title">{text.title}</strong>
+      </div>
 
-          <div className="slip-lucky-badge">
-            <span className="lucky-pip" aria-hidden="true" />
-            <p className="slip-lucky">
-              {en ? `Lucky tone · ${tone.luckyColor.en}` : `吉色 · ${tone.luckyColor.zh}`}
-            </p>
+      <div className="slip-body">
+        {language === 'zh' ? (
+          <div className="slip-grid-columns">
+            <p className="slip-column slip-poem">{text.poem[0]}</p>
+            <p className="slip-column slip-poem">{text.poem[1]}</p>
+            <p className="slip-column slip-meaning">{text.meaning}</p>
           </div>
-        </div>
+        ) : (
+          <div className="slip-western-poem">
+            <p className="slip-poem">{text.poem[0]}</p>
+            <p className="slip-poem">{text.poem[1]}</p>
+            <p className="slip-meaning">{text.meaning}</p>
+          </div>
+        )}
       </div>
+
+      <footer className="slip-foot">
+        <span className="slip-lucky-badge">
+          <span className="lucky-pip" aria-hidden="true" />
+          <span className="slip-lucky">
+            {en ? `Lucky tone · ${tone.luckyColor.en}` : `吉色 · ${tone.luckyColor.zh}`}
+          </span>
+        </span>
+        <span className="slip-sakura" aria-hidden="true" />
+      </footer>
     </article>
   );
 }
