@@ -94,6 +94,15 @@
 驗證花瓣時注意：面板是 `document.hidden = true`，花瓣迴圈不會啟動 —— 用
 `Object.defineProperty(document, 'hidden', { get: () => false })` 墊掉，再切一次「动画」開關讓它重跑。
 
+**籤紙改成日本御神籤**（使用者選的，另一個選項是可愛雜貨風橫式籤卡）已做完：
+設計 [`specs/2026-09-23-omikuji-slip-design.md`](specs/2026-09-23-omikuji-slip-design.md)、
+計畫 [`plans/2026-09-23-omikuji-slip.md`](plans/2026-09-23-omikuji-slip.md)。結果頁的問題寫在繪馬上、
+解籤是朱紅漆木札。**解籤續頁（`.sheet`）內部版式還沒改**，是下一個自然的候選。
+直排的坑：`writing-mode: vertical-rl` 的 flex 容器裡 `row` 是由上往下，欄要由右往左排得用 `column`。
+想看各種籤運與英文籤：用 `import('/src/app/components/StickFace.tsx')` 與
+`import('/node_modules/.vite/deps/react-dom_client.js')` 的 `default.createRoot` 直接掛到頁面上，
+不必真的抽（點「解签」會真的呼叫 agent、計費）。
+
 還沒做：擲筊確認；`src/app/roll/scene.ts` 的 `PCFSoftShadowMap` 警告（使用者說先擱著）。
 
 ## 驗證技巧（內建瀏覽器面板）
