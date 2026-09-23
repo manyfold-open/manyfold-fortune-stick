@@ -17,11 +17,11 @@ import { EJECT_MS, LEVEL_TONE, PRINT_MS, QUESTION_MIN, QUESTION_MAX } from '../c
 import { useT } from '../i18n';
 import {
   bambooRattle,
-  chime,
   motor,
   paperRollRumble,
   press as pressSound,
   stampSound,
+  suzu,
   typeTick,
 } from '../sound';
 import {
@@ -238,7 +238,7 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
         window.setTimeout(() => {
           triggerHaptic([35, 40, 18]);
           if (props.prefs.sound) {
-            chime(body.reading.stick.level);
+            suzu(body.reading.stick.level);
             stampSound(body.reading.stick.level);
           }
           setPhase('ejecting');
@@ -263,7 +263,7 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
     pendingReading.current = null;
     if (props.prefs.sound) {
       // 3D 籤筒的鈴聲已經在號碼印上籤身那一格響過了，這裡只剩籤紙的蓋章聲
-      if (chimeAtSlip(vessel)) chime(drawn.stick.level);
+      if (chimeAtSlip(vessel)) suzu(drawn.stick.level);
       stampSound(drawn.stick.level);
     }
     setReading(drawn);
@@ -330,6 +330,7 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
         onInterpret={() => void interpret()}
         onFollowUpMessages={onFollowUpMessages}
         onRestart={restart}
+        sound={props.prefs.sound}
       />
     );
   }

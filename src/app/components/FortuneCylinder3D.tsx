@@ -53,7 +53,7 @@ import {
 } from '../../shared/cylinder/pull';
 import { createCylinderScene, type CylinderScene } from '../cylinder/scene';
 import { STICK_VARIANTS, createNumberedStickCanvas } from '../cylinder/materials';
-import { bambooRattle, bambooRustle, chime } from '../sound';
+import { bambooRattle, bambooRustle, suzu } from '../sound';
 
 export interface FortuneCylinder3DProps {
   state: 'idle' | 'ready' | 'shaking' | 'ejecting';
@@ -345,7 +345,7 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
           if (!soundRef.current) continue;
           if (cue === 'grab') bambooRustle(0.55);
           else if (cue === 'slide') bambooRattle(NUDGE_END_AT - SLIDE_AT);
-          else chime(dr.level);
+          else suzu(dr.level);
         }
         dr.cueMs = ms;
         const hp = pullPose(pullSlot, ms, calm);
@@ -495,12 +495,12 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
         : stageLabel === 'shaking'
           ? progress >= 1
             ? dragging
-              ? en ? 'Stir as long as you like — let go to draw' : '想攪多久都可以 —— 放手就抽'
+              ? en ? 'Stir as long as you like, then let go to draw' : '想攪多久都可以，放手就抽'
               : en ? 'A stick is coming up…' : '籤就要出來了…'
             : dragging
               ? en ? 'Stir them round…' : '攪一攪…'
               : en ? 'Give them a real stir first' : '先攪一下再放手'
-          : en ? 'Press on the sticks and stir — let go whenever you like' : '按住籤攪一攪 —— 想攪多久都可以，放手就抽';
+          : en ? 'Press on the sticks and stir. Let go whenever you like' : '按住籤攪一攪，想攪多久都可以，放手就抽';
 
   return (
     <div className="roll-stage cyl3d-stage">

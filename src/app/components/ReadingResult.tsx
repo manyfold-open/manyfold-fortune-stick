@@ -1,30 +1,30 @@
 /**
- * 打出来的那张签纸，和接在它下面的解签续页。
+ * 打出来的那张签纸，和它背面的解签。
  *
  * 揭晓时只有签纸本身 —— 签号、等级、四字签名、签诗。解签是另外按一下：让用户先看签、
  * 先自己猜，再决定什么时候揭晓（产品文档第三步）。
  *
- * 版面是神社裡的一張御神籤：問題寫在上方跟紙同寬的繪馬上；籤紙與解籤是**同一張長紙條**
- * （`.omikuji` 畫外框，「解 签」帶是紙中間的分段）。分成兩張的時候使用者說「感覺像是分了三段」。
+ * 版面是神社裡的一張御神籤：問題寫在上方跟紙同寬的繪馬上；籤紙是**一張有正反兩面的卡**，
+ * 正面是籤，背面是解籤（設計：docs/superpowers/specs/2026-09-23-reading-flip-design.md）。
+ * 以前解籤接在籤紙下面、頁面一直往下長，使用者說「往下滑動很奇怪…讓它翻面過來，畫面就不會無限延伸」。
  *
- * 解签后支持拟真撕纸动效：
- * 用户可点击「撕下分享」或沿齿孔拉断纸条，整张解签内容伴随物理断裂声与触感震动，
- * 脱离并向前浮现为一张立体的「灵签珍藏卡」，可直接保存分享，或随时贴回。
+ * 卡高固定（CSS 的 --card-h），背面內容自己捲；分享與追問是浮在背面上的一張紙，不往下接。
  */
 
-import { useState } from 'react';
-import { LEVEL_LABEL, stickText } from '../../shared/sticks';
+import { useEffect, useState } from 'react';
+import { stickText } from '../../shared/sticks';
 import type { FollowUpMessage, Reading } from '../../shared/types';
 import { storedErrorText } from '../api';
 import { LEVEL_TONE } from '../constants';
 import { copyFor, useT } from '../i18n';
 import { withoutDashes } from '../../shared/text';
 import { EmaChrome } from './Ema';
-import { paperSettleSound, tearPaperSound } from '../sound';
+import { paperSettleSound } from '../sound';
 import FollowUp from './FollowUp';
 import SharePanel from './SharePanel';
 import StickFace from './StickFace';
-import TearLine, { TearEdge } from './TearLine';
+
+type Panel = 'share' | 'followup' | null;
 
 export default function ReadingResult(props: {
   reading: Reading;
@@ -33,13 +33,15 @@ export default function ReadingResult(props: {
   onInterpret: () => void;
   onFollowUpMessages: (messages: FollowUpMessage[]) => void;
   onRestart: () => void;
+  /** 使用者的「声音」開關：翻面的紙聲也要聽它的 */
+  sound: boolean;
 }) {
   const t = useT();
-  const [showShare, setShowShare] = useState(false);
-  const [showFollowUp, setShowFollowUp] = useState(false);
-  const [tearState, setTearState] = useState<'intact' | 'tearing' | 'torn'>('intact');
   const { reading } = props;
   const { interpretation } = reading;
+  // 重新整理時已經解過的籤直接停在背面：使用者離開時看的就是解籤
+  const [flipped, setFlipped] = useState(Boolean(interpretation));
+  const [panel, setPanel] = useState<Panel>(null);
   const displayQuestion = withoutDashes(reading.question);
   const displayInterpretation = interpretation
     ? {
@@ -57,89 +59,33 @@ export default function ReadingResult(props: {
    * 按钮和错误提示是另一回事 —— 那是机器在说话，跟界面走。
    */
   const sheet = copyFor(reading.language);
+  /** 背面有東西可看：解好了，或正在解（先放骨架） */
+  const hasBack = Boolean(interpretation) || props.interpreting;
+  const showBack = flipped && hasBack;
 
-  const handleTear = () => {
-    if (tearState !== 'intact') return;
-    setTearState('tearing');
-    setShowFollowUp(false);
-    setShowShare(true);
+  // 一按「解签」就翻到背面，骨架在背面等著
+  useEffect(() => {
+    if (props.interpreting) setFlipped(true);
+  }, [props.interpreting]);
 
-    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-      try {
-        navigator.vibrate([12, 18, 26, 32]);
-      } catch {
-        /* Ignore on restricted environments */
-      }
-    }
+  useEffect(() => {
+    if (!panel) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setPanel(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [panel]);
 
-    tearPaperSound(0.3);
-
-    setTimeout(() => {
-      setTearState('torn');
-    }, 440);
+  const flip = (toBack: boolean) => {
+    if (props.sound) paperSettleSound(0.2);
+    setPanel(null);
+    setFlipped(toBack);
   };
 
-  const handleReattach = () => {
-    paperSettleSound(0.2);
-    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-      try {
-        navigator.vibrate(15);
-      } catch {
-        /* Ignore */
-      }
-    }
-    setTearState('intact');
-  };
+  const togglePanel = (next: Exclude<Panel, null>) => setPanel((open) => (open === next ? null : next));
 
-  const actionsNav = (
-    <nav className="result-actions" data-lang={reading.language}>
-      <div className="actions-cluster actions-cluster-primary">
-        {tearState === 'torn' ? (
-          <>
-            <button type="button" className="text-action action-reattach" onClick={handleReattach}>
-              ↩ {t('actionReattach')}
-            </button>
-            <button
-              type="button"
-              className="text-action strong"
-              onClick={() => {
-                setShowShare((open) => !open);
-                if (!showShare) setShowFollowUp(false);
-              }}
-            >
-              {showShare ? t('actionShareClose') : t('actionShare')}
-            </button>
-          </>
-        ) : (
-          <button type="button" className="text-action action-tear strong" onClick={handleTear}>
-            <span className="tear-icon" aria-hidden="true">
-              ✂
-            </span>{' '}
-            {t('actionTearShare')}
-          </button>
-        )}
-      </div>
-
-      <div className="actions-cluster actions-cluster-secondary">
-        <button
-          type="button"
-          className="text-action"
-          onClick={() => {
-            setShowFollowUp((open) => !open);
-            if (!showFollowUp) setShowShare(false);
-          }}
-        >
-          {showFollowUp ? t('actionFollowUpClose') : t('actionFollowUp')}
-        </button>
-
-        <button type="button" className="text-action" onClick={props.onRestart}>
-          {t('actionRestart')}
-        </button>
-      </div>
-    </nav>
-  );
-
-  const interpretationContent = (
+  const interpretationBlocks = (
     <>
       {isFallback && (
         <p className="sheet-note">
@@ -170,13 +116,13 @@ export default function ReadingResult(props: {
           {displayInterpretation.notice && (
             <section className="sheet-block sheet-block-notice">
               <h3>{sheet.blockNotice}</h3>
-            <p>{displayInterpretation.notice}</p>
+              <p>{displayInterpretation.notice}</p>
             </section>
           )}
           {displayInterpretation.action && (
             <section className="sheet-block sheet-block-action">
               <h3>{sheet.blockAction}</h3>
-            <p>{displayInterpretation.action}</p>
+              <p>{displayInterpretation.action}</p>
             </section>
           )}
         </div>
@@ -191,32 +137,11 @@ export default function ReadingResult(props: {
           </p>
         </div>
       )}
-
-      {actionsNav}
-
-      {showShare && interpretation && (
-        <SharePanel
-          stick={reading.stick}
-          language={reading.language}
-          interpretation={interpretation}
-          question={displayQuestion}
-          onClose={() => setShowShare(false)}
-        />
-      )}
-
-      {showFollowUp && (
-        <FollowUp
-          readingId={reading.id}
-          language={reading.language}
-          onMessages={props.onFollowUpMessages}
-        />
-      )}
     </>
   );
 
   const loadingSkeleton = (
-    <article className="sheet sheet-loading" data-lang={reading.language}>
-      <p className="sheet-band" aria-hidden>{sheet.sheetBand}</p>
+    <>
       <div className="interpreting-header">
         <span className="interpreting-spinner" aria-hidden="true" />
         <p className="interpreting-status">
@@ -250,19 +175,15 @@ export default function ReadingResult(props: {
           <div className="skeleton-line" style={{ width: '54%' }} />
         </div>
       </div>
-    </article>
+    </>
   );
 
   const stickInfo = stickText(reading.stick, reading.language);
 
   return (
-    <section
-      className={`stage result${tearState === 'torn' ? ' stage-torn' : ''}`}
-      data-tone={LEVEL_TONE[reading.stick.level].key}
-    >
+    <section className="stage result" data-tone={LEVEL_TONE[reading.stick.level].key}>
       <div className="result-deck mode-single">
-        {/* 上半部：紙卷本體（所求之事 + 籤面） */}
-        <div className={`sheet-stack${tearState === 'torn' ? ' slip-stub' : ''}`}>
+        <div className="sheet-stack">
           {/* 所求之事：寫在繪馬上。小字跟這一局的語言走（紙上說問題的語言），不跟界面 */}
           <div className="ema-card" data-lang={reading.language}>
             <EmaChrome caption={sheet.emaCaption}>
@@ -270,32 +191,79 @@ export default function ReadingResult(props: {
             </EmaChrome>
           </div>
 
-          {/* 籤紙與解籤是同一張長紙條：外框畫在 .omikuji 上。撕下分享時，下半截才離開這張紙 */}
-          <div className="omikuji">
-            <StickFace stick={reading.stick} language={reading.language} />
+          <div className={`omikuji-card${showBack ? ' flipped' : ''}`}>
+            <div className="omikuji-inner">
+              <div className="omikuji face face-front" inert={showBack}>
+                <StickFace stick={reading.stick} language={reading.language} />
+                {hasBack && (
+                  <button type="button" className="flip-tag" onClick={() => flip(true)}>
+                    {t('flipToReading')} ⟳
+                  </button>
+                )}
+              </div>
 
-            {!interpretation && props.interpreting && loadingSkeleton}
+              {hasBack && (
+                <div className="omikuji face face-back" inert={!showBack}>
+                  <article
+                    className={`sheet${!interpretation ? ' sheet-loading' : ''}`}
+                    data-lang={reading.language}
+                    aria-label={`${stickInfo.title} · ${sheet.sheetBand}`}
+                  >
+                    <p className="sheet-band">
+                      <span aria-hidden>{sheet.sheetBand}</span>
+                      <button type="button" className="flip-tag" onClick={() => flip(false)}>
+                        ⟲ {t('flipToSlip')}
+                      </button>
+                    </p>
 
-            {/* 解籤後未撕下：呈現齒孔撕線 */}
-            {interpretation && tearState !== 'torn' && (
-              <TearLine onTear={handleTear} isTearing={tearState === 'tearing'} />
-            )}
+                    <div className="sheet-scroll">{interpretation ? interpretationBlocks : loadingSkeleton}</div>
 
-            {/* 若已撕下，上半紙卷底部露出自然撕斷毛邊 */}
-            {interpretation && tearState === 'torn' && (
-              <TearEdge position="bottom" className="stub-bottom-edge" />
-            )}
+                    {interpretation && (
+                      <nav className="result-actions" data-lang={reading.language}>
+                        <button type="button" className="text-action strong" onClick={() => togglePanel('share')}>
+                          {t('actionShare')}
+                        </button>
+                        <button type="button" className="text-action" onClick={() => togglePanel('followup')}>
+                          {t('actionFollowUp')}
+                        </button>
+                        <button type="button" className="text-action" onClick={props.onRestart}>
+                          {t('actionRestart')}
+                        </button>
+                      </nav>
+                    )}
+                  </article>
 
-            {/* 未撕下時，解籤內容接在同一卷紙下方 */}
-            {interpretation && tearState !== 'torn' && (
-              <article
-                className={`sheet${props.interpreting ? ' sheet-loading' : ''}${tearState === 'tearing' ? ' sheet-tearing' : ''}`}
-                data-lang={reading.language}
-              >
-                <p className="sheet-band" aria-hidden>{sheet.sheetBand}</p>
-                {interpretationContent}
-              </article>
-            )}
+                  {/* 分享、追問浮在背面上：一張蓋住解籤的紙，自己捲，不讓頁面往下長 */}
+                  {panel && interpretation && (
+                    <div className="sheet-panel" role="dialog" aria-modal="false">
+                      {panel === 'share' ? (
+                        <SharePanel
+                          stick={reading.stick}
+                          language={reading.language}
+                          interpretation={interpretation}
+                          question={displayQuestion}
+                          onClose={() => setPanel(null)}
+                        />
+                      ) : (
+                        <>
+                          <div className="share-head">
+                            <strong>{t('actionFollowUp')}</strong>
+                            <button type="button" className="text-action tiny" onClick={() => setPanel(null)}>
+                              {t('shareClose')}
+                            </button>
+                          </div>
+                          <FollowUp
+                            readingId={reading.id}
+                            language={reading.language}
+                            onMessages={props.onFollowUpMessages}
+                          />
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {!interpretation && !props.interpreting && (
@@ -312,27 +280,6 @@ export default function ReadingResult(props: {
             </div>
           )}
         </div>
-
-        {/* 若已撕下，解籤內容向前浮起，成為立體的「靈籤珍藏卡」 */}
-        {interpretation && tearState === 'torn' && (
-          <div className="torn-card-container">
-            <article
-              className={`sheet torn-card${props.interpreting ? ' sheet-loading' : ''}`}
-              data-lang={reading.language}
-            >
-              <TearEdge position="top" className="card-top-edge" />
-              <p className="sheet-band" aria-hidden>{sheet.sheetBand}</p>
-              <div className="torn-card-header">
-                <span className="torn-card-badge">
-                  {reading.language === 'en'
-                    ? `No. ${reading.stick.no} · ${LEVEL_LABEL.en[reading.stick.level]} · ${stickInfo.title}`
-                    : `第 ${reading.stick.no} 籤 · ${reading.stick.level} · ${stickInfo.title}`}
-                </span>
-              </div>
-              {interpretationContent}
-            </article>
-          </div>
-        )}
       </div>
     </section>
   );

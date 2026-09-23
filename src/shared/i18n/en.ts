@@ -35,9 +35,10 @@ export const en = {
   askLabel: 'What would you like to ask?',
   askGhost: 'Write down the thing on your mind',
   emaCaption: 'EMA · MAKE A WISH',
-  example1: 'How should I handle the recent changes at work?',
-  example2: 'Is this relationship still worth putting myself into?',
-  example3: 'Is now the time to start the thing I keep thinking about?',
+  /* 例句寫短：手機上一句要擠進一塊木札（約 290px），太長會折兩行、三塊疊起來把籤筒擠小 */
+  example1: 'How do I face the changes at work?',
+  example2: 'Is this relationship still worth it?',
+  example3: 'Is it time to start that long-held plan?',
 
   /* ── the printer LCD ── */
   lcdPrinting: 'Printing…',
@@ -65,14 +66,10 @@ export const en = {
   blockNotice: 'One thing to keep in mind',
   blockAction: 'One thing you can do today',
   actionShare: 'Share',
-  actionShareClose: 'Close sharing',
-  actionTearShare: 'Tear & share',
-  tearHint: 'Tear along perforation to keep or share',
-  tearPullTab: 'TEAR',
-  actionReattach: 'Re-attach',
-  shareTalisman: 'Fortune card',
   actionFollowUp: 'Ask a follow-up',
-  actionFollowUpClose: 'Close follow-up',
+  /** 籤紙兩面紅帶右端的小木札：正面翻到解籤、背面翻回籤面 */
+  flipToReading: 'Reading',
+  flipToSlip: 'Slip',
   actionRestart: 'Draw another',
 
   /* ── follow-up ── */
