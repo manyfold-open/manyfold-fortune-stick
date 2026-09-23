@@ -102,11 +102,12 @@ body {
   position: relative;
   max-width: 1120px;
   margin: 0 auto;
-  padding: 20px 28px 30px;
+  padding: max(20px, env(safe-area-inset-top, 20px)) max(28px, calc(env(safe-area-inset-right, 0px) + 24px)) max(32px, calc(env(safe-area-inset-bottom, 0px) + 24px)) max(28px, calc(env(safe-area-inset-left, 0px) + 24px));
   min-height: 100vh;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 }
 
 /* ── 牌记与页脚 ── */
@@ -114,15 +115,18 @@ body {
 .topbar {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 12px;
   margin-bottom: 8px;
+  position: relative;
+  z-index: 20;
 }
 
 .topbar-actions {
   display: flex;
   align-items: center;
   gap: 14px;
+  flex: 0 0 auto;
 }
 
 /* 语言开关：和「求签记录」一样是一行字，不是一个按钮。 */
@@ -223,13 +227,15 @@ body {
 }
 
 .footer-note {
-  position: absolute;
-  top: 20px;
-  left: 0;
-  font: 11px/1 var(--mono);
-  letter-spacing: 0.1em;
+  font: 11.5px/1.4 var(--mono);
+  letter-spacing: 0.08em;
   color: var(--on-ground-2);
   text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .footer-privacy {
@@ -257,12 +263,6 @@ body {
     grid-column: 1;
   }
 
-  .footer-note {
-    top: 14px;
-    left: 0;
-    text-align: left;
-  }
-
   .footer-privacy {
     justify-self: end;
   }
@@ -285,6 +285,10 @@ body {
   text-decoration: none;
   text-underline-offset: 6px;
   transition: opacity 0.15s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .text-action:hover:not(:disabled),
@@ -2772,7 +2776,10 @@ code {
 
 /* 适配 13 寸 MacBook Pro 等笔电屏幕高（视窗通常在 650px - 820px 之间） */
 @media (max-height: 820px) {
-  .shell { padding-top: 10px; padding-bottom: 14px; }
+  .shell {
+    padding-top: max(12px, env(safe-area-inset-top, 12px));
+    padding-bottom: max(24px, calc(env(safe-area-inset-bottom, 0px) + 20px));
+  }
   .stage { padding: 0 0 16px; }
   .stage.result { padding: 4px 0 12px; justify-content: flex-start; }
   .ask-slot { min-height: 144px; }
@@ -2786,43 +2793,51 @@ code {
   .ask-zone { padding: 20px 18px; }
 }
 
+@media (max-width: 640px) {
+  .shell {
+    padding-top: max(16px, env(safe-area-inset-top, 16px));
+    padding-bottom: max(32px, calc(env(safe-area-inset-bottom, 0px) + 26px));
+    padding-inline: max(20px, calc(env(safe-area-inset-left, 0px) + 18px));
+  }
+
+  .topbar {
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .footer-note {
+    font-size: 10.5px;
+    letter-spacing: 0.02em;
+    max-width: calc(100% - 135px);
+  }
+
+  html:lang(en) .footer-note {
+    font-size: 9.5px;
+    max-width: calc(100% - 145px);
+  }
+}
+
 /* 顶栏现在有三样东西（牌记、语言开关、记录），窄屏上挤不下就会折行 ——
    「问一签」被拆成两行看起来像坏了。先收起装饰性的副标，再压小间距。 */
 @media (max-width: 480px) {
-  .topbar { gap: 10px; }
-  .topbar-actions { gap: 12px; }
-  .topbar-actions > * { white-space: nowrap; }
+  .topbar { gap: 8px; }
+  .topbar-actions { gap: 10px; }
+  .topbar-actions > * { white-space: nowrap; font-size: 13px; }
   .brand-name { white-space: nowrap; }
   .brand-sub { display: none; }
 }
 
 @media (max-width: 400px) {
-  .shell { padding: 14px 16px 26px; }
+  .shell {
+    padding-top: max(14px, env(safe-area-inset-top, 14px));
+    padding-bottom: max(30px, calc(env(safe-area-inset-bottom, 0px) + 24px));
+    padding-inline: max(18px, calc(env(safe-area-inset-left, 0px) + 16px));
+  }
   .ask-zone { --mark-len: 14px; padding: 16px 12px; }
   .footer { gap: 12px; }
 }
 
-/* 左上那句小字是 absolute 的：在手機上限制最大寬度與單行省略，避免穿到右邊操作按鈕底下；超小螢幕隱藏避免擁擠 */
-@media (max-width: 640px) {
-  .footer-note {
-    top: 14px;
-    left: 16px;
-    max-width: calc(100% - 180px);
-    font-size: 10.5px;
-    line-height: 1.35;
-    letter-spacing: 0.02em;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  html:lang(en) .footer-note {
-    max-width: calc(100% - 210px);
-    font-size: 9.5px;
-  }
-}
-
-@media (max-width: 380px) {
+@media (max-width: 360px) {
   .footer-note {
     display: none;
   }
@@ -4205,33 +4220,37 @@ html { overflow-x: clip; }
   .shrine-torii { --pillar-w: 12px; --pillar-x: 2px; }
 }
 
-/* 手機版：鳥居與枝子微型化並上提，避免橫木與紙垂壓到繪馬題目 */
+/* 手機版：鳥居與枝子微型化並隨 safe-area 頂在頂欄下方，避開頂欄文字 */
 @media (max-width: 640px) {
   .shrine-torii {
-    --torii-top: 38px;
+    --torii-top: calc(max(16px, env(safe-area-inset-top, 16px)) + 30px);
     --pillar-w: 10px;
     --pillar-x: 2px;
   }
   .torii-kasagi {
-    height: 32px;
+    height: 30px;
   }
   .shrine-pillar::after {
     height: 28px;
   }
   .shimenawa {
-    top: calc(var(--torii-top) + 24px);
-    height: 28px;
+    top: calc(var(--torii-top) + 22px);
+    height: 26px;
   }
   .shide {
     width: 14px;
-    height: 34px;
+    height: 32px;
     margin-left: -7px;
   }
   .torii-nuki {
-    top: calc(var(--torii-top) + 48px);
+    top: calc(var(--torii-top) + 44px);
     height: 10px;
   }
-  .shrine-branch { width: 25vw; top: 34px; }
+  .shrine-branch {
+    width: 22vw;
+    max-width: 85px;
+    top: calc(var(--torii-top) - 6px);
+  }
   .shrine-branch.left { left: -14px; }
   .shrine-branch.right { right: -14px; }
 }
@@ -4554,7 +4573,11 @@ html { overflow-x: clip; }
 
 @media (max-width: 640px) {
   .omikuji-card {
-    /* 手機上繪馬較矮（~90px），給籤卡更充裕高度，內容不被壓扁，解籤可讀區大幅提升 */
+    /* 正面未翻開時，留足高度給下方的「解籤」與「再求一籤」按鈕 */
+    --card-h: clamp(380px, calc(100dvh - 300px), 540px);
+  }
+  .omikuji-card.flipped {
+    /* 翻到背面後，解籤內容較多，動作列內嵌在卡片底部，卡片可更充裕高 */
     --card-h: clamp(460px, calc(100dvh - 240px), 640px);
   }
 }
@@ -4573,8 +4596,6 @@ html { overflow-x: clip; }
 .omikuji.face {
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
-  transform-style: preserve-3d;
-  -webkit-transform-style: preserve-3d;
 }
 
 /* 正面：籤身撐滿卡高，籤詩那一段吃掉多出來的高度、內容置中 */
@@ -4584,11 +4605,14 @@ html { overflow-x: clip; }
   min-height: var(--card-h);
   z-index: 2;
   transform: translateZ(1px);
+  pointer-events: auto;
+  visibility: visible;
 }
 
 .omikuji-card.flipped .face-front {
   z-index: 1;
   pointer-events: none;
+  visibility: hidden;
 }
 
 .face-front .slip {
@@ -4607,11 +4631,15 @@ html { overflow-x: clip; }
   display: flex;
   flex-direction: column;
   z-index: 1;
+  pointer-events: none;
+  visibility: hidden;
   /* 移除直接在 face-back 上的 overflow: hidden，避免壓平 WebKit 3D Context 造成文字鏡像相反或透穿 */
 }
 
 .omikuji-card.flipped .face-back {
-  z-index: 2;
+  z-index: 3;
+  pointer-events: auto;
+  visibility: visible;
 }
 
 .result .omikuji.face-back > .sheet {
@@ -4650,6 +4678,9 @@ html { overflow-x: clip; }
   padding-top: 12px;
   gap: 10px;
   animation: none;
+  position: relative;
+  z-index: 10;
+  pointer-events: auto;
 }
 
 /* 翻面的小木札：兩面紅帶的右端 */
@@ -4845,13 +4876,20 @@ html { overflow-x: clip; }
   .footer {
     grid-template-columns: 1fr auto;
     justify-items: stretch;
-    gap: 10px 12px;
-    padding-top: 12px;
+    gap: 10px 14px;
+    padding-top: 14px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom, 10px));
+    margin-top: auto;
+    position: relative;
+    z-index: 10;
   }
 
   .footer-prefs {
     grid-column: 1;
     grid-row: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
     justify-content: flex-start;
   }
 
@@ -4864,5 +4902,6 @@ html { overflow-x: clip; }
   .footer-credits {
     grid-column: 1 / -1;
     justify-self: center;
+    padding-top: 4px;
   }
 }

@@ -19,6 +19,7 @@ import {
   bambooRattle,
   motor,
   paperRollRumble,
+  paperSettleSound,
   press as pressSound,
   stampSound,
   suzu,
@@ -303,15 +304,19 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
 
   /** 再求一签：清空上一次的问题，回到打印机前，开启全新一轮。 */
   const restart = useCallback(() => {
+    if (props.prefs.sound) paperSettleSound(0.22);
+    triggerHaptic(20);
     clearTimers();
+    stopMotor.current?.();
+    pendingReading.current = null;
     setCurrentReadingId(null);
     setReading(null);
     setSheet(null);
     setQuestion('');
     setFault(null);
     setPhase('ask');
-    window.scrollTo({ top: 0, behavior: props.prefs.reducedMotion ? 'auto' : 'smooth' });
-  }, [clearTimers, props.prefs.reducedMotion]);
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }, [clearTimers, props.prefs.sound, triggerHaptic]);
 
   if (restoring) {
     return (

@@ -150,6 +150,7 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
       {/* 求籤頁與求籤記錄是同一座神社（鳥居、櫻花瓣）；設定與隱私頁留著原本的浮塵 */}
       {route === 'game' || route === 'history' ? <ShrineBackdrop calm={prefs.reducedMotion} /> : <AmbientMotes reducedMotion={prefs.reducedMotion} />}
       <header className="topbar">
+        <span className="footer-note">{t('footerNote')}</span>
         <span className="topbar-actions">
           {/* 只换界面。已经印出来的签一个字都不会动。 */}
           <button
@@ -180,7 +181,6 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
       )}
 
       <footer className="footer">
-        <span className="footer-note">{t('footerNote')}</span>
 
         <div className="footer-prefs">
           <button

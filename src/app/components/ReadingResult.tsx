@@ -193,7 +193,7 @@ export default function ReadingResult(props: {
 
           <div className={`omikuji-card${showBack ? ' flipped' : ''}`}>
             <div className="omikuji-inner">
-              <div className="omikuji face face-front" inert={showBack}>
+              <div className="omikuji face face-front" aria-hidden={showBack}>
                 <StickFace stick={reading.stick} language={reading.language} />
                 {hasBack && (
                   <button type="button" className="flip-tag" onClick={() => flip(true)}>
@@ -203,7 +203,7 @@ export default function ReadingResult(props: {
               </div>
 
               {hasBack && (
-                <div className="omikuji face face-back" inert={!showBack}>
+                <div className="omikuji face face-back" aria-hidden={!showBack}>
                   <article
                     className={`sheet${!interpretation ? ' sheet-loading' : ''}`}
                     data-lang={reading.language}
@@ -266,11 +266,22 @@ export default function ReadingResult(props: {
             </div>
           </div>
 
-          {!interpretation && !props.interpreting && (
+          {!showBack && (
             <div className="sheet-actions" data-lang={reading.language}>
-              <button type="button" className="text-action lead-action" onClick={props.onInterpret}>
-                {t('interpret')}
-              </button>
+              {interpretation ? (
+                <button type="button" className="text-action lead-action" onClick={() => flip(true)}>
+                  {t('flipToReading')} ⟳
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="text-action lead-action"
+                  onClick={props.onInterpret}
+                  disabled={props.interpreting}
+                >
+                  {props.interpreting ? t('interpreting') : t('interpret')}
+                </button>
+              )}
               <div className="sheet-sub-actions">
                 <button type="button" className="text-action" onClick={props.onRestart}>
                   {t('actionRestart')}
