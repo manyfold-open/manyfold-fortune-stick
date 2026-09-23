@@ -15,7 +15,7 @@
  * 这里不提交任何东西：写完之后按打印机上的键才开始（校验也在那一步，错在屏上说）。
  */
 
-import { useState, type RefObject } from 'react';
+import { useEffect, useState, type RefObject } from 'react';
 import { withoutDashes } from '../../shared/text';
 import { QUESTION_MAX } from '../constants';
 import { useT } from '../i18n';
@@ -30,6 +30,11 @@ export default function QuestionForm(props: {
   /** 输入框本体，由调用方持有 —— 机器下方的例句点完要把光标送回这里。 */
   inputRef: RefObject<HTMLTextAreaElement | null>;
   sound?: boolean;
+  /**
+   * 每加一，繪馬就晃一下 —— 有人還沒寫問題就去攪籤筒時，用它把視線拉回來。
+   * 用計數而不是布林：連攪兩次也要晃兩次。
+   */
+  nudge?: number;
 }) {
   const t = useT();
   const [focused, setFocused] = useState(false);
@@ -38,6 +43,18 @@ export default function QuestionForm(props: {
    * 那一下晃动就从头再来一次 —— 连续打字也是每个字晃一下，不用计时器。
    */
   const [strokes, setStrokes] = useState(0);
+  const [nudging, setNudging] = useState(false);
+  useEffect(() => {
+    if (!props.nudge) return;
+    setNudging(false);
+    // 先拿掉、隔一下再加回去，連攪兩次動畫才會從頭播
+    const on = window.setTimeout(() => setNudging(true), 30);
+    const off = window.setTimeout(() => setNudging(false), 900);
+    return () => {
+      window.clearTimeout(on);
+      window.clearTimeout(off);
+    };
+  }, [props.nudge]);
   const field = props.inputRef;
   const length = [...props.value.trim()].length;
   const empty = props.value.length === 0;
@@ -47,7 +64,7 @@ export default function QuestionForm(props: {
   return (
     // 没有框，就把整块区域都做成可以落笔的地方：点哪里都开始写。
     <div className="ask" onClick={() => field.current?.focus()}>
-      <div className={`ask-zone${focused ? ' focused' : ''}${!empty ? ' has-content' : ''}${sway}`}>
+      <div className={`ask-zone${focused ? ' focused' : ''}${!empty ? ' has-content' : ''}${sway}${nudging ? ' nudge' : ''}`}>
         <EmaChrome>
           {/* 用 data-value 撑开高度：输入区自己长高，不需要 JS，也不会出现滚动条。 */}
           <div className="ask-grow" data-value={props.value}>
@@ -79,6 +96,11 @@ export default function QuestionForm(props: {
             />
             {empty && !focused && (
               <p className="ask-ghost" aria-hidden>
+                {/* 一支筆：沒有框，就讓這行字自己說「這裡是寫字的地方」 */}
+                <svg className="ask-pen" viewBox="0 0 20 20">
+                  <path d="M13.6 2.8 17.2 6.4 7.4 16.2 3 17 3.8 12.6Z" />
+                  <path d="M11.6 4.8 15.2 8.4" />
+                </svg>
                 {t('askGhost')}
                 <span className="ask-caret" />
               </p>
