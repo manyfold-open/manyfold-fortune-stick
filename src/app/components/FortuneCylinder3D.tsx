@@ -488,7 +488,8 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
   const hint = fault
     ? null
     : state === 'idle'
-      ? en ? 'Write your thoughts above first' : '請先在上方虔心寫下所求之事'
+      ? // 還沒寫問題時不放提示：題目框和例句就在上面，再說一次「請先寫下」是多的（使用者要求拿掉）
+        null
       : stageLabel === 'pulling' || stageLabel === 'done'
         ? en ? '✦ Your stick is drawn ✦' : '✦ 神籤已出 ✦'
         : stageLabel === 'shaking'

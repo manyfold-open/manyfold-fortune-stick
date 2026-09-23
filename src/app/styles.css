@@ -3123,7 +3123,8 @@ code {
 .shell:has(.cyl3d-stage) .stage {
   min-height: 0;
   justify-content: flex-start;
-  padding-bottom: 0;
+  /* 跟頁腳留一點距離，籤筒和提示才不會貼著頁腳 */
+  padding-bottom: 28px;
 }
 
 .shell:has(.cyl3d-stage) .roll-slot,
@@ -3167,9 +3168,9 @@ code {
   line-height: 1.6;
 }
 
-/* 例句寬螢幕上排成一行，省下兩行高度給籤筒 */
+/* 例句接在題目框正下方（FortuneGame.tsx）；寬螢幕上排成一行，省下兩行高度給籤筒 */
 .shell:has(.cyl3d-stage) .suggest-slot {
-  padding-top: 4px;
+  padding-top: 2px;
 }
 
 @media (min-width: 721px) {
