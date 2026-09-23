@@ -995,6 +995,11 @@ html, body {
   opacity: 0.92;
 }
 
+.suggestions .text-action.selected {
+  opacity: 1;
+  font-weight: 600;
+}
+
 @keyframes suggest-in {
   from { opacity: 0; transform: translateY(4px); }
 }
@@ -4564,6 +4569,15 @@ html:lang(en) .shell:has(.cyl3d-stage) .ask-zone {
   box-shadow: inset 0 0 0 1px var(--wood-edge), 0 5px 8px rgba(92, 62, 32, 0.22);
 }
 
+.shell:has(.cyl3d-stage) .suggestions .text-action.selected {
+  background: linear-gradient(180deg, #fff2db, #edd1a4);
+  box-shadow: inset 0 0 0 1.5px var(--seal), 0 3px 6px rgba(192, 50, 31, 0.22);
+  color: var(--seal-deep);
+  font-weight: 600;
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
 /* 直排（窄螢幕）：每塊一樣寬 —— 寬度要給 li，li 預設會縮成字那麼寬 */
 .shell:has(.cyl3d-stage) .suggestions li {
   display: flex;
@@ -5176,7 +5190,7 @@ html { overflow-x: clip; }
 @media (max-width: 640px) {
   .omikuji-card {
     /* 正面未翻開時，留足高度給下方的「解籤」與「再求一籤」按鈕，同時避免籤底吉色被切掉 */
-    --card-h: clamp(415px, calc(100dvh - 270px), 540px);
+    --card-h: clamp(410px, calc(100dvh - 240px), 530px);
   }
   .omikuji-card.flipped {
     /* 翻到背面後，解籤內容較多，動作列內嵌在卡片底部，卡片可更充裕高 */
@@ -5609,13 +5623,15 @@ html { overflow-x: clip; }
     flex: 1;
     height: 100%;
     min-height: 260px;
-    transform: scale(1.06) translateY(8px);
-    transform-origin: 50% 50%;
+    transform: scale(1.02);
+    transform-origin: 50% 40%;
   }
 
   .cyl3d-stage .roll-action-area {
-    margin-top: 2px;
-    margin-bottom: 4px;
+    margin-top: 10px;
+    margin-bottom: 14px;
+    position: relative;
+    z-index: 10;
     flex: none;
   }
 
@@ -5661,7 +5677,7 @@ html { overflow-x: clip; }
 
   /* 手機端解籤時，繪馬緊湊掛在鳥居下方，為籤卡爭取最大閱讀空間 */
   .result .sheet-stack .ema-card {
-    margin: 44px auto 0;
+    margin: 36px auto 0;
     padding: 8px 16px 4px;
     flex-shrink: 0;
   }
@@ -5669,6 +5685,61 @@ html { overflow-x: clip; }
   .result .sheet-stack .ema-card .asked {
     font-size: 15px;
     line-height: 1.4;
+  }
+
+  /* 籤卡正面內部排版精準收緊，確保在 compact 視口（如 iPhone 14 Safari ~664px）吉色徽章完整露出身段 */
+  .slip-seal-row {
+    padding: 6px 0 4px;
+  }
+
+  .slip-level-box {
+    width: 80px;
+    height: 80px;
+  }
+
+  .slip-level {
+    font-size: 23px;
+  }
+
+  .slip-level-box.long .slip-level {
+    font-size: 19px;
+  }
+
+  .slip-title-row {
+    padding: 2px 0 6px;
+  }
+
+  .slip-title {
+    font-size: 17px;
+  }
+
+  .slip-body {
+    padding: 6px 6px 8px;
+  }
+
+  .slip-grid-columns {
+    height: clamp(118px, 17dvh, 136px);
+  }
+
+  .slip-column {
+    padding: 0 6px;
+  }
+
+  .slip-poem {
+    font-size: 14px;
+  }
+
+  .slip-meaning {
+    font-size: 11.5px;
+  }
+
+  .face-front .slip {
+    padding-bottom: 6px;
+  }
+
+  .face-front .slip-foot {
+    padding-top: 4px;
+    padding-bottom: 2px;
   }
 
   /* 籤卡本體：填滿剩餘的所有垂直空間，不再定死固定高度 */
