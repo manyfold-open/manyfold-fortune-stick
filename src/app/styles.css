@@ -4401,8 +4401,8 @@ html:lang(en) .shell:has(.cyl3d-stage) .ask-zone {
 
 @media (max-width: 640px) {
   :is(.shell:has(.cyl3d-stage) .ask-zone, .ema-card) {
-    /* 手機上緊湊貼近鳥居貫木，紅繩銜接自然，大幅收縮上方空白留位給籤筒 */
-    margin: 46px auto 0;
+    /* 手機上掛在鳥居貫木下方，紅繩自然銜接，頂部完全避開貫木與注連繩紙垂 */
+    margin: 80px auto 0;
     padding: 12px 18px 6px;
   }
 }
@@ -5551,7 +5551,7 @@ html { overflow-x: clip; }
     position: relative;
     z-index: 10;
     padding-top: 6px;
-    margin-bottom: 22px;
+    margin-bottom: 12px;
     width: 100%;
     max-width: 440px;
     flex-shrink: 0;
