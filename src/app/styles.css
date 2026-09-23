@@ -3143,22 +3143,39 @@ code {
   margin-top: 6px;
 }
 
-/* 題目框收小一點：畫面要留給籤筒。兩行照樣不跳（min-height 仍然裝得下兩行）。 */
+/*
+ * 題目框與例句：同一個寬度（--ask-w），框的四個角正好落在例句那一排的兩端。
+ *
+ * 之前框是 600 × 62（將近 10:1）、例句那排 716px 比框還寬、兩者只隔 15px、例句用黑體
+ * 還拉開字距 —— 使用者說「看起來很怪，比例也很怪」。現在：
+ *   - 例句那排撐滿 --ask-w，第一句貼左角、最後一句貼右角，中間用間隔點；
+ *   - 框跟它一樣寬，上下留白加大（約 8:1），角線收到 16px；
+ *   - 例句跟題目同一套明體，只是小一號、淡一點；
+ *   - 框到例句 18px。
+ * 英文三句加起來約 1100px 放不進一排，英文介面與窄螢幕維持直排。
+ */
+.shell:has(.cyl3d-stage) {
+  --ask-w: min(720px, 100%);
+}
+
 .shell:has(.cyl3d-stage) .ask-slot,
 .shell:has(.cyl3d-stage) .ask-slot.printed {
-  /* 兩行 24px × 1.6 + 上下 12px 的框距 ≈ 101 */
-  min-height: 104px;
-  padding: 0 0 4px;
+  /* 兩行 24px × 1.6 + 上下 22px 的框距 ≈ 121：寫到第二行時框往上長，籤筒不會跳 */
+  min-height: 122px;
+  padding: 0;
 }
 
 .shell:has(.cyl3d-stage) .ask-zone {
-  --mark-len: 14px;
-  padding: 12px clamp(18px, 3vw, 32px);
+  --mark-len: 16px;
+  max-width: none;
+  width: var(--ask-w);
+  box-sizing: border-box;
+  padding: 22px clamp(18px, 3vw, 40px);
 }
 
 .shell:has(.cyl3d-stage) .ask-zone:hover,
 .shell:has(.cyl3d-stage) .ask-zone:focus-within {
-  --mark-len: 18px;
+  --mark-len: 20px;
 }
 
 .shell:has(.cyl3d-stage) .ask-grow > .ask-input,
@@ -3168,17 +3185,46 @@ code {
   line-height: 1.6;
 }
 
-/* 例句接在題目框正下方（FortuneGame.tsx）；寬螢幕上排成一行，省下兩行高度給籤筒 */
 .shell:has(.cyl3d-stage) .suggest-slot {
-  padding-top: 2px;
+  padding-top: 18px;
 }
 
-@media (min-width: 721px) {
-  .shell:has(.cyl3d-stage) .suggestions {
+.shell:has(.cyl3d-stage) .suggestions .text-action {
+  font-family: var(--serif);
+  /* 14px 時三句佔掉 685 / 720，句間只剩 18px；13px 句間約 40px */
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  line-height: 1.6;
+  opacity: 0.55;
+}
+
+.suggest-dot {
+  display: none;
+}
+
+@media (min-width: 860px) {
+  .shell:has(.cyl3d-stage) .suggestions[data-lang='zh'] {
+    width: var(--ask-w);
     flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    column-gap: 28px;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .shell:has(.cyl3d-stage) .suggestions[data-lang='zh'] li {
+    display: flex;
+    align-items: baseline;
+    flex: 1 1 auto;
+  }
+
+  /* 第一句不吃空間；後兩句各自把前面那段空隙吃掉、點放在空隙正中 —— 兩段空隙一樣大 */
+  .shell:has(.cyl3d-stage) .suggestions[data-lang='zh'] li:first-child { flex: 0 0 auto; }
+
+  .shell:has(.cyl3d-stage) .suggestions[data-lang='zh'] .suggest-dot {
+    display: block;
+    flex: 1;
+    text-align: center;
+    color: var(--on-ground-3);
+    font-size: 13px;
   }
 }
 

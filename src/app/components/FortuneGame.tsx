@@ -343,9 +343,15 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
      退场时按钮要一起 disabled，否则看不见却还能被 Tab 选中。 */
   const suggestions = (
     <div className="suggest-slot">
-      <ul className={`suggestions${typed === 0 ? '' : ' spent'}`} aria-hidden={typed !== 0}>
-        {[t('example1'), t('example2'), t('example3')].map((example) => (
+      <ul
+        className={`suggestions${typed === 0 ? '' : ' spent'}`}
+        aria-hidden={typed !== 0}
+        data-lang={props.prefs.language}
+      >
+        {[t('example1'), t('example2'), t('example3')].map((example, i) => (
           <li key={example}>
+            {/* 橫排時句子之間的間隔點；直排時藏起來（styles.css） */}
+            {i > 0 && <span className="suggest-dot" aria-hidden>·</span>}
             <button
               type="button"
               className="text-action"
