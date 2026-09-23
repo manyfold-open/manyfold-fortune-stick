@@ -6,6 +6,7 @@
  */
 
 import { CUP_FACE_HALF, CUP_PERIMETER, STICK_LEN, STICK_W, TUBE_H } from '../../shared/cylinder/geometry';
+import { hanNumber } from '../../shared/numerals';
 
 /* ── 竹籤贴图集：STICK_VARIANTS 格，每格是一種圖案的籤身正面（不印號碼） ── */
 
@@ -29,18 +30,6 @@ export const stickCellRect = (i: number): { x: number; y: number; w: number; h: 
   w: STICK_CELL_W,
   h: STICK_CELL_H,
 });
-
-const HAN_DIGITS = ['〇', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
-
-/** 1..36 写成签筒上那种汉字签号：第十八籤、第廿三籤、第卅六籤。 */
-export function hanNumber(n: number): string {
-  if (n < 10) return HAN_DIGITS[n];
-  if (n === 10) return '十';
-  const tens = Math.floor(n / 10);
-  const ones = n % 10;
-  const head = tens === 1 ? '十' : tens === 2 ? '廿' : tens === 3 ? '卅' : HAN_DIGITS[tens] + '十';
-  return ones === 0 ? head : head + HAN_DIGITS[ones];
-}
 
 /**
  * 圆体 —— 圆润的黑体。参考图的中文全是这一类，笔画等粗、末端收圆。
