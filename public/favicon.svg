@@ -1,17 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#bbb8b1"/>
-  <path d="M25 8h14l2 6H23z" fill="#cec2a6"/>
-  <rect x="8" y="14" width="48" height="24" rx="4" fill="#e2d8c1"/>
-  <rect x="8" y="14" width="48" height="9" rx="4" fill="#f3ecdb"/>
-  <rect x="29" y="16.5" width="21" height="6" rx="1" fill="#16211b"/>
-  <rect x="31" y="18.5" width="11" height="2" fill="#79efaa"/>
-  <g fill="#a2947a" opacity=".55">
-    <rect x="12" y="17" width="13" height="1.8" rx=".9"/>
-    <rect x="12" y="20.5" width="13" height="1.8" rx=".9"/>
-  </g>
-  <rect x="34" y="26" width="17" height="8" rx="4" fill="#f3ecdb"/>
-  <circle cx="15" cy="30" r="2" fill="#4fae72"/>
-  <rect x="12" y="35" width="40" height="3" rx="1.5" fill="#35302a"/>
-  <rect x="18" y="37" width="28" height="21" fill="#fffefa"/>
-  <text x="32" y="53" text-anchor="middle" font-family="Songti SC, STSong, serif" font-size="15" font-weight="700" fill="#bb2a1c">印</text>
+  <!-- 鳥居：跟頁面上那座同一組顏色（黑漆笠木、朱紅島木與柱、柱腳一截黑），淺木色底。
+       只用色塊，不放字：16px 的分頁圖示上字一定糊掉 -->
+  <defs>
+    <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7ecd6"/>
+      <stop offset="1" stop-color="#e9d5b0"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#ground)"/>
+  <!-- 柱 -->
+  <rect x="15" y="24" width="7" height="34" fill="#c23d26"/>
+  <rect x="42" y="24" width="7" height="34" fill="#c23d26"/>
+  <!-- 柱腳 -->
+  <rect x="14" y="51" width="9" height="7" fill="#2c211c"/>
+  <rect x="41" y="51" width="9" height="7" fill="#2c211c"/>
+  <!-- 貫：穿出柱子一截 -->
+  <rect x="9" y="33" width="46" height="5" fill="#b8321f"/>
+  <!-- 島木 -->
+  <path d="M8 20 Q32 27 56 20 L56 24 Q32 31 8 24 Z" fill="#b8321f"/>
+  <!-- 笠木：兩端上翹 -->
+  <path d="M3 12 Q32 21 61 12 L60 19 Q32 27 4 19 Z" fill="#2c211c"/>
 </svg>
