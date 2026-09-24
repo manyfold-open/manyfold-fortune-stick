@@ -54,7 +54,6 @@ export const en = {
   exampleToday: 'How does today look for me?',
   example1: 'How do I face the changes at work?',
   example2: 'Is this relationship still worth it?',
-  example3: 'Is it time to start that plan at last?',
 
   /* ── the printer LCD ── */
   lcdPrinting: 'Printing…',

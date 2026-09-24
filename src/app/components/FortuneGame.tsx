@@ -475,7 +475,7 @@ export default function FortuneGame(props: {
         aria-hidden={printing}
         data-lang={props.prefs.language}
       >
-        {[t('exampleToday'), t('example1'), t('example2'), t('example3')].map((example) => {
+        {[t('exampleToday'), t('example1'), t('example2')].map((example) => {
           const isSelected = question === example;
           return (
             <li key={example}>

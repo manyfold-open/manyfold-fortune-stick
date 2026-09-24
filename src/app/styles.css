@@ -6006,6 +6006,11 @@ html { overflow-x: clip; }
   color: var(--on-ground);
 }
 
+/* 「點一下打開籤紙」這種出籤後的加粗提示，16px 粗體在手機上太搶，比攪籤那幾句小一號 */
+.cyl3d-stage .roll-hint.highlight {
+  font-size: 14px;
+}
+
 .cyl3d-stage .roll-hint.ask-first {
   color: var(--accent);
 }
