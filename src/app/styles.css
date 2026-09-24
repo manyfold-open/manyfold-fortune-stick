@@ -5314,7 +5314,15 @@ html { overflow-x: clip; }
 .result .tarot-bridge-action .text-action {
   min-height: 44px;
   padding: 6px 4px;
-  font-size: 16px;
+  /* One line, with the mark centred on it: wrapped, the mark hung off the
+     second line's baseline and sat high. The size gives way on narrow phones
+     rather than the line breaking. */
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  white-space: nowrap;
+  font-size: clamp(13px, 3.9vw, 16px);
+  letter-spacing: 0.04em;
   font-weight: 600;
   color: var(--ink);
   opacity: 1;
@@ -5327,10 +5335,9 @@ html { overflow-x: clip; }
 /* The other app's own mark, after the words of the link that goes there. */
 .result .tarot-bridge-action .app-icon {
   display: inline-block;
+  flex: none;
   width: 1.4em;
   height: 1.4em;
-  margin-left: 0.45em;
-  vertical-align: -0.35em;
   border-radius: 0.3em;
 }
 
