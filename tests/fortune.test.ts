@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  clipText,
   buildFollowUpPrompt,
   buildInterpretPrompt,
   drawStickNo,
@@ -467,3 +468,28 @@ describe('提示词：少制造坏 JSON', () => {
     expect(buildInterpretPrompt('should I switch jobs', stick, 'en')).toMatch(/double quote/i);
   });
 });
+
+describe('clipText', () => {
+  it('leaves short text alone', () => {
+    expect(clipText('Short and sweet.', 50)).toBe('Short and sweet.');
+  });
+
+  it('never cuts an English word in half', () => {
+    const clipped = clipText('the stick is nudging you to admit it rather than keep gathering opinions', 60);
+    expect(clipped.endsWith('…')).toBe(true);
+    expect(clipped).not.toContain('gatheri');
+    expect([...clipped].length).toBeLessThanOrEqual(60);
+  });
+
+  it('keeps a whole English meaning of about 30 words', () => {
+    const meaning =
+      'You already know which way you lean on these work changes, and the stick is nudging you to admit it rather than keep gathering opinions from everyone around you.';
+    const parsed = parseInterpretation(
+      JSON.stringify({ meaning, answer: 'A full answer.', notice: 'n', action: 'a' }),
+      STICKS[18],
+      'en',
+    );
+    expect(parsed?.meaning).toBe(meaning);
+  });
+});
+

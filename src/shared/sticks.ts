@@ -77,10 +77,10 @@ export const STICKS: readonly FortuneStick[] = [
       luckyItem: '草莓大福',
     },
     en: {
-      title: 'Clouds Part, Moon Clear',
+      title: 'The Clouds Part',
       poem: [
-        'Long overcast, and then the whole sky turns blue',
-        'The moon comes back and keeps the old promise',
+        'After long grey days the whole sky clears',
+        'The moon returns and keeps its old promise',
       ],
       meaning: 'A situation that has been unclear for a long time is finally coming into focus.',
       general:
@@ -102,10 +102,10 @@ export const STICKS: readonly FortuneStick[] = [
       luckyItem: '热焙茶',
     },
     en: {
-      title: 'Spring River, Light Boat',
+      title: 'A Light Boat in Spring',
       poem: [
-        'The spring water warms and the boat rides high',
-        'Green hills on both banks see you part of the way',
+        'The spring river warms and the boat rides light',
+        'Green hills on both banks see you on your way',
       ],
       meaning: 'The conditions are more favourable than you expected, so you do not have to force this.',
       general:
@@ -129,8 +129,8 @@ export const STICKS: readonly FortuneStick[] = [
     en: {
       title: 'Old Wood, New Buds',
       poem: [
-        'They said the old branch had nothing left in it',
-        'One night of east wind and the whole tree is budding',
+        'They said the old branch had no life left in it',
+        'One night of east wind and the whole tree is in bud',
       ],
       meaning: 'Something you thought was over still contains a useful way forward.',
       general:
@@ -155,7 +155,7 @@ export const STICKS: readonly FortuneStick[] = [
       title: 'Higher Than You Thought',
       poem: [
         'Step after step, you never felt the climb',
-        'Only turning round do you see how far the road ran',
+        'Only when you turn round do you see how far you have come',
       ],
       meaning: 'You have made more progress than you can feel from inside it.',
       general:
@@ -180,7 +180,7 @@ export const STICKS: readonly FortuneStick[] = [
       title: 'Still Water, Deep Current',
       poem: [
         'No wind on the surface, and it seems to stand still',
-        'Underneath, the current is keeping its own schedule',
+        'Underneath, the current keeps its own pace',
       ],
       meaning: 'It looks still, but important work may be happening out of sight.',
       general:
@@ -202,16 +202,16 @@ export const STICKS: readonly FortuneStick[] = [
       luckyItem: '香氛蜡烛',
     },
     en: {
-      title: 'Waiting By The Stump',
+      title: 'Waiting by the Stump',
       poem: [
-        'Another day leans west beside the same old stump',
-        'The hare that ran into it once does not come twice',
+        'Another day goes by beside the same old stump',
+        'The hare that ran into it once will not come again',
       ],
       meaning: 'The method that worked before may not fit the situation you have now.',
       general:
         'You are bringing an old solution to a new set of conditions. The experience is still useful, but it needs updating. Before you act, identify what has changed since the last time. Familiarity feels reassuring here, but it is not the same as fit.',
       action: 'Write down one condition that has changed since the last time you did this.',
-      luckyItem: 'Scented Candle',
+      luckyItem: 'A Scented Candle',
     },
   },
   {
@@ -227,16 +227,16 @@ export const STICKS: readonly FortuneStick[] = [
       luckyItem: '整理书桌',
     },
     en: {
-      title: 'Finding The Path After Rain',
+      title: 'The Path After Rain',
       poem: [
         'The rain has stopped, the mud is deep, the road still wet',
-        'One slow step, and then one steady step',
+        'Take one slow step, then another steady one',
       ],
       meaning: 'A difficult stretch has just passed. This is a time to move carefully, not quickly.',
       general:
         'The difficult part may be over, but you have not fully regained your footing. This is not the moment for a dramatic decision. Get your sleep, attention, and daily rhythm back first. Once you feel steady again, you can decide whether anything needs to move faster.',
       action: 'Do one restorative small thing today: sleep enough, clear your desk, or answer one overdue message.',
-      luckyItem: 'Tidy Workspace',
+      luckyItem: 'A Tidy Desk',
     },
   },
   {
@@ -252,10 +252,10 @@ export const STICKS: readonly FortuneStick[] = [
       luckyItem: '抹茶拿铁',
     },
     en: {
-      title: 'Jade Inside The Stone',
+      title: 'Jade in the Stone',
       poem: [
-        'Uncut, the rough stone tells no one what it holds',
-        'Split it open once and the whole grain shows',
+        'Uncut, the rough stone shows no one what it holds',
+        'Split it open once and the jade shows through',
       ],
       meaning: 'There is real value in what you have made, but people have not seen it yet.',
       general:
@@ -280,7 +280,7 @@ export const STICKS: readonly FortuneStick[] = [
       title: 'The Channel Fills',
       poem: [
         'The ditch was dug long ago and stayed dry',
-        'One good rain, and it fills itself to the brim',
+        'One good rain, and it fills to the brim on its own',
       ],
       meaning: 'The groundwork is in place. You may not need to do anything else right now.',
       general:
@@ -302,10 +302,10 @@ export const STICKS: readonly FortuneStick[] = [
       luckyItem: '温暖热汤',
     },
     en: {
-      title: 'Winter Plum, Waiting',
+      title: 'The Winter Plum Waits',
       poem: [
-        'The plum tree in the cold refuses to open',
-        'Not that it has no flowers, only that it is not the hour',
+        'The plum tree in the cold will not bloom yet',
+        'Not that it has no flowers, only that it is not yet time',
       ],
       meaning: 'The direction may be right, but the timing is not ready.',
       general:
@@ -327,10 +327,10 @@ export const STICKS: readonly FortuneStick[] = [
       luckyItem: '看天空云朵',
     },
     en: {
-      title: 'Sailing Into The Wind',
+      title: 'Sailing into the Wind',
       poem: [
-        'Sails full, wind against her, and the boat slides back',
-        'Better to reef and wait for the evening to clear',
+        'Sails full, wind against you, and the boat slides back',
+        'Better to reef the sails and wait for a clear evening',
       ],
       meaning: 'Pushing harder right now will only use up more of your energy.',
       general:
@@ -352,16 +352,16 @@ export const STICKS: readonly FortuneStick[] = [
       luckyItem: '听一首慢歌',
     },
     en: {
-      title: 'Searching Under The Lamp',
+      title: 'Searching under the Lamp',
       poem: [
-        'All evening hunting one needle in the lamplight',
-        'It was out on the step, shining in the grass',
+        'All evening hunting for one needle by the lamp',
+        'It was out on the step, glinting in the grass',
       ],
       meaning: 'You may be searching in the wrong place or asking the question too narrowly.',
       general:
         'A lot of effort with no result often means the question is too narrow, not that you have not tried hard enough. Step outside the usual frame and look again. The useful answer may be just beyond the area you have been searching. Change the angle before you add more effort.',
       action: 'Rewrite your question a different way and see whether it is still the same question.',
-      luckyItem: 'Soft Lofi Song',
+      luckyItem: 'A Soft Song',
     },
   },
   {
@@ -377,10 +377,10 @@ export const STICKS: readonly FortuneStick[] = [
       luckyItem: '热柚子茶',
     },
     en: {
-      title: 'Waiting At The Crossing',
+      title: 'Waiting at the Crossing',
       poem: [
-        'No ferryman at the wild crossing, the boat lies sideways',
-        'Sit and watch the tide come up the river a few times',
+        'No ferryman at the lonely crossing, the boat drifts idle',
+        'Sit and watch the tide come in a few times',
       ],
       meaning: 'This decision is not yours to make yet. Waiting can still be useful.',
       general:
@@ -402,16 +402,16 @@ export const STICKS: readonly FortuneStick[] = [
       luckyItem: '随手笔记',
     },
     en: {
-      title: 'New Bridge, Old Road',
+      title: 'A New Bridge on an Old Road',
       poem: [
-        'The stream cut the road and troubled travellers ten years',
-        'This morning one bridge carries the seasons across',
+        'For ten years a stream cut the road and travellers waited',
+        'Now a single bridge carries them across',
       ],
       meaning: 'A new way through an old problem is appearing.',
       general:
         'A problem that stayed stuck may now have another solution. It could come from a new person, a better tool, or a rule that changed while you were looking elsewhere. You do not have to use the route you first chose. The route that gets you through is the right one now.',
       action: 'Dig out the reasons you gave up last time and check each one against today.',
-      luckyItem: 'Quick Journaling',
+      luckyItem: 'A Few Lines of Journalling',
     },
   },
   {
@@ -427,10 +427,10 @@ export const STICKS: readonly FortuneStick[] = [
       luckyItem: '晒晒太阳',
     },
     en: {
-      title: 'Gold In The Sand',
+      title: 'Gold in the Sand',
       poem: [
-        'Ten measures of sand washed down to a single grain',
-        'Your arms ache, and then the small light shows',
+        'Pan ten measures of sand to find a single grain',
+        'Your arms ache, and then the glint appears',
       ],
       meaning: 'There may be value here, but you will have to separate it from the noise.',
       general:
@@ -452,16 +452,16 @@ export const STICKS: readonly FortuneStick[] = [
       luckyItem: '一杯温水',
     },
     en: {
-      title: 'A Flame In The Wind',
+      title: 'A Flame in the Wind',
       poem: [
-        'Walking at night with one spark in your hand',
-        'Keep it alive and the road lights itself',
+        'Walking at night with one small flame in your hand',
+        'Keep it alight and the road will show itself',
       ],
       meaning: 'Protect your energy before you worry about your speed.',
       general:
         'There is more competing for your attention than usual. Whether you can keep going depends less on determination than on how much energy you have left. Reduce the number of things running at once and give your focus to one or two. That will carry you further than forcing everything through.',
       action: 'Switch off one thing tonight that has been steadily draining your attention.',
-      luckyItem: 'Cup of Warm Water',
+      luckyItem: 'A Cup of Warm Water',
     },
   },
   {
@@ -477,9 +477,9 @@ export const STICKS: readonly FortuneStick[] = [
       luckyItem: '伸个懒腰',
     },
     en: {
-      title: 'The Awl In The Bag',
+      title: 'The Point Shows Through',
       poem: [
-        'An awl in a cloth bag finds its own way through',
+        'An awl in a cloth bag soon pokes its way through',
         'It never had to raise its voice to be noticed',
       ],
       meaning: 'Good work can speak for itself. You do not have to fight to be noticed.',
@@ -502,10 +502,10 @@ export const STICKS: readonly FortuneStick[] = [
       luckyItem: '买一朵花',
     },
     en: {
-      title: 'Planting On Stone',
+      title: 'Planting on Stone',
       poem: [
-        'You moved the flower and set it on bare rock',
-        'Watered every morning, and still it takes no root',
+        'You moved the flower and planted it on bare rock',
+        'Watered every morning, it still will not take root',
       ],
       meaning: 'Your effort is real, but this situation may not be able to make use of it.',
       general:
@@ -527,10 +527,10 @@ export const STICKS: readonly FortuneStick[] = [
       luckyItem: '清爽深呼吸',
     },
     en: {
-      title: 'Open The Door, The Mountain',
+      title: 'The Answer in Plain Sight',
       poem: [
-        'Push the window open and the good hills are simply there',
-        'Why go the long way round asking everyone else',
+        'Open the window and the fine hills are right there',
+        'Why take the long way round, asking everyone else',
       ],
       meaning: 'The answer may be simpler than you are allowing it to be. You probably already know what you want.',
       general:
@@ -552,10 +552,10 @@ export const STICKS: readonly FortuneStick[] = [
       luckyItem: '吃一颗糖',
     },
     en: {
-      title: 'Sky From A Well',
+      title: 'Sky from a Well',
       poem: [
-        'Sitting in the well, watching one cloud go by',
-        'Mistaking that inch of blue for the whole of heaven',
+        'Sitting in a well, watching one cloud drift past',
+        'And taking that scrap of blue for the whole sky',
       ],
       meaning: 'You are seeing only part of the picture.',
       general:
@@ -577,10 +577,10 @@ export const STICKS: readonly FortuneStick[] = [
       luckyItem: '写下感恩',
     },
     en: {
-      title: 'Go Back And Make The Net',
+      title: 'Go Back and Weave a Net',
       poem: [
-        'Standing at the edge envying the fish catches nothing',
-        'Step back and knot a net, it is not too late',
+        'Stand at the water envying the fish and you catch nothing',
+        'Step back and weave a net, it is not too late',
       ],
       meaning: 'The goal is not the problem. You are missing one of the tools or skills needed to reach it.',
       general:
@@ -602,10 +602,10 @@ export const STICKS: readonly FortuneStick[] = [
       luckyItem: '整理相册',
     },
     en: {
-      title: 'A Light At Night',
+      title: 'A Light at Night',
       poem: [
-        'Open dark on all sides and no way to read the distance',
-        'Then a tower light, one point of it, holding steady',
+        'Dark on every side, with no way to judge the distance',
+        'Then a lighthouse, one steady point of light',
       ],
       meaning: 'A person, conversation, or piece of information may help you find your bearings.',
       general:
@@ -629,14 +629,14 @@ export const STICKS: readonly FortuneStick[] = [
     en: {
       title: 'Building Behind Closed Doors',
       poem: [
-        'Three years behind a shut door and the thing is finished',
-        'Push the door open and the wheel ruts are a different width',
+        'Three years behind a shut door and the cart is finished',
+        'Open the door and the ruts outside are a different width',
       ],
       meaning: 'You have worked seriously, but not enough outside feedback has reached the work.',
       general:
         'You have been judging the work by a standard that exists only in your own head. That standard can drift without you noticing. The risk is not a lack of effort; it is a lack of outside feedback. Show an unfinished version sooner, while changes are still cheap.',
       action: 'Show the unfinished thing to one real user or peer and ask only what is wrong with it.',
-      luckyItem: 'Sip of Coffee',
+      luckyItem: 'A Sip of Coffee',
     },
   },
   {
@@ -652,10 +652,10 @@ export const STICKS: readonly FortuneStick[] = [
       luckyItem: '换上干净被单',
     },
     en: {
-      title: 'Bamboo, Joint By Joint',
+      title: 'Bamboo, Joint by Joint',
       poem: [
-        'It grows the way bamboo grows, one joint at a time',
-        'It looks slow, and it is keeping to its own order',
+        'It grows as bamboo grows, one joint at a time',
+        'It looks slow, but it keeps its own order',
       ],
       meaning: 'This is moving slowly because slow is the nature of the work, not because you are failing.',
       general:
@@ -677,16 +677,16 @@ export const STICKS: readonly FortuneStick[] = [
       luckyItem: '漫步树荫下',
     },
     en: {
-      title: 'Good Field, Waiting For Rain',
+      title: 'A Good Field Waits for Rain',
       poem: [
         'The field is level, the rows are in, the sowing done',
-        'All that is wanting is one cloud at the edge of the sky',
+        'All it lacks is one cloud at the edge of the sky',
       ],
       meaning: 'You have done what you can. The rest depends on conditions outside your control.',
       general:
         'The preparation is sound, and the outcome now depends on something outside your control. That is not a failure of effort; it is simply the point where effort stops being the deciding factor. Keep the waiting contained, and let the next condition arrive in its own time.',
       action: 'Put everything you are waiting on into its own list, and stop checking it daily.',
-      luckyItem: 'Tree Shade Stroll',
+      luckyItem: 'A Walk in the Shade',
     },
   },
   {
@@ -702,10 +702,10 @@ export const STICKS: readonly FortuneStick[] = [
       luckyItem: '欣赏落日',
     },
     en: {
-      title: 'Out Of The Cocoon',
+      title: 'Out of the Cocoon',
       poem: [
-        'The shell is thin, and no one should cut it for you',
-        'The struggle out is what leaves the wings light',
+        'The cocoon is thin, and no one should cut it open for you',
+        'Struggling free is what makes the wings strong',
       ],
       meaning: 'The discomfort is part of the change, not proof that you are on the wrong path.',
       general:
@@ -727,16 +727,16 @@ export const STICKS: readonly FortuneStick[] = [
       luckyItem: '床头小夜灯',
     },
     en: {
-      title: 'Dismount At The Bridge',
+      title: 'Dismount at the Bridge',
       poem: [
-        'Crossing the bridge is no place to hurry',
-        'Get down, walk it slowly, and the road stays level',
+        'A bridge is no place to hurry across',
+        'Get down, walk slowly, and the road stays level',
       ],
       meaning: 'You have reached a point where slowing down will protect what matters.',
       general:
         'One or two points carry most of the risk, while the rest is more forgiving than it feels. Do not spend the same amount of caution everywhere. Find the step that cannot easily be undone, and give that step the time and care it deserves.',
       action: 'Name the least reversible step in this and give it one extra day.',
-      luckyItem: 'Warm Bedside Lamp',
+      luckyItem: 'A Warm Bedside Lamp',
     },
   },
   {
@@ -752,10 +752,10 @@ export const STICKS: readonly FortuneStick[] = [
       luckyItem: '给植物浇水',
     },
     en: {
-      title: 'Chestnuts In The Fire',
+      title: 'Chestnuts in the Fire',
       poem: [
-        'The chestnuts in the brazier smell worth reaching for',
-        'Your hand goes in and finds the coals are still live',
+        'The chestnuts in the fire smell good enough to reach for',
+        'Your hand goes in and finds the embers still alight',
       ],
       meaning: 'The upside is obvious, but some of the cost is still hidden.',
       general:
@@ -779,8 +779,8 @@ export const STICKS: readonly FortuneStick[] = [
     en: {
       title: 'A Thousand Miles Downstream',
       poem: [
-        'The light boat is already past the last of the ranges',
-        'A thousand sails in a day, and the water runs east',
+        'The light boat has already passed the far mountains',
+        'A thousand sails in a day, and the river runs east',
       ],
       meaning: 'The direction is right, and momentum will build without being forced.',
       general:
@@ -805,7 +805,7 @@ export const STICKS: readonly FortuneStick[] = [
       title: 'Early Road, Morning Fog',
       poem: [
         'Setting out at dawn, light fog over the village ahead',
-        'By sunrise the gate shows itself without being searched for',
+        'By sunrise the gate appears without any searching',
       ],
       meaning: 'The lack of clarity is temporary. Do not make a major decision before the fog lifts.',
       general:
@@ -827,16 +827,16 @@ export const STICKS: readonly FortuneStick[] = [
       luckyItem: '对镜子笑笑',
     },
     en: {
-      title: 'Prune For Fruit',
+      title: 'Prune for Fruit',
       poem: [
-        'Cut a third of the green off the crowded branch',
-        'Next year the fruit comes in thick along the wood',
+        'Cut back a third of the green from the crowded branch',
+        'Next year the fruit will hang thick on the bough',
       ],
       meaning: 'Letting go of a few things will give the important ones room to grow.',
       general:
         'You have too many worthwhile things running at once, which is why choosing feels so difficult. Nothing needs to be a failure before you pause it. Your time and attention are limited, and reducing the list is how the few that matter get enough room to become real.',
       action: 'Pick one thing you are doing, pause it today, and tell the people it affects.',
-      luckyItem: 'Smile in Mirror',
+      luckyItem: 'A Smile in the Mirror',
     },
   },
   {
@@ -852,10 +852,10 @@ export const STICKS: readonly FortuneStick[] = [
       luckyItem: '泡个热水澡',
     },
     en: {
-      title: 'Over The Ridge Together',
+      title: 'Over the Ridge Together',
       poem: [
-        'Alone, the mountain is high and every step is work',
-        'With company you are over the ridge before it felt long',
+        'Alone, the mountain is high and every step is hard',
+        'With company, you are over the ridge before you know it',
       ],
       meaning: 'You do not have to carry this alone.',
       general:
@@ -877,10 +877,10 @@ export const STICKS: readonly FortuneStick[] = [
       luckyItem: '听窗外雨声',
     },
     en: {
-      title: 'Beans For Beans',
+      title: 'You Reap What You Sow',
       poem: [
-        'Plant beans in spring and in autumn you get beans',
-        'Sow no millet, then ask nothing of the harvest',
+        'Plant beans in spring and in autumn you harvest beans',
+        'Sow no millet, and there is no millet to reap',
       ],
       meaning: 'The results will reflect what you have actually invested.',
       general:
@@ -904,14 +904,14 @@ export const STICKS: readonly FortuneStick[] = [
     en: {
       title: 'The Shore Is Behind You',
       poem: [
-        'Walk to where the water ends and doubt there is a road',
-        'Turn round, take one step, and the plain opens out',
+        'You walk to where the water ends and see no road ahead',
+        'Turn round, take one step, and the open plain is there',
       ],
       meaning: 'Stepping back is not failure. It may be how you find a better route.',
       general:
         'You may have invested too much in a route that is not taking you where you need to go, which is why turning back feels so difficult. The past cost cannot be recovered by spending more. Changing your mind is not giving in; it is using new information.',
       action: 'Answer this honestly: if I were starting fresh today, would I still choose this?',
-      luckyItem: 'Night Stargazing',
+      luckyItem: 'Stargazing',
     },
   },
   {
@@ -927,10 +927,10 @@ export const STICKS: readonly FortuneStick[] = [
       luckyItem: '收拾随身包',
     },
     en: {
-      title: 'The Single Log',
+      title: 'One Log across the Stream',
       poem: [
-        'One log across the stream and the water running fast',
-        'Better the bridge, three miles round, and dry feet',
+        'One log across the stream, and the water running fast',
+        'Better to walk three miles round to the bridge',
       ],
       meaning: 'A safer route may take longer, but it gives you a better chance of getting there.',
       general:
@@ -952,16 +952,16 @@ export const STICKS: readonly FortuneStick[] = [
       luckyItem: '说声辛苦了',
     },
     en: {
-      title: 'Keep The Edge Sheathed',
+      title: 'Keep the Blade Sheathed',
       poem: [
-        'Where the blade is kept covered, the body stays safe',
-        'Do not contend for this hour, contend for the long year',
+        'Keep the blade covered and you stay safe',
+        'Do not fight for this moment, play for the long years',
       ],
       meaning: 'Keep your position for now. You do not need to declare yourself yet.',
       general:
         'The people around you may be reacting quickly, and speaking up now could pull you into a dispute that is not yours. Put your attention back on your own work, explain less, and avoid taking sides before you need to. Time may settle more of this than an immediate statement would.',
       action: 'There is a discussion today you do not need to join. Quietly do not join it.',
-      luckyItem: 'Gentle Goodnight',
+      luckyItem: 'An Early Night',
     },
   },
 ];

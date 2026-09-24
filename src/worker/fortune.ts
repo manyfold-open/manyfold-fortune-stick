@@ -194,12 +194,28 @@ export function fallbackInterpretation(stick: FortuneStick, language: Language):
   };
 }
 
-const FIELD_LIMITS: Record<keyof Omit<Interpretation, 'source' | 'language'>, number> = {
-  meaning: 120,
-  answer: 600,
-  notice: 200,
-  action: 120,
+type FieldLimits = Record<keyof Omit<Interpretation, 'source' | 'language'>, number>;
+
+/**
+ * 每个字段最多留多少个字符。按语言分开：提示词给英文的是词数（meaning 30 词以内），
+ * 一个英文词平均六个字符，套中文的 120 字会把一句正常的英文从词中间切断。
+ */
+const FIELD_LIMITS: Record<Language, FieldLimits> = {
+  zh: { meaning: 120, answer: 600, notice: 200, action: 120 },
+  en: { meaning: 260, answer: 1100, notice: 260, action: 200 },
 };
+
+/**
+ * 超长时收短，但不从词中间断：英文退到最后一个空格，再补一个省略号。
+ * 中文没有空格，按字切本来就不会切坏一个字。
+ */
+export function clipText(text: string, limit: number): string {
+  if ([...text].length <= limit) return text;
+  let cut = [...text].slice(0, limit - 1).join('');
+  const space = cut.lastIndexOf(' ');
+  if (space > limit * 0.6) cut = cut.slice(0, space);
+  return `${cut.replace(/[\s,;:，、；：]+$/, '')}…`;
+}
 
 /** 按键切片时认得的键，和下面 pick 用的那几组别名保持一致。 */
 const SALVAGE_KEYS = [
@@ -346,23 +362,24 @@ export function parseInterpretation(
   // 严格解析优先；一个都解不出来，再按键切片救一次。
   const value = parsedCandidates.map(findObject).find(Boolean) ?? salvageFields(unfenced);
 
+  const limits = FIELD_LIMITS[language];
   const pick = (source: Record<string, unknown> | null, keys: string[], limit: number): string => {
     if (!source) return '';
     const text = keys
       .map((key) => source[key])
       .find((candidate): candidate is string => typeof candidate === 'string' && candidate.trim().length > 0);
     const trimmed = withoutDashes(text?.trim() ?? '');
-    return trimmed.slice(0, limit);
+    return clipText(trimmed, limit);
   };
 
-  const answer = pick(value, ['answer', 'response', 'content', 'text'], FIELD_LIMITS.answer);
+  const answer = pick(value, ['answer', 'response', 'content', 'text'], limits.answer);
   if (answer) {
     return {
-      meaning: pick(value, ['meaning', 'summary'], FIELD_LIMITS.meaning) || withoutDashes(preset.meaning),
+      meaning: pick(value, ['meaning', 'summary'], limits.meaning) || withoutDashes(preset.meaning),
       answer,
-      notice: pick(value, ['notice', 'caveat', 'insight'], FIELD_LIMITS.notice),
+      notice: pick(value, ['notice', 'caveat', 'insight'], limits.notice),
       action:
-        pick(value, ['action', 'suggestion', 'nextStep'], FIELD_LIMITS.action) || withoutDashes(preset.action),
+        pick(value, ['action', 'suggestion', 'nextStep'], limits.action) || withoutDashes(preset.action),
       source: 'ai',
       language,
     };
@@ -380,7 +397,7 @@ export function parseInterpretation(
   // meaning/action and place the agent's response in the main answer field.
   const prose = unfenced.trim();
   if (!prose) return null;
-  const text = withoutDashes(prose).slice(0, FIELD_LIMITS.answer);
+  const text = clipText(withoutDashes(prose), limits.answer);
   if (!text) return null;
   return {
     meaning: preset.meaning,

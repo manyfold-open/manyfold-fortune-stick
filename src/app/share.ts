@@ -191,16 +191,46 @@ function drawHorizontal(
   },
 ): void {
   type Line = { text: string; block: VerticalBlock };
-  const lines: Line[] = [];
-  for (const block of blocks) {
-    context.font = block.font;
-    for (const text of options.wrapText(context, block.text, options.width)) {
-      lines.push({ text, block });
+  const layout = (scaled: VerticalBlock[]) => {
+    const lines: Line[] = [];
+    for (const block of scaled) {
+      context.font = block.font;
+      for (const text of options.wrapText(context, block.text, options.width)) {
+        lines.push({ text, block });
+      }
     }
+    const total =
+      lines.reduce((sum, line) => sum + line.block.step, 0) + options.gap * (scaled.length - 1);
+    return { lines, total };
+  };
+
+  // 這一格高度是固定的：解籤的 AI 簽意比預寫的長，放不下就整體縮小一點字，
+  // 縮到七成還放不下，才把最後幾行收成刪節號。絕不讓字壓出格子。
+  let scale = 1;
+  let { lines, total } = layout(blocks);
+  while (total > options.height && scale > 0.72) {
+    scale -= 0.04;
+    const k = scale;
+    ({ lines, total } = layout(
+      blocks.map((block) => ({
+        ...block,
+        font: block.font.replace(/(\d+(?:\.\d+)?)px/, (_, px: string) => `${(Number(px) * k).toFixed(1)}px`),
+        step: block.step * k,
+      })),
+    ));
+  }
+  while (total > options.height && lines.length > 1) {
+    const dropped = lines.pop();
+    if (!dropped) break;
+    total -= dropped.block.step;
+    const last = lines[lines.length - 1];
+    if (last.block !== dropped.block) total -= options.gap;
+    context.font = last.block.font;
+    let text = last.text;
+    while (text && context.measureText(`${text}…`).width > options.width) text = text.slice(0, text.lastIndexOf(' ') > 0 ? text.lastIndexOf(' ') : -1);
+    last.text = `${text.replace(/[\s,;:“”]+$/, '')}…`;
   }
 
-  const total =
-    lines.reduce((sum, line) => sum + line.block.step, 0) + options.gap * (blocks.length - 1);
   // 整体在这一格里垂直居中，和竖排版本看起来占一样的位置。
   let y = options.top + Math.max(0, (options.height - total) / 2);
   context.textAlign = 'center';
@@ -373,13 +403,30 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
 
   // 签名，左右各一条朱红细线
   g.fillStyle = INK;
-  g.font = en ? `600 36px ${face}` : `600 40px ${SERIF}`;
   const titleGap = en ? 2 : 18;
-  const titleW = [...text.title].reduce((w, c) => w + g.measureText(c).width, 0) + titleGap * ([...text.title].length - 1);
+  const titleFace = en ? face : SERIF;
+  const measureTitle = () =>
+    [...text.title].reduce((w, c) => w + g.measureText(c).width, 0) + titleGap * ([...text.title].length - 1);
+  // 簽名兩側各有一條 22 + 40 的朱紅短線：長的英文簽名先縮字，縮到最小還放不下就不畫短線，
+  // 不然短線（甚至字）會畫到紙框外面
+  const RULES = 2 * (22 + 40) + 16;
+  let titleSize = en ? 36 : 40;
+  g.font = `600 ${titleSize}px ${titleFace}`;
+  let titleW = measureTitle();
+  while (titleW > innerW - RULES && titleSize > 26) {
+    titleSize -= 1;
+    g.font = `600 ${titleSize}px ${titleFace}`;
+    titleW = measureTitle();
+  }
+  while (titleW > innerW - 24 && titleSize > 16) {
+    titleSize -= 1;
+    g.font = `600 ${titleSize}px ${titleFace}`;
+    titleW = measureTitle();
+  }
   spacedText(g, text.title, center, y + TITLE / 2 + 12, titleGap);
   g.strokeStyle = SEAL;
   g.lineWidth = 2;
-  for (const dir of [-1, 1]) {
+  for (const dir of titleW <= innerW - RULES ? [-1, 1] : []) {
     const x0 = center + dir * (titleW / 2 + 22);
     g.beginPath();
     g.moveTo(x0, y + TITLE / 2);

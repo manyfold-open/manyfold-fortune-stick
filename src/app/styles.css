@@ -1770,12 +1770,19 @@ html, body {
 .slip-title-row::before,
 .slip-title-row::after {
   content: '';
+  flex: none;
   width: 18px;
   height: 1px;
   background: var(--seal);
 }
 
 .slip-title {
+  /* 長的英文簽名要能折行，不能把兩側短線和紙框頂出去 */
+  min-width: 0;
+  max-width: 100%;
+  text-align: center;
+  text-wrap: balance;
+  overflow-wrap: break-word;
   font-size: 19px;
   font-weight: 600;
   line-height: 1.35;
