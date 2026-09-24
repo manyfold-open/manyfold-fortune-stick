@@ -48,6 +48,7 @@ export default function PrivacyView() {
           <h3>{t('privacyThirdPartyTitle')}</h3>
           <ul>
             <li>{t('privacyManyfold')}</li>
+            <li>{t('privacyTarotBridge')}</li>
             <li>{t('privacyFonts')}</li>
             <li>{t('privacyCloudflare')}</li>
           </ul>

@@ -14,7 +14,9 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { stickText } from '../../shared/sticks';
 import type { FollowUpMessage, Reading } from '../../shared/types';
-import { storedErrorText } from '../api';
+import { createTarotClaim, storedErrorText } from '../api';
+import { rememberedTarotReturn, TAROT_URL, tarotHandoffUrl } from '../tarotBridge';
+import TarotIcon from './TarotIcon';
 import { LEVEL_TONE } from '../constants';
 import { copyFor, useT, useUiLanguage } from '../i18n';
 import { format } from '../../shared/i18n';
@@ -67,6 +69,7 @@ export default function ReadingResult(props: {
   const [flipped, setFlipped] = useState(Boolean(interpretation));
   const [settled, setSettled] = useState(Boolean(interpretation));
   const [panel, setPanel] = useState<Panel>(null);
+  const [tarotBridgePending, setTarotBridgePending] = useState(false);
   const emaRef = useRef<HTMLDivElement | null>(null);
   /** 只看第一次掛上來時有沒有 —— 之後解籤、翻面重渲染都不能再滑一次。 */
   const [fromDraw] = useState(() => Boolean(props.emaFrom));
@@ -177,6 +180,35 @@ export default function ReadingResult(props: {
   };
 
   const togglePanel = (next: Exclude<Panel, null>) => setPanel((open) => (open === next ? null : next));
+
+  /**
+   * Tarot opens in a new tab, so this stick and its reading stay put. The tab
+   * is opened now, inside the click, because a window opened after the claim's
+   * await would be blocked as a popup; it is pointed at Tarot once the claim is
+   * back. The reward is a bonus, not a gate: if the claim cannot be made, Tarot
+   * still opens.
+   */
+  const openTarot = async () => {
+    if (tarotBridgePending) return;
+    setTarotBridgePending(true);
+    const tab = window.open('', '_blank');
+    let target = tarotHandoffUrl(TAROT_URL, uiLanguage, null);
+    try {
+      const { token, tarotUrl } = await createTarotClaim(reading.id, rememberedTarotReturn());
+      target = tarotHandoffUrl(tarotUrl, uiLanguage, token);
+    } catch {
+      // Unconfigured secret, network trouble, timeout: go without the reward.
+    }
+    if (tab) {
+      // Tarot gets no handle back on this page (what rel=noopener would do).
+      tab.opener = null;
+      tab.location.href = target;
+      setTarotBridgePending(false);
+    } else {
+      // A browser that refused the new tab still gets to Tarot.
+      window.location.assign(target);
+    }
+  };
 
   const interpretationBlocks = (
     <>
@@ -311,6 +343,19 @@ export default function ReadingResult(props: {
 
                     <div className="sheet-scroll" onWheel={handleScrollWheel}>
                       {interpretation ? interpretationBlocks : loadingSkeleton}
+                      {interpretation && !panel && (
+                        <div className="tarot-bridge-action">
+                          <button
+                            type="button"
+                            className="text-action"
+                            onClick={() => void openTarot()}
+                            disabled={tarotBridgePending}
+                          >
+                            {tarotBridgePending ? t('tarotBridgeOpening') : t('actionTarotBridge')}
+                            <TarotIcon />
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     {interpretation && !panel && (

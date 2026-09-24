@@ -89,6 +89,8 @@ export const zh = {
   flipToReading: '解签',
   flipToSlip: '签面',
   actionRestart: '再求一签',
+  actionTarotBridge: '去塔罗自己提问',
+  tarotBridgeOpening: '正在准备塔罗链接…',
 
   /* ── 追问 ── */
   followUpEmpty: '就着这支签往下问，签和解读都不会变。',
@@ -157,6 +159,8 @@ export const zh = {
   privacyThirdPartyTitle: '第三方服务',
   privacyManyfold:
     '解签时，问题、签的内容、已有解读和追问会传给你连接的 Manyfold agent。连接流程也会把应用名称和 HTTPS 网站地址传给 Manyfold；本应用不会把 agent token 传到浏览器。',
+  privacyTarotBridge:
+    '如果你从当天的解签页前往塔罗，系统会发送一串当日有效的随机奖励码。它与这次求签的内容无关，不包含你的问题或解读；塔罗会向本站核对这串码后才发放奖励。',
   privacyFonts:
     '页面会从 Google Fonts 请求 Noto Serif 字体。字体请求由 Google 处理；本应用不会把问题或解读放进字体请求。',
   privacyCloudflare:

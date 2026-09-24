@@ -98,3 +98,21 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
   return (await response.json()) as T;
 }
+
+export const TAROT_CLAIM_TIMEOUT_MS = 5000;
+
+/**
+ * Request a one-use Tarot claim for this completed reading; no question is sent.
+ * `token` is null when the reading is too old to earn today's reward.
+ */
+export const createTarotClaim = (
+  readingId: string,
+  returnUrl: string | null,
+): Promise<{ token: string | null; tarotUrl: string }> =>
+  api(`/api/readings/${encodeURIComponent(readingId)}/tarot-claim`, {
+    method: 'POST',
+    body: JSON.stringify(returnUrl ? { returnUrl } : {}),
+    // The reward must never hold the Tarot link hostage: past this, the
+    // caller opens Tarot without it.
+    signal: AbortSignal.timeout(TAROT_CLAIM_TIMEOUT_MS),
+  });

@@ -5313,6 +5313,51 @@ html { overflow-x: clip; }
   border-top: 1px solid color-mix(in srgb, var(--seal) 30%, transparent);
 }
 
+/* A thumb-sized target: the shared .text-action is a 3px line of type, which
+   on a phone leaves this one only 31px tall. It is also the one way out to
+   another app, so it reads at full ink and a little heavier than the lines
+   around it, underlined in Tarot's deep blue so the destination shows before
+   the click. Still a line of type on the paper, not a new box. */
+.result .tarot-bridge-action .text-action {
+  min-height: 44px;
+  padding: 6px 4px;
+  /* One line, with the mark centred on it: wrapped, the mark hung off the
+     second line's baseline and sat high. The size gives way on narrow phones
+     rather than the line breaking. */
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  white-space: nowrap;
+  font-size: clamp(13px, 3.9vw, 16px);
+  letter-spacing: 0.04em;
+  font-weight: 600;
+  color: var(--ink);
+  opacity: 1;
+  text-decoration: underline;
+  text-decoration-color: #2f55b5;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 8px;
+}
+
+/* The other app's own mark, after the words of the link that goes there. */
+.result .tarot-bridge-action .app-icon {
+  display: inline-block;
+  flex: none;
+  width: 1.4em;
+  height: 1.4em;
+  border-radius: 0.3em;
+}
+
+.result .tarot-bridge-action {
+  margin: 24px 0 8px;
+  padding-top: 14px;
+  border-top: 1px solid color-mix(in srgb, var(--seal) 24%, transparent);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
 .result :is(.share-panel, .followup) {
   border-top: 1px solid color-mix(in srgb, var(--seal) 30%, transparent);
 }

@@ -19,6 +19,10 @@ export interface Env {
   CONFIG_ENCRYPTION_KEY?: string;
   /** Optional: when set, settings/agent-management routes require x-admin-password. */
   ADMIN_PASSWORD?: string;
+  /** Tarot app URL; production defaults to app.manyfold.ai/tarot/. */
+  TAROT_HANDOFF_URL?: string;
+  /** Comma-separated other Tarot URLs a visitor may be sent back to (e.g. the legacy host). */
+  TAROT_RETURN_URLS?: string;
 }
 
 /** Everything needed to talk to one agent over A2A. */

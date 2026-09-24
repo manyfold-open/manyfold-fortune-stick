@@ -89,6 +89,17 @@ CREATE TABLE IF NOT EXISTS reading_messages (
 );
 
 CREATE INDEX IF NOT EXISTS idx_reading_messages ON reading_messages (reading_id, id);
+
+-- A Tarot reward claim for a finished reading: a random code handed to Tarot in
+-- the link, which Tarot's Worker looks up here (over a service binding) before
+-- it grants anything. One code per reading, so drawing it twice cannot mint two.
+-- day is the Taipei calendar day the claim is good for.
+CREATE TABLE IF NOT EXISTS tarot_claims (
+  id         TEXT PRIMARY KEY,
+  reading_id TEXT NOT NULL UNIQUE,
+  day        TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
 `;
 
 /**

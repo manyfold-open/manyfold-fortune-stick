@@ -19,3 +19,6 @@
 # Set this (>=32 chars) to keep the key out of the database:
 #   npx wrangler secret put CONFIG_ENCRYPTION_KEY
 # CONFIG_ENCRYPTION_KEY=
+
+# Optional: point local/preview results at the matching Tarot app.
+# TAROT_HANDOFF_URL=http://localhost:5173/tarot/
