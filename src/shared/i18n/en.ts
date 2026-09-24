@@ -11,7 +11,8 @@ export const en = {
   brandTitle: 'Omikuji',
   brandSub: 'AI FORTUNE STICK',
   navHistory: 'Your slips',
-  navBackToGame: 'Back to the machine',
+  // 窄手機上頂欄只放得下這麼長（「Back to the machine」會把整頁撐寬、左右晃）。台上早就沒有機器了，是籤筒
+  navBackToGame: 'Draw a stick',
   navSettings: 'Settings',
   shrineSettingsTitle: 'Shrine Settings',
   settingsClose: 'Close',
