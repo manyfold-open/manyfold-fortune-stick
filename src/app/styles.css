@@ -5307,10 +5307,21 @@ html { overflow-x: clip; }
 }
 
 /* A thumb-sized target: the shared .text-action is a 3px line of type, which
-   on a phone leaves this one only 31px tall. */
+   on a phone leaves this one only 31px tall. It is also the one way out to
+   another app, so it reads at full ink and a little heavier than the lines
+   around it, underlined in Tarot's deep blue so the destination shows before
+   the click. Still a line of type on the paper, not a new box. */
 .result .tarot-bridge-action .text-action {
   min-height: 44px;
   padding: 6px 4px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  opacity: 1;
+  text-decoration: underline;
+  text-decoration-color: #2f55b5;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 8px;
 }
 
 /* The other app's own mark, after the words of the link that goes there. */
