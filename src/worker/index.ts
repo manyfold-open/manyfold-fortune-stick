@@ -28,6 +28,7 @@ import { isSettingsApiPath } from './auth';
 import { HttpError, type Env } from './types';
 import { ensureSchema } from './db';
 import { withShareMeta } from './meta';
+import { signTarotBonus } from './tarot-bridge';
 import { ConfigError, safeEqual } from './crypto';
 import { A2AError } from './a2a';
 import {
@@ -142,6 +143,17 @@ app.post('/api/readings', async (c) => {
   const body = (await c.req.json().catch(() => null)) as { question?: unknown } | null;
   const reading = await createReading(c.env, body?.question);
   return c.json({ reading }, 201);
+});
+
+app.post('/api/readings/:id/tarot-claim', async (c) => {
+  const reading = await getReading(c.env, c.req.param('id'));
+  if (!reading.interpretation) {
+    throw new HttpError(409, 'reading_not_complete', 'Finish reading this stick before opening Tarot.');
+  }
+  return c.json({
+    token: await signTarotBonus(c.env, reading),
+    tarotUrl: c.env.TAROT_HANDOFF_URL ?? 'https://app.manyfold.ai/tarot/',
+  });
 });
 
 app.get('/api/readings/:id', async (c) => c.json({ reading: await getReading(c.env, c.req.param('id')) }));

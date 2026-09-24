@@ -19,3 +19,11 @@
 # Set this (>=32 chars) to keep the key out of the database:
 #   npx wrangler secret put CONFIG_ENCRYPTION_KEY
 # CONFIG_ENCRYPTION_KEY=
+
+# Use the same random 32+ character secret in both the Fortune Stick and Tarot
+# repos for local bridge development. Production: set this secret in both Workers.
+#   npx wrangler secret put TAROT_BRIDGE_SECRET
+# TAROT_BRIDGE_SECRET=
+
+# Optional: point local/preview results at the matching Tarot app.
+# TAROT_HANDOFF_URL=http://localhost:5173/tarot/

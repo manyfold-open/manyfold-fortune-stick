@@ -4,7 +4,7 @@ An AI fortune-stick reading built on Cloudflare Workers and Manyfold.
 
 One question. One stick. One reading.
 
-LIVE: https://app.manyfold.ai/fortune-stick
+LIVE: https://app.manyfold.ai/fortune-stick/
 
 ## What it is
 

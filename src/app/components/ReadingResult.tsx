@@ -14,7 +14,8 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { stickText } from '../../shared/sticks';
 import type { FollowUpMessage, Reading } from '../../shared/types';
-import { storedErrorText } from '../api';
+import { createTarotClaim, storedErrorText } from '../api';
+import { tarotHandoffUrl } from '../tarotBridge';
 import { LEVEL_TONE } from '../constants';
 import { copyFor, useT, useUiLanguage } from '../i18n';
 import { format } from '../../shared/i18n';
@@ -67,6 +68,8 @@ export default function ReadingResult(props: {
   const [flipped, setFlipped] = useState(Boolean(interpretation));
   const [settled, setSettled] = useState(Boolean(interpretation));
   const [panel, setPanel] = useState<Panel>(null);
+  const [tarotBridgePending, setTarotBridgePending] = useState(false);
+  const [tarotBridgeError, setTarotBridgeError] = useState(false);
   const emaRef = useRef<HTMLDivElement | null>(null);
   /** 只看第一次掛上來時有沒有 —— 之後解籤、翻面重渲染都不能再滑一次。 */
   const [fromDraw] = useState(() => Boolean(props.emaFrom));
@@ -177,6 +180,19 @@ export default function ReadingResult(props: {
   };
 
   const togglePanel = (next: Exclude<Panel, null>) => setPanel((open) => (open === next ? null : next));
+
+  const openTarot = async () => {
+    if (tarotBridgePending) return;
+    setTarotBridgePending(true);
+    setTarotBridgeError(false);
+    try {
+      const { token, tarotUrl } = await createTarotClaim(reading.id);
+      window.location.assign(tarotHandoffUrl(tarotUrl, uiLanguage, token));
+    } catch {
+      setTarotBridgeError(true);
+      setTarotBridgePending(false);
+    }
+  };
 
   const interpretationBlocks = (
     <>
@@ -311,6 +327,21 @@ export default function ReadingResult(props: {
 
                     <div className="sheet-scroll" onWheel={handleScrollWheel}>
                       {interpretation ? interpretationBlocks : loadingSkeleton}
+                      {interpretation && !panel && (
+                        <div className="tarot-bridge-action">
+                          <button
+                            type="button"
+                            className="text-action"
+                            onClick={() => void openTarot()}
+                            disabled={tarotBridgePending}
+                          >
+                            {tarotBridgePending ? t('tarotBridgeOpening') : t('actionTarotBridge')}
+                          </button>
+                          {tarotBridgeError && (
+                            <p className="fault" role="alert">{t('tarotBridgeError')}</p>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {interpretation && !panel && (

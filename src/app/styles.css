@@ -5306,6 +5306,21 @@ html { overflow-x: clip; }
   border-top: 1px solid color-mix(in srgb, var(--seal) 30%, transparent);
 }
 
+.result .tarot-bridge-action {
+  margin: 24px 0 8px;
+  padding-top: 14px;
+  border-top: 1px solid color-mix(in srgb, var(--seal) 24%, transparent);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.result .tarot-bridge-action .fault {
+  margin: 0;
+  text-align: center;
+}
+
 .result :is(.share-panel, .followup) {
   border-top: 1px solid color-mix(in srgb, var(--seal) 30%, transparent);
 }

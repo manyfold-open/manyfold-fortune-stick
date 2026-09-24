@@ -19,6 +19,10 @@ export interface Env {
   CONFIG_ENCRYPTION_KEY?: string;
   /** Optional: when set, settings/agent-management routes require x-admin-password. */
   ADMIN_PASSWORD?: string;
+  /** Shared HMAC secret used only to sign one-day Tarot reward claims. */
+  TAROT_BRIDGE_SECRET?: string;
+  /** Tarot app URL; production defaults to app.manyfold.ai/tarot/. */
+  TAROT_HANDOFF_URL?: string;
 }
 
 /** Everything needed to talk to one agent over A2A. */

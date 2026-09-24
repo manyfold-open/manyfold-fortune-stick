@@ -98,3 +98,12 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
   return (await response.json()) as T;
 }
+
+/** Request a one-use Tarot claim for this completed reading; no question is sent. */
+export const createTarotClaim = (
+  readingId: string,
+): Promise<{ token: string; tarotUrl: string }> =>
+  api(`/api/readings/${encodeURIComponent(readingId)}/tarot-claim`, {
+    method: 'POST',
+    body: '{}',
+  });

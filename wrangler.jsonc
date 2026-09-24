@@ -44,7 +44,9 @@
     // "production" enforces https-only and no-private-IP checks on agent URLs.
     "ENVIRONMENT": "production",
     // Requests under this prefix are served as if they had arrived at the root.
-    "BASE_PATH": "/fortune-stick"
+    "BASE_PATH": "/fortune-stick",
+    // Preview builds can override this to the matching Tarot preview URL.
+    "TAROT_HANDOFF_URL": "https://app.manyfold.ai/tarot/"
   }
   // Optional hardening, neither is required to deploy:
   //   npx wrangler secret put ADMIN_PASSWORD          # protects agent management in /settings
