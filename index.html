@@ -21,19 +21,23 @@
          那是「本机装过才生效」的增强，故意不进这笔请求：整包 CJK 明体几 MB，
          为它拖慢首屏不划算。改这里之前先看那边的注释。
 
+         display=optional：字体没在第一时间到，这一次就整页用后备字体，不中途换字 ——
+         swap 会先用系统字排一遍、下载完再换，绘马和按钮在手机上会跳一下。
+         第二次打开字体已经在缓存里，一开始就是 Noto Serif。分享图另外 document.fonts.load，不受影响。
+
          故意不让它挡住首屏：字体表是渲染阻塞资源，一旦 Google Fonts 慢或者被挡，
          模块脚本要等它，整页就是白的。先按 print 媒体加载，到了再切成 all。 -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;700;900&family=Noto+Serif:wght@400;500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;700;900&family=Noto+Serif:wght@400;500;700&display=optional"
       rel="stylesheet"
       media="print"
       onload="this.media='all'"
     />
     <noscript>
       <link
-        href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;700;900&family=Noto+Serif:wght@400;500;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;700;900&family=Noto+Serif:wght@400;500;700&display=optional"
         rel="stylesheet"
       />
     </noscript>

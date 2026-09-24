@@ -114,12 +114,15 @@ export default function ShrineBackdrop({ calm }: { calm: boolean }) {
     let h = 0;
     const fit = (): void => {
       const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const widthChanged = window.innerWidth !== w;
       w = window.innerWidth;
       h = window.innerHeight;
       cv.width = Math.round(w * dpr);
       cv.height = Math.round(h * dpr);
       g.setTransform(dpr, 0, 0, dpr, 0, 0);
-      petals = createPetals(petalCount(w), 7);
+      // 手機捲動時網址列收合，只有高度在變、一直發 resize：花瓣留著原來那一批，
+      // 不然每收一次就整批重生、在畫面上閃一下
+      if (widthChanged || petals.length === 0) petals = createPetals(petalCount(w), 7);
     };
     const paint = (t: number): void => {
       g.clearRect(0, 0, w, h);
@@ -137,9 +140,13 @@ export default function ShrineBackdrop({ calm }: { calm: boolean }) {
     fit();
     let raf = 0;
     const t0 = performance.now();
+    // 花瓣飄得慢，每秒 30 格就夠順；整面、兩倍解析度的畫布每格重畫，是手機上最便宜能省下的一塊
+    let painted = 0;
     const loop = (now: number): void => {
-      paint((now - t0) / 1000);
       raf = requestAnimationFrame(loop);
+      if (now - painted < 30) return;
+      painted = now;
+      paint((now - t0) / 1000);
     };
     const start = (): void => {
       cancelAnimationFrame(raf);
@@ -148,6 +155,8 @@ export default function ShrineBackdrop({ calm }: { calm: boolean }) {
     };
     const onResize = (): void => {
       fit();
+      // 改尺寸會清空畫布：當場補畫，不要等下一格，才不會空一下
+      paint((performance.now() - t0) / 1000);
       start();
     };
     start();

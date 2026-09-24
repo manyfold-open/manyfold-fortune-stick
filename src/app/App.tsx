@@ -13,18 +13,17 @@
  * 供给下面所有组件，除此之外不碰任何一张已经印好的签。
  */
 
-import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type MouseEvent } from 'react';
 import type { AppState } from '../shared/types';
 import { api, onUnauthorized } from './api';
 import FortuneGame from './components/FortuneGame';
-import HistoryView from './components/HistoryView';
 import PasswordGate from './components/PasswordGate';
-import PrivacyView from './components/PrivacyView';
 import SettingsModal from './components/SettingsModal';
-import SettingsView from './components/SettingsView';
+import SharedStickView from './components/SharedStickView';
+import { parseSharedStick } from '../shared/share-link';
 import ShrineBackdrop from './components/ShrineBackdrop';
 import { LanguageProvider, useT, useUiLanguage } from './i18n';
-import { getPrefs, setPrefs, type Prefs } from './storage';
+import { getPrefs, setCurrentReadingId, setPrefs, type Prefs } from './storage';
 import { installAudioUnlock } from './sound';
 import { appUrl, BASE } from './base';
 
@@ -49,6 +48,11 @@ const routeFromHash = (): Route => {
   if (hash === 'history') return 'history';
   return 'game';
 };
+
+// 首屏只要籤筒：記錄、隱私、部署設定這三頁用到才下載，打開遊戲時少抓一截程式
+const HistoryView = lazy(() => import('./components/HistoryView'));
+const PrivacyView = lazy(() => import('./components/PrivacyView'));
+const SettingsView = lazy(() => import('./components/SettingsView'));
 
 export default function App() {
   const [prefs, setPrefsState] = useState<Prefs>(() => getPrefs());
@@ -82,6 +86,44 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
   const [route, setRoute] = useState<Route>(routeFromHash);
   const [gateOpen, setGateOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  /**
+   * 左上角 logo 在求籤頁上被點了幾次。求籤頁的網址本來就沒有 #，goToGame 清不了什麼，
+   * 以前就是點了毫無反應；現在交給 FortuneGame：看著結果時回到空白繪馬（跟「再求一籤」一樣）。
+   */
+  const [homeTaps, setHomeTaps] = useState(0);
+  /** 朋友分享來的那一支（?s=13&l=en）。有它，求籤頁先給人看那張籤紙，底下一行「求一支自己的」。 */
+  const [shared, setShared] = useState(() => parseSharedStick(location.search));
+  /** 看完朋友那支，去求自己的：網址上的 ?s= 拿掉（重新整理不會又回來），換成求籤頁 */
+  const leaveShared = () => {
+    const url = new URL(location.href);
+    url.searchParams.delete('s');
+    url.searchParams.delete('l');
+    history.replaceState(history.state, '', url.toString());
+    setShared(null);
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  };
+  const goHome = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (shared) {
+      event.preventDefault();
+      leaveShared();
+      if (location.hash) location.hash = '';
+      return;
+    }
+    if (route === 'game' && location.pathname.replace(/\/+$/, '') === BASE) {
+      event.preventDefault();
+      setHomeTaps((n) => n + 1);
+      return;
+    }
+    startFresh(event);
+  };
+  /**
+   * 從記錄、隱私頁回求籤頁（logo 或「Draw a stick」）：跟在求籤頁點 logo 一樣是一局新的 ——
+   * 以前會回到上一支籤的結果，按鈕寫著「求一支」卻打開舊的那張。舊的那支還在記錄裡。
+   */
+  const startFresh = (event: MouseEvent<HTMLAnchorElement>) => {
+    setCurrentReadingId(null);
+    goToGame(event);
+  };
 
   const refreshState = useCallback(async () => {
     try {
@@ -192,7 +234,7 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
         <a
           className="brand"
           href={appUrl('/')}
-          onClick={goToGame}
+          onClick={goHome}
           aria-label={t('brandTitle')}
         >
           <span className="brand-torii" aria-hidden="true">⛩️</span>
@@ -212,9 +254,9 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
           <a
             className="text-action history-link"
             href={route === 'game' ? '#history' : appUrl('/')}
-            onClick={route === 'game' ? undefined : goToGame}
+            onClick={route === 'game' ? undefined : startFresh}
           >
-            {route === 'game' ? t('navHistory') : t('navBackToGame')}
+            <span className="history-link-label">{route === 'game' ? t('navHistory') : t('navBackToGame')}</span>
           </a>
           <button
             type="button"
@@ -228,7 +270,8 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
         </span>
       </header>
 
-      {route === 'settings' && state.adminOk && (
+      <Suspense fallback={null}>
+        {route === 'settings' && state.adminOk && (
         <SettingsView
           agents={state.agents}
           initialSession={state.connect.session}
@@ -237,8 +280,10 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
       )}
       {route === 'history' && <HistoryView />}
       {route === 'privacy' && <PrivacyView />}
-      {route === 'game' && (
-        <FortuneGame prefs={prefs} interpreterReady={state.interpreterReady} />
+      </Suspense>
+      {route === 'game' && shared && <SharedStickView shared={shared} onDrawOwn={leaveShared} />}
+      {route === 'game' && !shared && (
+        <FortuneGame prefs={prefs} interpreterReady={state.interpreterReady} homeTaps={homeTaps} />
       )}
 
       <footer className="footer">

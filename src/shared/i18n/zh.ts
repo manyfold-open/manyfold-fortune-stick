@@ -51,6 +51,9 @@ export const zh = {
   askGhost: '在这里写下你心里的那件事',
   askDone: '完成',
   emaCaption: '絵馬 · 心願',
+  emaStreak: '絵馬 · 连续第 {days} 天',
+  // 每天来抽的人最常问的一句，放在第一块：点一下就能搅，不必每天打字
+  exampleToday: '今天的运势如何？',
   example1: '我该如何面对最近的工作变化？',
   example2: '这段关系还值得我继续投入吗？',
   example3: '现在是开始做那件想了很久的事的时候吗？',
@@ -109,6 +112,11 @@ export const zh = {
   shareShared: '已经交给系统分享。',
   shareDownloaded: '图片已保存到下载。',
   shareFailed: '图片这次没生成出来，可以先复制下面这段文字。',
+  shareStory: '做成限时动态尺寸（9:16）',
+  shareLinkNote: '分享时会附上一条连结：朋友点开看到的是这一支签，看不到你的问题和解读。',
+  /* 朋友分享来的那一支签（?s=） */
+  sharedEma: '朋友分享给你的一签',
+  sharedDrawOwn: '求一支自己的签',
 
   /* ── 记录 ── */
   historyTitle: '求签记录',

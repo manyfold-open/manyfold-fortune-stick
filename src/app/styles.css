@@ -3428,6 +3428,52 @@ code {
     font-size: 11.5px;
     white-space: nowrap;
   }
+  /* 手機上設定只留齒輪（按鈕本身有 aria-label）。英文三顆字鈕加上品牌，以前在 375～430px 寬
+     會比螢幕還寬，整頁被撐開、可以左右晃 */
+  .settings-trigger-label { display: none; }
+}
+
+/* 保險：頂欄放什麼字都不准把頁面撐寬。擠不下時中間那顆（求籤記錄／回到求籤）縮成省略號，
+   品牌和設定不動 —— 將來改文案、加語言，最壞是字被截，不會整頁左右晃 */
+.topbar {
+  min-width: 0;
+}
+
+.topbar-actions {
+  min-width: 0;
+  flex-shrink: 1;
+}
+
+.topbar-actions .lang-switch,
+.topbar-actions .settings-trigger {
+  flex-shrink: 0;
+}
+
+/* 頂欄的膠囊只有 22px 高，單手在外面很容易按歪。可點範圍往上下各撐到 44px（蘋果建議的最小觸控高度），
+   外觀不變；左右只撐一點點，不去吃隔壁那顆 */
+.brand,
+.topbar-actions .text-action {
+  position: relative;
+}
+
+.brand::after,
+.topbar-actions .text-action::after {
+  content: '';
+  position: absolute;
+  inset: -11px -3px;
+}
+
+/* 省略號做在裡面那層字上：按鈕本身不能 overflow: hidden，不然下面撐大的可點範圍（::after）會被切掉 */
+.topbar-actions .history-link {
+  min-width: 0;
+  flex-shrink: 1;
+}
+
+.history-link-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (max-width: 400px) {
@@ -4689,6 +4735,15 @@ html:lang(en) .shell:has(.cyl3d-stage) .ask-zone {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+/* 籤筒那一包（three.js）是跟頁面一起、另外下載的：到了就淡入，不要啪一下冒出來 */
+.cyl3d-canvas-wrapper > canvas:first-child {
+  animation: cyl3d-in 0.45s ease both;
+}
+
+@keyframes cyl3d-in {
+  from { opacity: 0; }
 }
 
 @media (max-width: 640px) {

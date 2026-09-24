@@ -10,7 +10,7 @@
  * 界面上所有的提示都走打印机的屏（LCD），页面本身不再出现第二处提示文案。
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import type { FollowUpMessage, Reading } from '../../shared/types';
 import { api, ApiError, errorMessage } from '../api';
 import { EJECT_MS, LEVEL_TONE, PRINT_MS, QUESTION_MIN, QUESTION_MAX } from '../constants';
@@ -32,17 +32,46 @@ import {
   type LocalFollowUp,
   type Prefs,
 } from '../storage';
-import FortuneCylinder from './FortuneCylinder';
 import { acceptsGesture, chimeAtSlip, drawStartSound, enterDraws } from '../../shared/cylinder/interaction';
-import FortuneCylinder3D from './FortuneCylinder3D';
-import FortunePaperRoll from './FortunePaperRoll';
-import Printer from './Printer';
 import { EmaChrome } from './Ema';
 import QuestionForm from './QuestionForm';
 import ReadingResult, { type EmaRect } from './ReadingResult';
 import StickFace from './StickFace';
 
+/*
+ * 3D 籤筒連同 three.js 是整包程式裡最大的一塊（光 three 的渲染器就五百多 KB）。
+ * 拆成自己一包、程式一跑起來就開始抓：鳥居、繪馬、頂欄先出來，使用者可以先寫問題，
+ * 籤筒到了再淡入；重新整理停在解籤頁的人則完全不用等它。
+ */
+const cylinder3d = import('./FortuneCylinder3D');
+const FortuneCylinder3D = lazy(() => cylinder3d);
+
+/** 籤筒還沒到時佔住同一塊版面（同一組 class），它到了不會把頁面推動 */
+function CylinderPlaceholder() {
+  return (
+    <div className="roll-stage cyl3d-stage cyl3d-loading" aria-hidden>
+      <div className="cyl3d-canvas-wrapper" />
+      <div className="roll-action-area">
+        <div className="cyl3d-status">
+          <p className="roll-hint" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 另外三個器具只在 ?vessel= 才用得到：拆出去，一般人打開遊戲不必下載它們
+const FortuneCylinder = lazy(() => import('./FortuneCylinder'));
+const FortunePaperRoll = lazy(() => import('./FortunePaperRoll'));
+const Printer = lazy(() => import('./Printer'));
+
 type Phase = 'ask' | 'printing' | 'ejecting';
+
+/** 解籤。訊息 id 由伺服器照這一列的 updated_at 算（AGENTS.md 第 14 條），同一個請求不會被算兩次。 */
+const requestInterpretation = (id: string): Promise<Reading> =>
+  api<{ reading: Reading }>(`/api/readings/${encodeURIComponent(id)}/interpret`, { method: 'POST' }).then(
+    (body) => body.reading,
+  );
 
 interface Fault {
   code: string;
@@ -54,7 +83,12 @@ type Vessel = 'cylinder' | 'printer' | 'roll' | 'cylinder3d';
 const isVessel = (v: string | null): v is Vessel =>
   v === 'cylinder' || v === 'printer' || v === 'roll' || v === 'cylinder3d';
 
-export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boolean }) {
+export default function FortuneGame(props: {
+  prefs: Prefs;
+  interpreterReady: boolean;
+  /** 左上角 logo 在這一頁被點的次數（App 數）。每多一下就回到起點，見下面的 effect。 */
+  homeTaps?: number;
+}) {
   const t = useT();
   const [question, setQuestion] = useState(() => {
     try {
@@ -269,6 +303,33 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
     }
   }, [phase, question, props.prefs.reducedMotion, props.prefs.sound, t, vessel]);
 
+  /**
+   * 抽完就在背景先解籤：籤紙一攤開，按「解签」多半已經解好了，不用再對著骨架等好幾秒。
+   * 代價是每一支抽出來的籤都會送一次（連沒按解籤的也算）—— 使用者同意這樣換速度。
+   * 只在新抽的那一刻做（重新整理、從記錄打開的不做）；背景這一次失敗不吭聲，按下去時照常再解。
+   * 解好的時候人已經去求下一支了，就只存進記錄，不去動畫面上那一張。
+   */
+  const warm = useRef<{ id: string; promise: Promise<Reading> } | null>(null);
+  const shownId = useRef<string | null>(null);
+  shownId.current = reading?.id ?? null;
+  const warmUp = useCallback(
+    (drawn: Reading) => {
+      if (!props.interpreterReady || drawn.interpretation) return;
+      const promise = requestInterpretation(drawn.id);
+      warm.current = { id: drawn.id, promise };
+      void promise
+        .then((next) => {
+          saveRecord(next);
+          if (shownId.current === next.id) setReading((now) => (now && !now.interpretation ? next : now));
+        })
+        .catch(() => undefined)
+        .finally(() => {
+          if (warm.current?.promise === promise) warm.current = null;
+        });
+    },
+    [props.interpreterReady],
+  );
+
   /** 籤筒 v2 演完了：这时候才把画面交给结果页。 */
   const revealDone = useCallback(() => {
     const drawn = pendingReading.current;
@@ -281,22 +342,26 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
     }
     const box = emaRef.current?.getBoundingClientRect();
     setEmaFrom(box ? { top: box.top, left: box.left, width: box.width, height: box.height } : null);
+    shownId.current = drawn.id;
     setReading(drawn);
     setSheet(null);
     setPhase('ask');
-  }, [props.prefs.sound, vessel]);
+    warmUp(drawn);
+  }, [props.prefs.sound, vessel, warmUp]);
 
   const interpret = useCallback(async () => {
     if (!reading || interpreting) return;
     setInterpreting(true);
     setFault(null);
+    // 背景已經在解這一支（warmUp）：接著等同一個請求，不再送一次 —— 送兩次就是解兩次、扣兩次
+    const pending = warm.current?.id === reading.id ? warm.current.promise : null;
+    warm.current = null;
     try {
-      const body = await api<{ reading: Reading }>(
-        `/api/readings/${encodeURIComponent(reading.id)}/interpret`,
-        { method: 'POST' },
-      );
-      setReading(body.reading);
-      saveRecord(body.reading);
+      const next = pending
+        ? await pending.catch(() => requestInterpretation(reading.id))
+        : await requestInterpretation(reading.id);
+      setReading(next);
+      saveRecord(next);
     } catch (cause) {
       setFault({ code: 'ERROR', text: errorMessage(cause, t) });
     } finally {
@@ -323,6 +388,7 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
     clearTimers();
     stopMotor.current?.();
     pendingReading.current = null;
+    warm.current = null;
     setCurrentReadingId(null);
     setReading(null);
     setSheet(null);
@@ -332,6 +398,22 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
     setPhase('ask');
     window.scrollTo({ top: 0, behavior: 'auto' });
   }, [clearTimers, props.prefs.sound, triggerHaptic]);
+
+  /*
+   * 點 logo = 回首頁。看著結果時就是「再求一籤」那一步：清掉這一局、回到空白繪馬 ——
+   * 不抽籤（籤只能攪出來），抽過的那支留在「你的籤」裡。攪籤、出籤途中不理它：那支籤已經在
+   * 伺服器定下來了，半路打斷，使用者就只能去記錄裡才看得到它。
+   * 只看「變了」：路由切回來時元件重新掛上，那時的次數不算一次點擊。
+   */
+  const homeSeen = useRef(props.homeTaps ?? 0);
+  useEffect(() => {
+    const taps = props.homeTaps ?? 0;
+    if (taps === homeSeen.current) return;
+    homeSeen.current = taps;
+    if (restoring || phase !== 'ask') return;
+    if (reading) restart();
+    else window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [props.homeTaps, restoring, phase, reading, restart]);
 
   if (restoring) {
     return (
@@ -393,7 +475,7 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
         aria-hidden={printing}
         data-lang={props.prefs.language}
       >
-        {[t('example1'), t('example2'), t('example3')].map((example) => {
+        {[t('exampleToday'), t('example1'), t('example2'), t('example3')].map((example) => {
           const isSelected = question === example;
           return (
             <li key={example}>
@@ -448,32 +530,35 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
 
       {vessel === 'cylinder3d' && suggestions}
 
+      <Suspense fallback={null}>
       {vessel === 'cylinder3d' ? (
         <div className="roll-slot">
-          <FortuneCylinder3D
-            state={
-              phase === 'printing'
-                ? 'shaking'
-                : phase === 'ejecting'
-                  ? 'ejecting'
-                  : typed > 0
-                    ? 'ready'
-                    : 'idle'
-            }
-            sheet={sheet}
-            fault={fault}
-            language={sheet ? sheet.language : props.prefs.language}
-            soundEnabled={props.prefs.sound}
-            reducedMotion={props.prefs.reducedMotion}
-            onShake={() => void draw()}
-            onRevealed={revealDone}
-            onNeedQuestion={() => {
-              setAskNudge((n) => n + 1);
-              askField.current?.focus();
-            }}
-            // 籤筒 v2 的籤是摇出来的，不是演完的 —— 出籤途中关掉输入会死锁
-            disabled={!acceptsGesture(vessel, phase)}
-          />
+          <Suspense fallback={<CylinderPlaceholder />}>
+            <FortuneCylinder3D
+              state={
+                phase === 'printing'
+                  ? 'shaking'
+                  : phase === 'ejecting'
+                    ? 'ejecting'
+                    : typed > 0
+                      ? 'ready'
+                      : 'idle'
+              }
+              sheet={sheet}
+              fault={fault}
+              language={sheet ? sheet.language : props.prefs.language}
+              soundEnabled={props.prefs.sound}
+              reducedMotion={props.prefs.reducedMotion}
+              onShake={() => void draw()}
+              onRevealed={revealDone}
+              onNeedQuestion={() => {
+                setAskNudge((n) => n + 1);
+                askField.current?.focus();
+              }}
+              // 籤筒 v2 的籤是摇出来的，不是演完的 —— 出籤途中关掉输入会死锁
+              disabled={!acceptsGesture(vessel, phase)}
+            />
+          </Suspense>
         </div>
       ) : vessel === 'roll' ? (
         <div className="roll-slot">
@@ -529,6 +614,7 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
           </Printer>
         </div>
       )}
+      </Suspense>
 
       {vessel !== 'cylinder3d' && suggestions}
     </section>

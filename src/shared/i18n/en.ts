@@ -11,7 +11,8 @@ export const en = {
   brandTitle: 'Omikuji',
   brandSub: 'AI FORTUNE STICK',
   navHistory: 'Your slips',
-  navBackToGame: 'Back to the machine',
+  // 窄手機上頂欄只放得下這麼長（「Back to the machine」會把整頁撐寬、左右晃）。台上早就沒有機器了，是籤筒
+  navBackToGame: 'Draw a stick',
   navSettings: 'Settings',
   shrineSettingsTitle: 'Shrine Settings',
   settingsClose: 'Close',
@@ -47,7 +48,10 @@ export const en = {
   askGhost: 'Write the thing on your mind here',
   askDone: 'Done',
   emaCaption: 'EMA · MAKE A WISH',
+  emaStreak: 'EMA · DAY {days} IN A ROW',
   /* 例句寫短：手機上一句要擠進一塊木札（約 290px），太長會折兩行、三塊疊起來把籤筒擠小 */
+  // 每天來抽的人最常問的一句，放在第一塊：點一下就能攪，不必每天打字
+  exampleToday: 'How does today look for me?',
   example1: 'How do I face the changes at work?',
   example2: 'Is this relationship still worth it?',
   example3: 'Is it time to start that plan at last?',
@@ -108,6 +112,11 @@ export const en = {
   shareShared: 'Handed to your system share sheet.',
   shareDownloaded: 'Image saved to your downloads.',
   shareFailed: 'The image did not come out this time. You can copy the text below instead.',
+  shareStory: 'Story size, 9:16',
+  shareLinkNote: 'A link goes with it. Friends who open it see this stick, never your question or reading.',
+  /* a stick a friend shared (?s=) */
+  sharedEma: 'A friend shared this slip with you',
+  sharedDrawOwn: 'Draw your own',
 
   /* ── history ── */
   historyTitle: 'Your slips',

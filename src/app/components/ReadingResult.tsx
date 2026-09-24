@@ -11,20 +11,25 @@
  * 卡高固定（CSS 的 --card-h），背面內容自己捲；分享與追問是浮在背面上的一張紙，不往下接。
  */
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { stickText } from '../../shared/sticks';
 import type { FollowUpMessage, Reading } from '../../shared/types';
 import { storedErrorText } from '../api';
 import { LEVEL_TONE } from '../constants';
 import { copyFor, useT } from '../i18n';
+import { format } from '../../shared/i18n';
+import { streakDays } from '../../shared/streak';
+import { listRecords } from '../storage';
 import { withoutDashes } from '../../shared/text';
 import { EmaChrome } from './Ema';
 import { paperSettleSound } from '../sound';
 import FollowUp from './FollowUp';
-import SharePanel from './SharePanel';
 import StickFace from './StickFace';
 
 type Panel = 'share' | 'followup' | null;
+
+/** 分享（出圖、二維碼）要到按下「分享」才下載 —— 大多數人抽完不一定分享，首屏不必背它 */
+const SharePanel = lazy(() => import('./SharePanel'));
 
 /** 求籤頁那塊繪馬在畫面上的位置（getBoundingClientRect），交棒時量的。 */
 export interface EmaRect {
@@ -80,6 +85,12 @@ export default function ReadingResult(props: {
    * 按钮和错误提示是另一回事 —— 那是机器在说话，跟界面走。
    */
   const sheet = copyFor(reading.language);
+  /**
+   * 連著幾天來抽（只看這台瀏覽器自己的記錄）。兩天以上就寫在繪馬的小字上 —— 「連續第 3 天」，
+   * 每天來的人看得到自己來了幾天。掛上來時算一次就好，這一頁上它不會變。
+   */
+  const [streak] = useState(() => streakDays(listRecords().map((record) => record.createdAt)));
+  const emaCaption = streak >= 2 ? format(sheet.emaStreak, { days: streak }) : sheet.emaCaption;
   /** 背面有東西可看：解好了，或正在解（先放骨架） */
   const hasBack = Boolean(interpretation) || props.interpreting;
   const showBack = flipped && hasBack;
@@ -266,7 +277,7 @@ export default function ReadingResult(props: {
         <div className={`sheet-stack${fromDraw ? ' from-draw' : ''}`}>
           {/* 所求之事：寫在繪馬上。小字跟這一局的語言走（紙上說問題的語言），不跟界面 */}
           <div className="ema-card" data-lang={reading.language} ref={emaRef}>
-            <EmaChrome caption={sheet.emaCaption}>
+            <EmaChrome caption={emaCaption}>
               <p className="asked">{displayQuestion}</p>
             </EmaChrome>
           </div>
@@ -319,13 +330,15 @@ export default function ReadingResult(props: {
                   {panel && interpretation && (
                     <div className="sheet-panel" role="dialog" aria-modal="false" onWheel={handleScrollWheel}>
                       {panel === 'share' ? (
-                        <SharePanel
-                          stick={reading.stick}
-                          language={reading.language}
-                          interpretation={interpretation}
-                          question={displayQuestion}
-                          onClose={() => setPanel(null)}
-                        />
+                        <Suspense fallback={<p className="muted small">{t('shareBusy')}</p>}>
+                          <SharePanel
+                            stick={reading.stick}
+                            language={reading.language}
+                            interpretation={interpretation}
+                            question={displayQuestion}
+                            onClose={() => setPanel(null)}
+                          />
+                        </Suspense>
                       ) : (
                         <>
                           <div className="share-head">
