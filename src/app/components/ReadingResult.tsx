@@ -16,7 +16,7 @@ import { stickText } from '../../shared/sticks';
 import type { FollowUpMessage, Reading } from '../../shared/types';
 import { storedErrorText } from '../api';
 import { LEVEL_TONE } from '../constants';
-import { copyFor, useT } from '../i18n';
+import { copyFor, useT, useUiLanguage } from '../i18n';
 import { format } from '../../shared/i18n';
 import { streakDays } from '../../shared/streak';
 import { listRecords } from '../storage';
@@ -59,6 +59,8 @@ export default function ReadingResult(props: {
   emaFrom?: EmaRect | null;
 }) {
   const t = useT();
+  // 按鈕上的字是機器說的話，跟界面語言走；拿籤紙的語言去排版，英文字會被撐成中文的字距
+  const uiLanguage = useUiLanguage();
   const { reading } = props;
   const { interpretation } = reading;
   // 重新整理時已經解過的籤直接停在背面：使用者離開時看的就是解籤
@@ -312,7 +314,7 @@ export default function ReadingResult(props: {
                     </div>
 
                     {interpretation && !panel && (
-                      <nav className="result-actions" data-lang={reading.language}>
+                      <nav className="result-actions" data-lang={uiLanguage}>
                         <button type="button" className="text-action strong" onClick={() => togglePanel('share')}>
                           {t('actionShare')}
                         </button>
@@ -362,7 +364,7 @@ export default function ReadingResult(props: {
           </div>
 
           {!showBack && (
-            <div className="sheet-actions" data-lang={reading.language}>
+            <div className="sheet-actions" data-lang={uiLanguage}>
               {interpretation ? (
                 <button type="button" className="text-action lead-action" onClick={() => flip(true)}>
                   {t('flipToReading')} ⟳

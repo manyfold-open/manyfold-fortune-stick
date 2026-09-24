@@ -90,7 +90,6 @@
 
 html, body {
   margin: 0;
-  overscroll-behavior-y: none;
   background: var(--ground-wash), var(--ground);
   background-attachment: fixed;
   color: var(--on-ground);
@@ -1552,7 +1551,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 18px;
+  gap: 12px;
   flex-wrap: wrap;
   padding: 12px 16px 10px;
   text-align: center;
@@ -1580,10 +1579,10 @@ html, body {
 
 .sheet-actions[data-lang='en'] .lead-action {
   font-family: var(--serif-en);
-  font-size: 15px;
+  font-size: 14px;
   letter-spacing: 0.04em;
   text-indent: 0;
-  padding: 6px 12px;
+  padding: 7px 16px;
 }
 
 .result-deck.mode-single .sheet-sub-actions,
@@ -5013,12 +5012,13 @@ html { overflow-x: clip; }
 .sheet-actions { padding: 4px 0 6px; }
 
 .sheet-actions .lead-action {
-  padding: 9px 30px 9px 34px;
+  /* 以前 19px、左右 30px：跟「再求一签」並排放不下，手機上折成兩行（使用者：縮小，一行就好） */
+  padding: 7px 20px 7px 24px;
   border-radius: 4px;
   background: linear-gradient(180deg, #cc412b, #a52a1b);
   color: #fbf3e6;
   text-decoration: none;
-  font-size: 19px;
+  font-size: 16px;
   box-shadow: inset 0 0 0 1px rgba(255, 236, 214, 0.25), 0 3px 7px rgba(120, 30, 20, 0.3);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -5171,6 +5171,12 @@ html { overflow-x: clip; }
 .result .result-actions .text-action {
   font-size: 14.5px;
   padding: 6px 14px;
+}
+
+/* 籤紙下面「再求一签」那塊木札，跟左邊的朱紅木札一起收小，兩顆排得進一行 */
+.result .sheet-actions .sheet-sub-actions .text-action {
+  font-size: 12.5px;
+  padding: 4px 10px;
 }
 
 /* 朱紅漆木札：再求一签、生成并分享 */
@@ -5629,13 +5635,10 @@ html { overflow-x: clip; }
  * 2. 解籤結果畫面鎖定整頁高度為 100dvh，只有卡片內部解籤文字獨立捲動，徹底杜絕滑動衝突與外層滾動
  */
 @media (max-width: 640px) {
-  /* 手機端提問與求籤階段：嚴格鎖定 html 與 body 零外層捲動，徹底杜絕 iOS Safari 鍵盤收合與重整捲動偏移 */
-  html.route-game,
-  body.route-game,
-  html:has(.route-game),
-  body:has(.route-game),
-  html:has(.shell:has(.cyl3d-stage)),
-  body:has(.shell:has(.cyl3d-stage)),
+  /* 解籤頁鎖住外層，只讓籤卡裡的字捲動。
+     提問與求籤頁不鎖：以前一起鎖成 overflow: hidden，iOS 把整頁往上推一截時就卡死拉不回來，
+     往下拉重整也沒了（使用者：「給點彈性」）。那一頁本來就剛好一個螢幕高，
+     偏掉的話由 FortuneGame 在捲動停下時拉回來；攪籤的畫布有 touch-action: none，拖著攪不會帶動頁面。 */
   html:has(.shell:has(.result)),
   body:has(.shell:has(.result)) {
     height: 100%;
@@ -5934,6 +5937,13 @@ html { overflow-x: clip; }
    占位字一直是全黑的木墨色，看起來就是一個標題，沒人想到可以點 */
 .shell:has(.cyl3d-stage) .ask-grow > .ask-ghost {
   color: color-mix(in srgb, var(--wood-ink) 42%, transparent);
+}
+
+/* 英文占位字比中文長一倍，照中文的字級在手機上折成兩行（使用者：小一點，一行就好）。
+   只縮占位字：開始寫字時它已經收起來了，寫的字還是原本的大小 */
+.shell:has(.cyl3d-stage) .ask-grow > .ask-ghost[data-lang='en'] {
+  font-size: clamp(15px, 3.4vw, 21px);
+  letter-spacing: 0.01em;
 }
 
 .shell:has(.cyl3d-stage) .ask-ghost .ask-pen {
