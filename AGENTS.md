@@ -99,6 +99,9 @@ Rules for anyone — human or AI agent — iterating on it. These are the load-b
      and stay one message, while a deliberate 重试解签 (the row has been written since) is a
      new one. A messageId fixed per reading makes every retry byte-identical to the first,
      and the agent answers it with an empty stream — that button then never works.
+   - a fresh draw is interpreted in the background right away (`warmUp` in `FortuneGame.tsx`),
+     so every drawn stick bills one turn whether or not 解签 is pressed. Pressing it while that
+     request is in flight must reuse it, never send a second one for the same attempt.
 15. **Keep new routes behind the admin gate.** Any route added under `/api/` is protected by
    the `ADMIN_PASSWORD` middleware automatically — do not add exceptions beyond `/api/health`
    and `/api/state` without a reason as good as theirs.

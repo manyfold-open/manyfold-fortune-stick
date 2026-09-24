@@ -17,6 +17,9 @@ import type { FollowUpMessage, Reading } from '../../shared/types';
 import { storedErrorText } from '../api';
 import { LEVEL_TONE } from '../constants';
 import { copyFor, useT } from '../i18n';
+import { format } from '../../shared/i18n';
+import { streakDays } from '../../shared/streak';
+import { listRecords } from '../storage';
 import { withoutDashes } from '../../shared/text';
 import { EmaChrome } from './Ema';
 import { paperSettleSound } from '../sound';
@@ -82,6 +85,12 @@ export default function ReadingResult(props: {
    * 按钮和错误提示是另一回事 —— 那是机器在说话，跟界面走。
    */
   const sheet = copyFor(reading.language);
+  /**
+   * 連著幾天來抽（只看這台瀏覽器自己的記錄）。兩天以上就寫在繪馬的小字上 —— 「連續第 3 天」，
+   * 每天來的人看得到自己來了幾天。掛上來時算一次就好，這一頁上它不會變。
+   */
+  const [streak] = useState(() => streakDays(listRecords().map((record) => record.createdAt)));
+  const emaCaption = streak >= 2 ? format(sheet.emaStreak, { days: streak }) : sheet.emaCaption;
   /** 背面有東西可看：解好了，或正在解（先放骨架） */
   const hasBack = Boolean(interpretation) || props.interpreting;
   const showBack = flipped && hasBack;
@@ -268,7 +277,7 @@ export default function ReadingResult(props: {
         <div className={`sheet-stack${fromDraw ? ' from-draw' : ''}`}>
           {/* 所求之事：寫在繪馬上。小字跟這一局的語言走（紙上說問題的語言），不跟界面 */}
           <div className="ema-card" data-lang={reading.language} ref={emaRef}>
-            <EmaChrome caption={sheet.emaCaption}>
+            <EmaChrome caption={emaCaption}>
               <p className="asked">{displayQuestion}</p>
             </EmaChrome>
           </div>

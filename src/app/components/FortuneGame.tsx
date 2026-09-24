@@ -67,6 +67,12 @@ const Printer = lazy(() => import('./Printer'));
 
 type Phase = 'ask' | 'printing' | 'ejecting';
 
+/** 解籤。訊息 id 由伺服器照這一列的 updated_at 算（AGENTS.md 第 14 條），同一個請求不會被算兩次。 */
+const requestInterpretation = (id: string): Promise<Reading> =>
+  api<{ reading: Reading }>(`/api/readings/${encodeURIComponent(id)}/interpret`, { method: 'POST' }).then(
+    (body) => body.reading,
+  );
+
 interface Fault {
   code: string;
   text: string;
@@ -297,6 +303,33 @@ export default function FortuneGame(props: {
     }
   }, [phase, question, props.prefs.reducedMotion, props.prefs.sound, t, vessel]);
 
+  /**
+   * 抽完就在背景先解籤：籤紙一攤開，按「解签」多半已經解好了，不用再對著骨架等好幾秒。
+   * 代價是每一支抽出來的籤都會送一次（連沒按解籤的也算）—— 使用者同意這樣換速度。
+   * 只在新抽的那一刻做（重新整理、從記錄打開的不做）；背景這一次失敗不吭聲，按下去時照常再解。
+   * 解好的時候人已經去求下一支了，就只存進記錄，不去動畫面上那一張。
+   */
+  const warm = useRef<{ id: string; promise: Promise<Reading> } | null>(null);
+  const shownId = useRef<string | null>(null);
+  shownId.current = reading?.id ?? null;
+  const warmUp = useCallback(
+    (drawn: Reading) => {
+      if (!props.interpreterReady || drawn.interpretation) return;
+      const promise = requestInterpretation(drawn.id);
+      warm.current = { id: drawn.id, promise };
+      void promise
+        .then((next) => {
+          saveRecord(next);
+          if (shownId.current === next.id) setReading((now) => (now && !now.interpretation ? next : now));
+        })
+        .catch(() => undefined)
+        .finally(() => {
+          if (warm.current?.promise === promise) warm.current = null;
+        });
+    },
+    [props.interpreterReady],
+  );
+
   /** 籤筒 v2 演完了：这时候才把画面交给结果页。 */
   const revealDone = useCallback(() => {
     const drawn = pendingReading.current;
@@ -309,22 +342,26 @@ export default function FortuneGame(props: {
     }
     const box = emaRef.current?.getBoundingClientRect();
     setEmaFrom(box ? { top: box.top, left: box.left, width: box.width, height: box.height } : null);
+    shownId.current = drawn.id;
     setReading(drawn);
     setSheet(null);
     setPhase('ask');
-  }, [props.prefs.sound, vessel]);
+    warmUp(drawn);
+  }, [props.prefs.sound, vessel, warmUp]);
 
   const interpret = useCallback(async () => {
     if (!reading || interpreting) return;
     setInterpreting(true);
     setFault(null);
+    // 背景已經在解這一支（warmUp）：接著等同一個請求，不再送一次 —— 送兩次就是解兩次、扣兩次
+    const pending = warm.current?.id === reading.id ? warm.current.promise : null;
+    warm.current = null;
     try {
-      const body = await api<{ reading: Reading }>(
-        `/api/readings/${encodeURIComponent(reading.id)}/interpret`,
-        { method: 'POST' },
-      );
-      setReading(body.reading);
-      saveRecord(body.reading);
+      const next = pending
+        ? await pending.catch(() => requestInterpretation(reading.id))
+        : await requestInterpretation(reading.id);
+      setReading(next);
+      saveRecord(next);
     } catch (cause) {
       setFault({ code: 'ERROR', text: errorMessage(cause, t) });
     } finally {
@@ -351,6 +388,7 @@ export default function FortuneGame(props: {
     clearTimers();
     stopMotor.current?.();
     pendingReading.current = null;
+    warm.current = null;
     setCurrentReadingId(null);
     setReading(null);
     setSheet(null);
@@ -437,7 +475,7 @@ export default function FortuneGame(props: {
         aria-hidden={printing}
         data-lang={props.prefs.language}
       >
-        {[t('example1'), t('example2'), t('example3')].map((example) => {
+        {[t('exampleToday'), t('example1'), t('example2'), t('example3')].map((example) => {
           const isSelected = question === example;
           return (
             <li key={example}>

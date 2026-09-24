@@ -47,6 +47,7 @@ import {
   NUDGE_END_AT,
   HOLD_MS,
   PULL_DONE,
+  SKIP_AT,
   SLIDE_AT,
   neighborNudge,
   numberFade,
@@ -157,6 +158,8 @@ interface Drive {
   pointerY: number;
   pointerAt: number;
   dragging: boolean;
+  /** 號碼印好了，點一下可以直接打開籤紙（SKIP_AT）。 */
+  skippable: boolean;
   /** 上一次有東西在動的時間、上一次真的畫的時間 —— 靜止時不重畫（見 frame 結尾）。 */
   activeAt: number;
   renderedAt: number;
@@ -181,6 +184,8 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
   const [blooming, setBlooming] = useState(false);
   /** 沒寫問題就來攪：短暫說一聲「先寫下心事」，過一會兒自己收掉（使用者不要常駐的提示）。 */
   const [askFirst, setAskFirst] = useState(false);
+  /** 號碼印好了、還在拿著看：提示改成「點一下打開」。 */
+  const [canSkip, setCanSkip] = useState(false);
   const askFirstTimer = useRef(0);
   /** 示範的手，位置每格跟著要被拿起來那支籤投影到畫面上。 */
   const guideRef = useRef<HTMLDivElement | null>(null);
@@ -216,6 +221,7 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
     pointerY: 0,
     pointerAt: 0,
     dragging: false,
+    skippable: false,
     activeAt: 0,
     renderedAt: 0,
   });
@@ -230,6 +236,19 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
   calmRef.current = reducedMotion ?? false;
   shakeCb.current = onShake;
   revealCb.current = onRevealed;
+
+  /**
+   * 交棒給籤紙：先淡出再回報（直接換掉畫面會「啪」一下）。整段演完時由 frame 叫，
+   * 號碼印好之後使用者點一下也叫（每天來抽的人不必每次等完那兩秒）。只會交一次。
+   */
+  const handOff = useCallback(() => {
+    const dr = d.current;
+    if (dr.stage !== 'pulling') return;
+    dr.stage = 'done';
+    setStageLabel('done');
+    setHandingOff(true);
+    dr.handoff = window.setTimeout(() => revealCb.current?.(), HANDOFF_FADE_MS);
+  }, []);
 
   /* ── 這一抽失敗了（題目太短、網路錯）：清掉「要過籤」，讓使用者改完再攪一次 ── */
   useEffect(() => {
@@ -468,13 +487,11 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
         // 抽的途中號碼淡入 —— 號碼是伺服器給的那一個。鈴聲（上面的 reveal）跟淡入同一格開始
         if (dr.numberFace) dr.numberFace.material.opacity = numberFade(ms, calm);
 
-        if (dr.stage === 'pulling' && ms >= (calm ? HOLD_MS : PULL_DONE)) {
-          dr.stage = 'done';
-          setStageLabel('done');
-          // 先淡出再交棒 —— 直接换掉画面会「啪」一下，看完籤号的那一拍就断了
-          setHandingOff(true);
-          dr.handoff = window.setTimeout(() => revealCb.current?.(), HANDOFF_FADE_MS);
+        if (dr.stage === 'pulling' && !calm && !dr.skippable && ms >= SKIP_AT) {
+          dr.skippable = true;
+          setCanSkip(true);
         }
+        if (dr.stage === 'pulling' && ms >= (calm ? HOLD_MS : PULL_DONE)) handOff();
       }
 
       /* 3. 鏡頭：待機時平視整支籤筒；拿籤時跟著籤往上、推到籤頭與號碼（不用彈簧，不會翻轉） */
@@ -560,8 +577,13 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
 
   /* ── 按住拖動 = 攪 ── */
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (disabled) return;
     const dr = d.current;
+    // 號碼已經印好、還拿著看：這一下是「打開」，不是再攪
+    if (dr.stage === 'pulling' && dr.skippable) {
+      handOff();
+      return;
+    }
+    if (disabled) return;
     dr.dragging = true;
     setDragging(true);
     dr.pointerX = e.clientX;
@@ -573,7 +595,7 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
     } catch {
       /* 某些合成事件没有真的 pointerId */
     }
-  }, [disabled]);
+  }, [disabled, handOff]);
 
   const onPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     const dr = d.current;
@@ -644,7 +666,10 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
         askFirst
         ? en ? 'Write your question on the ema above first' : '先在上面的繪馬寫下心事'
         : null
-      : stageLabel === 'pulling' || stageLabel === 'done'
+      : // 交棒淡出的那一下字不再換回去，膠囊淡出時才不會閃一下
+        (stageLabel === 'pulling' || stageLabel === 'done') && canSkip
+        ? en ? '✦ Tap to open your slip ✦' : '✦ 點一下打開籤紙 ✦'
+        : stageLabel === 'pulling' || stageLabel === 'done'
         ? en ? '✦ Your stick is drawn ✦' : '✦ 神籤已出 ✦'
         : stageLabel === 'shaking'
           ? progress >= 1
@@ -672,6 +697,12 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
+        onKeyDown={(e) => {
+          if ((e.key === 'Enter' || e.key === ' ') && d.current.skippable) {
+            e.preventDefault();
+            handOff();
+          }
+        }}
         role="button"
         tabIndex={disabled ? -1 : 0}
         aria-label={en ? 'Stir the sticks in the 3D fortune cylinder' : '攪動籤筒裡的籤'}

@@ -267,3 +267,11 @@ describe('聲音跟畫面對齊：每個動作的聲音在同一格響、而且�
     expect(run(() => 16, true).map(([c]) => c)).toEqual(['reveal']);
   });
 });
+
+describe('點一下跳過拿著看的那段（SKIP_AT）', () => {
+  it('要等號碼完全印上去才准跳，而且比整段演完早', () => {
+    expect(P.numberFade(P.SKIP_AT)).toBe(1);
+    expect(P.numberFade(P.SKIP_AT - 1)).toBeLessThan(1);
+    expect(P.SKIP_AT).toBeLessThan(P.PULL_DONE);
+  });
+});

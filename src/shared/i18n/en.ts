@@ -48,7 +48,10 @@ export const en = {
   askGhost: 'Write the thing on your mind here',
   askDone: 'Done',
   emaCaption: 'EMA · MAKE A WISH',
+  emaStreak: 'EMA · DAY {days} IN A ROW',
   /* 例句寫短：手機上一句要擠進一塊木札（約 290px），太長會折兩行、三塊疊起來把籤筒擠小 */
+  // 每天來抽的人最常問的一句，放在第一塊：點一下就能攪，不必每天打字
+  exampleToday: 'How does today look for me?',
   example1: 'How do I face the changes at work?',
   example2: 'Is this relationship still worth it?',
   example3: 'Is it time to start that plan at last?',

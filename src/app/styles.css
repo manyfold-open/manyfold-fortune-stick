@@ -3449,11 +3449,28 @@ code {
   flex-shrink: 0;
 }
 
-/* 省略號只對 block 裡的字有用 —— inline-flex 的字是匿名 flex 項，截不了 */
+/* 頂欄的膠囊只有 22px 高，單手在外面很容易按歪。可點範圍往上下各撐到 44px（蘋果建議的最小觸控高度），
+   外觀不變；左右只撐一點點，不去吃隔壁那顆 */
+.brand,
+.topbar-actions .text-action {
+  position: relative;
+}
+
+.brand::after,
+.topbar-actions .text-action::after {
+  content: '';
+  position: absolute;
+  inset: -11px -3px;
+}
+
+/* 省略號做在裡面那層字上：按鈕本身不能 overflow: hidden，不然下面撐大的可點範圍（::after）會被切掉 */
 .topbar-actions .history-link {
-  display: block;
   min-width: 0;
   flex-shrink: 1;
+}
+
+.history-link-label {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

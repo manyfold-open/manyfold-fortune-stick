@@ -23,7 +23,7 @@ import SharedStickView from './components/SharedStickView';
 import { parseSharedStick } from '../shared/share-link';
 import ShrineBackdrop from './components/ShrineBackdrop';
 import { LanguageProvider, useT, useUiLanguage } from './i18n';
-import { getPrefs, setPrefs, type Prefs } from './storage';
+import { getPrefs, setCurrentReadingId, setPrefs, type Prefs } from './storage';
 import { installAudioUnlock } from './sound';
 import { appUrl, BASE } from './base';
 
@@ -114,6 +114,14 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
       setHomeTaps((n) => n + 1);
       return;
     }
+    startFresh(event);
+  };
+  /**
+   * 從記錄、隱私頁回求籤頁（logo 或「Draw a stick」）：跟在求籤頁點 logo 一樣是一局新的 ——
+   * 以前會回到上一支籤的結果，按鈕寫著「求一支」卻打開舊的那張。舊的那支還在記錄裡。
+   */
+  const startFresh = (event: MouseEvent<HTMLAnchorElement>) => {
+    setCurrentReadingId(null);
     goToGame(event);
   };
 
@@ -246,9 +254,9 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
           <a
             className="text-action history-link"
             href={route === 'game' ? '#history' : appUrl('/')}
-            onClick={route === 'game' ? undefined : goToGame}
+            onClick={route === 'game' ? undefined : startFresh}
           >
-            {route === 'game' ? t('navHistory') : t('navBackToGame')}
+            <span className="history-link-label">{route === 'game' ? t('navHistory') : t('navBackToGame')}</span>
           </a>
           <button
             type="button"

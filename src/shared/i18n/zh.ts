@@ -51,6 +51,9 @@ export const zh = {
   askGhost: '在这里写下你心里的那件事',
   askDone: '完成',
   emaCaption: '絵馬 · 心願',
+  emaStreak: '絵馬 · 连续第 {days} 天',
+  // 每天来抽的人最常问的一句，放在第一块：点一下就能搅，不必每天打字
+  exampleToday: '今天的运势如何？',
   example1: '我该如何面对最近的工作变化？',
   example2: '这段关系还值得我继续投入吗？',
   example3: '现在是开始做那件想了很久的事的时候吗？',

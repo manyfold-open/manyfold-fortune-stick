@@ -165,6 +165,12 @@ export function pullPose(slot: BundleSlot, ms: number, reduced = false): PullPos
 }
 
 /**
+ * 從這一刻起點一下就能直接打開籤紙（跳過拿著看的那兩秒）：號碼已經完全印上去了，
+ * 看得清抽到第幾籤。每天來抽的人不必每次都等完整段。
+ */
+export const SKIP_AT = NUMBER_AT + NUMBER_FADE_MS;
+
+/**
  * 號碼印上去的程度 0..1。組件把印著「第 N 籤」的那一面疊在籤身上，動它的不透明度。
  *
  * 先快後慢：一過 NUMBER_AT 就看得到一點，鈴聲那一格不會是空的。
