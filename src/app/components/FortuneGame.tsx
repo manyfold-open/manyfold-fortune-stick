@@ -54,7 +54,12 @@ type Vessel = 'cylinder' | 'printer' | 'roll' | 'cylinder3d';
 const isVessel = (v: string | null): v is Vessel =>
   v === 'cylinder' || v === 'printer' || v === 'roll' || v === 'cylinder3d';
 
-export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boolean }) {
+export default function FortuneGame(props: {
+  prefs: Prefs;
+  interpreterReady: boolean;
+  /** 左上角 logo 在這一頁被點的次數（App 數）。每多一下就回到起點，見下面的 effect。 */
+  homeTaps?: number;
+}) {
   const t = useT();
   const [question, setQuestion] = useState(() => {
     try {
@@ -332,6 +337,22 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
     setPhase('ask');
     window.scrollTo({ top: 0, behavior: 'auto' });
   }, [clearTimers, props.prefs.sound, triggerHaptic]);
+
+  /*
+   * 點 logo = 回首頁。看著結果時就是「再求一籤」那一步：清掉這一局、回到空白繪馬 ——
+   * 不抽籤（籤只能攪出來），抽過的那支留在「你的籤」裡。攪籤、出籤途中不理它：那支籤已經在
+   * 伺服器定下來了，半路打斷，使用者就只能去記錄裡才看得到它。
+   * 只看「變了」：路由切回來時元件重新掛上，那時的次數不算一次點擊。
+   */
+  const homeSeen = useRef(props.homeTaps ?? 0);
+  useEffect(() => {
+    const taps = props.homeTaps ?? 0;
+    if (taps === homeSeen.current) return;
+    homeSeen.current = taps;
+    if (restoring || phase !== 'ask') return;
+    if (reading) restart();
+    else window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [props.homeTaps, restoring, phase, reading, restart]);
 
   if (restoring) {
     return (

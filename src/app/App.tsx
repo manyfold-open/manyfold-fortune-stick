@@ -82,6 +82,19 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
   const [route, setRoute] = useState<Route>(routeFromHash);
   const [gateOpen, setGateOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  /**
+   * 左上角 logo 在求籤頁上被點了幾次。求籤頁的網址本來就沒有 #，goToGame 清不了什麼，
+   * 以前就是點了毫無反應；現在交給 FortuneGame：看著結果時回到空白繪馬（跟「再求一籤」一樣）。
+   */
+  const [homeTaps, setHomeTaps] = useState(0);
+  const goHome = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (route === 'game' && location.pathname.replace(/\/+$/, '') === BASE) {
+      event.preventDefault();
+      setHomeTaps((n) => n + 1);
+      return;
+    }
+    goToGame(event);
+  };
 
   const refreshState = useCallback(async () => {
     try {
@@ -192,7 +205,7 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
         <a
           className="brand"
           href={appUrl('/')}
-          onClick={goToGame}
+          onClick={goHome}
           aria-label={t('brandTitle')}
         >
           <span className="brand-torii" aria-hidden="true">⛩️</span>
@@ -238,7 +251,7 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
       {route === 'history' && <HistoryView />}
       {route === 'privacy' && <PrivacyView />}
       {route === 'game' && (
-        <FortuneGame prefs={prefs} interpreterReady={state.interpreterReady} />
+        <FortuneGame prefs={prefs} interpreterReady={state.interpreterReady} homeTaps={homeTaps} />
       )}
 
       <footer className="footer">
