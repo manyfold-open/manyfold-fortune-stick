@@ -77,8 +77,11 @@ export interface FortuneCylinder3DProps {
   disabled?: boolean;
 }
 
-/** 交棒给签纸前的淡出时长，跟 styles.css 的 transition 对齐。 */
-const HANDOFF_FADE_MS = 460;
+/**
+ * 交棒给签纸前的淡出时长，跟 styles.css 的 transition 对齐。淡完到签纸出来之间一格空白都不留：
+ * 繪馬原地不動（ReadingResult 從這裡的位置滑過去），籤紙緊接著升起來。
+ */
+const HANDOFF_FADE_MS = 380;
 
 /**
  * 攪夠了那一刻，中間那支籤自己往上冒多少（籤軸方向，世界單位）。比手撥起來的（PICK_LIFT 0.6）高、
@@ -508,7 +511,13 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
     };
     raf = requestAnimationFrame(frame);
 
-    const observer = new ResizeObserver(() => rig.resize(host.clientWidth, host.clientHeight));
+    // 改尺寸會清空畫布（設 canvas.width 就清），而 ResizeObserver 排在這一格 rAF 之後、上屏之前 ——
+    // 不當場補畫，這一格上屏的就是一張空畫布，籤筒會閃一下不見。版面一動（例句收起、繪馬變高、
+    // 鍵盤收起）就會碰到，所以改完尺寸立刻用現在的鏡頭再畫一次
+    const observer = new ResizeObserver(() => {
+      rig.resize(host.clientWidth, host.clientHeight);
+      rig.render();
+    });
     observer.observe(host);
 
     return () => {
@@ -628,7 +637,7 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
   const showGuide = state === 'ready' && stageLabel === 'rest' && !dragging && !disabled;
 
   return (
-    <div className="roll-stage cyl3d-stage">
+    <div className={`roll-stage cyl3d-stage${handingOff ? ' handing-off' : ''}`}>
       <div
         ref={hostRef}
         className={`cyl3d-canvas-wrapper${handingOff ? ' handing-off' : ''}`}

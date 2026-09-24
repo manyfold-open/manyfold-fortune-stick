@@ -2,7 +2,8 @@
  * 打印机与交互的拟真音效，使用 WebAudio 纯算法合成，不下载任何音频文件。
  * 3D 签筒（神社主题）用到的：在绘马上写字 typeTick、竹签 bamboo*、揭晓的铃 suzu、落印 stampSound、签纸翻面 paperSettleSound。
  *
- * AudioContext 只在用户第一次交互时创建 —— 遵守现代浏览器的手势唤醒策略。
+ * 手機上要能響，AudioContext 得在一個「放手」的手勢裡被叫醒（installAudioUnlock）——
+ * 見下面那段說明。
  */
 
 import type { StickLevel } from '../shared/sticks';
@@ -18,11 +19,46 @@ function ctx(): AudioContext | null {
       if (!Ctor) return null;
       context = new Ctor();
     }
-    if (context.state === 'suspended') void context.resume();
+    // suspended：還沒被手勢叫醒；interrupted：iOS 切到背景、來電之後。不在手勢裡的話 resume 會被拒，
+    // 那就等下一次手勢（installAudioUnlock），別丟出未處理的 rejection
+    if (context.state !== 'running' && context.state !== 'closed') void context.resume().catch(() => undefined);
     return context;
   } catch {
     return null;
   }
+}
+
+/**
+ * 手機（尤其 iOS Safari）沒有聲音的原因：第一個音效通常是攪籤時的沙沙聲，從 requestAnimationFrame
+ * 裡叫出來 —— 那不是手勢，AudioContext 建出來就停在 suspended，之後每次 resume 也都不在手勢裡，
+ * 一整局都是啞的。桌機 Chrome 碰過頁面一次就放行，所以只有手機聽不到。
+ *
+ * iOS 只認「放開」那一下（touchend / pointerup / click，外加按鍵），按下（touchstart / pointerdown）
+ * 不算。所以在這幾個事件上：還沒在跑就當場 resume，再播一個 1 取樣的靜音 —— 舊版 iOS 要在手勢裡
+ * 真的有聲音開始播，才算解鎖。一直掛著：切到背景回來 iOS 會把它變成 interrupted，下一次點擊再救回來。
+ * 已經在跑的話只是讀一次 state，不花什麼。
+ *
+ * `enabled` 是使用者的聲音開關 —— 關著就不建 AudioContext。回傳拆掉監聽的函式。
+ */
+export function installAudioUnlock(enabled: () => boolean): () => void {
+  const events = ['pointerup', 'touchend', 'click', 'keydown'] as const;
+  const unlock = (): void => {
+    if (context?.state === 'running' || !enabled()) return;
+    const audio = ctx();
+    if (!audio) return;
+    try {
+      const blip = audio.createBufferSource();
+      blip.buffer = audio.createBuffer(1, 1, audio.sampleRate);
+      blip.connect(audio.destination);
+      blip.start(0);
+    } catch {
+      /* 解不開就算了，下一次手勢再試 */
+    }
+  };
+  for (const name of events) window.addEventListener(name, unlock, { capture: true, passive: true });
+  return () => {
+    for (const name of events) window.removeEventListener(name, unlock, { capture: true });
+  };
 }
 
 /** 一段衰减的噪声，模拟实体材质与空气阻尼摩擦 */

@@ -13,7 +13,7 @@
  * 供给下面所有组件，除此之外不碰任何一张已经印好的签。
  */
 
-import { useCallback, useEffect, useState, type MouseEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react';
 import type { AppState } from '../shared/types';
 import { api, onUnauthorized } from './api';
 import FortuneGame from './components/FortuneGame';
@@ -25,6 +25,7 @@ import SettingsView from './components/SettingsView';
 import ShrineBackdrop from './components/ShrineBackdrop';
 import { LanguageProvider, useT, useUiLanguage } from './i18n';
 import { getPrefs, setPrefs, type Prefs } from './storage';
+import { installAudioUnlock } from './sound';
 import { appUrl, BASE } from './base';
 
 type Route = 'game' | 'history' | 'settings' | 'privacy';
@@ -51,6 +52,12 @@ const routeFromHash = (): Route => {
 
 export default function App() {
   const [prefs, setPrefsState] = useState<Prefs>(() => getPrefs());
+
+  // 手機上的聲音要在「放手」那一下叫醒（sound.ts 的 installAudioUnlock）。開關用 ref 讀，
+  // 切換聲音時不用重掛監聽
+  const soundOn = useRef(prefs.sound);
+  soundOn.current = prefs.sound;
+  useEffect(() => installAudioUnlock(() => soundOn.current), []);
 
   const updatePrefs = (patch: Partial<Prefs>) => {
     const next = { ...prefs, ...patch };

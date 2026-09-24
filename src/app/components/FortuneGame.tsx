@@ -39,7 +39,7 @@ import FortunePaperRoll from './FortunePaperRoll';
 import Printer from './Printer';
 import { EmaChrome } from './Ema';
 import QuestionForm from './QuestionForm';
-import ReadingResult from './ReadingResult';
+import ReadingResult, { type EmaRect } from './ReadingResult';
 import StickFace from './StickFace';
 
 type Phase = 'ask' | 'printing' | 'ejecting';
@@ -125,6 +125,9 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
   const askField = useRef<HTMLTextAreaElement | null>(null);
   /** 沒寫問題就去攪籤筒的次數 —— 每加一，繪馬晃一下（QuestionForm 的 nudge）。 */
   const [askNudge, setAskNudge] = useState(0);
+  /** 出籤途中那塊繪馬。交棒時量它在哪，結果頁的繪馬從這裡滑過去 —— 同一塊牌子，不是換一塊。 */
+  const emaRef = useRef<HTMLDivElement | null>(null);
+  const [emaFrom, setEmaFrom] = useState<EmaRect | null>(null);
 
   const clearTimers = useCallback(() => {
     timers.current.forEach((id) => window.clearTimeout(id));
@@ -276,6 +279,8 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
       if (chimeAtSlip(vessel)) suzu(drawn.stick.level);
       stampSound(drawn.stick.level);
     }
+    const box = emaRef.current?.getBoundingClientRect();
+    setEmaFrom(box ? { top: box.top, left: box.left, width: box.width, height: box.height } : null);
     setReading(drawn);
     setSheet(null);
     setPhase('ask');
@@ -321,6 +326,7 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
     setCurrentReadingId(null);
     setReading(null);
     setSheet(null);
+    setEmaFrom(null);
     setQuestion('');
     setFault(null);
     setPhase('ask');
@@ -351,6 +357,7 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
         onFollowUpMessages={onFollowUpMessages}
         onRestart={restart}
         sound={props.prefs.sound}
+        emaFrom={emaFrom}
       />
     );
   }
@@ -414,9 +421,13 @@ export default function FortuneGame(props: { prefs: Prefs; interpreterReady: boo
       <div className={`ask-slot${printing ? ' printed' : ''}`}>
         {printing ? (
           vessel === 'cylinder3d' ? (
-            <div className="ask-zone">
+            <div className="ask-zone" ref={emaRef}>
               <EmaChrome>
-                <p className="asked">{question}</p>
+                {/* 包在跟輸入框同一個 .ask-grow 裡：高度由同一份隱藏副本撐開，
+                    攪夠了那一刻輸入框換成印好的字，繪馬一 px 都不變（手還按著籤，籤筒不能動） */}
+                <div className="ask-grow" data-value={question}>
+                  <p className="asked">{question}</p>
+                </div>
               </EmaChrome>
             </div>
           ) : (

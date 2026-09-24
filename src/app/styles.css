@@ -1649,6 +1649,23 @@ html, body {
 }
 
 
+/* 剛從籤筒抽完過來（.from-draw）：繪馬是求籤頁上那一塊，不淡入、不跟著落下，
+   由 ReadingResult 從原來的位置滑過來；只有新出現的籤紙和按鈕照樣攤開。
+   整疊一起淡入的話，繪馬會先消失再從下面冒出來 —— 那一下就是「閃一下再切過去」。 */
+.sheet-stack.from-draw {
+  animation: none;
+}
+
+/* 滑過來的途中繪馬會跟正在升起的籤紙上緣疊一小截：繪馬壓在上面，籤紙像從它底下抽出來 */
+.sheet-stack.from-draw > .ema-card {
+  z-index: 1;
+}
+
+.sheet-stack.from-draw > :not(.ema-card) {
+  transform-origin: top center;
+  animation: result-unroll 0.72s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 /* 結果頁像一卷剛從出紙口接住的紙：先落下，再完全攤平。 */
 @keyframes result-unroll {
   from {
@@ -4317,7 +4334,7 @@ code {
 .cyl3d-canvas-wrapper {
   position: relative;
   /* 交棒给签纸之前先淡出，时长跟 HANDOFF_FADE_MS 对齐 */
-  transition: opacity 0.46s ease;
+  transition: opacity 0.38s ease-in;
   width: 100%;
   /* 高度由 FortuneCylinder3D 量出來設定：填滿首屏剩下的高度，提示文字留在折線以上。
      鏡頭距離由 shared/cylinder/framing.ts 依長寬比算，所以畫布多高，籤筒在頁面上就多大。
@@ -4335,6 +4352,15 @@ code {
 }
 
 .cyl3d-canvas-wrapper.handing-off {
+  opacity: 0;
+}
+
+/* 「神籤已出」那顆膠囊跟籤筒一起退場 —— 留著的話籤筒淡完了它還孤零零掛在底下 */
+.cyl3d-stage .roll-action-area {
+  transition: opacity 0.38s ease-in;
+}
+
+.cyl3d-stage.handing-off .roll-action-area {
   opacity: 0;
 }
 
@@ -4546,6 +4572,14 @@ html:lang(en) .shell:has(.cyl3d-stage) .ask-zone {
   text-wrap: balance;
   color: var(--wood-ink);
   font-size: clamp(16px, 3.2vw, 19px);
+}
+
+/* 求籤頁上，攪夠了那一刻輸入框換成印好的字：字級、行高跟輸入框一樣，繪馬才不會在手還按著籤的時候
+   縮一下、把籤筒往上拉（解籤頁的繪馬另有自己的字級，不動它） */
+.shell:has(.cyl3d-stage) .ask-zone .asked {
+  grid-area: 1 / 1;
+  font-size: clamp(18px, 3.4vw, 21px);
+  line-height: 1.6;
 }
 
 .shell:has(.cyl3d-stage) .suggest-slot {
@@ -5628,21 +5662,12 @@ html { overflow-x: clip; }
     touch-action: pan-x;
   }
 
-  /* 當已有提問或出籤中，例句無縫收起為 0 高度，徹底杜絕留白空隙 */
+  /* 出籤中例句只淡掉、位置留著。以前收成 0 高：攪夠了那一刻（手還按著籤）整個籤筒畫布被拉高、
+     往上跳，每一格改尺寸還把畫布清空一次 —— 錄影裡「閃一下、籤筒變大」就是這裡 */
   .shell:has(.cyl3d-stage) .suggestions.spent {
-    max-height: 0;
-    margin: 0;
-    padding: 0;
     opacity: 0;
-    overflow: hidden;
     pointer-events: none;
-    transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
-  }
-
-  .shell:has(.cyl3d-stage) .suggest-slot:has(.suggestions.spent),
-  .shell:has(.cyl3d-stage) .suggest-slot.spent {
-    padding: 0;
-    margin: 0;
+    transition: opacity 0.25s ease;
   }
 
   /* 籤筒畫布：搶佔正中央全高舞台，微縮放以強化「主角」視覺魄力，位置適度微下移以留出防誤觸呼吸帶 */
