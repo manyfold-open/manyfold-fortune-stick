@@ -11,7 +11,7 @@
  * 卡高固定（CSS 的 --card-h），背面內容自己捲；分享與追問是浮在背面上的一張紙，不往下接。
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { stickText } from '../../shared/sticks';
 import type { FollowUpMessage, Reading } from '../../shared/types';
 import { storedErrorText } from '../api';
@@ -26,6 +26,17 @@ import StickFace from './StickFace';
 
 type Panel = 'share' | 'followup' | null;
 
+/** 求籤頁那塊繪馬在畫面上的位置（getBoundingClientRect），交棒時量的。 */
+export interface EmaRect {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+}
+
+/** 繪馬從求籤頁的位置滑到這一頁的位置要多久。跟籤紙升起（result-unroll 0.72s）一起走完。 */
+const EMA_GLIDE_MS = 620;
+
 export default function ReadingResult(props: {
   reading: Reading;
   interpreting: boolean;
@@ -35,6 +46,12 @@ export default function ReadingResult(props: {
   onRestart: () => void;
   /** 使用者的「声音」開關：翻面的紙聲也要聽它的 */
   sound: boolean;
+  /**
+   * 剛從籤筒抽完過來：那塊繪馬在求籤頁的位置。有它，繪馬就不淡入，從那裡滑到這裡 ——
+   * 兩頁的繪馬高低不一樣（手機上解籤頁把它往上收，給籤卡讓位），直接換頁它會跳一下。
+   * 刷新、從記錄打開的沒有它，整疊照舊一起攤開。
+   */
+  emaFrom?: EmaRect | null;
 }) {
   const t = useT();
   const { reading } = props;
@@ -43,6 +60,9 @@ export default function ReadingResult(props: {
   const [flipped, setFlipped] = useState(Boolean(interpretation));
   const [settled, setSettled] = useState(Boolean(interpretation));
   const [panel, setPanel] = useState<Panel>(null);
+  const emaRef = useRef<HTMLDivElement | null>(null);
+  /** 只看第一次掛上來時有沒有 —— 之後解籤、翻面重渲染都不能再滑一次。 */
+  const [fromDraw] = useState(() => Boolean(props.emaFrom));
   const displayQuestion = withoutDashes(reading.question);
   const displayInterpretation = interpretation
     ? {
@@ -90,6 +110,25 @@ export default function ReadingResult(props: {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [panel]);
+
+  // 在上屏之前量好、先放回求籤頁的位置，第一格畫出來的繪馬就在原地
+  useLayoutEffect(() => {
+    const from = props.emaFrom;
+    const el = emaRef.current;
+    if (!from || !el || typeof el.animate !== 'function') return;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    const to = el.getBoundingClientRect();
+    // 對齊中心：兩塊牌子高低差十來 px，對齊上緣的話下緣會跳；不縮放，字才不會被拉扁
+    const dx = from.left + from.width / 2 - (to.left + to.width / 2);
+    const dy = from.top + from.height / 2 - (to.top + to.height / 2);
+    if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
+    el.animate([{ translate: `${dx}px ${dy}px` }, { translate: '0px 0px' }], {
+      duration: EMA_GLIDE_MS,
+      easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+    });
+    // 只在剛掛上來時滑一次。滑的是獨立的 translate 屬性，不佔 transform —— 滑的途中滑鼠移上去，
+    // hover 的 rotate 照樣疊得上去，不會跳
+  }, []);
 
   const flip = (toBack: boolean) => {
     if (props.sound) paperSettleSound(0.2);
@@ -224,9 +263,9 @@ export default function ReadingResult(props: {
   return (
     <section className="stage result" data-tone={LEVEL_TONE[reading.stick.level].key}>
       <div className="result-deck mode-single">
-        <div className="sheet-stack">
+        <div className={`sheet-stack${fromDraw ? ' from-draw' : ''}`}>
           {/* 所求之事：寫在繪馬上。小字跟這一局的語言走（紙上說問題的語言），不跟界面 */}
-          <div className="ema-card" data-lang={reading.language}>
+          <div className="ema-card" data-lang={reading.language} ref={emaRef}>
             <EmaChrome caption={sheet.emaCaption}>
               <p className="asked">{displayQuestion}</p>
             </EmaChrome>
