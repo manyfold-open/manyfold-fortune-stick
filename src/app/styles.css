@@ -1888,7 +1888,10 @@ html, body {
 /* 英文等級是一個長字（MIDDLING 在 12.5px 時 81px，剛好等於內圈直徑，字貼著圈）：
    英文印大一號、字收小，max-width 讓兩個字的等級（GREAT FORTUNE）折成兩行，四周留約 12px */
 .slip[data-lang='en'] .slip-level-box { width: 104px; height: 104px; }
-.slip[data-lang='en'] .slip-level { font-family: var(--serif-en); font-size: 11.5px; letter-spacing: 0.06em; text-indent: 0.06em; line-height: 1.3; max-width: 72px; }
+/* 英文等級印：選擇器故意多一層 .slip-level-box —— 窄螢幕那段 media query 裡的
+   `.slip-level-box.long .slip-level { font-size: 19px }` 權重一樣又寫在後面，
+   會把英文蓋成 19px，單字的 MIDDLING 折不了行就撐出印外（手機上實測）。 */
+.slip[data-lang='en'] .slip-level-box .slip-level { font-family: var(--serif-en); font-size: 12.5px; letter-spacing: 0.05em; text-indent: 0.05em; line-height: 1.3; max-width: 82px; }
 .slip[data-lang='en'] .slip-title { font-family: var(--serif-en); letter-spacing: 0.05em; text-indent: 0; font-size: 18px; }
 .slip[data-lang='en'] .slip-poem { font-family: var(--serif-en); font-size: 15px; font-style: italic; letter-spacing: 0.015em; line-height: 1.5; text-wrap: balance; }
 .slip[data-lang='en'] .slip-meaning { font-family: var(--serif-en); font-size: 13.5px; letter-spacing: 0.01em; text-wrap: balance; margin-top: 6px; }

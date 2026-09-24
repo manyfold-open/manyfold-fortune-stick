@@ -65,7 +65,8 @@ export const en = {
   printKeyBusy: 'Printing',
 
   /* ── the result page ── */
-  interpret: 'R E A D  I T',
+  // 字母之間本來就空一格；兩個詞之間用不斷行空格拉開，普通的兩個空格會被 HTML 摺成一個，讀起來像 READIT
+  interpret: 'R E A D \u00A0 I T',
   interpreting: 'Reading your stick',
   reinterpreting: 'Reading it again',
   retryInterpret: 'Try reading again',
