@@ -158,7 +158,7 @@ interface Drive {
   pointerY: number;
   pointerAt: number;
   dragging: boolean;
-  /** 號碼印好了，點一下可以直接打開籤紙（SKIP_AT）。 */
+  /** 號碼印好了，點一下可以提早打開籤紙（SKIP_AT）；不點也會自己打開。 */
   skippable: boolean;
   /** 上一次有東西在動的時間、上一次真的畫的時間 —— 靜止時不重畫（見 frame 結尾）。 */
   activeAt: number;
@@ -184,8 +184,6 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
   const [blooming, setBlooming] = useState(false);
   /** 沒寫問題就來攪：短暫說一聲「先寫下心事」，過一會兒自己收掉（使用者不要常駐的提示）。 */
   const [askFirst, setAskFirst] = useState(false);
-  /** 號碼印好了、還在拿著看：提示改成「點一下打開」。 */
-  const [canSkip, setCanSkip] = useState(false);
   const askFirstTimer = useRef(0);
   /** 示範的手，位置每格跟著要被拿起來那支籤投影到畫面上。 */
   const guideRef = useRef<HTMLDivElement | null>(null);
@@ -489,7 +487,6 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
 
         if (dr.stage === 'pulling' && !calm && !dr.skippable && ms >= SKIP_AT) {
           dr.skippable = true;
-          setCanSkip(true);
         }
         if (dr.stage === 'pulling' && ms >= (calm ? HOLD_MS : PULL_DONE)) handOff();
       }
@@ -666,10 +663,9 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
         askFirst
         ? en ? 'Write your question on the ema above first' : '先在上面的繪馬寫下心事'
         : null
-      : // 交棒淡出的那一下字不再換回去，膠囊淡出時才不會閃一下
-        (stageLabel === 'pulling' || stageLabel === 'done') && canSkip
-        ? en ? '✦ Tap to open your slip ✦' : '✦ 點一下打開籤紙 ✦'
-        : stageLabel === 'pulling' || stageLabel === 'done'
+      : // 籤紙會自己打開，不叫人去點（使用者回饋：寫「點一下打開」不對）。
+        // 想早點看的人照樣點得開（skippable），只是不特別說
+        stageLabel === 'pulling' || stageLabel === 'done'
         ? en ? '✦ Your stick is drawn ✦' : '✦ 神籤已出 ✦'
         : stageLabel === 'shaking'
           ? progress >= 1
@@ -679,7 +675,7 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
             : dragging
               ? en ? 'Stir them round…' : '攪一攪…'
               : en ? 'Just a few more circles' : '再攪幾圈就好'
-          : en ? 'Press on the sticks and stir. Let go whenever you like' : '按住籤攪一攪，想攪多久都可以，放手就抽';
+          : en ? 'Hold and stir the sticks, let go when ready' : '按住籤攪一攪，想攪多久都可以，放手就抽';
 
   /*
    * 題目寫了、還沒真的攪過，就放一隻手示範「按住、繞圈、放開」—— 使用者回饋：不知道要

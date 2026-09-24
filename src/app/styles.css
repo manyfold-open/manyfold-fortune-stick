@@ -5954,17 +5954,29 @@ html { overflow-x: clip; }
   75% { transform: rotate(0.8deg); }
 }
 
-/* 籤筒下那行字：以前 14px 灰字，擠在籤筒底下沒人看見 */
+/* 籤筒下那行字：以前 14px 灰字沒人看見，改 16px 又太大（手機上折成兩行、比繪馬還搶）。
+   15px 深色字加膠囊已經夠醒目；手機再小一號，一句話放得進一行 */
 .cyl3d-stage .roll-hint {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 500;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
   color: var(--on-ground);
 }
 
-/* 「點一下打開籤紙」這種出籤後的加粗提示，16px 粗體在手機上太搶，比攪籤那幾句小一號 */
+/* 「神籤已出」這種出籤後的加粗提示，粗體本來就搶，比攪籤那幾句小一號 */
 .cyl3d-stage .roll-hint.highlight {
-  font-size: 14px;
+  font-size: 13px;
+}
+
+@media (max-width: 640px) {
+  .cyl3d-stage .roll-hint {
+    font-size: 13px;
+    letter-spacing: 0.01em;
+    padding: 4px 14px;
+  }
+  .cyl3d-stage .roll-hint.highlight {
+    font-size: 12px;
+  }
 }
 
 .cyl3d-stage .roll-hint.ask-first {
