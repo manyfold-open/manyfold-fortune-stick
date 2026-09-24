@@ -46,7 +46,9 @@
     // Requests under this prefix are served as if they had arrived at the root.
     "BASE_PATH": "/fortune-stick",
     // Preview builds can override this to the matching Tarot preview URL.
-    "TAROT_HANDOFF_URL": "https://app.manyfold.ai/tarot/"
+    "TAROT_HANDOFF_URL": "https://app.manyfold.ai/tarot/",
+    // Other Tarot hosts a visitor may have come from; the Tarot link sends them back there.
+    "TAROT_RETURN_URLS": "https://tarot.manyfold.ai/"
   }
   // Optional hardening, neither is required to deploy:
   //   npx wrangler secret put ADMIN_PASSWORD          # protects agent management in /settings

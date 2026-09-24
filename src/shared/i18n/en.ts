@@ -90,7 +90,6 @@ export const en = {
   actionRestart: 'Draw another',
   actionTarotBridge: 'Ask your own Tarot question',
   tarotBridgeOpening: 'Preparing the Tarot link…',
-  tarotBridgeError: 'The Tarot reward link is unavailable. Try again in a moment.',
 
   /* ── follow-up ── */
   followUpEmpty: 'Ask another question about this same stick. The stick and its reading will stay the same.',
@@ -161,7 +160,7 @@ export const en = {
   privacyManyfold:
     'When you ask for a reading, your question, the stick content, the existing reading, and further questions are sent to the Manyfold agent you connected. The connection flow also sends the app name and HTTPS site URL to Manyfold; agent tokens never reach the browser.',
   privacyTarotBridge:
-    'If you open Tarot from a finished reading, a one day reward claim is sent. It contains only the reading id and date, never your question or interpretation.',
+    'If you open Tarot from a reading finished today, a signed reward claim for that day is sent. It holds a scrambled code that cannot be used to look up your reading, and never your question or interpretation.',
   privacyFonts:
     'The page requests Noto Serif fonts from Google Fonts. Google handles those font requests; this app does not put your question or reading into a font request.',
   privacyCloudflare:

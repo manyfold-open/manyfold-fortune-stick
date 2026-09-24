@@ -15,7 +15,7 @@ import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 're
 import { stickText } from '../../shared/sticks';
 import type { FollowUpMessage, Reading } from '../../shared/types';
 import { createTarotClaim, storedErrorText } from '../api';
-import { tarotHandoffUrl } from '../tarotBridge';
+import { rememberedTarotReturn, TAROT_URL, tarotHandoffUrl } from '../tarotBridge';
 import { LEVEL_TONE } from '../constants';
 import { copyFor, useT, useUiLanguage } from '../i18n';
 import { format } from '../../shared/i18n';
@@ -69,7 +69,6 @@ export default function ReadingResult(props: {
   const [settled, setSettled] = useState(Boolean(interpretation));
   const [panel, setPanel] = useState<Panel>(null);
   const [tarotBridgePending, setTarotBridgePending] = useState(false);
-  const [tarotBridgeError, setTarotBridgeError] = useState(false);
   const emaRef = useRef<HTMLDivElement | null>(null);
   /** 只看第一次掛上來時有沒有 —— 之後解籤、翻面重渲染都不能再滑一次。 */
   const [fromDraw] = useState(() => Boolean(props.emaFrom));
@@ -181,17 +180,18 @@ export default function ReadingResult(props: {
 
   const togglePanel = (next: Exclude<Panel, null>) => setPanel((open) => (open === next ? null : next));
 
+  /** The reward is a bonus, not a gate: if the claim cannot be made, Tarot still opens. */
   const openTarot = async () => {
     if (tarotBridgePending) return;
     setTarotBridgePending(true);
-    setTarotBridgeError(false);
+    let target = tarotHandoffUrl(TAROT_URL, uiLanguage, null);
     try {
-      const { token, tarotUrl } = await createTarotClaim(reading.id);
-      window.location.assign(tarotHandoffUrl(tarotUrl, uiLanguage, token));
+      const { token, tarotUrl } = await createTarotClaim(reading.id, rememberedTarotReturn());
+      target = tarotHandoffUrl(tarotUrl, uiLanguage, token);
     } catch {
-      setTarotBridgeError(true);
-      setTarotBridgePending(false);
+      // Unconfigured secret, network trouble: go without the reward.
     }
+    window.location.assign(target);
   };
 
   const interpretationBlocks = (
@@ -337,9 +337,6 @@ export default function ReadingResult(props: {
                           >
                             {tarotBridgePending ? t('tarotBridgeOpening') : t('actionTarotBridge')}
                           </button>
-                          {tarotBridgeError && (
-                            <p className="fault" role="alert">{t('tarotBridgeError')}</p>
-                          )}
                         </div>
                       )}
                     </div>

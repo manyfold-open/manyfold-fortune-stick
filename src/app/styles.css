@@ -5316,11 +5316,6 @@ html { overflow-x: clip; }
   gap: 8px;
 }
 
-.result .tarot-bridge-action .fault {
-  margin: 0;
-  text-align: center;
-}
-
 .result :is(.share-panel, .followup) {
   border-top: 1px solid color-mix(in srgb, var(--seal) 30%, transparent);
 }

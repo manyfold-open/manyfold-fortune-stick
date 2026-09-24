@@ -28,7 +28,7 @@ import { isSettingsApiPath } from './auth';
 import { HttpError, type Env } from './types';
 import { ensureSchema } from './db';
 import { withShareMeta } from './meta';
-import { signTarotBonus } from './tarot-bridge';
+import { signTarotBonus, tarotReturnUrl } from './tarot-bridge';
 import { ConfigError, safeEqual } from './crypto';
 import { A2AError } from './a2a';
 import {
@@ -150,9 +150,12 @@ app.post('/api/readings/:id/tarot-claim', async (c) => {
   if (!reading.interpretation) {
     throw new HttpError(409, 'reading_not_complete', 'Finish reading this stick before opening Tarot.');
   }
+  const body = (await c.req.json().catch(() => null)) as { returnUrl?: unknown } | null;
+  // token is null when the reading is too old to earn today's reward; the
+  // browser still opens Tarot, just without a claim Tarot would refuse.
   return c.json({
     token: await signTarotBonus(c.env, reading),
-    tarotUrl: c.env.TAROT_HANDOFF_URL ?? 'https://app.manyfold.ai/tarot/',
+    tarotUrl: tarotReturnUrl(c.env, body?.returnUrl),
   });
 });
 
