@@ -90,7 +90,6 @@
 
 html, body {
   margin: 0;
-  overscroll-behavior-y: none;
   background: var(--ground-wash), var(--ground);
   background-attachment: fixed;
   color: var(--on-ground);
@@ -5629,13 +5628,10 @@ html { overflow-x: clip; }
  * 2. 解籤結果畫面鎖定整頁高度為 100dvh，只有卡片內部解籤文字獨立捲動，徹底杜絕滑動衝突與外層滾動
  */
 @media (max-width: 640px) {
-  /* 手機端提問與求籤階段：嚴格鎖定 html 與 body 零外層捲動，徹底杜絕 iOS Safari 鍵盤收合與重整捲動偏移 */
-  html.route-game,
-  body.route-game,
-  html:has(.route-game),
-  body:has(.route-game),
-  html:has(.shell:has(.cyl3d-stage)),
-  body:has(.shell:has(.cyl3d-stage)),
+  /* 解籤頁鎖住外層，只讓籤卡裡的字捲動。
+     提問與求籤頁不鎖：以前一起鎖成 overflow: hidden，iOS 把整頁往上推一截時就卡死拉不回來，
+     往下拉重整也沒了（使用者：「給點彈性」）。那一頁本來就剛好一個螢幕高，
+     偏掉的話由 FortuneGame 在捲動停下時拉回來；攪籤的畫布有 touch-action: none，拖著攪不會帶動頁面。 */
   html:has(.shell:has(.result)),
   body:has(.shell:has(.result)) {
     height: 100%;

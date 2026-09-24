@@ -149,16 +149,9 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
-  // 切換路由時確保視窗頂天立地，並標記 route-game 以供手機端鎖定外層零捲動
+  // 切換路由時回到頁頂
   useEffect(() => {
     window.scrollTo(0, 0);
-    const isGame = route === 'game';
-    document.documentElement.classList.toggle('route-game', isGame);
-    document.body.classList.toggle('route-game', isGame);
-    return () => {
-      document.documentElement.classList.remove('route-game');
-      document.body.classList.remove('route-game');
-    };
   }, [route]);
 
   useEffect(() => {

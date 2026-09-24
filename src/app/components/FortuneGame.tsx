@@ -209,6 +209,45 @@ export default function FortuneGame(props: {
     }
   }, [restoring, phase, reading]);
 
+  /* 提問頁整頁剛好一個螢幕高，鳥居柱腳就是頁底。iOS 有時會把整頁往上推一截卡住
+     （分頁還原、網址列伸縮、鍵盤收起），柱腳浮在半空、底下露出一條空白（2026-09-24 使用者截圖）。
+     以前是把 html / body 鎖成 overflow: hidden 想擋掉它，結果卡住了也拉不回來，連往下拉重整都沒了。
+     現在頁面不鎖，改成：捲動停下來、回到這一頁、剛載入完，只要沒在打字，就把頁底拉回柱腳。
+     頁面本來就比螢幕高（橫放的手機、很矮的視窗）時照樣能捲，只是不會捲過柱腳。 */
+  useEffect(() => {
+    if (phase !== 'ask' || reading) return;
+    let idle = 0;
+    const settle = (behavior: ScrollBehavior) => {
+      if (document.activeElement === askField.current) return;
+      const shell = document.querySelector<HTMLElement>('.shell');
+      if (!shell) return;
+      // 橫放的手機上籤筒會超出鳥居往下長，那一截還是要捲得到：量內容，不只量框
+      const bottom =
+        shell.getBoundingClientRect().top + window.scrollY + Math.max(shell.offsetHeight, shell.scrollHeight);
+      const furthest = Math.max(0, Math.round(bottom - window.innerHeight));
+      if (window.scrollY > furthest + 1) window.scrollTo({ top: furthest, left: 0, behavior });
+    };
+    const onScroll = () => {
+      window.clearTimeout(idle);
+      idle = window.setTimeout(() => settle('smooth'), 160);
+    };
+    const onShow = () => settle('auto');
+    // 分頁還原的捲動位置常常在 load 之後才套上，多看兩眼
+    const late = [0, 400, 1200].map((ms) => window.setTimeout(onShow, ms));
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('pageshow', onShow);
+    window.addEventListener('load', onShow);
+    window.visualViewport?.addEventListener('resize', onScroll);
+    return () => {
+      window.clearTimeout(idle);
+      late.forEach((t) => window.clearTimeout(t));
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('pageshow', onShow);
+      window.removeEventListener('load', onShow);
+      window.visualViewport?.removeEventListener('resize', onScroll);
+    };
+  }, [phase, reading]);
+
   const triggerHaptic = useCallback((pattern: number | number[]) => {
     if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
       try {
