@@ -5306,6 +5306,13 @@ html { overflow-x: clip; }
   border-top: 1px solid color-mix(in srgb, var(--seal) 30%, transparent);
 }
 
+/* A thumb-sized target: the shared .text-action is a 3px line of type, which
+   on a phone leaves this one only 31px tall. */
+.result .tarot-bridge-action .text-action {
+  min-height: 44px;
+  padding: 6px 4px;
+}
+
 /* The other app's own mark, after the words of the link that goes there. */
 .result .tarot-bridge-action .app-icon {
   display: inline-block;
