@@ -18,7 +18,7 @@
 import { useEffect, useState, type RefObject } from 'react';
 import { withoutDashes } from '../../shared/text';
 import { QUESTION_MAX } from '../constants';
-import { useT } from '../i18n';
+import { useT, useUiLanguage } from '../i18n';
 import { typeTick } from '../sound';
 import { EmaChrome } from './Ema';
 
@@ -37,6 +37,7 @@ export default function QuestionForm(props: {
   nudge?: number;
 }) {
   const t = useT();
+  const uiLanguage = useUiLanguage();
   const [focused, setFocused] = useState(false);
   /*
    * 写了几笔。每一笔轮流换 sway-a / sway-b 两个 class：animation-name 一换，
@@ -139,7 +140,7 @@ export default function QuestionForm(props: {
                 enterKeyHint="done"
               />
               {empty && !focused && (
-                <p className="ask-ghost" aria-hidden>
+                <p className="ask-ghost" data-lang={uiLanguage} aria-hidden>
                   {/* 一支筆：沒有框，就讓這行字自己說「這裡是寫字的地方」 */}
                   <svg className="ask-pen" viewBox="0 0 20 20">
                     <path d="M13.6 2.8 17.2 6.4 7.4 16.2 3 17 3.8 12.6Z" />
