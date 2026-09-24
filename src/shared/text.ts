@@ -4,6 +4,8 @@
  * older records that may already contain a dash.
  */
 const DASHES = /[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]+/g;
+/** A plain hyphen standing in for a dash: spaced (" - ") or doubled ("--"). */
+const ASCII_DASHES = /[ \t]+-+[ \t]+|-{2,}/g;
 
 export const withoutDashes = (value: string): string =>
-  value.replace(DASHES, ' ').replace(/[ \t]{2,}/g, ' ');
+  value.replace(DASHES, ' ').replace(ASCII_DASHES, ' ').replace(/[ \t]{2,}/g, ' ');

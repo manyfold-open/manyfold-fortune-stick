@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { zh } from '../src/shared/i18n/zh';
 import { en } from '../src/shared/i18n/en';
 import { copyFor, format, translatorFor } from '../src/shared/i18n';
+import { STICKS } from '../src/shared/sticks';
 
 describe('界面字典', () => {
   it('两张表的键完全一致 —— 漏一个就编译不过，这里再兜一层', () => {
@@ -45,6 +46,20 @@ describe('界面字典', () => {
       for (const key of Object.keys(zh) as (keyof typeof zh)[]) {
         expect(translatorFor(language)(key)).not.toMatch(/[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]/);
         expect(copyFor(language)[key]).not.toMatch(/[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]/);
+      }
+    }
+  });
+
+  it('英文文案（界面和签文）连连字符也不用', () => {
+    const hyphen = /[A-Za-z]-[A-Za-z]|\s-\s|--/;
+    for (const [key, value] of Object.entries<string>(en)) {
+      expect(value, `${key} 里有连字符`).not.toMatch(hyphen);
+    }
+    for (const stick of STICKS) {
+      const { poem, ...rest } = stick.en;
+      for (const value of [...poem, ...Object.values(rest)]) {
+        expect(value, `第 ${stick.no} 签的英文里有连字符`).not.toMatch(hyphen);
+        expect(value).not.toMatch(/[\u2010-\u2015\u2212]/);
       }
     }
   });

@@ -132,7 +132,7 @@ export function getPrefs(): Prefs {
   return {
     sound: stored.sound ?? true,
     reducedMotion: stored.reducedMotion ?? systemReducedMotion(),
-    language: stored.language === 'en' ? 'en' : 'zh',
+    language: stored.language === 'zh' ? 'zh' : 'en',
   };
 }
 

@@ -15,7 +15,7 @@ import { translatorFor, type Translate } from '../shared/i18n';
 export { copyFor, translatorFor } from '../shared/i18n';
 export type { Copy, Translate } from '../shared/i18n';
 
-const LanguageContext = createContext<Language>('zh');
+const LanguageContext = createContext<Language>('en');
 
 export function LanguageProvider(props: { language: Language; children: ReactNode }) {
   return (

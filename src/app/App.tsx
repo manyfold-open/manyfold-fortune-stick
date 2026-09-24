@@ -140,10 +140,10 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
     };
   }, [prefs.reducedMotion]);
 
-  // <html lang> 决定读屏软件怎么念这一页，所以它得跟着界面语言走，不能钉死在 zh-CN。
+  // <html lang> 决定读屏软件怎么念这一页，所以它得跟着界面语言走，不能钉死在一种语言上。
   // 标题和描述同理 —— 标签页上显示的是当前这个人看得懂的那个名字。
   useEffect(() => {
-    document.documentElement.lang = language === 'en' ? 'en' : 'zh-CN';
+    document.documentElement.lang = language === 'en' ? 'en-GB' : 'zh-CN';
     document.title = t('documentTitle');
     document
       .querySelector('meta[name="description"]')

@@ -315,7 +315,7 @@ describe('按问题的语言解签', () => {
     const prompt = buildInterpretPrompt('Should I take this job offer?', stick, 'en');
     expect(prompt).toContain('Should I take this job offer?');
     expect(prompt).toContain(stickText(stick, 'en').poem[0]);
-    expect(prompt).toContain('Reply in English');
+    expect(prompt).toContain('Reply in British English');
     expect(prompt).not.toContain('全部用中文');
   });
 

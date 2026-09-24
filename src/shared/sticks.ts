@@ -361,7 +361,7 @@ export const STICKS: readonly FortuneStick[] = [
       general:
         'A lot of effort with no result often means the question is too narrow, not that you have not tried hard enough. Step outside the usual frame and look again. The useful answer may be just beyond the area you have been searching. Change the angle before you add more effort.',
       action: 'Rewrite your question a different way and see whether it is still the same question.',
-      luckyItem: 'Soft Lo-Fi Song',
+      luckyItem: 'Soft Lofi Song',
     },
   },
   {
@@ -407,7 +407,7 @@ export const STICKS: readonly FortuneStick[] = [
         'The stream cut the road and troubled travellers ten years',
         'This morning one bridge carries the seasons across',
       ],
-      meaning: 'A new way through a long-standing problem is appearing.',
+      meaning: 'A new way through an old problem is appearing.',
       general:
         'A problem that stayed stuck may now have another solution. It could come from a new person, a better tool, or a rule that changed while you were looking elsewhere. You do not have to use the route you first chose. The route that gets you through is the right one now.',
       action: 'Dig out the reasons you gave up last time and check each one against today.',
@@ -561,7 +561,7 @@ export const STICKS: readonly FortuneStick[] = [
       general:
         'You do not yet have enough information for a decision this large, but anxiety makes a quick conclusion feel safer. Widen the picture instead. Ask one more person, look at one more example, or test one more assumption. A little more context may change the shape of the whole problem.',
       action: 'Find someone today whose position differs from yours and hear how they see it.',
-      luckyItem: 'Sweet Candy',
+      luckyItem: 'Boiled Sweets',
     },
   },
   {
@@ -611,7 +611,7 @@ export const STICKS: readonly FortuneStick[] = [
       general:
         'Feeling lost does not mean you are failing. A useful reference point may be closer than it seems: a conversation, a document, or someone who has already taken a similar path. These clues are easy to miss when you are waiting for a dramatic answer, so pay attention to the quieter ones.',
       action: 'Reach out to someone who has walked a similar road and ask for fifteen minutes.',
-      luckyItem: 'Organizing Photos',
+      luckyItem: 'Organising Photos',
     },
   },
   {
@@ -635,7 +635,7 @@ export const STICKS: readonly FortuneStick[] = [
       meaning: 'You have worked seriously, but not enough outside feedback has reached the work.',
       general:
         'You have been judging the work by a standard that exists only in your own head. That standard can drift without you noticing. The risk is not a lack of effort; it is a lack of outside feedback. Show an unfinished version sooner, while changes are still cheap.',
-      action: 'Show the half-finished thing to one real user or peer and ask only what is wrong with it.',
+      action: 'Show the unfinished thing to one real user or peer and ask only what is wrong with it.',
       luckyItem: 'Sip of Coffee',
     },
   },
@@ -786,7 +786,7 @@ export const STICKS: readonly FortuneStick[] = [
       general:
         'The hard part is behind you, and the ease you feel now is the result of earlier work. You can expand with some confidence, but keep the habits that made this possible. Success often makes those habits feel optional just when they matter most.',
       action: 'Write down one habit you do not want to lose now things are easier, and put it somewhere visible.',
-      luckyItem: 'Sunny-side Egg',
+      luckyItem: 'Fried Egg',
     },
   },
   {

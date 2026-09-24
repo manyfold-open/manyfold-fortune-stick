@@ -193,7 +193,7 @@ export const zh = {
   settingsKeep: '保留',
   settingsDisconnect: '断开',
   settingsMoreTitle: '连接更多 agent',
-  settingsMoreNote: '重新授权一个已经连着的 agent 会就地换掉它的 token —— 授权过期时用得上。',
+  settingsMoreNote: '重新授权一个已经连着的 agent 会就地换掉它的 token，授权过期时用得上。',
   settingsAboutTitle: '关于这个部署',
   settingsAboutBody:
     'agent 的 token 以 AES-GCM 加密存在 D1 里，任何时候都不会发到浏览器。设置 ADMIN_PASSWORD 只保护这个设置页的 agent 管理操作，游戏仍然公开可玩。设置 CONFIG_ENCRYPTION_KEY 可以让加密密钥不落库。详见 README。',
@@ -201,10 +201,10 @@ export const zh = {
   /* ── 连接 Manyfold ── */
   connectStart: '连接 Manyfold agent',
   connectOpening: '打开中…',
-  connectPopupBlocked: '弹窗被拦截了 —— 用下面的「重新打开授权页面」。',
+  connectPopupBlocked: '弹窗被拦截了，用下面的「重新打开授权页面」。',
   connectCodeLabel: '确认码',
   connectCodeNote:
-    '批准前先确认 Manyfold 页面上显示的是同一个码 —— 这是确认你授权的是这个应用的唯一方式。',
+    '批准前先确认 Manyfold 页面上显示的是同一个码，这是确认你授权的是这个应用的唯一方式。',
   connectWaiting: '等待你在 Manyfold 上批准…',
   connectReopen: '重新打开授权页面',
   connectCancel: '取消',
