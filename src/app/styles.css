@@ -5953,6 +5953,31 @@ html { overflow-x: clip; }
     font-size: 11.5px;
   }
 
+  /* 英文籤紙在手機上也要收：上面那幾條是給中文的，英文那一組（.slip[data-lang='en'] …）
+     權重比較高，原封不動留著桌機的大印、大字。英文又比中文長，籤名一折兩行，
+     吉色徽章就被擠到框線上（使用者回饋：第二十九签 A Thousand Miles Downstream）。
+     選擇器照抄英文那一組，寫在後面才蓋得過 */
+  .slip[data-lang='en'] .slip-level-box { width: 92px; height: 92px; }
+  .slip[data-lang='en'] .slip-level-box .slip-level { font-size: 11.5px; max-width: 74px; }
+  .slip[data-lang='en'] .slip-title { font-size: 16px; line-height: 1.3; text-wrap: balance; }
+  .slip[data-lang='en'] .slip-western-poem { gap: 2px; }
+  .slip[data-lang='en'] .slip-poem { font-size: 14px; line-height: 1.5; }
+  .slip[data-lang='en'] .slip-meaning { font-size: 12.5px; line-height: 1.5; margin-top: 4px; }
+
+  /* 保險：籤卡在手機上是定高的（填滿剩下的螢幕），再矮的螢幕、再長的籤，
+     多出來的只讓籤詩那一段自己捲，表頭和吉色徽章永遠完整露在框裡。
+     置中改用 margin: auto —— align-items: center 溢出時會把上緣推到捲不到的地方 */
+  .face-front .slip-body {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    align-items: flex-start;
+  }
+
+  .face-front .slip-body > * {
+    margin-block: auto;
+  }
+
   .face-front .slip {
     padding-bottom: 6px;
   }
