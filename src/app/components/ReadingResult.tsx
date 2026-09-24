@@ -11,7 +11,7 @@
  * 卡高固定（CSS 的 --card-h），背面內容自己捲；分享與追問是浮在背面上的一張紙，不往下接。
  */
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { stickText } from '../../shared/sticks';
 import type { FollowUpMessage, Reading } from '../../shared/types';
 import { storedErrorText } from '../api';
@@ -21,10 +21,12 @@ import { withoutDashes } from '../../shared/text';
 import { EmaChrome } from './Ema';
 import { paperSettleSound } from '../sound';
 import FollowUp from './FollowUp';
-import SharePanel from './SharePanel';
 import StickFace from './StickFace';
 
 type Panel = 'share' | 'followup' | null;
+
+/** 分享（出圖、二維碼）要到按下「分享」才下載 —— 大多數人抽完不一定分享，首屏不必背它 */
+const SharePanel = lazy(() => import('./SharePanel'));
 
 /** 求籤頁那塊繪馬在畫面上的位置（getBoundingClientRect），交棒時量的。 */
 export interface EmaRect {
@@ -319,13 +321,15 @@ export default function ReadingResult(props: {
                   {panel && interpretation && (
                     <div className="sheet-panel" role="dialog" aria-modal="false" onWheel={handleScrollWheel}>
                       {panel === 'share' ? (
-                        <SharePanel
-                          stick={reading.stick}
-                          language={reading.language}
-                          interpretation={interpretation}
-                          question={displayQuestion}
-                          onClose={() => setPanel(null)}
-                        />
+                        <Suspense fallback={<p className="muted small">{t('shareBusy')}</p>}>
+                          <SharePanel
+                            stick={reading.stick}
+                            language={reading.language}
+                            interpretation={interpretation}
+                            question={displayQuestion}
+                            onClose={() => setPanel(null)}
+                          />
+                        </Suspense>
                       ) : (
                         <>
                           <div className="share-head">

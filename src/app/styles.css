@@ -4720,6 +4720,15 @@ html:lang(en) .shell:has(.cyl3d-stage) .ask-zone {
   height: 100%;
 }
 
+/* 籤筒那一包（three.js）是跟頁面一起、另外下載的：到了就淡入，不要啪一下冒出來 */
+.cyl3d-canvas-wrapper > canvas:first-child {
+  animation: cyl3d-in 0.45s ease both;
+}
+
+@keyframes cyl3d-in {
+  from { opacity: 0; }
+}
+
 @media (max-width: 640px) {
   .cyl3d-canvas-wrapper { min-height: 320px; }
 }

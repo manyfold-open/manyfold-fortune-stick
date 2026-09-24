@@ -10,7 +10,7 @@
  * 界面上所有的提示都走打印机的屏（LCD），页面本身不再出现第二处提示文案。
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import type { FollowUpMessage, Reading } from '../../shared/types';
 import { api, ApiError, errorMessage } from '../api';
 import { EJECT_MS, LEVEL_TONE, PRINT_MS, QUESTION_MIN, QUESTION_MAX } from '../constants';
@@ -32,15 +32,38 @@ import {
   type LocalFollowUp,
   type Prefs,
 } from '../storage';
-import FortuneCylinder from './FortuneCylinder';
 import { acceptsGesture, chimeAtSlip, drawStartSound, enterDraws } from '../../shared/cylinder/interaction';
-import FortuneCylinder3D from './FortuneCylinder3D';
-import FortunePaperRoll from './FortunePaperRoll';
-import Printer from './Printer';
 import { EmaChrome } from './Ema';
 import QuestionForm from './QuestionForm';
 import ReadingResult, { type EmaRect } from './ReadingResult';
 import StickFace from './StickFace';
+
+/*
+ * 3D 籤筒連同 three.js 是整包程式裡最大的一塊（光 three 的渲染器就五百多 KB）。
+ * 拆成自己一包、程式一跑起來就開始抓：鳥居、繪馬、頂欄先出來，使用者可以先寫問題，
+ * 籤筒到了再淡入；重新整理停在解籤頁的人則完全不用等它。
+ */
+const cylinder3d = import('./FortuneCylinder3D');
+const FortuneCylinder3D = lazy(() => cylinder3d);
+
+/** 籤筒還沒到時佔住同一塊版面（同一組 class），它到了不會把頁面推動 */
+function CylinderPlaceholder() {
+  return (
+    <div className="roll-stage cyl3d-stage cyl3d-loading" aria-hidden>
+      <div className="cyl3d-canvas-wrapper" />
+      <div className="roll-action-area">
+        <div className="cyl3d-status">
+          <p className="roll-hint" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 另外三個器具只在 ?vessel= 才用得到：拆出去，一般人打開遊戲不必下載它們
+const FortuneCylinder = lazy(() => import('./FortuneCylinder'));
+const FortunePaperRoll = lazy(() => import('./FortunePaperRoll'));
+const Printer = lazy(() => import('./Printer'));
 
 type Phase = 'ask' | 'printing' | 'ejecting';
 
@@ -469,32 +492,35 @@ export default function FortuneGame(props: {
 
       {vessel === 'cylinder3d' && suggestions}
 
+      <Suspense fallback={null}>
       {vessel === 'cylinder3d' ? (
         <div className="roll-slot">
-          <FortuneCylinder3D
-            state={
-              phase === 'printing'
-                ? 'shaking'
-                : phase === 'ejecting'
-                  ? 'ejecting'
-                  : typed > 0
-                    ? 'ready'
-                    : 'idle'
-            }
-            sheet={sheet}
-            fault={fault}
-            language={sheet ? sheet.language : props.prefs.language}
-            soundEnabled={props.prefs.sound}
-            reducedMotion={props.prefs.reducedMotion}
-            onShake={() => void draw()}
-            onRevealed={revealDone}
-            onNeedQuestion={() => {
-              setAskNudge((n) => n + 1);
-              askField.current?.focus();
-            }}
-            // 籤筒 v2 的籤是摇出来的，不是演完的 —— 出籤途中关掉输入会死锁
-            disabled={!acceptsGesture(vessel, phase)}
-          />
+          <Suspense fallback={<CylinderPlaceholder />}>
+            <FortuneCylinder3D
+              state={
+                phase === 'printing'
+                  ? 'shaking'
+                  : phase === 'ejecting'
+                    ? 'ejecting'
+                    : typed > 0
+                      ? 'ready'
+                      : 'idle'
+              }
+              sheet={sheet}
+              fault={fault}
+              language={sheet ? sheet.language : props.prefs.language}
+              soundEnabled={props.prefs.sound}
+              reducedMotion={props.prefs.reducedMotion}
+              onShake={() => void draw()}
+              onRevealed={revealDone}
+              onNeedQuestion={() => {
+                setAskNudge((n) => n + 1);
+                askField.current?.focus();
+              }}
+              // 籤筒 v2 的籤是摇出来的，不是演完的 —— 出籤途中关掉输入会死锁
+              disabled={!acceptsGesture(vessel, phase)}
+            />
+          </Suspense>
         </div>
       ) : vessel === 'roll' ? (
         <div className="roll-slot">
@@ -550,6 +576,7 @@ export default function FortuneGame(props: {
           </Printer>
         </div>
       )}
+      </Suspense>
 
       {vessel !== 'cylinder3d' && suggestions}
     </section>

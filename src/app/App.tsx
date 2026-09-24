@@ -13,15 +13,12 @@
  * 供给下面所有组件，除此之外不碰任何一张已经印好的签。
  */
 
-import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type MouseEvent } from 'react';
 import type { AppState } from '../shared/types';
 import { api, onUnauthorized } from './api';
 import FortuneGame from './components/FortuneGame';
-import HistoryView from './components/HistoryView';
 import PasswordGate from './components/PasswordGate';
-import PrivacyView from './components/PrivacyView';
 import SettingsModal from './components/SettingsModal';
-import SettingsView from './components/SettingsView';
 import SharedStickView from './components/SharedStickView';
 import { parseSharedStick } from '../shared/share-link';
 import ShrineBackdrop from './components/ShrineBackdrop';
@@ -51,6 +48,11 @@ const routeFromHash = (): Route => {
   if (hash === 'history') return 'history';
   return 'game';
 };
+
+// 首屏只要籤筒：記錄、隱私、部署設定這三頁用到才下載，打開遊戲時少抓一截程式
+const HistoryView = lazy(() => import('./components/HistoryView'));
+const PrivacyView = lazy(() => import('./components/PrivacyView'));
+const SettingsView = lazy(() => import('./components/SettingsView'));
 
 export default function App() {
   const [prefs, setPrefsState] = useState<Prefs>(() => getPrefs());
@@ -260,7 +262,8 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
         </span>
       </header>
 
-      {route === 'settings' && state.adminOk && (
+      <Suspense fallback={null}>
+        {route === 'settings' && state.adminOk && (
         <SettingsView
           agents={state.agents}
           initialSession={state.connect.session}
@@ -269,6 +272,7 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
       )}
       {route === 'history' && <HistoryView />}
       {route === 'privacy' && <PrivacyView />}
+      </Suspense>
       {route === 'game' && shared && <SharedStickView shared={shared} onDrawOwn={leaveShared} />}
       {route === 'game' && !shared && (
         <FortuneGame prefs={prefs} interpreterReady={state.interpreterReady} homeTaps={homeTaps} />

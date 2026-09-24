@@ -157,6 +157,9 @@ interface Drive {
   pointerY: number;
   pointerAt: number;
   dragging: boolean;
+  /** 上一次有東西在動的時間、上一次真的畫的時間 —— 靜止時不重畫（見 frame 結尾）。 */
+  activeAt: number;
+  renderedAt: number;
 }
 
 export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
@@ -213,6 +216,8 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
     pointerY: 0,
     pointerAt: 0,
     dragging: false,
+    activeAt: 0,
+    renderedAt: 0,
   });
 
   const stateRef = useRef(state);
@@ -271,6 +276,8 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
     const spin = new THREE.Quaternion();
     const headV = new THREE.Vector3();
     const heads = new Array<number>(STICK_COUNT).fill(0);
+    /** 上一格每支籤的高度：看籤有沒有真的在動（靜止時速度被摩擦和地板彈來彈去，永遠不會剛好是 0） */
+    const lastY = new Array<number>(STICK_COUNT).fill(0);
     const frontRow = Array.from({ length: STICK_COUNT }, (_, i) => i).filter((i) => bundleSlot(i).row === 0);
     const frontXs: number[] = [];
     /** 每支籤頭現在落在畫布上的哪個 x（像素）—— 手在畫面上碰到哪支是這樣比出來的。 */
@@ -507,7 +514,27 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
         guide.style.top = `${gy.toFixed(1)}px`;
       }
 
+      // 靜止時不重畫。放手、籤束歇下來之後畫面一格都不會變，以前照樣每秒 60 格、兩倍解析度
+      // 加抗鋸齒地畫，手機放著就發燙、耗電，旁邊的動畫也跟著搶不到 GPU。
+      // 有東西在動就每格畫；停下來 0.6 秒後只留每 0.5 秒一次的心跳（插畫晚到、貼圖換了也畫得上去）。
+      // 改尺寸時 ResizeObserver 那邊會自己補畫。
+      const busy =
+        dr.dragging ||
+        dr.stage === 'pulling' ||
+        dr.stage === 'done' ||
+        Math.abs(sh.phi) > 1e-4 ||
+        Math.abs(sh.omega) > 1e-4 ||
+        sh.intensity > 1e-3 ||
+        Math.abs(dr.readyLift - (dr.requested ? READY_LIFT : 0)) > 1e-4 ||
+        dr.pick.lift.some((v) => v > 1e-4) ||
+        dr.motions.some((m, i) => Math.abs(m.y - lastY[i]) > 1e-5) ||
+        Math.abs(dr.camZ - idleZ) > 1e-3 ||
+        Math.abs(dr.camY - IDLE_LOOK_Y) > 1e-3;
+      for (let i = 0; i < STICK_COUNT; i += 1) lastY[i] = dr.motions[i].y;
+      if (busy) dr.activeAt = now;
+      if (!busy && now - dr.activeAt > 600 && now - dr.renderedAt < 500) return;
       rig.render();
+      dr.renderedAt = now;
     };
     raf = requestAnimationFrame(frame);
 
