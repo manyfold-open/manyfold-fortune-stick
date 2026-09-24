@@ -5306,6 +5306,16 @@ html { overflow-x: clip; }
   border-top: 1px solid color-mix(in srgb, var(--seal) 30%, transparent);
 }
 
+/* The other app's own mark, after the words of the link that goes there. */
+.result .tarot-bridge-action .app-icon {
+  display: inline-block;
+  width: 1.4em;
+  height: 1.4em;
+  margin-left: 0.45em;
+  vertical-align: -0.35em;
+  border-radius: 0.3em;
+}
+
 .result .tarot-bridge-action {
   margin: 24px 0 8px;
   padding-top: 14px;
