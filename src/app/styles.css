@@ -4551,6 +4551,7 @@ code {
  * box-shadow，所以陰影用 filter: drop-shadow，而且裁切只做在兩層偽元素上 ——
  * 紅繩在牌子外面，不能跟著被裁掉。
  */
+.ema-glow,
 .ema-cord,
 .ema-caption,
 .ema-mizuhiki {
@@ -4973,9 +4974,15 @@ html { overflow-x: clip; }
   width: 20px;
   height: 55px;
   margin-left: -10px;
-  filter: drop-shadow(0 2px 3px rgba(60, 40, 20, 0.18));
+  /* 影子畫在 SVG 裡（.shide-shadow），不用 filter: drop-shadow —— 四條紙垂一直在搖，
+     濾鏡每一格都要重算；畫進去的影子跟著轉就好，不花力氣 */
+  overflow: visible;
   transform-origin: top center;
   animation: shide-sway 7.2s ease-in-out infinite alternate;
+}
+
+.shide .shide-shadow {
+  fill: rgba(60, 40, 20, 0.14);
 }
 
 .shide .shide-body {
@@ -6106,17 +6113,34 @@ html { overflow-x: clip; }
   animation: ema-nudge 0.8s cubic-bezier(0.36, 0.07, 0.19, 0.97);
 }
 
+/* 暖光是繪馬後面一層 box-shadow，只動 opacity：以前是在關鍵格裡動 filter（多疊一層 drop-shadow），
+   閒置時每 5 秒就要整塊重算濾鏡。光暈畫一次，之後淡入淡出只是合成，不用重畫。
+   光暈縮在牌子裡面、圓角包住斜切角，光才不會從切掉的角上露出一塊缺口 */
+.shell:has(.cyl3d-stage) .ask-zone .ema-glow {
+  display: block;
+  position: absolute;
+  inset: 12px;
+  z-index: -2;
+  border-radius: 20px 20px 6px 6px;
+  box-shadow: 0 0 16px 10px rgba(255, 206, 120, 0.7);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.shell:has(.cyl3d-stage) .ask-zone:not(.focused):not(.has-content):not(.nudge):not(:hover) .ema-glow {
+  animation: ema-glow 5.2s ease-in-out 1.2s infinite;
+}
+
 @keyframes ema-beckon {
-  0%, 62%, 100% {
-    transform: rotate(0deg);
-    filter: drop-shadow(0 6px 10px rgba(92, 62, 32, 0.22));
-  }
-  70% {
-    transform: rotate(-1.4deg);
-    filter: drop-shadow(0 6px 10px rgba(92, 62, 32, 0.22)) drop-shadow(0 0 14px rgba(255, 206, 120, 0.75));
-  }
+  0%, 62%, 100% { transform: rotate(0deg); }
+  70% { transform: rotate(-1.4deg); }
   80% { transform: rotate(1deg); }
   90% { transform: rotate(-0.4deg); }
+}
+
+@keyframes ema-glow {
+  0%, 62%, 90%, 100% { opacity: 0; }
+  70% { opacity: 1; }
 }
 
 @keyframes ema-nudge {

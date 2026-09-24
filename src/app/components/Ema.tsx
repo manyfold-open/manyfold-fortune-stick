@@ -1,8 +1,8 @@
 /**
- * 繪馬的零件：上方的紅繩、牌頂的小字、底下的紅色水引。
+ * 繪馬的零件：上方的紅繩、牌頂的小字、底下的紅色水引，和空牌子招手時背後那圈暖光。
  *
  * 只是裝飾，外觀全在 styles.css：只有 3D 籤筒台上（.shell:has(.cyl3d-stage)）才顯示，
- * 其他器具下這三樣是 display: none，題目照舊直接寫在頁面上。
+ * 其他器具下這幾樣是 display: none，題目照舊直接寫在頁面上。
  */
 
 import type { ReactNode } from 'react';
@@ -12,6 +12,7 @@ export function EmaChrome({ children, caption }: { children: ReactNode; caption?
   const t = useT();
   return (
     <>
+      <span className="ema-glow" aria-hidden />
       <span className="ema-cord" aria-hidden />
       <p className="ema-caption" aria-hidden>{caption ?? t('emaCaption')}</p>
       {children}
