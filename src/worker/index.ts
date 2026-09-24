@@ -27,6 +27,7 @@ import type { AppState } from '../shared/types';
 import { isSettingsApiPath } from './auth';
 import { HttpError, type Env } from './types';
 import { ensureSchema } from './db';
+import { withShareMeta } from './meta';
 import { ConfigError, safeEqual } from './crypto';
 import { A2AError } from './a2a';
 import {
@@ -219,7 +220,7 @@ export default {
     const base = mountPath(env);
     const url = new URL(request.url);
     if (!base || (url.pathname !== base && !url.pathname.startsWith(`${base}/`))) {
-      return app.fetch(request, env, ctx);
+      return withShareMeta(await app.fetch(request, env, ctx), url, '');
     }
     // The page loads its assets relative to itself, so the mount root needs its slash.
     if (url.pathname === base) {
@@ -227,7 +228,11 @@ export default {
       return Response.redirect(url.toString(), 308);
     }
     url.pathname = url.pathname.slice(base.length);
-    const response = await app.fetch(new Request(url.toString(), request), env, ctx);
+    const response = withShareMeta(
+      await app.fetch(new Request(url.toString(), request), env, ctx),
+      new URL(request.url),
+      base,
+    );
     const location = response.headers.get('location');
     if (!location?.startsWith('/') || location.startsWith('//')) return response;
     const redirected = new Response(response.body, response);

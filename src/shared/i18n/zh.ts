@@ -109,6 +109,11 @@ export const zh = {
   shareShared: '已经交给系统分享。',
   shareDownloaded: '图片已保存到下载。',
   shareFailed: '图片这次没生成出来，可以先复制下面这段文字。',
+  shareStory: '做成限时动态尺寸（9:16）',
+  shareLinkNote: '分享时会附上一条连结：朋友点开看到的是这一支签，看不到你的问题和解读。',
+  /* 朋友分享来的那一支签（?s=） */
+  sharedEma: '朋友分享给你的一签',
+  sharedDrawOwn: '求一支自己的签',
 
   /* ── 记录 ── */
   historyTitle: '求签记录',

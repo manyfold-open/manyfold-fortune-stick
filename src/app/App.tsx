@@ -22,6 +22,8 @@ import PasswordGate from './components/PasswordGate';
 import PrivacyView from './components/PrivacyView';
 import SettingsModal from './components/SettingsModal';
 import SettingsView from './components/SettingsView';
+import SharedStickView from './components/SharedStickView';
+import { parseSharedStick } from '../shared/share-link';
 import ShrineBackdrop from './components/ShrineBackdrop';
 import { LanguageProvider, useT, useUiLanguage } from './i18n';
 import { getPrefs, setPrefs, type Prefs } from './storage';
@@ -87,7 +89,24 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
    * 以前就是點了毫無反應；現在交給 FortuneGame：看著結果時回到空白繪馬（跟「再求一籤」一樣）。
    */
   const [homeTaps, setHomeTaps] = useState(0);
+  /** 朋友分享來的那一支（?s=13&l=en）。有它，求籤頁先給人看那張籤紙，底下一行「求一支自己的」。 */
+  const [shared, setShared] = useState(() => parseSharedStick(location.search));
+  /** 看完朋友那支，去求自己的：網址上的 ?s= 拿掉（重新整理不會又回來），換成求籤頁 */
+  const leaveShared = () => {
+    const url = new URL(location.href);
+    url.searchParams.delete('s');
+    url.searchParams.delete('l');
+    history.replaceState(history.state, '', url.toString());
+    setShared(null);
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  };
   const goHome = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (shared) {
+      event.preventDefault();
+      leaveShared();
+      if (location.hash) location.hash = '';
+      return;
+    }
     if (route === 'game' && location.pathname.replace(/\/+$/, '') === BASE) {
       event.preventDefault();
       setHomeTaps((n) => n + 1);
@@ -250,7 +269,8 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
       )}
       {route === 'history' && <HistoryView />}
       {route === 'privacy' && <PrivacyView />}
-      {route === 'game' && (
+      {route === 'game' && shared && <SharedStickView shared={shared} onDrawOwn={leaveShared} />}
+      {route === 'game' && !shared && (
         <FortuneGame prefs={prefs} interpreterReady={state.interpreterReady} homeTaps={homeTaps} />
       )}
 

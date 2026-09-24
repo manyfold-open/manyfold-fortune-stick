@@ -240,7 +240,11 @@ const SHARE_PILLAR_W = 70;
  *
  * 以前這裡只畫兩根淡掉的紅柱，加上畫面邊緣兩截灰色方塊當笠木與貫 —— 使用者：「分享卡裡的神社不夠逼真、跟原本的不一樣」。
  */
-export function paintShrine(g: CanvasRenderingContext2D, w: number, h: number): number {
+/**
+ * `toriiDrop`：鳥居整座往下挪多少。限時動態（9:16）上緣一截會被 IG／LINE 的頭像列蓋住，
+ * 鳥居要從那底下開始；一般的 4:5 貼文是 0。
+ */
+export function paintShrine(g: CanvasRenderingContext2D, w: number, h: number, toriiDrop = 0): number {
   const base = g.createLinearGradient(0, 0, 0, h);
   base.addColorStop(0, '#f3e6cb');
   base.addColorStop(1, '#dcc7a3');
@@ -253,11 +257,12 @@ export function paintShrine(g: CanvasRenderingContext2D, w: number, h: number): 
   g.fillStyle = sun;
   g.fillRect(0, 0, w, h);
 
-  const nukiBottom = drawTorii(g, w, h, SHARE_TORII_TOP, SHARE_TORII_K, SHARE_PILLAR_X, SHARE_PILLAR_W);
+  const toriiTop = SHARE_TORII_TOP + toriiDrop;
+  const nukiBottom = drawTorii(g, w, h, toriiTop, SHARE_TORII_K, SHARE_PILLAR_X, SHARE_PILLAR_W);
 
   // 櫻花枝壓在笠木上，跟頁面一樣從笠木底下探出來
-  drawBranch(g, -40, SHARE_TORII_TOP + 24, 420, false);
-  drawBranch(g, w + 40, SHARE_TORII_TOP + 24, 420, true);
+  drawBranch(g, -40, toriiTop + 24, 420, false);
+  drawBranch(g, w + 40, toriiTop + 24, 420, true);
 
   // 花瓣：跟頁面同一套動力學，固定在同一刻 —— 每張分享圖的花瓣都在同一個地方
   for (const p of createPetals(18, 7)) {

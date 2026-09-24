@@ -3,11 +3,11 @@
  * 系统分享用不了就退回下载；下载也不行时，至少给一段可以复制的短文字。
  */
 
-import { useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { stickText, type FortuneStick } from '../../shared/sticks';
 import type { Interpretation } from '../../shared/types';
 import { useT } from '../i18n';
-import { renderShareImage, shareImage, shareText } from '../share';
+import { renderShareImage, shareImage, shareText, type ShareOutcome } from '../share';
 import type { Language } from '../../shared/lang';
 
 export default function SharePanel(props: {
@@ -20,40 +20,76 @@ export default function SharePanel(props: {
 }) {
   const t = useT();
   const [includeQuestion, setIncludeQuestion] = useState(false);
+  const [story, setStory] = useState(false);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState('');
   const [fallbackText, setFallbackText] = useState('');
   const sharingRef = useRef(false);
 
-  const go = async () => {
+  /*
+   * 面板一打开（和每次改选项）就在背景把图画好。iOS 只在点击后很短的时间内准叫出分享面板：
+   * 以前按下才开始画（等字体、画二维码、画 1080 宽的图），画完再叫就被拒，手机上分享等于永远失败。
+   * 现在按下时图已经在手上，直接叫。
+   */
+  const key = `${includeQuestion ? 'q' : '-'}${story ? 's' : 'p'}`;
+  const ready = useRef<{ key: string; blob: Blob } | null>(null);
+  const pending = useRef<{ key: string; promise: Promise<Blob> } | null>(null);
+  const { stick, interpretation, question, language } = props;
+  const render = useCallback(
+    (withQuestion: boolean, asStory: boolean, forKey: string): Promise<Blob> => {
+      if (pending.current?.key === forKey) return pending.current.promise;
+      const promise = renderShareImage({
+        stick,
+        interpretation,
+        question,
+        includeQuestion: withQuestion,
+        language,
+        format: asStory ? 'story' : 'post',
+      });
+      pending.current = { key: forKey, promise };
+      void promise
+        .then((blob) => {
+          if (pending.current?.key === forKey) ready.current = { key: forKey, blob };
+        })
+        .catch(() => undefined);
+      return promise;
+    },
+    [stick, interpretation, question, language],
+  );
+  useEffect(() => {
+    void render(includeQuestion, story, key).catch(() => undefined);
+  }, [render, includeQuestion, story, key]);
+
+  const fail = () => {
+    setStatus(t('shareFailed'));
+    setFallbackText(shareText(stick, interpretation?.meaning ?? stickText(stick, language).meaning, language));
+  };
+
+  const go = () => {
     if (sharingRef.current) return;
-    sharingRef.current = true;
-    setBusy(true);
     setStatus('');
     setFallbackText('');
-    try {
-      const blob = await renderShareImage({
-        stick: props.stick,
-        interpretation: props.interpretation,
-        question: props.question,
-        includeQuestion,
-        language: props.language,
-      });
-      const outcome = await shareImage(blob, props.stick, props.language);
-      setStatus(outcome === 'shared' ? t('shareShared') : t('shareDownloaded'));
-    } catch {
-      setStatus(t('shareFailed'));
-      setFallbackText(
-        shareText(
-          props.stick,
-          props.interpretation?.meaning ?? stickText(props.stick, props.language).meaning,
-          props.language,
-        ),
-      );
-    } finally {
-      sharingRef.current = false;
-      setBusy(false);
+    const done = (outcome: ShareOutcome) => setStatus(outcome === 'shared' ? t('shareShared') : t('shareDownloaded'));
+    // 图好了：在这一下点击里直接叫分享，前面不能有任何 await
+    if (ready.current?.key === key) {
+      sharingRef.current = true;
+      void shareImage(ready.current.blob, stick, language)
+        .then(done, fail)
+        .finally(() => {
+          sharingRef.current = false;
+        });
+      return;
     }
+    // 还没画完（刚打开就点）：等它画完再分享。iOS 可能已经不准叫面板了，那就退回下载或复制文字
+    sharingRef.current = true;
+    setBusy(true);
+    void render(includeQuestion, story, key)
+      .then((blob) => shareImage(blob, stick, language))
+      .then(done, fail)
+      .finally(() => {
+        sharingRef.current = false;
+        setBusy(false);
+      });
   };
 
   return (
@@ -73,9 +109,14 @@ export default function SharePanel(props: {
         />
         {t('shareIncludeQuestion')}
       </label>
-      <button className="text-action strong" onClick={() => void go()} disabled={busy}>
+      <label className="check">
+        <input type="checkbox" checked={story} onChange={(event) => setStory(event.target.checked)} />
+        {t('shareStory')}
+      </label>
+      <button className="text-action strong" onClick={go} disabled={busy}>
         {busy ? t('shareBusy') : t('shareGo')}
       </button>
+      <p className="muted small">{t('shareLinkNote')}</p>
       {status && (
         <p className="muted small share-status" role="status" aria-live="polite">
           {status}

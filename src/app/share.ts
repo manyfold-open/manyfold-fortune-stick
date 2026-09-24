@@ -14,6 +14,7 @@
 
 import QRCode from 'qrcode';
 import type { Language } from '../shared/lang';
+import { sharedStickQuery } from '../shared/share-link';
 import { withoutDashes } from '../shared/text';
 import {
   LEVEL_LABEL,
@@ -24,11 +25,18 @@ import {
 } from '../shared/sticks';
 import { hanNumber } from '../shared/numerals';
 import type { Interpretation } from '../shared/types';
+import { appUrl } from './base';
 import { LEVEL_TONE } from './constants';
 import { CREAM, ROUND, SEAL, SEAL_DEEP, drawEma, drawSakuraMark, drawSeal, drawWashiTape, paintShrine, spacedText } from './shrineArt';
 
 const WIDTH = 1080;
 const HEIGHT = 1350;
+/**
+ * 限時動態（9:16）：4:5 那張整個放在正中間，上下各多出 STORY_PAD 的天空和柱腳。
+ * 上下那兩截剛好是 IG／LINE 頭像列和回覆框會蓋住的地方，籤紙和繪馬不會被擋。
+ */
+const STORY_HEIGHT = 1920;
+const STORY_PAD = (STORY_HEIGHT - HEIGHT) / 2;
 const APP_NAME = 'AI Fortune Stick';
 /** 二维码边长（px）。扫了回到游戏首页。 */
 const QR_SIZE = 104;
@@ -54,7 +62,13 @@ export interface ShareInput {
   interpretation: Interpretation | null;
   question: string;
   includeQuestion: boolean;
+  /** post：4:5 貼文（預設）；story：9:16 限時動態。 */
+  format?: 'post' | 'story';
 }
+
+/** 這支籤的分享連結：朋友點開看到同一張籤紙，下面一句「求一支自己的」。不帶問題、不帶解籤。 */
+export const shareLink = (stick: FortuneStick, language: Language): string =>
+  new URL(appUrl('/') + sharedStickQuery(stick.no, language), window.location.origin).toString();
 
 /** 按宽度折行。中文逐字折，不需要考虑单词边界。 */
 function wrapChars(context: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
@@ -245,12 +259,10 @@ function drawHorizontal(
   }
 }
 
-/** 生成回到游戏首页的二维码。分享图可能离开当前页面，所以不保留 hash 路由。 */
-async function loadShareQr(): Promise<HTMLImageElement | null> {
+/** 二维码：扫了看到的是这一支签（shareLink），下面就是「求一支自己的」—— 以前只回首页，看不出是谁分享的哪一支。 */
+async function loadShareQr(stick: FortuneStick, language: Language): Promise<HTMLImageElement | null> {
   try {
-    const url = new URL(window.location.href);
-    url.hash = '';
-    const dataUrl = await QRCode.toDataURL(url.toString(), {
+    const dataUrl = await QRCode.toDataURL(shareLink(stick, language), {
       errorCorrectionLevel: 'M',
       margin: 1,
       width: QR_SIZE,
@@ -292,9 +304,13 @@ async function waitForFonts(): Promise<void> {
 
 export async function renderShareImage(input: ShareInput): Promise<Blob> {
   await waitForFonts();
+  const story = input.format === 'story';
+  const H = story ? STORY_HEIGHT : HEIGHT;
+  /** 紙最低只能到這裡：限時動態底下那截留給回覆框 */
+  const bottom = story ? H - STORY_PAD : H;
   const canvas = document.createElement('canvas');
   canvas.width = WIDTH;
-  canvas.height = HEIGHT;
+  canvas.height = H;
   const g = canvas.getContext('2d');
   if (!g) throw new Error('这个浏览器不支持生成图片。');
 
@@ -307,14 +323,14 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
   const level = LEVEL_LABEL[language][stick.level];
   const meaning = withoutDashes(input.interpretation?.meaning ?? text.meaning);
   const question = withoutDashes(input.question);
-  const qrImage = await loadShareQr();
+  const qrImage = await loadShareQr(stick, language);
   const center = WIDTH / 2;
   const paperW = 680;
   const paperX = center - paperW / 2;
   const withQuestion = input.includeQuestion && Boolean(question.trim());
 
   // 鳥居的貫下緣：繪馬的紅繩從那裡垂下來（紅繩長 40px，見 drawEma）
-  const nukiBottom = paintShrine(g, WIDTH, HEIGHT);
+  const nukiBottom = paintShrine(g, WIDTH, H, story ? STORY_PAD : 0);
   g.textAlign = 'center';
 
   // 纸的各段高度：表头带、签号、大红印、签名、签诗、吉色
@@ -350,10 +366,10 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
     paperTop = emaBottom + 34;
   } else {
     // 沒有繪馬：紙放在鳥居的貫與畫面下緣之間的正中
-    paperTop = Math.round(nukiBottom + (HEIGHT - nukiBottom - (FIXED + BODY_MAX)) / 2);
+    paperTop = Math.round(nukiBottom + (bottom - nukiBottom - (FIXED + BODY_MAX)) / 2);
   }
   // 問題折成兩行時繪馬變高：籤詩那一格讓出空間，紙才不會貼著畫面下緣
-  const BODY = Math.max(300, Math.min(BODY_MAX, HEIGHT - 40 - paperTop - FIXED));
+  const BODY = Math.max(300, Math.min(BODY_MAX, bottom - 40 - paperTop - FIXED));
   const paperH = FIXED + BODY;
 
   // 纸：阴影、纸色、朱红双线框
@@ -525,7 +541,7 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
     g.fillStyle = INK_2;
     g.font = `500 17px ${en ? face : ROUND}`;
     g.textAlign = 'center';
-    g.fillText(en ? 'SCAN TO PLAY' : '扫码再玩一签', qx + QR_SIZE / 2, qy + QR_SIZE + 20);
+    g.fillText(en ? 'SCAN TO DRAW' : '扫码求一签', qx + QR_SIZE / 2, qy + QR_SIZE + 20);
   }
 
   // 以前紙下面還有兩行頁腳（「签为参考，路要自己走」和網址），使用者要拿掉；
@@ -541,7 +557,15 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
 
 export type ShareOutcome = 'shared' | 'downloaded';
 
-/** 能调系统分享就调；不能就下载。两条路都走不通时抛错，由调用方降级到复制文字。 */
+/**
+ * 能调系统分享就调；不能就下载。两条路都走不通时抛错，由调用方降级到复制文字。
+ *
+ * 图要事先做好再传进来（SharePanel 一打开就在背景画）：iOS 只在点击后很短的时间内准叫出
+ * 分享面板，先花一两秒画图再叫，就会被拒（NotAllowedError），手机上等于分享永远失败。
+ * 所以这里在 navigator.share 之前一个 await 都没有。
+ *
+ * 连结写在 text 里而不是 url 栏：带着图片时，iOS 有些 App 只收 url、把图片丢掉。
+ */
 export async function shareImage(
   blob: Blob,
   stick: FortuneStick,
@@ -554,8 +578,8 @@ export async function shareImage(
     files: [file],
     title: APP_NAME,
     text: en
-      ? `No. ${stick.no} · ${LEVEL_LABEL.en[stick.level]}`
-      : `第 ${stick.no} 签 · ${stick.level}`,
+      ? `No. ${stick.no} · ${LEVEL_LABEL.en[stick.level]}\n${shareLink(stick, language)}`
+      : `第 ${stick.no} 签 · ${stick.level}\n${shareLink(stick, language)}`,
   };
   if (navigator.canShare?.(shareData)) {
     try {
@@ -582,8 +606,9 @@ export async function shareImage(
 export const shareText = (stick: FortuneStick, meaning: string, language: Language): string => {
   const text = stickText(stick, language);
   const cleanMeaning = withoutDashes(meaning);
+  const link = shareLink(stick, language);
   if (language === 'en') {
-    return `${APP_NAME} · No. ${stick.no} · ${LEVEL_LABEL.en[stick.level]}\n${text.poem[0]} / ${text.poem[1]}\n${cleanMeaning}`;
+    return `${APP_NAME} · No. ${stick.no} · ${LEVEL_LABEL.en[stick.level]}\n${text.poem[0]} / ${text.poem[1]}\n${cleanMeaning}\n${link}`;
   }
-  return `${APP_NAME} · 第 ${stick.no} 签 · ${stick.level}\n${text.poem[0]}，${text.poem[1]}\n${cleanMeaning}`;
+  return `${APP_NAME} · 第 ${stick.no} 签 · ${stick.level}\n${text.poem[0]}，${text.poem[1]}\n${cleanMeaning}\n${link}`;
 };

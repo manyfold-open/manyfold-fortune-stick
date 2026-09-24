@@ -109,6 +109,11 @@ export const en = {
   shareShared: 'Handed to your system share sheet.',
   shareDownloaded: 'Image saved to your downloads.',
   shareFailed: 'The image did not come out this time. You can copy the text below instead.',
+  shareStory: 'Story size, 9:16',
+  shareLinkNote: 'A link goes with it. Friends who open it see this stick, never your question or reading.',
+  /* a stick a friend shared (?s=) */
+  sharedEma: 'A friend shared this slip with you',
+  sharedDrawOwn: 'Draw your own',
 
   /* ── history ── */
   historyTitle: 'Your slips',
