@@ -86,6 +86,7 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
   const [route, setRoute] = useState<Route>(routeFromHash);
   const [gateOpen, setGateOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const settingsTriggerRef = useRef<HTMLButtonElement | null>(null);
   /**
    * 左上角 logo 在求籤頁上被點了幾次。求籤頁的網址本來就沒有 #，goToGame 清不了什麼，
    * 以前就是點了毫無反應；現在交給 FortuneGame：看著結果時回到空白繪馬（跟「再求一籤」一樣）。
@@ -248,6 +249,7 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
           <button
             type="button"
             className="text-action settings-trigger"
+            ref={settingsTriggerRef}
             aria-label={t('navSettings')}
             onClick={() => setSettingsOpen(true)}
           >
@@ -314,6 +316,7 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
       <SettingsModal
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
+        anchorRef={settingsTriggerRef}
         prefs={prefs}
         updatePrefs={updatePrefs}
         language={language}
