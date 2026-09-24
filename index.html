@@ -13,31 +13,32 @@
       }
       window.scrollTo(0, 0);
     </script>
-    <!-- 两套衬线：中文的 Noto Serif SC，英文签纸的 Noto Serif（拉丁子集，比前者小得多）。
-         一次请求拿两家，让两种签纸看起来像同一台机器印的。
-         加载不上时会落回 Songti SC / SimSun 和 Georgia，排版不会散。
+    <!-- 这笔请求拿两家：Noto Serif SC（中文明朝）和霞鹜文楷 TC（绘马、木牌上的手写字）。
+         英文明朝 Shippori Mincho B1 不走这里，只打包了拉丁字母那一包，放在 src/app/fonts/，
+         由 styles.css 的 @font-face 载入。字体只有三个角色，见 styles.css :root 的 --font-* 注释。
+         加载不上时会落回 Songti SC / SimSun 和楷体，排版不会散。
 
-         styles.css 的 --serif 排在这两家前面还有 GenRyuMin（源流明体）——
+         styles.css 的明朝排在 Noto Serif SC 前面还有 GenRyuMin（源流明体）——
          那是「本机装过才生效」的增强，故意不进这笔请求：整包 CJK 明体几 MB，
          为它拖慢首屏不划算。改这里之前先看那边的注释。
 
          display=optional：字体没在第一时间到，这一次就整页用后备字体，不中途换字 ——
          swap 会先用系统字排一遍、下载完再换，绘马和按钮在手机上会跳一下。
-         第二次打开字体已经在缓存里，一开始就是 Noto Serif。分享图另外 document.fonts.load，不受影响。
+         第二次打开字体已经在缓存里，一开始就是明朝和文楷。分享图另外 document.fonts.load，不受影响。
 
          故意不让它挡住首屏：字体表是渲染阻塞资源，一旦 Google Fonts 慢或者被挡，
          模块脚本要等它，整页就是白的。先按 print 媒体加载，到了再切成 all。 -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;700;900&family=Noto+Serif:wght@400;500;700&display=optional"
+      href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;700;900&family=LXGW+WenKai+TC:wght@400;700&display=optional"
       rel="stylesheet"
       media="print"
       onload="this.media='all'"
     />
     <noscript>
       <link
-        href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;700;900&family=Noto+Serif:wght@400;500;700&display=optional"
+        href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;700;900&family=LXGW+WenKai+TC:wght@400;700&display=optional"
         rel="stylesheet"
       />
     </noscript>

@@ -27,7 +27,8 @@ import { hanNumber } from '../shared/numerals';
 import type { Interpretation } from '../shared/types';
 import { appUrl } from './base';
 import { LEVEL_TONE } from './constants';
-import { CREAM, ROUND, SEAL, SEAL_DEEP, drawEma, drawSakuraMark, drawSeal, drawWashiTape, paintShrine, spacedText } from './shrineArt';
+import { HAND, MINCHO_EN, MINCHO_ZH } from './fonts';
+import { CREAM, SEAL, SEAL_DEEP, drawEma, drawSakuraMark, drawSeal, drawWashiTape, paintShrine, spacedText } from './shrineArt';
 
 const WIDTH = 1080;
 const HEIGHT = 1350;
@@ -40,8 +41,8 @@ const STORY_PAD = (STORY_HEIGHT - HEIGHT) / 2;
 const APP_NAME = 'AI Fortune Stick';
 /** 二维码边长（px）。扫了回到游戏首页。 */
 const QR_SIZE = 104;
-const SERIF = '"Noto Serif SC", "Songti SC", "STSong", "SimSun", serif';
-const SERIF_EN = 'Charter, "Charter BT", Georgia, Palatino, "Noto Serif", "Iowan Old Style", "Times New Roman", serif';
+const SERIF = MINCHO_ZH;
+const SERIF_EN = MINCHO_EN;
 
 const PAPER = '#fffefa';
 const INK = '#17161a';
@@ -285,16 +286,19 @@ async function loadShareQr(stick: FortuneStick, language: Language): Promise<HTM
  * canvas 不会等 webfont：字体还没到就直接用后备字体画完了，于是第一次分享出来的图
  * 和页面上看到的不是同一副长相。所以先把要用到的字重加载出来再下笔。
  */
-async function waitForFonts(): Promise<void> {
+async function waitForFonts(sample: string): Promise<void> {
   if (!document.fonts) return;
+  // 中文和文楷是按字切片下载的：只 load 字体名会只拿到空格那一片，要把真的会画的字一起传进去
   try {
     await Promise.all([
-      document.fonts.load(`700 96px ${SERIF}`),
-      document.fonts.load(`500 52px ${SERIF}`),
-      document.fonts.load(`400 34px ${SERIF}`),
-      document.fonts.load(`700 56px ${SERIF_EN}`),
-      document.fonts.load(`500 40px ${SERIF_EN}`),
-      document.fonts.load(`400 30px ${SERIF_EN}`),
+      document.fonts.load(`700 96px ${SERIF}`, sample),
+      document.fonts.load(`500 52px ${SERIF}`, sample),
+      document.fonts.load(`400 34px ${SERIF}`, sample),
+      document.fonts.load(`700 56px ${SERIF_EN}`, sample),
+      document.fonts.load(`600 40px ${SERIF_EN}`, sample),
+      document.fonts.load(`500 40px ${SERIF_EN}`, sample),
+      document.fonts.load(`400 30px ${SERIF_EN}`, sample),
+      document.fonts.load(`500 36px ${HAND}`, sample),
     ]);
     await document.fonts.ready;
   } catch {
@@ -303,7 +307,6 @@ async function waitForFonts(): Promise<void> {
 }
 
 export async function renderShareImage(input: ShareInput): Promise<Blob> {
-  await waitForFonts();
   const story = input.format === 'story';
   const H = story ? STORY_HEIGHT : HEIGHT;
   /** 紙最低只能到這裡：限時動態底下那截留給回覆框 */
@@ -323,6 +326,9 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
   const level = LEVEL_LABEL[language][stick.level];
   const meaning = withoutDashes(input.interpretation?.meaning ?? text.meaning);
   const question = withoutDashes(input.question);
+  await waitForFonts(
+    [text.title, ...text.poem, meaning, question, level, text.luckyItem, 'OMIKUJI 御神签 第签 吉色 开运 扫码求一签 SCAN TO DRAW 0123456789'].join(''),
+  );
   const qrImage = await loadShareQr(stick, language);
   const center = WIDTH / 2;
   const paperW = 680;
@@ -352,7 +358,7 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
   // 问题写在绘马上，挂在纸的正上方、跟纸一样宽
   let paperTop: number;
   if (withQuestion) {
-    const qFont = `500 36px ${face}`;
+    const qFont = `500 36px ${HAND}`;
     g.font = qFont;
     const all = wrapFor(language)(g, question, paperW - 110);
     const lines = all.slice(0, 2);
@@ -413,7 +419,18 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
 
   // 等级大红印：三个字的等级小一号，英文两个词各一行
   const sealLines = en ? level.split(' ') : [level];
-  const sealFont = en ? `700 24px ${face}` : `800 ${[...level].length >= 3 ? 40 : 54}px ${SERIF}`;
+  // 英文最长那个词（FORTUNE、BLESSING）要留在内圈里：Shippori 比以前的字宽，放不下就缩字
+  let sealFont = en ? `700 24px ${face}` : `800 ${[...level].length >= 3 ? 40 : 54}px ${SERIF}`;
+  if (en) {
+    const fits = () => Math.max(...sealLines.map((line) => g.measureText(line).width)) <= (SEAL_R - 12) * 1.5;
+    let size = 24;
+    g.font = sealFont;
+    while (!fits() && size > 16) {
+      size -= 1;
+      sealFont = `700 ${size}px ${face}`;
+      g.font = sealFont;
+    }
+  }
   drawSeal(g, center, y + SEAL_BLOCK / 2, SEAL_R, sealLines, sealFont, en ? 30 : 54);
   y += SEAL_BLOCK;
 
@@ -466,8 +483,8 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
     drawHorizontal(
       g,
       [
-        { text: text.poem[0], font: `italic 500 32px ${face}`, color: INK, step: 44 },
-        { text: text.poem[1], font: `italic 500 32px ${face}`, color: INK, step: 44 },
+        { text: text.poem[0], font: `500 32px ${face}`, color: INK, step: 44 },
+        { text: text.poem[1], font: `500 32px ${face}`, color: INK, step: 44 },
         { text: soulMeaning, font: `400 26px ${face}`, color: INK_2, step: 36 },
       ],
       { centerX: center, top: y + 20, width: innerW - 70, height: BODY - 40, gap: 22, wrapText: wrapBalanced },
@@ -539,7 +556,7 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
     const qy = y + (FOOT - QR_SIZE - 26) / 2;
     g.drawImage(qrImage, qx, qy, QR_SIZE, QR_SIZE);
     g.fillStyle = INK_2;
-    g.font = `500 17px ${en ? face : ROUND}`;
+    g.font = `500 17px ${face}`;
     g.textAlign = 'center';
     g.fillText(en ? 'SCAN TO DRAW' : '扫码求一签', qx + QR_SIZE / 2, qy + QR_SIZE + 20);
   }

@@ -9,6 +9,106 @@
    减少动画有两条路径：系统的 prefers-reduced-motion，和页面上的开关（.shell.calm）。
    两条都要能关掉走纸、出纸和揭晓这三个动作。 */
 
+/* Shippori Mincho B1 只打包拉丁字母那一包（每个字重约 31 KB，SIL OFL，授权在 fonts/ 里）。
+   display: optional 跟 index.html 里 Google Fonts 那笔一样：没在第一时间到就整页用后备字体，不中途换字。 */
+@font-face {
+  font-family: 'Shippori Mincho B1';
+  font-style: normal;
+  font-weight: 400;
+  font-display: optional;
+  src: url('./fonts/shippori-mincho-b1-latin-400.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Shippori Mincho B1';
+  font-style: normal;
+  font-weight: 500;
+  font-display: optional;
+  src: url('./fonts/shippori-mincho-b1-latin-500.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Shippori Mincho B1';
+  font-style: normal;
+  font-weight: 600;
+  font-display: optional;
+  src: url('./fonts/shippori-mincho-b1-latin-600.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Shippori Mincho B1';
+  font-style: normal;
+  font-weight: 700;
+  font-display: optional;
+  src: url('./fonts/shippori-mincho-b1-latin-700.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Shippori Mincho B1';
+  font-style: normal;
+  font-weight: 800;
+  font-display: optional;
+  src: url('./fonts/shippori-mincho-b1-latin-800.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* 同一批字档再登记一次，只认字母、数字和 ASCII 标点：中文段落把它排在最前面，
+   夹在中文里的英文、数字照样是 Shippori，但 … · — “ ” 这些落到中文明朝，保持中文字形。
+   同一个网址，浏览器不会多下载一次。 */
+@font-face {
+  font-family: 'Shippori Mincho B1 Letters';
+  font-style: normal;
+  font-weight: 400;
+  font-display: optional;
+  src: url('./fonts/shippori-mincho-b1-latin-400.woff2') format('woff2');
+  unicode-range: U+0020-007E, U+00A0-00B6, U+00B8-00FF;
+}
+@font-face {
+  font-family: 'Shippori Mincho B1 Letters';
+  font-style: normal;
+  font-weight: 500;
+  font-display: optional;
+  src: url('./fonts/shippori-mincho-b1-latin-500.woff2') format('woff2');
+  unicode-range: U+0020-007E, U+00A0-00B6, U+00B8-00FF;
+}
+@font-face {
+  font-family: 'Shippori Mincho B1 Letters';
+  font-style: normal;
+  font-weight: 600;
+  font-display: optional;
+  src: url('./fonts/shippori-mincho-b1-latin-600.woff2') format('woff2');
+  unicode-range: U+0020-007E, U+00A0-00B6, U+00B8-00FF;
+}
+@font-face {
+  font-family: 'Shippori Mincho B1 Letters';
+  font-style: normal;
+  font-weight: 700;
+  font-display: optional;
+  src: url('./fonts/shippori-mincho-b1-latin-700.woff2') format('woff2');
+  unicode-range: U+0020-007E, U+00A0-00B6, U+00B8-00FF;
+}
+@font-face {
+  font-family: 'Shippori Mincho B1 Letters';
+  font-style: normal;
+  font-weight: 800;
+  font-display: optional;
+  src: url('./fonts/shippori-mincho-b1-latin-800.woff2') format('woff2');
+  unicode-range: U+0020-007E, U+00A0-00B6, U+00B8-00FF;
+}
+
+/* 中文段落换成中文那一份字体顺序：英文字母、数字仍是 Shippori，… · — “ ” 用中文字形。界面语言看 <html lang>，
+   签纸、续页这些「纸」看自己的 data-lang（一局的语言跟着问题，不跟着界面）。 */
+:root:lang(zh),
+[data-lang='zh'] {
+  --font-mincho: var(--font-mincho-zh);
+  font-family: var(--font-mincho);
+}
+
+[data-lang='en'] {
+  --font-mincho: var(--font-mincho-en);
+  font-family: var(--font-mincho);
+}
+
 :root {
   /* 繪馬與木札的木頭（3D 籤筒台與結果頁共用） */
   --wood-edge: #8f6a43;
@@ -50,18 +150,24 @@
 
   /* 四个等级的底色。tone 用在纸上的字，ground 用在整页的底。 */
   --tone: #5b5750;
-  /* 开头两家是「装了才有」的增强：GenRyuMin（源流明体）不在 index.html 那笔
-     Google Fonts 请求里 —— 一整包 CJK 明体几 MB，为它拖慢首屏不值得。本机装过的
-     人得到更好的明体，没装的照旧落到 Noto Serif SC，两边都不会坏。
-     ButTaiwan 的发行版本家族名不止一种写法，都列上，配不上的会被跳过。
-
-     Noto Serif TC 排在 SC 后面是有意的：这个站的正文是简体（<html lang="zh-CN">），
-     TC 抢在前面会让装了它的人拿到繁体地区字形。放在后面只当 Google Fonts
-     被挡时的兜底。 */
-  --serif: 'GenRyuMin2 TW', 'GenRyuMin TW', 'GenRyuMin', 'Noto Serif SC', 'Noto Serif TC', 'Songti SC', 'STSong', 'SimSun', serif;
-  --serif-en: Charter, 'Charter BT', Georgia, Palatino, 'Noto Serif', 'Iowan Old Style', 'Times New Roman', serif;
-  --sans: system-ui, -apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  --mono: ui-monospace, 'SF Mono', 'SFMono-Regular', Menlo, Consolas, monospace;
+  /* 字体只有三个角色，别处一律用这三个变量（tests/typography.test.ts 会挡住第四套字）：
+     · --font-mincho：明朝。全站默认 —— 品牌、签纸、解签、设定、按钮、提示。
+       英文是 Shippori Mincho B1（日本字厂的明朝，拉丁字母带和文味），中文是 Noto Serif SC。
+       Shippori 只自带拉丁字母那一包（下面的 @font-face，src/app/fonts/），缺简体字的
+       日文汉字一个都没进来 —— 所以英文排在前面也不会把中文画成日文字形，一条字体顺序
+       同时管中英文。中文段落（:lang(zh)、data-lang="zh"）换成 --font-mincho-zh：
+       打头的是只认字母数字的那份 Shippori，让夹在中文里的 … · — “ ” 用中文的字形。
+       源流明体（GenRyuMin）是「装了才有」的增强：一整包 CJK 明体几 MB，不进 Google Fonts
+       那笔请求，本机装过的人得到更好的明体，没装的照旧落到 Noto Serif SC。
+       Noto Serif TC 排在 SC 后面是有意的：正文是简体，TC 抢在前面会拿到繁体地区字形。
+     · --font-hand：手写。只用在木头上写的字 —— 绘马上的问题、例句木牌、「去求一签」小木札。
+       霞鹜文楷 TC（从日本教科书体 Klee One 改出来的），简繁和英文字母都齐。
+     · --font-mono：等宽。只留给打印机的 LCD、键帽、部署者设定页和 code。 */
+  --font-mincho-zh: 'Shippori Mincho B1 Letters', 'GenRyuMin2 TW', 'GenRyuMin TW', 'GenRyuMin', 'Noto Serif SC', 'Noto Serif TC', 'Songti SC', 'STSong', 'SimSun', serif;
+  --font-mincho-en: 'Shippori Mincho B1', 'GenRyuMin2 TW', 'GenRyuMin TW', 'GenRyuMin', 'Noto Serif SC', 'Noto Serif TC', 'Songti SC', 'STSong', 'SimSun', serif;
+  --font-mincho: var(--font-mincho-en);
+  --font-hand: 'LXGW WenKai TC', 'Kaiti SC', 'STKaiti', var(--font-mincho-zh);
+  --font-mono: ui-monospace, 'SF Mono', 'SFMono-Regular', Menlo, Consolas, monospace;
   color-scheme: light;
 }
 
@@ -93,7 +199,7 @@ html, body {
   background: var(--ground-wash), var(--ground);
   background-attachment: fixed;
   color: var(--on-ground);
-  font: 16px/1.75 var(--sans);
+  font: 16px/1.75 var(--font-mincho);
   -webkit-font-smoothing: antialiased;
   transition: background 0.9s ease;
 }
@@ -154,7 +260,7 @@ html, body {
 }
 
 .topbar-actions .lang-switch {
-  font-family: var(--mono);
+  font-family: var(--font-mincho);
   font-size: 11px;
   letter-spacing: 0.12em;
 }
@@ -174,7 +280,7 @@ html, body {
   gap: 7px;
   text-decoration: none;
   color: inherit;
-  font-family: var(--serif);
+  font-family: var(--font-mincho);
   font-weight: 700;
   font-size: 15px;
   letter-spacing: 0.16em;
@@ -220,7 +326,7 @@ html, body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font: 11px/1.4 var(--mono);
+  font: 11px/1.4 var(--font-mincho);
   letter-spacing: 0.05em;
   color: var(--on-ground-2);
   text-decoration: none;
@@ -311,7 +417,7 @@ html, body {
 
 .settings-title {
   margin: 0;
-  font-family: var(--serif);
+  font-family: var(--font-mincho);
   font-size: 17px;
   font-weight: 700;
   letter-spacing: 0.1em;
@@ -360,7 +466,7 @@ html, body {
 }
 
 .settings-label {
-  font-family: var(--serif);
+  font-family: var(--font-mincho);
   font-weight: 600;
   font-size: 14.5px;
   letter-spacing: 0.05em;
@@ -393,6 +499,7 @@ html, body {
 .segment-btn {
   border: 0;
   background: none;
+  font-family: inherit;
   padding: 5px 12px;
   border-radius: 6px;
   font-size: 12.5px;
@@ -458,7 +565,7 @@ html, body {
   padding: 10px 14px;
   text-align: center;
   color: var(--seal);
-  font-family: var(--serif);
+  font-family: var(--font-mincho);
   font-size: 12px;
   letter-spacing: 0.15em;
   opacity: 0.88;
@@ -556,7 +663,7 @@ html, body {
 }
 
 .text-action.strong {
-  font-family: var(--serif);
+  font-family: var(--font-mincho);
   font-weight: 700;
   opacity: 1;
   text-decoration: underline;
@@ -578,7 +685,7 @@ html, body {
 }
 
 .lead-action {
-  font-family: var(--serif);
+  font-family: var(--font-mincho);
   font-size: 21px;
   font-weight: 700;
   letter-spacing: 0.42em;
@@ -712,7 +819,7 @@ html, body {
 
 .stage-loading {
   margin: auto;
-  font: 13px/1 var(--mono);
+  font: 13px/1 var(--font-mincho);
   letter-spacing: 0.14em;
   color: var(--on-ground-2);
 }
@@ -723,7 +830,7 @@ html, body {
    晚 0.3 秒才淡出來：快的時候（有快取）東西先到了，這行字根本不會閃出來。 */
 .loading-line {
   margin: auto;
-  font: 400 15px/1.5 var(--serif);
+  font: 400 15px/1.5 var(--font-mincho);
   letter-spacing: 0.06em;
   color: var(--on-ground-2);
   text-align: center;
@@ -842,7 +949,7 @@ html, body {
 .ask-grow > .ask-ghost,
 .ask-grow::after {
   grid-area: 1 / 1;
-  font: 500 clamp(20px, 4.7vw, 30px) / 1.7 var(--serif);
+  font: 500 clamp(20px, 4.7vw, 30px) / 1.7 var(--font-hand);
   letter-spacing: 0.05em;
   text-align: center;
   word-break: break-word;
@@ -880,7 +987,7 @@ html, body {
 .ask-counter {
   margin: 10px 0 0;
   text-align: center;
-  font: 11px/1 var(--mono);
+  font: 11px/1 var(--font-mincho);
   letter-spacing: 0.12em;
   color: var(--on-ground-3);
 }
@@ -926,7 +1033,7 @@ html, body {
   background: linear-gradient(180deg, #fffbf2, #fbf1e2);
   box-shadow: 0 2px 5px rgba(120, 84, 46, 0.16), 0 0 0 1px rgba(255, 255, 255, 0.9) inset;
   color: var(--accent);
-  font-family: var(--serif);
+  font-family: var(--font-mincho);
   font-size: 11px;
   font-weight: 600;
   line-height: 1;
@@ -1030,7 +1137,7 @@ html, body {
 
 .scroll-head-label {
   display: inline-block;
-  font: 600 9.5px/1 var(--mono);
+  font: 600 9.5px/1 var(--font-mono);
   letter-spacing: 0.22em;
   color: var(--ink-3);
   margin-bottom: 5px;
@@ -1039,7 +1146,7 @@ html, body {
 
 .scroll-head-text {
   margin: 0;
-  font: 500 clamp(14.5px, 2.2vw, 17px) / 1.5 var(--serif);
+  font: 500 clamp(14.5px, 2.2vw, 17px) / 1.5 var(--font-mincho);
   letter-spacing: 0.04em;
   color: var(--ink);
   text-wrap: balance;
@@ -1047,7 +1154,7 @@ html, body {
 }
 
 .scroll-head[data-lang='en'] .scroll-head-text {
-  font-family: var(--serif-en);
+  font-family: var(--font-mincho);
   letter-spacing: 0.015em;
   line-height: 1.5;
   font-size: clamp(16px, 2.8vw, 18.5px);
@@ -1056,7 +1163,7 @@ html, body {
 .asked {
   margin: 0;
   text-align: center;
-  font: 500 clamp(16px, 3.8vw, 19px) / 1.7 var(--serif);
+  font: 500 clamp(16px, 3.8vw, 19px) / 1.7 var(--font-mincho);
   letter-spacing: 0.05em;
   color: var(--on-ground-2);
   max-width: 600px;
@@ -1158,7 +1265,7 @@ html, body {
   gap: 6px;
   padding: 0 7px;
   overflow: hidden;
-  font: 600 clamp(8px, 2.5vw, 10.5px) / 1 var(--mono);
+  font: 600 clamp(8px, 2.5vw, 10.5px) / 1 var(--font-mono);
   letter-spacing: 0.06em;
   color: var(--lcd-on);
   text-shadow: 0 0 6px rgba(121, 239, 170, 0.5);
@@ -1226,7 +1333,7 @@ html, body {
   min-width: 0;
   flex: 1;
   overflow: hidden;
-  font-family: var(--sans);
+  font-family: var(--font-mono);
   font-weight: 500;
   letter-spacing: 0.04em;
 }
@@ -1291,14 +1398,14 @@ html, body {
 }
 
 .print-key-cap {
-  font: 700 clamp(13px, 3.6vw, 17px) / 1 var(--serif);
+  font: 700 clamp(13px, 3.6vw, 17px) / 1 var(--font-mincho);
   letter-spacing: 0.08em;
   color: var(--accent);
 }
 
 /* 英文键帽是一个词，不是一个字：缩到无衬线小字，才装得进同一颗键。 */
 .print-key[data-lang='en'] .print-key-cap {
-  font: 700 clamp(10px, 2.4vw, 12px) / 1 var(--mono);
+  font: 700 clamp(10px, 2.4vw, 12px) / 1 var(--font-mono);
   letter-spacing: 0.14em;
 }
 
@@ -1571,7 +1678,7 @@ html, body {
 }
 
 .sheet-actions[data-lang='en'] .lead-action {
-  font-family: var(--serif-en);
+  font-family: var(--font-mincho);
   font-size: 14px;
   letter-spacing: 0.04em;
   text-indent: 0;
@@ -1597,7 +1704,7 @@ html, body {
 }
 
 .sheet-actions[data-lang='en'] .sheet-sub-actions .text-action {
-  font-family: var(--serif-en);
+  font-family: var(--font-mincho);
   font-size: 13.5px;
   letter-spacing: 0.02em;
 }
@@ -1682,7 +1789,7 @@ html, body {
   padding: 10px 12px 12px;
   background: var(--paper);
   color: var(--ink);
-  font-family: var(--serif);
+  font-family: var(--font-mincho);
   border: 2px solid var(--seal);
   box-shadow: 0 3px 8px rgba(38, 26, 18, 0.08), 0 16px 36px rgba(38, 26, 18, 0.16);
   overflow: hidden;
@@ -1891,19 +1998,20 @@ html, body {
 }
 
 /* 英文籤紙 */
-.slip[data-lang='en'] { font-family: var(--serif-en); }
-.slip[data-lang='en'] .slip-head-band { font-family: var(--serif-en); letter-spacing: 0.5em; text-indent: 0.5em; font-size: 12.5px; }
-.slip[data-lang='en'] .slip-no { font-family: var(--serif-en); letter-spacing: 0.16em; font-size: 11px; }
+.slip[data-lang='en'] { font-family: var(--font-mincho); }
+.slip[data-lang='en'] .slip-head-band { font-family: var(--font-mincho); letter-spacing: 0.5em; text-indent: 0.5em; font-size: 12.5px; }
+.slip[data-lang='en'] .slip-no { font-family: var(--font-mincho); letter-spacing: 0.16em; font-size: 11px; }
 /* 英文等級是一個長字（MIDDLING 在 12.5px 時 81px，剛好等於內圈直徑，字貼著圈）：
    英文印大一號、字收小，max-width 讓兩個字的等級（GREAT FORTUNE）折成兩行，四周留約 12px */
 .slip[data-lang='en'] .slip-level-box { width: 104px; height: 104px; }
 /* 英文等級印：選擇器故意多一層 .slip-level-box —— 窄螢幕那段 media query 裡的
    `.slip-level-box.long .slip-level { font-size: 19px }` 權重一樣又寫在後面，
    會把英文蓋成 19px，單字的 MIDDLING 折不了行就撐出印外（手機上實測）。 */
-.slip[data-lang='en'] .slip-level-box .slip-level { font-family: var(--serif-en); font-size: 12.5px; letter-spacing: 0.05em; text-indent: 0.05em; line-height: 1.3; max-width: 82px; }
-.slip[data-lang='en'] .slip-title { font-family: var(--serif-en); letter-spacing: 0.05em; text-indent: 0; font-size: 18px; }
-.slip[data-lang='en'] .slip-poem { font-family: var(--serif-en); font-size: 15px; font-style: italic; letter-spacing: 0.015em; line-height: 1.5; text-wrap: balance; }
-.slip[data-lang='en'] .slip-meaning { font-family: var(--serif-en); font-size: 13.5px; letter-spacing: 0.01em; text-wrap: balance; margin-top: 6px; }
+.slip[data-lang='en'] .slip-level-box .slip-level { font-family: var(--font-mincho); font-size: 12.5px; letter-spacing: 0.05em; text-indent: 0.05em; line-height: 1.3; max-width: 82px; }
+.slip[data-lang='en'] .slip-title { font-family: var(--font-mincho); letter-spacing: 0.05em; text-indent: 0; font-size: 18px; }
+/* Shippori 没有斜体：英文签诗改成正体、细一号，行距和字距放宽一点，跟下面灰色的签意照样分得开 */
+.slip[data-lang='en'] .slip-poem { font-family: var(--font-mincho); font-size: 15px; font-weight: 400; letter-spacing: 0.03em; line-height: 1.6; text-wrap: balance; }
+.slip[data-lang='en'] .slip-meaning { font-family: var(--font-mincho); font-size: 13.5px; letter-spacing: 0.01em; text-wrap: balance; margin-top: 6px; }
 .slip[data-lang='en'] .slip-lucky { font-size: 11px; }
 
 /* 默认落印基准 */
@@ -2033,13 +2141,13 @@ html, body {
 
 .sheet-block h3 {
   margin: 0 0 6px;
-  font: 600 11px/1 var(--mono);
+  font: 600 11px/1 var(--font-mincho);
   letter-spacing: 0.16em;
   color: var(--tone);
 }
 
 .sheet[data-lang='en'] .sheet-block h3 {
-  font: 600 10.5px/1.3 var(--sans);
+  font: 600 10.5px/1.3 var(--font-mincho);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -2049,14 +2157,14 @@ html, body {
 }
 
 .sheet[data-lang='en'] .sheet-lead {
-  font-family: var(--serif-en);
+  font-family: var(--font-mincho);
   font-size: 15.5px !important;
   line-height: 1.65 !important;
   letter-spacing: 0.01em;
 }
 
 .sheet[data-lang='en'] .sheet-block p {
-  font-family: var(--serif-en);
+  font-family: var(--font-mincho);
   font-size: 13.5px;
   line-height: 1.66;
   letter-spacing: 0.012em;
@@ -2071,7 +2179,7 @@ html, body {
 }
 
 .sheet-lead {
-  font-family: var(--serif);
+  font-family: var(--font-mincho);
   font-size: 15.5px !important;
   line-height: 1.65 !important;
   letter-spacing: 0.025em;
@@ -2195,7 +2303,7 @@ html, body {
 
 .interpreting-status {
   margin: 0;
-  font: 600 12.5px/1 var(--mono);
+  font: 600 12.5px/1 var(--font-mincho);
   letter-spacing: 0.18em;
   color: var(--tone);
 }
@@ -2246,7 +2354,7 @@ html, body {
 
 .working {
   margin: 0;
-  font: 13px/1.6 var(--mono);
+  font: 13px/1.6 var(--font-mincho);
   letter-spacing: 0.12em;
   color: var(--ink-2);
 }
@@ -2333,7 +2441,7 @@ html, body {
   justify-content: space-between;
   align-items: baseline;
   margin-bottom: 8px;
-  font-family: var(--serif);
+  font-family: var(--font-mincho);
   letter-spacing: 0.12em;
 }
 
@@ -2358,7 +2466,7 @@ html, body {
   border: 0;
   background: var(--paper-2);
   padding: 10px 12px;
-  font: 13px/1.6 var(--sans);
+  font: 13px/1.6 var(--font-mincho);
   color: var(--ink-2);
   resize: vertical;
   animation: ink-section-in 0.32s ease both;
@@ -2413,7 +2521,7 @@ html, body {
   border: 1px solid var(--hair);
   border-radius: 4px;
   padding: 6px 10px;
-  font: 13px/1.4 var(--sans);
+  font: 13px/1.4 var(--font-mincho);
   color: var(--ink);
   cursor: pointer;
   text-align: left;
@@ -2431,7 +2539,7 @@ html, body {
 
 .ticket-idx {
   flex: none;
-  font: 700 11px/1 var(--mono);
+  font: 700 11px/1 var(--font-mincho);
   color: var(--tone);
   letter-spacing: 0.08em;
   background: color-mix(in srgb, var(--tone) 15%, transparent);
@@ -2452,7 +2560,7 @@ html, body {
   flex: none;
   font-size: 11px;
   color: var(--ink-3);
-  font-family: var(--mono);
+  font-family: var(--font-mincho);
 }
 
 .followup-round-content {
@@ -2476,7 +2584,7 @@ html, body {
 
 .bubble-role {
   display: inline-block;
-  font: 9px/1 var(--mono);
+  font: 9px/1 var(--font-mincho);
   letter-spacing: 0.16em;
   margin-right: 9px;
   vertical-align: 2px;
@@ -2530,7 +2638,7 @@ html, body {
   background: transparent;
   outline: none;
   padding: 4px 0;
-  font: 15px/1.55 var(--sans);
+  font: 15px/1.55 var(--font-mincho);
   color: var(--ink);
   caret-color: var(--accent);
   resize: none;
@@ -2561,7 +2669,7 @@ html, body {
 .history h2,
 .panel h2 {
   margin: 0 0 4px;
-  font-family: var(--serif);
+  font-family: var(--font-mincho);
   font-size: 19px;
   font-weight: 700;
   letter-spacing: 0.2em;
@@ -2570,7 +2678,6 @@ html, body {
 .history {
   --seal: #c0321f;
   --seal-deep: #9e2517;
-  --round: "Yuanti SC", "Yuanti TC", "Hiragino Maru Gothic ProN", "PingFang SC", sans-serif;
   /* 鳥居貫的下緣在 130px；木牌上緣落在 156px，中間是 26px 的紅繩 —— 跟求籤頁的繪馬掛在同一個位置 */
   padding-top: 0;
 }
@@ -2640,7 +2747,7 @@ html, body {
 
 .history-plaque-caption {
   display: block;
-  font: 600 10.5px/1.4 var(--round);
+  font: 600 10.5px/1.4 var(--font-mincho);
   letter-spacing: 0.3em;
   text-indent: 0.3em;
   color: var(--accent);
@@ -2656,7 +2763,7 @@ html, body {
 }
 
 html:lang(en) .history .history-plaque h2 {
-  font-family: var(--serif-en);
+  font-family: var(--font-mincho);
   letter-spacing: 0.08em;
   text-indent: 0.08em;
 }
@@ -2686,13 +2793,13 @@ html:lang(en) .history .history-plaque h2 {
 
 .history-head .muted.small {
   margin: 0;
-  font-family: var(--round);
+  font-family: var(--font-mincho);
   font-size: 12px;
   letter-spacing: 0.06em;
 }
 
 .history-head .text-action {
-  font-family: var(--round);
+  font-family: var(--font-mincho);
   font-size: 13px;
 }
 
@@ -2702,7 +2809,7 @@ html:lang(en) .history .history-plaque h2 {
 }
 
 .history-empty .muted {
-  font-family: var(--round);
+  font-family: var(--font-mincho);
   font-size: 14px;
 }
 
@@ -2716,7 +2823,7 @@ html:lang(en) .history .history-plaque h2 {
   border-radius: 4px;
   background: linear-gradient(180deg, var(--wood-hi), var(--wood));
   box-shadow: inset 0 0 0 1px var(--wood-edge), 0 2px 4px rgba(92, 62, 32, 0.18);
-  font-family: var(--serif);
+  font-family: var(--font-hand);
   color: var(--wood-ink);
   text-decoration: none;
   opacity: 1;
@@ -2828,7 +2935,7 @@ html:lang(en) .history .history-plaque h2 {
   padding: 10px 0;
   background: linear-gradient(180deg, var(--seal), var(--seal-deep));
   color: #fbf3e6;
-  font-family: var(--serif);
+  font-family: var(--font-mincho);
   font-weight: 700;
   font-size: 15px;
   writing-mode: vertical-rl;
@@ -2840,7 +2947,7 @@ html:lang(en) .history .history-plaque h2 {
   writing-mode: horizontal-tb;
   flex-direction: column;
   gap: 3px;
-  font-family: var(--serif-en);
+  font-family: var(--font-mincho);
   font-size: 19px;
   letter-spacing: 0;
 }
@@ -2869,7 +2976,7 @@ html:lang(en) .history .history-plaque h2 {
   border-radius: 999px;
   background: var(--tone-bg);
   border: 0.5px solid color-mix(in srgb, var(--tone) 32%, transparent);
-  font: 600 12px/1.6 var(--round);
+  font: 600 12px/1.6 var(--font-mincho);
   letter-spacing: 0.1em;
   color: var(--tone);
   white-space: nowrap;
@@ -2878,7 +2985,7 @@ html:lang(en) .history .history-plaque h2 {
 .slip-mini[data-lang='en'] .slip-mini-level { font-size: 10.5px; letter-spacing: 0.06em; }
 
 .slip-mini-title {
-  font-family: var(--serif);
+  font-family: var(--font-mincho);
   font-size: 15px;
   font-weight: 600;
   letter-spacing: 0.24em;
@@ -2886,9 +2993,8 @@ html:lang(en) .history .history-plaque h2 {
 }
 
 .slip-mini[data-lang='en'] .slip-mini-title {
-  font-family: var(--serif-en);
+  font-family: var(--font-mincho);
   font-weight: 500;
-  font-style: italic;
   letter-spacing: 0.02em;
 }
 
@@ -2905,7 +3011,7 @@ html:lang(en) .history .history-plaque h2 {
 .history-meta .small {
   grid-area: time;
   padding-bottom: 12px;
-  font: 11px/1.6 var(--round);
+  font: 11px/1.6 var(--font-mincho);
   letter-spacing: 0.04em;
   color: var(--ink-3);
 }
@@ -2916,7 +3022,7 @@ html:lang(en) .history .history-plaque h2 {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font: 600 12px/1 var(--round);
+  font: 600 12px/1 var(--font-mincho);
   letter-spacing: 0.1em;
   color: var(--seal);
   opacity: 0.8;
@@ -2955,15 +3061,15 @@ html:lang(en) .history .history-plaque h2 {
 }
 
 .history-body p { font-size: 14.5px; line-height: 1.8; color: var(--ink-2); }
-.history-body .lead { font-family: var(--serif); font-size: 16px; color: var(--ink); }
-.history-body h4 { margin: 14px 0 4px; font: 600 11px/1 var(--round); letter-spacing: 0.18em; color: var(--tone); }
+.history-body .lead { font-family: var(--font-mincho); font-size: 16px; color: var(--ink); }
+.history-body h4 { margin: 14px 0 4px; font: 600 11px/1 var(--font-mincho); letter-spacing: 0.18em; color: var(--tone); }
 
 .history-label {
   display: inline-flex;
   align-items: center;
   gap: 5px;
   margin-right: 2px;
-  font-family: var(--round);
+  font-family: var(--font-mincho);
   font-weight: 600;
   color: var(--tone);
 }
@@ -3030,7 +3136,7 @@ html:lang(en) .history .history-plaque h2 {
 
 .privacy-badge {
   display: inline-block;
-  font: 600 11px/1.2 var(--mono);
+  font: 600 11px/1.2 var(--font-mincho);
   letter-spacing: 0.18em;
   color: var(--seal, #c0321f);
   background: rgba(192, 50, 31, 0.08);
@@ -3042,7 +3148,7 @@ html:lang(en) .history .history-plaque h2 {
 }
 
 .panel.privacy h2 {
-  font-family: var(--serif);
+  font-family: var(--font-mincho);
   font-size: 18px;
   font-weight: 700;
   letter-spacing: 0.18em;
@@ -3072,7 +3178,7 @@ html:lang(en) .history .history-plaque h2 {
 }
 
 .panel.privacy .privacy-section h3 {
-  font-family: var(--serif);
+  font-family: var(--font-mincho);
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -3212,7 +3318,7 @@ html:lang(en) .history .history-plaque h2 {
 
 .panel:not(.privacy) h3 {
   margin: 22px 0 8px;
-  font: 600 11px/1 var(--mono);
+  font: 600 11px/1 var(--font-mono);
   letter-spacing: 0.18em;
   color: var(--on-ground-2);
 }
@@ -3236,7 +3342,7 @@ html:lang(en) .history .history-plaque h2 {
   display: flex;
   align-items: baseline;
   gap: 10px;
-  font-family: var(--serif);
+  font-family: var(--font-mincho);
   font-weight: 700;
   letter-spacing: 0.08em;
 }
@@ -3244,7 +3350,7 @@ html:lang(en) .history .history-plaque h2 {
 .agent-card-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 
 .badge {
-  font: 9.5px/1 var(--mono);
+  font: 9.5px/1 var(--font-mono);
   letter-spacing: 0.14em;
 }
 
@@ -3266,7 +3372,7 @@ html:lang(en) .history .history-plaque h2 {
 }
 
 .connect-code strong {
-  font: 700 22px/1 var(--mono);
+  font: 700 22px/1 var(--font-mono);
   letter-spacing: 0.3em;
 }
 
@@ -3290,7 +3396,7 @@ html:lang(en) .history .history-plaque h2 {
 .notice.error { color: var(--accent); }
 
 code {
-  font: 0.9em var(--mono);
+  font: 0.9em var(--font-mono);
   background: rgba(127, 127, 127, 0.18);
   padding: 1px 5px;
 }
@@ -3316,7 +3422,7 @@ code {
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
 }
 
-.dialog h2 { margin: 0 0 8px; font-family: var(--serif); letter-spacing: 0.14em; font-size: 18px; }
+.dialog h2 { margin: 0 0 8px; font-family: var(--font-mincho); letter-spacing: 0.14em; font-size: 18px; }
 .dialog p { font-size: 13.5px; color: var(--ink-3); }
 
 .dialog input {
@@ -3326,7 +3432,7 @@ code {
   border: 0;
   border-bottom: 1px solid var(--hair);
   background: transparent;
-  font: 16px var(--mono);
+  font: 16px var(--font-mono);
   letter-spacing: 0.1em;
   color: var(--ink);
   outline: none;
@@ -3511,7 +3617,7 @@ code {
   background: transparent;
   border: none;
   color: var(--on-ground-2);
-  font: 500 13px/1.2 var(--serif);
+  font: 500 13px/1.2 var(--font-mincho);
   padding: 6px 14px;
   border-radius: 16px;
   cursor: pointer;
@@ -3680,7 +3786,7 @@ code {
   background: linear-gradient(180deg, #b82829 0%, #7e1719 100%);
   color: #fff9e6;
   border: 1px solid #ffd060;
-  font: 700 9.5px/1 "Kaiti SC", "STKaiti", var(--serif);
+  font: 700 9.5px/1 var(--font-hand);
   padding: 2.5px 5.5px;
   border-radius: 4px;
   white-space: nowrap;
@@ -3760,7 +3866,7 @@ code {
 
 .chosen-stick-no {
   writing-mode: vertical-rl;
-  font-family: "Kaiti SC", "STKaiti", "BiauKai", var(--serif);
+  font-family: var(--font-hand);
   font-size: 8.5px;
   font-weight: 800;
   letter-spacing: 0.12em;
@@ -3895,7 +4001,7 @@ code {
 }
 
 .gold-char {
-  font-family: "Kaiti SC", "STKaiti", "BiauKai", "DFKai-SB", "KaiTi", var(--serif);
+  font-family: var(--font-hand);
   font-size: 42px;
   font-weight: 800;
   line-height: 1.05;
@@ -3935,7 +4041,7 @@ code {
   right: -8px;
   background: #941c1e;
   color: #fffaf0;
-  font: 700 8.5px/1 "Kaiti SC", "STKaiti", "BiauKai", var(--serif);
+  font: 700 8.5px/1 var(--font-hand);
   padding: 2.5px 3.5px;
   border-radius: 1.5px;
   box-shadow: 0 1.5px 3px rgba(0, 0, 0, 0.6);
@@ -3979,7 +4085,7 @@ code {
 
 .cylinder-hint {
   margin: 0;
-  font-family: var(--serif);
+  font-family: var(--font-mincho);
   font-size: 13.5px;
   color: var(--on-ground-2);
   letter-spacing: 0.1em;
@@ -4012,7 +4118,7 @@ code {
   border: 1.5px solid #e0b04c;
   padding: 10px 24px;
   border-radius: 24px;
-  font: 700 15px/1.2 var(--serif);
+  font: 700 15px/1.2 var(--font-mincho);
   letter-spacing: 0.18em;
   text-indent: 0.18em;
   cursor: pointer;
@@ -4063,7 +4169,7 @@ code {
   color: var(--on-ground);
   padding: 9px 18px;
   border-radius: 22px;
-  font: 600 13.5px/1.2 var(--serif);
+  font: 600 13.5px/1.2 var(--font-mincho);
   letter-spacing: 0.1em;
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15);
@@ -4092,7 +4198,7 @@ code {
   color: #fff8e8;
   padding: 9.5px 22px;
   border-radius: 22px;
-  font: 700 14px/1.2 var(--serif);
+  font: 700 14px/1.2 var(--font-mincho);
   letter-spacing: 0.15em;
   cursor: pointer;
   box-shadow:
@@ -4142,7 +4248,7 @@ code {
   border: 1px solid color-mix(in srgb, var(--rule) 50%, transparent);
   padding: 8px 20px;
   border-radius: 20px;
-  font-family: var(--serif);
+  font-family: var(--font-mincho);
   font-size: 13px;
   color: var(--on-ground);
   letter-spacing: 0.08em;
@@ -4218,7 +4324,7 @@ code {
   color: var(--accent);
   padding: 6px 14px;
   border-radius: 16px;
-  font-family: var(--serif);
+  font-family: var(--font-mincho);
   font-size: 13px;
   letter-spacing: 0.05em;
   animation: shake-alert 0.3s ease-in-out;
@@ -4227,7 +4333,7 @@ code {
 .fault-badge {
   background: var(--accent);
   color: #fff;
-  font-family: var(--mono);
+  font-family: var(--font-mincho);
   font-size: 10px;
   padding: 1px 5px;
   border-radius: 3px;
@@ -4299,7 +4405,7 @@ code {
 .roll-hint {
   margin: 0;
   color: var(--on-ground-2);
-  font: 400 14px/1.5 var(--serif);
+  font: 400 14px/1.5 var(--font-mincho);
 }
 
 .roll-hint.active { color: var(--on-ground); }
@@ -4320,7 +4426,7 @@ code {
   background: color-mix(in srgb, var(--ground) 82%, #fff);
   border: 1px solid color-mix(in srgb, var(--rule) 60%, transparent);
   color: var(--on-ground);
-  font: 400 13px/1.5 var(--serif);
+  font: 400 13px/1.5 var(--font-mincho);
   box-shadow: 0 1px 4px rgba(60, 40, 20, 0.08);
   letter-spacing: 0.04em;
   transition: all 0.25s ease;
@@ -4345,7 +4451,7 @@ code {
   border-radius: 16px;
   background: color-mix(in srgb, #78191a 22%, transparent);
   border: 1px solid color-mix(in srgb, #78191a 48%, transparent);
-  font: 400 13px/1.4 var(--serif);
+  font: 400 13px/1.4 var(--font-mincho);
   color: var(--on-ground);
 }
 
@@ -4354,7 +4460,7 @@ code {
   padding: 48px 24px;
   text-align: center;
   color: var(--on-ground-2);
-  font: 400 14px/1.6 var(--serif);
+  font: 400 14px/1.6 var(--font-mincho);
 }
 
 @media (max-width: 640px) {
@@ -4585,7 +4691,7 @@ html:lang(en) .shell:has(.cyl3d-stage) .ask-zone {
   display: block;
   margin: 0 0 2px;
   text-align: center;
-  font: 600 10.5px/1.4 "Yuanti SC", "Yuanti TC", "Hiragino Maru Gothic ProN", "PingFang SC", sans-serif;
+  font: 600 10.5px/1.4 var(--font-mincho);
   letter-spacing: 0.3em;
   color: var(--accent);
 }
@@ -4610,6 +4716,7 @@ html:lang(en) .shell:has(.cyl3d-stage) .ask-zone {
   text-wrap: balance;
   color: var(--wood-ink);
   font-size: clamp(16px, 3.2vw, 19px);
+  font-family: var(--font-hand);
 }
 
 /* 求籤頁上，攪夠了那一刻輸入框換成印好的字：字級、行高跟輸入框一樣，繪馬才不會在手還按著籤的時候
@@ -4637,7 +4744,7 @@ html:lang(en) .shell:has(.cyl3d-stage) .ask-zone {
   border-radius: 4px;
   background: linear-gradient(180deg, var(--wood-hi), var(--wood));
   box-shadow: inset 0 0 0 1px var(--wood-edge), 0 2px 4px rgba(92, 62, 32, 0.18);
-  font-family: var(--serif);
+  font-family: var(--font-hand);
   font-size: 13px;
   line-height: 1.5;
   letter-spacing: 0.03em;
@@ -5050,13 +5157,13 @@ html { overflow-x: clip; }
   background: linear-gradient(180deg, var(--seal), var(--seal-deep));
   color: #fbf3e6;
   text-align: center;
-  font: 700 13px/1.2 var(--serif);
+  font: 700 13px/1.2 var(--font-mincho);
   letter-spacing: 0.6em;
   text-indent: 0.6em;
 }
 
 .result .sheet[data-lang='en'] .sheet-band {
-  font-family: var(--serif-en);
+  font-family: var(--font-mincho);
   letter-spacing: 0.4em;
   text-indent: 0.4em;
 }
@@ -5067,7 +5174,7 @@ html { overflow-x: clip; }
   align-items: center;
   gap: 6px;
   margin: 0 0 6px;
-  font: 700 11.5px/1.3 "Yuanti SC", "Yuanti TC", "Hiragino Maru Gothic ProN", "PingFang SC", sans-serif;
+  font: 700 11.5px/1.3 var(--font-mincho);
   letter-spacing: 0.2em;
   text-transform: none;
   color: var(--seal);
@@ -5153,7 +5260,7 @@ html { overflow-x: clip; }
   background: linear-gradient(180deg, var(--wood-hi), var(--wood));
   box-shadow: inset 0 0 0 1px var(--wood-edge), 0 2px 4px rgba(92, 62, 32, 0.16);
   color: var(--wood-ink);
-  font-family: var(--serif);
+  font-family: var(--font-mincho);
   font-size: 13.5px;
   letter-spacing: 0.08em;
   opacity: 0.95;
@@ -5181,7 +5288,7 @@ html { overflow-x: clip; }
   background: linear-gradient(180deg, #cc412b, #a52a1b);
   box-shadow: inset 0 0 0 1px rgba(255, 236, 214, 0.25), 0 3px 7px rgba(120, 30, 20, 0.28);
   color: #fbf3e6;
-  font-family: var(--serif);
+  font-family: var(--font-mincho);
   font-weight: 700;
   letter-spacing: 0.16em;
   opacity: 1;
@@ -5205,7 +5312,7 @@ html { overflow-x: clip; }
 
 /* 分享／追問的小標跟續頁同一種 */
 .result .share-head > :first-child {
-  font: 700 13px/1.3 "Yuanti SC", "Yuanti TC", "Hiragino Maru Gothic ProN", "PingFang SC", sans-serif;
+  font: 700 13px/1.3 var(--font-mincho);
   letter-spacing: 0.2em;
   color: var(--seal);
 }
@@ -5460,7 +5567,7 @@ html { overflow-x: clip; }
   border-radius: 3px;
   background: rgba(251, 243, 230, 0.12);
   color: #fbf3e6;
-  font: 600 11.5px/1.5 "Yuanti SC", "Yuanti TC", "Hiragino Maru Gothic ProN", "PingFang SC", sans-serif;
+  font: 600 11.5px/1.5 var(--font-mincho);
   letter-spacing: 0.12em;
   text-indent: 0;
   cursor: pointer;

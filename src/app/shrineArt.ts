@@ -8,6 +8,7 @@
  */
 
 import { createPetals, petalAt } from '../shared/sakura';
+import { MINCHO_EN } from './fonts';
 
 export const SEAL = '#c0321f';
 export const SEAL_DEEP = '#9e2517';
@@ -16,7 +17,6 @@ export const WOOD_EDGE = '#8f6a43';
 export const WOOD = '#ecd9b8';
 export const WOOD_HI = '#f5e8cf';
 export const WOOD_INK = '#3b2a1e';
-export const ROUND = '"Yuanti SC", "Yuanti TC", "Hiragino Maru Gothic ProN", "PingFang SC", sans-serif';
 
 /*
  * ── 鳥居 ── 頁面上的尺寸（px，從頁面頂端量）；分享圖整組乘上一個倍率。
@@ -405,7 +405,7 @@ export function drawEma(
 
   g.textAlign = 'center';
   g.fillStyle = SEAL;
-  g.font = `700 20px ${ROUND}`;
+  g.font = `700 20px ${MINCHO_EN}`;
   spacedText(g, caption, cx, top + 44, 6);
 
   g.fillStyle = WOOD_INK;
