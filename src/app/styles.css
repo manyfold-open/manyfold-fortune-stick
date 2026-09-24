@@ -670,93 +670,39 @@ html, body {
   color: var(--on-ground-2);
 }
 
-/* ── 神社載入中畫面（桌面與手機通用） ── */
-.loading-shrine {
+/* ── 載入中的一行字 ──
+   以前一打開是一整頁鳥居 emoji 圓章加「Preparing the shrine…」，擋著整個遊戲等 /api/state。
+   現在頁面直接出來，只有真的還空著的那一塊（籤筒、上一支籤、設定頁）放一行白話的字。
+   晚 0.3 秒才淡出來：快的時候（有快取）東西先到了，這行字根本不會閃出來。 */
+.loading-line {
   margin: auto;
+  font: 400 15px/1.5 var(--serif);
+  letter-spacing: 0.06em;
+  color: var(--on-ground-2);
+  text-align: center;
+  opacity: 0;
+  animation: loading-line-in 0.4s ease 0.3s forwards, loading-line-breathe 2.4s ease-in-out 0.7s infinite alternate;
+}
+
+@keyframes loading-line-in {
+  to { opacity: 1; }
+}
+
+@keyframes loading-line-breathe {
+  from { opacity: 1; }
+  to { opacity: 0.55; }
+}
+
+.shell.calm .loading-line {
+  animation: loading-line-in 0.4s ease 0.3s forwards;
+}
+
+/* 籤筒還沒到：字放在籤筒那塊空位的正中間 */
+.cyl3d-loading .cyl3d-canvas-wrapper {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  position: relative;
-  z-index: 10;
-  animation: loading-fade-in 0.4s ease both;
-}
-
-@keyframes loading-fade-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.loading-shrine-emblem {
-  position: relative;
-  width: 76px;
-  height: 76px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: radial-gradient(circle at 40% 35%, #fffdf8 0%, #fbf3e6 65%, #f2e2cb 100%);
-  border: 1.5px solid rgba(192, 50, 31, 0.4);
-  box-shadow:
-    0 8px 24px rgba(138, 42, 30, 0.14),
-    0 2px 6px rgba(138, 42, 30, 0.08),
-    inset 0 0 14px rgba(255, 255, 255, 0.9);
-  animation: shrine-pulse 2.8s ease-in-out infinite alternate;
-}
-
-@keyframes shrine-pulse {
-  0% {
-    transform: translateY(0) scale(1);
-    box-shadow: 0 6px 18px rgba(138, 42, 30, 0.1), inset 0 0 10px rgba(255, 255, 255, 0.8);
-  }
-  100% {
-    transform: translateY(-4px) scale(1.05);
-    box-shadow: 0 14px 28px rgba(138, 42, 30, 0.2), inset 0 0 16px rgba(255, 255, 255, 0.95);
-  }
-}
-
-.loading-shrine-torii {
-  font-size: 34px;
-  line-height: 1;
-  filter: drop-shadow(0 2px 4px rgba(138, 42, 30, 0.22));
-}
-
-.loading-shrine-sakura {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  font-size: 18px;
-  line-height: 1;
-  filter: drop-shadow(0 1px 3px rgba(200, 65, 44, 0.3));
-  animation: sakura-orbit 3.6s ease-in-out infinite alternate;
-}
-
-@keyframes sakura-orbit {
-  0% { transform: rotate(-10deg) scale(0.9); }
-  100% { transform: rotate(18deg) scale(1.15) translate(2px, -2px); }
-}
-
-.loading-shrine-text {
-  margin: 0;
-  font-family: var(--serif);
-  font-size: 15.5px;
-  letter-spacing: 0.14em;
-  color: #8b3224;
-  font-weight: 500;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.85);
-  animation: text-breathe 2.4s ease-in-out infinite alternate;
-}
-
-@keyframes text-breathe {
-  0% { opacity: 0.8; }
-  100% { opacity: 1; }
-}
-
-.shell.calm .loading-shrine-emblem,
-.shell.calm .loading-shrine-sakura,
-.shell.calm .loading-shrine-text {
-  animation: none !important;
+  cursor: default;
 }
 
 /* ── 提问：只有字，没有框 ── */

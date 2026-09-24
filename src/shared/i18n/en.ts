@@ -35,10 +35,11 @@ export const en = {
   footerNote: 'The stick offers a perspective. What you do next is up to you.',
   langSwitch: '中文',
   langSwitchLabel: '切换到简体中文',
-  loading: 'Preparing the shrine…',
+  loading: 'Loading…',
+  loadingSticks: 'Loading the sticks…',
   loadFailed: 'Cannot reach the service: {detail}',
   retry: 'Try again',
-  restoring: 'Fetching your sacred slip…',
+  restoring: 'Loading your last slip…',
   documentTitle: 'AI Fortune Stick',
   documentDescription:
     'AI Fortune Stick: write down what is on your mind, stir the fortune cylinder, and receive one fixed slip to think with.',

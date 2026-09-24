@@ -46,11 +46,20 @@ import StickFace from './StickFace';
 const cylinder3d = import('./FortuneCylinder3D');
 const FortuneCylinder3D = lazy(() => cylinder3d);
 
-/** 籤筒還沒到時佔住同一塊版面（同一組 class），它到了不會把頁面推動 */
+/**
+ * 籤筒還沒到時佔住同一塊版面（同一組 class），它到了不會把頁面推動。
+ * 空著的那一塊正中間說一聲「籤筒載入中」：頂欄、鳥居、繪馬都已經在了，只有這裡還空著，
+ * 不說的話看起來像壞掉。字晚 0.3 秒才淡出來（styles.css .loading-line），有快取時籤筒一下就到，不會閃一下。
+ */
 function CylinderPlaceholder() {
+  const t = useT();
   return (
-    <div className="roll-stage cyl3d-stage cyl3d-loading" aria-hidden>
-      <div className="cyl3d-canvas-wrapper" />
+    <div className="roll-stage cyl3d-stage cyl3d-loading">
+      <div className="cyl3d-canvas-wrapper">
+        <p className="loading-line" role="status">
+          {t('loadingSticks')}
+        </p>
+      </div>
       <div className="roll-action-area">
         <div className="cyl3d-status">
           <p className="roll-hint" />
@@ -85,7 +94,8 @@ const isVessel = (v: string | null): v is Vessel =>
 
 export default function FortuneGame(props: {
   prefs: Prefs;
-  interpreterReady: boolean;
+  /** 解籤的 agent 接上了沒有；null 是 /api/state 還沒回來 —— 先不預解籤，也先不喊沒接上 */
+  interpreterReady: boolean | null;
   /** 左上角 logo 在這一頁被點的次數（App 數）。每多一下就回到起點，見下面的 effect。 */
   homeTaps?: number;
 }) {
@@ -457,13 +467,9 @@ export default function FortuneGame(props: {
   if (restoring) {
     return (
       <section className="stage">
-        <div className="loading-shrine" role="status" aria-live="polite">
-          <div className="loading-shrine-emblem" aria-hidden="true">
-            <span className="loading-shrine-torii">⛩️</span>
-            <span className="loading-shrine-sakura">🌸</span>
-          </div>
-          <p className="loading-shrine-text">{t('restoring')}</p>
-        </div>
+        <p className="loading-line" role="status">
+          {t('restoring')}
+        </p>
       </section>
     );
   }
@@ -490,7 +496,7 @@ export default function FortuneGame(props: {
     : printing
       ? { code: 'PRINT', message: t('lcdPrinting'), alert: false }
       : typed === 0
-        ? props.interpreterReady
+        ? props.interpreterReady !== false
           ? { code: 'READY', message: t('lcdWriteSomething'), alert: false }
           : { code: 'WARN', message: t('lcdNoInterpreter'), alert: true }
         : { code: 'READY', message: t('lcdPressKey'), alert: false };
