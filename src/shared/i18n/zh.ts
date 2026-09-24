@@ -38,10 +38,11 @@ export const zh = {
   footerNote: '签为参考，路要自己走',
   langSwitch: 'EN',
   langSwitchLabel: 'Switch to English',
-  loading: '神社祈愿准备中…',
+  loading: '载入中…',
+  loadingSticks: '签筒载入中…',
   loadFailed: '连不上服务：{detail}',
   retry: '重试',
-  restoring: '正在取回你的灵签…',
+  restoring: '上一支签载入中…',
   documentTitle: 'AI Fortune Stick',
   documentDescription:
     'AI Fortune Stick：写下心里的事，摇动神签筒，抽出一张属于你的灵签。',

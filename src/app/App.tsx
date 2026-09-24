@@ -192,32 +192,26 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
       ?.setAttribute('content', t('documentDescription'));
   }, [language, t]);
 
-  if (loadError) {
-    return (
-      <main className="shell">
+  /* /api/state 只管兩件事：解籤的 agent 接上了沒有、設定頁的密碼。寫問題、抽籤都用不到它，
+     所以不再整頁擋著等它（以前一打開是一整頁「Preparing the shrine…」）。
+     還沒回來是 null（先不預解籤）；拿不到就當沒接上，籤照樣能抽，解籤那一步再說清楚。
+     只有設定頁真的要它，載入中和失敗重試都留在設定頁自己那塊。 */
+  const interpreterReady = state ? state.interpreterReady : loadError ? false : null;
+  const settingsPending =
+    route === 'settings' && !state ? (
+      loadError ? (
         <p className="stage-loading">
           {t('loadFailed', { detail: loadError })}{' '}
           <button type="button" className="text-action" onClick={() => void refreshState()}>
             {t('retry')}
           </button>
         </p>
-      </main>
-    );
-  }
-  if (!state) {
-    return (
-      <main className={`shell${prefs.reducedMotion ? ' calm' : ''}`}>
-        <ShrineBackdrop calm={prefs.reducedMotion} />
-        <div className="loading-shrine" role="status" aria-live="polite">
-          <div className="loading-shrine-emblem" aria-hidden="true">
-            <span className="loading-shrine-torii">⛩️</span>
-            <span className="loading-shrine-sakura">🌸</span>
-          </div>
-          <p className="loading-shrine-text">{t('loading')}</p>
-        </div>
-      </main>
-    );
-  }
+      ) : (
+        <p className="loading-line" role="status">
+          {t('loading')}
+        </p>
+      )
+    ) : null;
 
   return (
     <main className={`shell${prefs.reducedMotion ? ' calm' : ''}`}>
@@ -264,7 +258,8 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
       </header>
 
       <Suspense fallback={null}>
-        {route === 'settings' && state.adminOk && (
+        {settingsPending}
+        {route === 'settings' && state?.adminOk && (
         <SettingsView
           agents={state.agents}
           initialSession={state.connect.session}
@@ -276,7 +271,7 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
       </Suspense>
       {route === 'game' && shared && <SharedStickView shared={shared} onDrawOwn={leaveShared} />}
       {route === 'game' && !shared && (
-        <FortuneGame prefs={prefs} interpreterReady={state.interpreterReady} homeTaps={homeTaps} />
+        <FortuneGame prefs={prefs} interpreterReady={interpreterReady} homeTaps={homeTaps} />
       )}
 
       <footer className="footer">
