@@ -28,7 +28,7 @@ import { isSettingsApiPath } from './auth';
 import { HttpError, type Env } from './types';
 import { ensureSchema } from './db';
 import { withShareMeta } from './meta';
-import { signTarotBonus, tarotReturnUrl } from './tarot-bridge';
+import { claimTarotBonus, findTarotClaim, tarotReturnUrl } from './tarot-bridge';
 import { ConfigError, safeEqual } from './crypto';
 import { A2AError } from './a2a';
 import {
@@ -154,9 +154,18 @@ app.post('/api/readings/:id/tarot-claim', async (c) => {
   // token is null when the reading is too old to earn today's reward; the
   // browser still opens Tarot, just without a claim Tarot would refuse.
   return c.json({
-    token: await signTarotBonus(c.env, reading),
+    token: await claimTarotBonus(c.env, reading),
     tarotUrl: tarotReturnUrl(c.env, body?.returnUrl),
   });
+});
+
+// Tarot's Worker asks here (over its service binding) before granting a reward.
+// The answer is only the day a code is good for; a code is 32 random bytes, so
+// this tells a guesser nothing, and it never names the reading behind it.
+app.get('/api/tarot-claims/:id', async (c) => {
+  const claim = await findTarotClaim(c.env, c.req.param('id'));
+  if (!claim) throw new HttpError(404, 'claim_not_found', 'No such Tarot claim.');
+  return c.json({ claim: { day: claim.day } });
 });
 
 app.get('/api/readings/:id', async (c) => c.json({ reading: await getReading(c.env, c.req.param('id')) }));

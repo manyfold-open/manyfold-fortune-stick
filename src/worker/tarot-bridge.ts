@@ -1,21 +1,24 @@
 /**
- * Signs a one-day claim for a completed Fortune Stick reading.
+ * Tarot reward claims for completed Fortune Stick readings.
  *
- * The claim never carries the reading id itself: `GET /api/readings/:id` is
- * unauthenticated, so the id is a key to the question. The claim id is an HMAC
- * of the reading id instead — stable, so one reading still maps to one reward,
- * but useless for looking anything up.
+ * A claim is a random code stored here. Tarot never has to trust the browser:
+ * its Worker looks the code up in this Worker over a service binding
+ * (`GET /api/tarot-claims/:id`) before it grants anything. There is no shared
+ * secret to configure or leak, and the code says nothing about the reading —
+ * `GET /api/readings/:id` is unauthenticated, so a reading id must never leave.
  */
 
 import type { Reading } from '../shared/types';
 import { TAROT_URL } from '../shared/tarot-handoff';
-import { HttpError, type Env } from './types';
+import { now } from './db';
+import type { Env } from './types';
 
-const encoder = new TextEncoder();
 const TAIPEI_OFFSET_MS = 8 * 60 * 60 * 1000;
 /** A stick drawn just before Taipei midnight still earns today's reward if it is finished shortly after. */
 export const LATE_DRAW_GRACE_MS = 60 * 60 * 1000;
 export const DEFAULT_TAROT_URL = TAROT_URL;
+/** 32 random bytes as base64url: 43 characters, far past guessable. */
+export const CLAIM_ID = /^[A-Za-z0-9_-]{43}$/;
 
 const toBase64Url = (bytes: Uint8Array): string => {
   let binary = '';
@@ -25,29 +28,6 @@ const toBase64Url = (bytes: Uint8Array): string => {
 
 export const taipeiDay = (timestamp: number): string =>
   new Date(timestamp + TAIPEI_OFFSET_MS).toISOString().slice(0, 10);
-
-/** Midnight Taipei time at the end of `day`, in epoch seconds. */
-const endOfTaipeiDay = (day: string): number =>
-  Math.floor((Date.parse(`${day}T00:00:00.000Z`) + 16 * 60 * 60 * 1000) / 1000);
-
-const bridgeSecret = (env: Env): string => {
-  const secret = env.TAROT_BRIDGE_SECRET?.trim();
-  if (!secret || secret.length < 32) {
-    throw new HttpError(503, 'bridge_unavailable', 'The Tarot reward is not configured.');
-  }
-  return secret;
-};
-
-const hmac = async (secret: string, message: string): Promise<Uint8Array> => {
-  const key = await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign'],
-  );
-  return new Uint8Array(await crypto.subtle.sign('HMAC', key, encoder.encode(message)));
-};
 
 /**
  * Whether this reading still earns today's reward: drawn today (Taipei), or
@@ -60,26 +40,34 @@ export const earnsTarotBonus = (reading: Reading, nowMs: number = Date.now()): b
   return taipeiDay(createdAt) === taipeiDay(nowMs) || nowMs - createdAt <= LATE_DRAW_GRACE_MS;
 };
 
-/** Returns null when the reading is too old to earn today's reward. */
-export async function signTarotBonus(
+/**
+ * The claim code for this reading, good for today; null when the reading is too
+ * old to earn today's reward. A reading keeps one code: asking again returns the
+ * same one (re-dated to today inside the grace window), so it can only ever be
+ * redeemed once on the Tarot side.
+ */
+export async function claimTarotBonus(
   env: Env,
   reading: Reading,
   nowMs: number = Date.now(),
 ): Promise<string | null> {
-  const secret = bridgeSecret(env);
   if (!earnsTarotBonus(reading, nowMs)) return null;
-
   const day = taipeiDay(nowMs);
-  const claim = {
-    v: 1,
-    iss: 'fortune-stick',
-    aud: 'tarot',
-    id: toBase64Url(await hmac(secret, `tarot-claim-id:${reading.id}`)),
-    day,
-    exp: endOfTaipeiDay(day),
-  } as const;
-  const payload = toBase64Url(encoder.encode(JSON.stringify(claim)));
-  return `${payload}.${toBase64Url(await hmac(secret, payload))}`;
+  const id = toBase64Url(crypto.getRandomValues(new Uint8Array(32)));
+  const row = await env.DB.prepare(
+    `INSERT INTO tarot_claims (id, reading_id, day, created_at) VALUES (?, ?, ?, ?)
+     ON CONFLICT (reading_id) DO UPDATE SET day = excluded.day
+     RETURNING id`,
+  )
+    .bind(id, reading.id, day, now())
+    .first<{ id: string }>();
+  return row?.id ?? null;
+}
+
+/** What Tarot is told about a code: the day it is good for, or nothing at all. */
+export async function findTarotClaim(env: Env, id: string): Promise<{ day: string } | null> {
+  if (!CLAIM_ID.test(id)) return null;
+  return env.DB.prepare('SELECT day FROM tarot_claims WHERE id = ?').bind(id).first<{ day: string }>();
 }
 
 /**

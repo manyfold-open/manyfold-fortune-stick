@@ -160,7 +160,7 @@ export const zh = {
   privacyManyfold:
     '解签时，问题、签的内容、已有解读和追问会传给你连接的 Manyfold agent。连接流程也会把应用名称和 HTTPS 网站地址传给 Manyfold；本应用不会把 agent token 传到浏览器。',
   privacyTarotBridge:
-    '如果你从当天的解签页前往塔罗，系统会发送一枚当日有效的签名奖励凭证。凭证里只有一串无法用来查回这次求签的编码和日期，不包含你的问题或解读。',
+    '如果你从当天的解签页前往塔罗，系统会发送一串当日有效的随机奖励码。它与这次求签的内容无关，不包含你的问题或解读；塔罗会向本站核对这串码后才发放奖励。',
   privacyFonts:
     '页面会从 Google Fonts 请求 Noto Serif 字体。字体请求由 Google 处理；本应用不会把问题或解读放进字体请求。',
   privacyCloudflare:
