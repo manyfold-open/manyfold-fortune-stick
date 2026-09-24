@@ -473,6 +473,53 @@ html, body {
   color: var(--accent);
 }
 
+/* 桌機：面板從右上角的設定鈕正下方掉出來，右緣對齊按鈕，上面一個小尖角指回按鈕。
+   位置由 SettingsModal 量按鈕後寫進 --anchor-*；量不到時退回大約的位置。手機維持底部抽屜 */
+@media (min-width: 720px) {
+  .settings-backdrop {
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding: var(--anchor-top, 72px) var(--anchor-right, 24px) 24px 24px;
+    background: rgba(30, 18, 12, 0.16);
+    backdrop-filter: blur(1.5px);
+    -webkit-backdrop-filter: blur(1.5px);
+  }
+
+  .settings-sheet {
+    max-width: 380px;
+    border-radius: 14px;
+    border: 1px solid color-mix(in srgb, var(--seal) 28%, transparent);
+    box-shadow: 0 18px 44px rgba(40, 20, 10, 0.24), 0 2px 6px rgba(40, 20, 10, 0.08);
+    padding: 18px 20px 16px;
+    transform-origin: calc(100% - var(--anchor-width, 90px) / 2) 0;
+    animation: settings-drop 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  /* 捲動放在裡面那層：面板本身要 overflow 可見，尖角才不會被切掉 */
+  .settings-body {
+    max-height: calc(100dvh - var(--anchor-top, 72px) - 110px);
+    overflow-y: auto;
+  }
+
+  .settings-sheet::before {
+    content: '';
+    position: absolute;
+    top: -7px;
+    right: calc(var(--anchor-width, 90px) / 2 - 7px);
+    width: 12px;
+    height: 12px;
+    background: var(--paper);
+    border-left: 1px solid color-mix(in srgb, var(--seal) 28%, transparent);
+    border-top: 1px solid color-mix(in srgb, var(--seal) 28%, transparent);
+    transform: rotate(45deg);
+  }
+}
+
+@keyframes settings-drop {
+  from { opacity: 0; transform: translateY(-6px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+
 /* ── 唯一的动作样式：纸上的一行字 ── */
 
 .text-action {

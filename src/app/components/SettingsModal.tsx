@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
 import type { Prefs } from '../storage';
 import type { Language } from '../../shared/lang';
 import { useT } from '../i18n';
@@ -6,6 +6,8 @@ import { useT } from '../i18n';
 interface SettingsModalProps {
   open: boolean;
   onClose: () => void;
+  /** 頂欄的設定鈕。桌機上面板從它正下方掉出來，手機上不用（照樣從底部滑上來） */
+  anchorRef?: RefObject<HTMLElement | null>;
   prefs: Prefs;
   updatePrefs: (patch: Partial<Prefs>) => void;
   language: Language;
@@ -14,6 +16,7 @@ interface SettingsModalProps {
 export default function SettingsModal({
   open,
   onClose,
+  anchorRef,
   prefs,
   updatePrefs,
   language,
@@ -21,6 +24,24 @@ export default function SettingsModal({
   const t = useT();
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const closeRef = useRef<HTMLButtonElement | null>(null);
+
+  // 量設定鈕的位置，交給 CSS 變數；只有桌機的樣式會用到。視窗改大小時跟著重量
+  const [anchor, setAnchor] = useState<CSSProperties>({});
+  useLayoutEffect(() => {
+    if (!open) return;
+    const measure = () => {
+      const rect = anchorRef?.current?.getBoundingClientRect();
+      if (!rect) return;
+      setAnchor({
+        '--anchor-top': `${Math.round(rect.bottom + 10)}px`,
+        '--anchor-right': `${Math.round(window.innerWidth - rect.right)}px`,
+        '--anchor-width': `${Math.round(rect.width)}px`,
+      } as CSSProperties);
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [open, anchorRef]);
 
   // Close on Escape key
   useEffect(() => {
@@ -61,7 +82,7 @@ export default function SettingsModal({
   if (!open) return null;
 
   return (
-    <div className="settings-backdrop" onClick={onClose} aria-hidden={!open}>
+    <div className="settings-backdrop" onClick={onClose} aria-hidden={!open} style={anchor}>
       <div
         className="settings-sheet"
         role="dialog"
