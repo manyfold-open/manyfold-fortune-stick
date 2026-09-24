@@ -52,6 +52,7 @@ function Torii() {
         </svg>
         {SHIDE_AT.map((u) => (
           <svg key={u} className="shide" viewBox={`0 0 ${SHIDE_VIEW.w} ${SHIDE_VIEW.h}`} style={{ left: `${u * 100}%`, top: ropeY(u) - 2 }} aria-hidden>
+            <path className="shide-shadow" d={SHIDE_D} transform="translate(0.4 1.6)" />
             <path className="shide-body" d={SHIDE_D} />
             <path className="shide-folds" d={SHIDE_FOLDS_D} />
           </svg>
@@ -113,7 +114,10 @@ export default function ShrineBackdrop({ calm }: { calm: boolean }) {
     let w = 0;
     let h = 0;
     const fit = (): void => {
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      // 桌機（寬 ≥ 900）一律 1× 解析度：整面畫布每秒重畫 30 次，Retina 上 2× 是 2880×1800，
+      // 是閒置時最吃 GPU 的一塊，桌機一直卡就是它。花瓣本來就是軟邊小色塊，1× 看不出差別；
+      // 手機畫布小，照舊最多 2×
+      const dpr = window.innerWidth >= 900 ? 1 : Math.min(2, window.devicePixelRatio || 1);
       const widthChanged = window.innerWidth !== w;
       w = window.innerWidth;
       h = window.innerHeight;
