@@ -56,7 +56,6 @@ export const zh = {
   exampleToday: '今天的运势如何？',
   example1: '我该如何面对最近的工作变化？',
   example2: '这段关系还值得我继续投入吗？',
-  example3: '现在是开始做那件想了很久的事的时候吗？',
 
   /* ── 打印机的屏 ── */
   lcdPrinting: '正在打印…',
