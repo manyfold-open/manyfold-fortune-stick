@@ -64,6 +64,9 @@ export const onUnauthorized = (handler: (() => void) | null): void => {
 
 const isAdminAwarePath = (path: string): boolean =>
   path === '/api/state' ||
+  // The daily numbers on #settings (GET /api/stats?days=…), not the public
+  // POST /api/stats/:metric the game reports to.
+  path.split('?')[0] === '/api/stats' ||
   path === '/api/connect' ||
   path.startsWith('/api/connect/') ||
   path === '/api/agents' ||

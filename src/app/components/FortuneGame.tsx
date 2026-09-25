@@ -37,6 +37,7 @@ import { EmaChrome } from './Ema';
 import QuestionForm from './QuestionForm';
 import ReadingResult, { type EmaRect } from './ReadingResult';
 import StickFace from './StickFace';
+import { takeVisitSourceForDraw } from '../visit';
 
 /*
  * 3D 籤筒連同 three.js 是整包程式裡最大的一塊（光 three 的渲染器就五百多 KB）。
@@ -307,7 +308,7 @@ export default function FortuneGame(props: {
     try {
       const body = await api<{ reading: Reading }>('/api/readings', {
         method: 'POST',
-        body: JSON.stringify({ question }),
+        body: JSON.stringify({ question, via: takeVisitSourceForDraw() ?? undefined }),
       });
       setCurrentReadingId(body.reading.id);
       saveRecord(body.reading);

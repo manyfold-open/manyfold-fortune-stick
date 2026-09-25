@@ -68,8 +68,8 @@ export interface ShareInput {
 }
 
 /** 這支籤的分享連結：朋友點開看到同一張籤紙，下面一句「求一支自己的」。不帶問題、不帶解籤。 */
-export const shareLink = (stick: FortuneStick, language: Language): string =>
-  new URL(appUrl('/') + sharedStickQuery(stick.no, language), window.location.origin).toString();
+export const shareLink = (stick: FortuneStick, language: Language, via?: 'qr' | 'link'): string =>
+  new URL(appUrl('/') + sharedStickQuery(stick.no, language, via), window.location.origin).toString();
 
 /** 按宽度折行。中文逐字折，不需要考虑单词边界。 */
 function wrapChars(context: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
@@ -263,7 +263,7 @@ function drawHorizontal(
 /** 二维码：扫了看到的是这一支签（shareLink），下面就是「求一支自己的」—— 以前只回首页，看不出是谁分享的哪一支。 */
 async function loadShareQr(stick: FortuneStick, language: Language): Promise<HTMLImageElement | null> {
   try {
-    const dataUrl = await QRCode.toDataURL(shareLink(stick, language), {
+    const dataUrl = await QRCode.toDataURL(shareLink(stick, language, 'qr'), {
       errorCorrectionLevel: 'M',
       margin: 1,
       width: QR_SIZE,
@@ -572,7 +572,7 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
   });
 }
 
-export type ShareOutcome = 'shared' | 'downloaded';
+export type ShareOutcome = 'shared' | 'downloaded' | 'cancelled';
 
 /**
  * 能调系统分享就调；不能就下载。两条路都走不通时抛错，由调用方降级到复制文字。
@@ -595,8 +595,8 @@ export async function shareImage(
     files: [file],
     title: APP_NAME,
     text: en
-      ? `No. ${stick.no} · ${LEVEL_LABEL.en[stick.level]}\n${shareLink(stick, language)}`
-      : `第 ${stick.no} 签 · ${stick.level}\n${shareLink(stick, language)}`,
+      ? `No. ${stick.no} · ${LEVEL_LABEL.en[stick.level]}\n${shareLink(stick, language, 'link')}`
+      : `第 ${stick.no} 签 · ${stick.level}\n${shareLink(stick, language, 'link')}`,
   };
   if (navigator.canShare?.(shareData)) {
     try {
@@ -604,7 +604,7 @@ export async function shareImage(
       return 'shared';
     } catch (error) {
       // 用户自己取消了，不算失败，也不该再触发一次下载。
-      if ((error as Error)?.name === 'AbortError') return 'shared';
+      if ((error as Error)?.name === 'AbortError') return 'cancelled';
       throw error;
     }
   }
@@ -623,7 +623,7 @@ export async function shareImage(
 export const shareText = (stick: FortuneStick, meaning: string, language: Language): string => {
   const text = stickText(stick, language);
   const cleanMeaning = withoutDashes(meaning);
-  const link = shareLink(stick, language);
+  const link = shareLink(stick, language, 'link');
   if (language === 'en') {
     return `${APP_NAME} · No. ${stick.no} · ${LEVEL_LABEL.en[stick.level]}\n${text.poem[0]} / ${text.poem[1]}\n${cleanMeaning}\n${link}`;
   }

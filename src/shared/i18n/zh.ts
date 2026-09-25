@@ -169,7 +169,7 @@ export const zh = {
   privacyCookies:
     '本应用不设置、读取或依赖 Cookie，也不需要匿名用户跨请求识别，因此没有 Cookie 期限或撤回操作。',
   privacyAnalytics:
-    '当前没有 Google Analytics、GTM、Meta Pixel、Sentry、Hotjar、PostHog 或其他 analytics script；没有 measurement ID，也不会发送 analytics event，所以不会显示额外 consent banner。',
+    '当前没有 Google Analytics、GTM、Meta Pixel、Sentry、Hotjar、PostHog 或其他 analytics script。本站只自己记录每天的总数，例如抽了几支签、分享了几次、访问是从分享链接、扫码还是塔罗过来的；这些只是每日次数，不包含你是谁、问了什么或抽到哪支签，所以不会显示额外 consent banner。',
   privacySharingTitle: '分享会公开什么',
   privacySharing:
     '分享只在你的浏览器生成图片并交给系统分享或下载，不会上传到本应用的分享服务。图片可能包含签号、等级、签诗、一句话签意、可选的问题和 QR code；你把图片发给谁，就由那个平台和收件人看到。',
@@ -209,6 +209,29 @@ export const zh = {
   settingsAboutTitle: '关于这个部署',
   settingsAboutBody:
     'agent 的 token 以 AES-GCM 加密存在 D1 里，任何时候都不会发到浏览器。设置 ADMIN_PASSWORD 只保护这个设置页的 agent 管理操作，游戏仍然公开可玩。设置 CONFIG_ENCRYPTION_KEY 可以让加密密钥不落库。详见 README。',
+
+  /* ── #settings 的每日数据 ── */
+  statsTitle: '每日数据',
+  statsNote:
+    '按台湾日期统计，在正式的数据分析接上之前先由本站自己计数。只存每天的总数，不存是谁、问了什么或抽到哪支签。从分享或塔罗进来的访问，每个浏览器分页只算一次。',
+  statsRangeLabel: '显示几天',
+  statsDays: '{n} 天',
+  statsLoading: '正在读取数据…',
+  statsDay: '日期',
+  statsTotal: '合计',
+  statsDraws: '求签数',
+  statsFromTarot: '从塔罗来',
+  statsFromTarotDrew: '其中求签',
+  statsToTarot: '点去塔罗',
+  statsClaims: '发出塔罗奖励',
+  statsShares: '分享次数',
+  statsScanned: '扫码进来',
+  statsLinked: '点链接进来',
+  statsOldShares: '旧分享进来',
+  statsFromShareDrew: '分享进来后求签',
+  statsTarotBreakdown: '从塔罗来的位置：看完解读 {outro}、额度用完 {locked}、塔罗分享页 {share}、其他 {other}。',
+  statsHowTo:
+    '「点去塔罗」算的是每一次点击；「发出塔罗奖励」算的是当天完成、并发出奖励码的签。奖励后来有没有用掉，记录在塔罗那边。旧的分享图没有扫码标记，从那里进来的会算在「旧分享进来」。',
 
   /* ── 连接 Manyfold ── */
   connectStart: '连接 Manyfold agent',

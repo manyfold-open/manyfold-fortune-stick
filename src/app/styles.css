@@ -6349,3 +6349,16 @@ html { overflow-x: clip; }
     animation: none !important;
   }
 }
+
+/* ── #settings: daily numbers ── */
+.stats-panel { display: flex; flex-direction: column; gap: 10px; }
+.stats-range { gap: 14px; }
+/* A wide table on a phone scrolls inside its own box, never the page. */
+.stats-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+.stats-table { border-collapse: collapse; font-size: 13px; white-space: nowrap; }
+.stats-table th,
+.stats-table td { padding: 6px 10px; text-align: right; border-bottom: 1px solid color-mix(in srgb, var(--ink) 12%, transparent); }
+.stats-table thead th { font-weight: 600; font-size: 12px; vertical-align: bottom; }
+.stats-table tbody th { text-align: left; font-weight: 600; }
+.stats-table .stats-total { background: color-mix(in srgb, var(--seal) 7%, transparent); font-weight: 700; }
+.stats-table td.is-zero { opacity: 0.4; }
