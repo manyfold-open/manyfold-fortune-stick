@@ -43,7 +43,7 @@ export const ko = {
 
   /* ── 질문 ── */
   askLabel: '묻고 싶은 것',
-  askGhost: '마음속 고민을 여기에 적어 주세요',
+  askGhost: '여기에 고민을 적어 주세요',
   askDone: '완료',
   emaCaption: '에마 · 소원',
   emaStreak: '에마 · {days}일 연속',

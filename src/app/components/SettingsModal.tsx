@@ -170,7 +170,7 @@ export default function SettingsModal({
           </div>
 
           {/* 语言设定 */}
-          <div className="settings-row">
+          <div className="settings-row lang-row">
             <div className="settings-label-wrap">
               <span className="settings-label">
                 <span className="settings-icon">🌐</span> {t('settingsLanguageTitle')}

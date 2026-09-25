@@ -12,7 +12,7 @@
  * 右上角那个界面开关。
  */
 
-import { writesVertically, type Language } from '../../shared/lang';
+import { HTML_LANG, writesVertically, type Language } from '../../shared/lang';
 import { PAPER } from '../../shared/paper';
 import { LEVEL_LABEL, STICK_COUNT, stickText, type FortuneStick } from '../../shared/sticks';
 import { LEVEL_TONE } from '../constants';
@@ -29,6 +29,9 @@ export default function StickFace(props: {
   const level = LEVEL_LABEL[language][stick.level];
   const paper = PAPER[language];
   const vertical = writesVertically(language);
+  // 日文、韩文的纸标上 lang：浏览器要知道是日文，才会按词组（文節）换行，不把「新しい」劈成两半。
+  // 中文、英文照旧不标 —— 那两种纸的样子一个像素都不动。
+  const paperLang = language === 'ja' || language === 'ko' ? HTML_LANG[language] : undefined;
 
   if (props.size === 'small') {
     const tab = paper.tab(stick.no);
@@ -60,7 +63,7 @@ export default function StickFace(props: {
   // 三個字（上上签）的印要小一號才放得下；英文一律是長字
   const longLevel = [...level].length >= 3 || language === 'en';
   return (
-    <article className="slip" data-tone={tone.key} data-lang={language}>
+    <article className="slip" data-tone={tone.key} data-lang={language} lang={paperLang}>
       <header className="slip-head">
         <span className="slip-head-band">{paper.band}</span>
         <span className="slip-no">{paper.number(stick.no, STICK_COUNT)}</span>

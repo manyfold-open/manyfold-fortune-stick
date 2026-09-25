@@ -21,7 +21,7 @@ export const ja = {
   settingsSoundDesc: 'おみくじを引くときの鈴の音と紙の音',
   settingsMotionDesc: '舞い散る桜とゆらめき',
   settingsSoundTitle: '参拝の音',
-  settingsMotionTitle: '桜とゆらめき',
+  settingsMotionTitle: '桜と動き',
   settingsMotionActive: 'にぎやか',
   settingsMotionCalm: 'しずか',
   settingsLanguageTitle: '表示言語',

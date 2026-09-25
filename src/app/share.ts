@@ -72,7 +72,7 @@ export const shareLink = (stick: FortuneStick, language: Language, via?: 'qr' | 
   new URL(appUrl('/') + sharedStickQuery(stick.no, language, via), window.location.origin).toString();
 
 /** 按宽度折行。中文逐字折，不需要考虑单词边界。 */
-function wrapChars(context: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+function wrapChars(context: CanvasRenderingContext2D, text: string, maxWidth: number, kinsoku = false): string[] {
   const lines: string[] = [];
   let line = '';
   for (const char of text) {
@@ -81,7 +81,8 @@ function wrapChars(context: CanvasRenderingContext2D, text: string, maxWidth: nu
       line = '';
       continue;
     }
-    if (context.measureText(line + char).width > maxWidth && line) {
+    // 日文：不能起头的字不另起一行，挂在这一行末尾
+    if (context.measureText(line + char).width > maxWidth && line && !(kinsoku && NO_LINE_START.has(char))) {
       lines.push(line);
       line = char;
     } else {
@@ -120,7 +121,10 @@ function wrapWords(context: CanvasRenderingContext2D, text: string, maxWidth: nu
 }
 
 /** 按语言选折行方式。中文、日文逐字，英文、韩文按词。 */
-const wrapFor = (language: Language) => (wrapsByWord(language) ? wrapWords : wrapChars);
+const wrapFor = (language: Language) =>
+  wrapsByWord(language)
+    ? wrapWords
+    : (context: CanvasRenderingContext2D, text: string, maxWidth: number) => wrapChars(context, text, maxWidth, language === 'ja');
 
 /**
  * canvas 的直排是一个字一个字正着画的，不会像 CSS 的 vertical-rl 那样把横排才对的符号立起来。
@@ -153,6 +157,27 @@ interface VerticalBlock {
   color: string;
   /** 一个字占的高度 */
   step: number;
+  /** 日文的禁则：不能起头的字（小假名、长音、句读、收尾的括号）挂到上一列的末尾 */
+  kinsoku?: boolean;
+}
+
+/** 日文里不能放在一行（一列）开头的字。 */
+const NO_LINE_START = new Set([...'ぁぃぅぇぉっゃゅょゎァィゥェォッャュョヮヵヶー︱、。，．︑︒」』）﹂﹄？！…・']);
+
+/**
+ * 按每列 perColumn 个字切开；kinsoku 时，不能起头的字挂到上一列末尾（允许那一列多一两个字），
+ * 所以一列永远不会从「っ」「。」或者单独一个收尾的「﹂」开始。
+ */
+function splitColumns(chars: string[], perColumn: number, kinsoku: boolean): string[][] {
+  const columns: string[][] = [];
+  let i = 0;
+  while (i < chars.length) {
+    let end = Math.min(chars.length, i + perColumn);
+    while (kinsoku && end < chars.length && NO_LINE_START.has(chars[end]) && end - i < perColumn + 2) end += 1;
+    columns.push(chars.slice(i, end));
+    i = end;
+  }
+  return columns;
 }
 
 /**
@@ -173,8 +198,8 @@ function drawVertical(
     const chars = [...block.text];
     // 列宽按这一块里最宽的字算，免得标点把列挤窄。
     const width = Math.max(...chars.map((char) => context.measureText(char).width));
-    for (let i = 0; i < chars.length; i += perColumn) {
-      columns.push({ chars: chars.slice(i, i + perColumn), block, width });
+    for (const column of splitColumns(chars, perColumn, Boolean(block.kinsoku))) {
+      columns.push({ chars: column, block, width });
     }
   }
 
@@ -530,7 +555,7 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
         // 七言一列要放得下：一個字的高度照這一格的高度算（BODY 會因為繪馬變高而縮）
         { text: upright(text.poem[0]), font: `500 ${Math.min(38, poemStep - 4)}px ${face}`, color: INK, step: poemStep },
         { text: upright(text.poem[1]), font: `500 ${Math.min(38, poemStep - 4)}px ${face}`, color: INK, step: poemStep },
-        { text: upright(soulMeaning), font: `400 29px ${face}`, color: INK_2, step: 34 },
+        { text: upright(soulMeaning), font: `400 29px ${face}`, color: INK_2, step: 34, kinsoku: language === 'ja' },
       ],
       { centerX: center, top: y + 26, height: BODY - 52, gap: 26 },
     );

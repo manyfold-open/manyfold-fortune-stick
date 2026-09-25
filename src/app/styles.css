@@ -572,6 +572,20 @@ html, body {
   opacity: 0.85;
 }
 
+/* 語言那一排有四顆鈕：窄螢幕放不下就整排掉到標題下面、靠右，不撐出畫面 */
+.settings-row.lang-row {
+  flex-wrap: wrap;
+  row-gap: 10px;
+}
+
+.settings-row.lang-row .settings-label-wrap {
+  flex: 1 0 auto;
+}
+
+.settings-row.lang-row .settings-segment {
+  margin-left: auto;
+}
+
 .settings-segment {
   display: inline-flex;
   padding: 3px;
@@ -2100,7 +2114,7 @@ html, body {
 
 /* 日文籤紙沿用中文的直排；籤意比中文長一點，折成兩三列時讓每列差不多長，
    不要最後一列只剩一個「た」 */
-.slip[data-lang='ja'] .slip-meaning { text-wrap: balance; }
+.slip[data-lang='ja'] .slip-meaning { text-wrap: balance; word-break: auto-phrase; }
 
 /* 韓文籤紙：橫排（跟英文同一套 .slip-western-poem），字號跟中文走。
    中文那幾條的大字距（籤名 0.42em、籤詩 0.18em）是給一個個方塊字排的，
