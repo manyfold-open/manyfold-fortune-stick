@@ -52,7 +52,7 @@ export default function SettingsView(props: {
   };
 
   return (
-    <section className="panel">
+    <section className="panel settings-page">
       <h2>{t('settingsTitle')}</h2>
       <p className="muted small">{t('settingsUrlOnly')}</p>
 

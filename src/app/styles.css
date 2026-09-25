@@ -6437,3 +6437,33 @@ html { overflow-x: clip; }
 .stats-table td.is-zero { color: var(--ink-3); opacity: 0.55; }
 .stats-table tbody tr:last-child th,
 .stats-table tbody tr:last-child td { border-bottom: 0; }
+
+/* ── #settings page ──
+   Like the privacy page: it starts below the torii's rope and paper streamers
+   (they hang to about 150px on a wide screen, 120px on a phone) and sits in
+   front of them on a paper card, so nothing in the shrine runs through its
+   text. On paper, so its muted notes use the --ink scale. */
+.panel.settings-page {
+  position: relative;
+  z-index: 2;
+  box-sizing: border-box;
+  max-width: 760px;
+  margin: 100px auto 44px;
+  padding: 26px 30px 30px;
+  background: rgba(255, 252, 245, 0.95);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 1px solid rgba(160, 110, 60, 0.28);
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(92, 62, 32, 0.09), 0 1px 4px rgba(0, 0, 0, 0.04);
+  color: var(--ink);
+}
+.panel.settings-page .muted { color: var(--ink-3); }
+.panel.settings-page h3 { margin-top: 28px; }
+@media (max-width: 640px) {
+  .panel.settings-page {
+    margin: 78px 12px 32px;
+    width: auto;
+    padding: 20px 16px 24px;
+  }
+}

@@ -61,9 +61,26 @@ describe('where a visit came from', () => {
     expect(visitSourceFrom('?utm_source=tarot-share&utm_medium=share')).toBe('tarot-share');
   });
 
-  it('does not count a plain visit', () => {
-    expect(visitSourceFrom('')).toBeNull();
-    expect(visitSourceFrom('?utm_source=newsletter')).toBeNull();
+  it('counts every other visit as organic, by the kind of site that sent it', () => {
+    const self = 'https://app.manyfold.ai';
+    expect(visitSourceFrom('', '', self)).toBe('organic-direct');
+    expect(visitSourceFrom('', 'https://www.google.com/', self)).toBe('organic-search');
+    expect(visitSourceFrom('', 'https://www.bing.com/search?q=x', self)).toBe('organic-search');
+    expect(visitSourceFrom('', 'https://l.instagram.com/', self)).toBe('organic-social');
+    expect(visitSourceFrom('', 'https://www.threads.net/@someone', self)).toBe('organic-social');
+    expect(visitSourceFrom('', 'https://t.co/abc', self)).toBe('organic-social');
+    expect(visitSourceFrom('', 'https://someblog.example/post', self)).toBe('organic-other');
+    // A reload, or a hop inside this same site, is still a direct visit.
+    expect(visitSourceFrom('', 'https://app.manyfold.ai/fortune-stick/', self)).toBe('organic-direct');
+    expect(visitSourceFrom('', 'not a url', self)).toBe('organic-direct');
+  });
+
+  it("keeps Tarot's visitors as Tarot even without its tags, and tagged links as campaigns", () => {
+    const self = 'https://app.manyfold.ai';
+    expect(visitSourceFrom('', 'https://app.manyfold.ai/tarot/', self)).toBe('tarot-other');
+    expect(visitSourceFrom('', 'https://tarot.manyfold.ai/', self)).toBe('tarot-other');
+    expect(visitSourceFrom('?utm_source=newsletter', '', self)).toBe('campaign');
+    expect(visitSourceFrom('?utm_source=facebook_ads', 'https://www.facebook.com/', self)).toBe('campaign');
   });
 
   it('still reads the same stick off a link that carries via', () => {
@@ -80,8 +97,19 @@ describe('counting', () => {
     expect(count('share:sent')).toBeGreaterThan(0);
   });
 
+  it('counts a visit as new or returning when the page says which', async () => {
+    const fresh = count('visitor:new');
+    const back = count('visitor:returning');
+    await call('/api/stats/visit:organic-direct', { body: { returning: false } });
+    await call('/api/stats/visit:organic-search', { body: { returning: true } });
+    await call('/api/stats/visit:organic-social', { body: { returning: 'maybe' } });
+    expect(count('visitor:new')).toBe(fresh + 1);
+    expect(count('visitor:returning')).toBe(back + 1);
+    expect(count('visit:organic-social')).toBeGreaterThan(0);
+  });
+
   it('refuses a metric it does not know, and ones only the server may count', async () => {
-    for (const metric of ['visit:anything', 'hello', 'draw:share-qr', 'tarot:opened']) {
+    for (const metric of ['visit:anything', 'hello', 'draw:share-qr', 'tarot:opened', 'visitor:new']) {
       expect((await call(`/api/stats/${metric}`, { body: {} })).status).toBe(400);
     }
     expect(d1.query("SELECT COUNT(*) AS n FROM daily_stats WHERE metric = 'hello'")).toEqual([{ n: 0 }]);

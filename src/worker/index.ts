@@ -170,10 +170,18 @@ app.post('/api/readings/:id/tarot-claim', async (c) => {
 // fixed metric names in shared/stats.ts are counted; anything else is refused.
 app.post('/api/stats/:metric', async (c) => {
   const metric = c.req.param('metric');
-  if (!isMetric(metric) || metric.startsWith('draw:') || metric === 'tarot:opened') {
+  // Draws, Tarot clicks and new/returning are counted by the server alongside
+  // what they belong to; the page cannot report them on their own.
+  if (!isMetric(metric) || !(metric.startsWith('visit:') || metric.startsWith('share:'))) {
     throw new HttpError(400, 'unknown_metric', 'No such metric.');
   }
   await bumpStat(c.env, metric);
+  if (metric.startsWith('visit:')) {
+    const body = (await c.req.json().catch(() => null)) as { returning?: unknown } | null;
+    if (typeof body?.returning === 'boolean') {
+      await bumpStat(c.env, body.returning ? 'visitor:returning' : 'visitor:new');
+    }
+  }
   return c.json({ ok: true });
 });
 
