@@ -109,6 +109,27 @@
   font-family: var(--font-mincho);
 }
 
+/* 日文、韩文：各换自己的明朝与手写字（字体顺序写在 :root）。版面沿用中文那一套 ——
+   日文的签纸照样直排，韩文的签纸横排（StickFace 按 writesVertically 分）。
+   日文用严格的禁则，不让「ー」「。」「っ」落到行首；韩文按词换行（keep-all），
+   不然一个词会被从中间劈成两行。 */
+:root:lang(ja),
+[data-lang='ja'] {
+  --font-mincho: var(--font-mincho-ja);
+  --font-hand: var(--font-hand-ja);
+  font-family: var(--font-mincho);
+  line-break: strict;
+}
+
+:root:lang(ko),
+[data-lang='ko'] {
+  --font-mincho: var(--font-mincho-ko);
+  --font-hand: var(--font-hand-ko);
+  font-family: var(--font-mincho);
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
 :root {
   /* 繪馬與木札的木頭（3D 籤筒台與結果頁共用） */
   --wood-edge: #8f6a43;
@@ -167,6 +188,13 @@
   --font-mincho-en: 'Shippori Mincho B1', 'GenRyuMin2 TW', 'GenRyuMin TW', 'GenRyuMin', 'Noto Serif SC', 'Noto Serif TC', 'Songti SC', 'STSong', 'SimSun', serif;
   --font-mincho: var(--font-mincho-en);
   --font-hand: 'LXGW WenKai TC', 'Kaiti SC', 'STKaiti', var(--font-mincho-zh);
+  /* 日文、韩文的纸：Noto Serif JP / KR 跟 Noto Serif SC 是同一套设计，字宽、行高一样，
+     放进为中文排好的版面不会撑开。日文排在 SC 前面，汉字才是日文字形。
+     手写字：日文用 Klee One（霞鹜文楷的原型，同一只手）；韩文还没有配得上的手写字，先用明朝。 */
+  --font-mincho-ja: 'Shippori Mincho B1 Letters', 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif SC', serif;
+  --font-mincho-ko: 'Shippori Mincho B1 Letters', 'Noto Serif KR', 'AppleMyungjo', 'Batang', 'Noto Serif SC', serif;
+  --font-hand-ja: 'Klee One', 'LXGW WenKai TC', var(--font-mincho-ja);
+  --font-hand-ko: var(--font-mincho-ko);
   --font-mono: ui-monospace, 'SF Mono', 'SFMono-Regular', Menlo, Consolas, monospace;
   color-scheme: light;
 }
@@ -263,6 +291,62 @@ html, body {
   font-family: var(--font-mincho);
   font-size: 11px;
   letter-spacing: 0.12em;
+}
+
+/* 語言選單：點開頂欄那顆語言膠囊，底下垂一張小紙條，四種語言各一行字。
+   紙條上的字是印在紙上的，用 --ink；每一行用它自己的字體（data-lang）。 */
+.lang-menu-wrap {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.lang-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 8em;
+  background: var(--paper);
+  border: 1px solid rgba(184, 50, 31, 0.18);
+  border-radius: 12px;
+  box-shadow: 0 8px 22px rgba(80, 40, 20, 0.16);
+}
+
+.topbar-actions .lang-menu .text-action {
+  width: 100%;
+  justify-content: flex-start;
+  padding: 7px 12px;
+  border-color: transparent;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.topbar-actions .lang-menu .text-action:hover,
+.topbar-actions .lang-menu .text-action:focus-visible {
+  background: var(--paper-2);
+  transform: none;
+}
+
+/* 撐大的觸控範圍（下面那條 ::after）在紙條裡會蓋到上下兩行，按錯語言 */
+.topbar-actions .lang-menu .text-action::after {
+  display: none;
+}
+
+.topbar-actions .lang-menu .text-action[aria-pressed='true'] {
+  color: var(--accent);
+  font-weight: 600;
 }
 
 .settings-trigger {
@@ -486,6 +570,20 @@ html, body {
   line-height: 1.4;
   color: var(--on-ground-2);
   opacity: 0.85;
+}
+
+/* 語言那一排有四顆鈕：窄螢幕放不下就整排掉到標題下面、靠右，不撐出畫面 */
+.settings-row.lang-row {
+  flex-wrap: wrap;
+  row-gap: 10px;
+}
+
+.settings-row.lang-row .settings-label-wrap {
+  flex: 1 0 auto;
+}
+
+.settings-row.lang-row .settings-segment {
+  margin-left: auto;
 }
 
 .settings-segment {
@@ -2014,6 +2112,19 @@ html, body {
 .slip[data-lang='en'] .slip-meaning { font-family: var(--font-mincho); font-size: 13.5px; letter-spacing: 0.01em; text-wrap: balance; margin-top: 6px; }
 .slip[data-lang='en'] .slip-lucky { font-size: 11px; }
 
+/* 日文籤紙沿用中文的直排；籤意比中文長一點，會折成兩三列。
+   按詞組（文節）折，不把「新しい」劈成兩半，也不會最後一列只剩一個「た」
+   （要配 StickFace 上的 lang="ja" 才生效） */
+.slip[data-lang='ja'] .slip-meaning { word-break: auto-phrase; }
+
+/* 韓文籤紙：橫排（跟英文同一套 .slip-western-poem），字號跟中文走。
+   中文那幾條的大字距（籤名 0.42em、籤詩 0.18em）是給一個個方塊字排的，
+   韓文是帶空格的句子，拉開字距反而讀不成詞，也容易多折一行 */
+.slip[data-lang='ko'] .slip-title { letter-spacing: 0.06em; text-indent: 0; font-size: 18px; }
+.slip[data-lang='ko'] .slip-poem { letter-spacing: 0.02em; line-height: 1.6; text-wrap: balance; }
+.slip[data-lang='ko'] .slip-meaning { letter-spacing: 0; text-wrap: balance; margin-top: 6px; }
+.slip[data-lang='ko'] .slip-no { letter-spacing: 0.1em; text-indent: 0.1em; }
+
 /* 默认落印基准 */
 .sheet-stack .slip-level-box {
   animation: stamp 0.44s cubic-bezier(0.2, 1.35, 0.35, 1) both;
@@ -2943,7 +3054,8 @@ html:lang(en) .history .history-plaque h2 {
   line-height: 1;
 }
 
-.slip-mini[data-lang='en'] .slip-mini-tab {
+.slip-mini[data-lang='en'] .slip-mini-tab,
+.slip-mini[data-lang='ko'] .slip-mini-tab {
   writing-mode: horizontal-tb;
   flex-direction: column;
   gap: 3px;
@@ -2992,7 +3104,8 @@ html:lang(en) .history .history-plaque h2 {
   color: var(--ink);
 }
 
-.slip-mini[data-lang='en'] .slip-mini-title {
+.slip-mini[data-lang='en'] .slip-mini-title,
+.slip-mini[data-lang='ko'] .slip-mini-title {
   font-family: var(--font-mincho);
   font-weight: 500;
   letter-spacing: 0.02em;

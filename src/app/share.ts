@@ -13,7 +13,8 @@
  */
 
 import QRCode from 'qrcode';
-import type { Language } from '../shared/lang';
+import { wrapsByWord, writesVertically, type Language } from '../shared/lang';
+import { PAPER as PAPER_COPY } from '../shared/paper';
 import { sharedStickQuery } from '../shared/share-link';
 import { withoutDashes } from '../shared/text';
 import {
@@ -23,11 +24,10 @@ import {
   type FortuneStick,
   type StickLevel,
 } from '../shared/sticks';
-import { hanNumber } from '../shared/numerals';
 import type { Interpretation } from '../shared/types';
 import { appUrl } from './base';
 import { LEVEL_TONE } from './constants';
-import { HAND, MINCHO_EN, MINCHO_ZH } from './fonts';
+import { MINCHO_EN, MINCHO_ZH, handFor, minchoFor } from './fonts';
 import { CREAM, SEAL, SEAL_DEEP, drawEma, drawSakuraMark, drawSeal, drawWashiTape, paintShrine, spacedText } from './shrineArt';
 
 const WIDTH = 1080;
@@ -72,7 +72,7 @@ export const shareLink = (stick: FortuneStick, language: Language, via?: 'qr' | 
   new URL(appUrl('/') + sharedStickQuery(stick.no, language, via), window.location.origin).toString();
 
 /** 按宽度折行。中文逐字折，不需要考虑单词边界。 */
-function wrapChars(context: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+function wrapChars(context: CanvasRenderingContext2D, text: string, maxWidth: number, kinsoku = false): string[] {
   const lines: string[] = [];
   let line = '';
   for (const char of text) {
@@ -81,7 +81,8 @@ function wrapChars(context: CanvasRenderingContext2D, text: string, maxWidth: nu
       line = '';
       continue;
     }
-    if (context.measureText(line + char).width > maxWidth && line) {
+    // 日文：不能起头的字不另起一行，挂在这一行末尾
+    if (context.measureText(line + char).width > maxWidth && line && !(kinsoku && NO_LINE_START.has(char))) {
       lines.push(line);
       line = char;
     } else {
@@ -119,8 +120,19 @@ function wrapWords(context: CanvasRenderingContext2D, text: string, maxWidth: nu
   return lines;
 }
 
-/** 按语言选折行方式。中文逐字，英文按词。 */
-const wrapFor = (language: Language) => (language === 'en' ? wrapWords : wrapChars);
+/** 按语言选折行方式。中文、日文逐字，英文、韩文按词。 */
+const wrapFor = (language: Language) =>
+  wrapsByWord(language)
+    ? wrapWords
+    : (context: CanvasRenderingContext2D, text: string, maxWidth: number) => wrapChars(context, text, maxWidth, language === 'ja');
+
+/**
+ * canvas 的直排是一个字一个字正着画的，不会像 CSS 的 vertical-rl 那样把横排才对的符号立起来。
+ * 日文正文里常见的长音、顿号、句号和引号换成直排的字形，不然「ー」会是一条横线。
+ * 只给日文用：中文那一套一直是这样画的，不动它。
+ */
+const VERTICAL_FORMS: Record<string, string> = { 'ー': '︱', '、': '︑', '。': '︒', '「': '﹁', '」': '﹂' };
+const toVerticalForms = (text: string): string => [...text].map((char) => VERTICAL_FORMS[char] ?? char).join('');
 
 /**
  * 折成幾行就讓每行差不多長：先照寬度折，再把寬度往內收到行數剛好不會多一行為止。
@@ -145,6 +157,27 @@ interface VerticalBlock {
   color: string;
   /** 一个字占的高度 */
   step: number;
+  /** 日文的禁则：不能起头的字（小假名、长音、句读、收尾的括号）挂到上一列的末尾 */
+  kinsoku?: boolean;
+}
+
+/** 日文里不能放在一行（一列）开头的字。 */
+const NO_LINE_START = new Set([...'ぁぃぅぇぉっゃゅょゎァィゥェォッャュョヮヵヶー︱、。，．︑︒」』）﹂﹄？！…・']);
+
+/**
+ * 按每列 perColumn 个字切开；kinsoku 时，不能起头的字挂到上一列末尾（允许那一列多一两个字），
+ * 所以一列永远不会从「っ」「。」或者单独一个收尾的「﹂」开始。
+ */
+function splitColumns(chars: string[], perColumn: number, kinsoku: boolean): string[][] {
+  const columns: string[][] = [];
+  let i = 0;
+  while (i < chars.length) {
+    let end = Math.min(chars.length, i + perColumn);
+    while (kinsoku && end < chars.length && NO_LINE_START.has(chars[end]) && end - i < perColumn + 2) end += 1;
+    columns.push(chars.slice(i, end));
+    i = end;
+  }
+  return columns;
 }
 
 /**
@@ -165,8 +198,8 @@ function drawVertical(
     const chars = [...block.text];
     // 列宽按这一块里最宽的字算，免得标点把列挤窄。
     const width = Math.max(...chars.map((char) => context.measureText(char).width));
-    for (let i = 0; i < chars.length; i += perColumn) {
-      columns.push({ chars: chars.slice(i, i + perColumn), block, width });
+    for (const column of splitColumns(chars, perColumn, Boolean(block.kinsoku))) {
+      columns.push({ chars: column, block, width });
     }
   }
 
@@ -286,7 +319,7 @@ async function loadShareQr(stick: FortuneStick, language: Language): Promise<HTM
  * canvas 不会等 webfont：字体还没到就直接用后备字体画完了，于是第一次分享出来的图
  * 和页面上看到的不是同一副长相。所以先把要用到的字重加载出来再下笔。
  */
-async function waitForFonts(sample: string): Promise<void> {
+async function waitForFonts(sample: string, language: Language): Promise<void> {
   if (!document.fonts) return;
   // 中文和文楷是按字切片下载的：只 load 字体名会只拿到空格那一片，要把真的会画的字一起传进去
   try {
@@ -298,7 +331,11 @@ async function waitForFonts(sample: string): Promise<void> {
       document.fonts.load(`600 40px ${SERIF_EN}`, sample),
       document.fonts.load(`500 40px ${SERIF_EN}`, sample),
       document.fonts.load(`400 30px ${SERIF_EN}`, sample),
-      document.fonts.load(`500 36px ${HAND}`, sample),
+      document.fonts.load(`500 36px ${handFor(language)}`, sample),
+      // 日文、韩文的纸用自己的那一套明朝
+      ...(language === 'ja' || language === 'ko'
+        ? [700, 600, 500, 400].map((weight) => document.fonts.load(`${weight} 40px ${minchoFor(language)}`, sample))
+        : []),
     ]);
     await document.fonts.ready;
   } catch {
@@ -318,8 +355,12 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
   if (!g) throw new Error('这个浏览器不支持生成图片。');
 
   const { stick, language } = input;
+  /** 英文的字距、字号是给拉丁字母调的；韩文横排，但字号跟着中文走。 */
   const en = language === 'en';
-  const face = en ? SERIF_EN : SERIF;
+  const vertical = writesVertically(language);
+  const paper = PAPER_COPY[language];
+  const face = minchoFor(language);
+  const hand = handFor(language);
   const text = stickText(stick, language);
   const tone = TONE[stick.level];
   const lucky = LEVEL_TONE[stick.level].luckyColor;
@@ -327,7 +368,22 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
   const meaning = withoutDashes(input.interpretation?.meaning ?? text.meaning);
   const question = withoutDashes(input.question);
   await waitForFonts(
-    [text.title, ...text.poem, meaning, question, level, text.luckyItem, 'OMIKUJI 御神签 第签 吉色 开运 扫码求一签 SCAN TO DRAW 0123456789'].join(''),
+    [
+      text.title,
+      ...text.poem,
+      meaning,
+      question,
+      level,
+      text.luckyItem,
+      paper.band,
+      paper.number(stick.no, STICK_COUNT),
+      paper.luckyTone(lucky[language]),
+      paper.luckyCharm(''),
+      paper.emaCaption,
+      paper.scanToDraw,
+      'OMIKUJI 御神签 第签 吉色 开运 扫码求一签 SCAN TO DRAW 0123456789',
+    ].join(''),
+    language,
   );
   const qrImage = await loadShareQr(stick, language);
   const center = WIDTH / 2;
@@ -358,7 +414,7 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
   // 问题写在绘马上，挂在纸的正上方、跟纸一样宽
   let paperTop: number;
   if (withQuestion) {
-    const qFont = `500 36px ${HAND}`;
+    const qFont = `500 36px ${hand}`;
     g.font = qFont;
     const all = wrapFor(language)(g, question, paperW - 110);
     const lines = all.slice(0, 2);
@@ -368,7 +424,7 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
       while (last && g.measureText(`${last}…`).width > paperW - 110) last = [...last].slice(0, -1).join('');
       lines[1] = `${last.trimEnd()}…`;
     }
-    const emaBottom = drawEma(g, center, nukiBottom + 40, paperW, lines, qFont, 52, en ? 'EMA · MAKE A WISH' : '絵馬 · 心願');
+    const emaBottom = drawEma(g, center, nukiBottom + 40, paperW, lines, qFont, 52, paper.emaCaption);
     paperTop = emaBottom + 34;
   } else {
     // 沒有繪馬：紙放在鳥居的貫與畫面下緣之間的正中
@@ -407,20 +463,20 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
   g.fillStyle = band;
   g.fillRect(innerX, y, innerW, BAND);
   g.fillStyle = CREAM;
-  g.font = en ? `700 26px ${face}` : `700 30px ${SERIF}`;
-  spacedText(g, en ? 'OMIKUJI' : '御神签', center, y + BAND / 2 + 11, en ? 14 : 30);
+  g.font = en ? `700 26px ${face}` : `700 30px ${face}`;
+  spacedText(g, paper.band, center, y + BAND / 2 + 11, en ? 14 : 30);
   y += BAND;
 
   // 签号
   g.fillStyle = INK_2;
   g.font = `400 25px ${face}`;
-  spacedText(g, en ? `NO. ${stick.no} OF ${STICK_COUNT}` : `第${hanNumber(stick.no)}签`, center, y + 38, en ? 4 : 10);
+  spacedText(g, paper.number(stick.no, STICK_COUNT), center, y + 38, vertical ? 10 : 4);
   y += NO;
 
   // 等级大红印：三个字的等级小一号，英文两个词各一行
   const sealLines = en ? level.split(' ') : [level];
   // 英文最长那个词（FORTUNE、BLESSING）要留在内圈里：Shippori 比以前的字宽，放不下就缩字
-  let sealFont = en ? `700 24px ${face}` : `800 ${[...level].length >= 3 ? 40 : 54}px ${SERIF}`;
+  let sealFont = en ? `700 24px ${face}` : `800 ${[...level].length >= 3 ? 40 : 54}px ${face}`;
   if (en) {
     const fits = () => Math.max(...sealLines.map((line) => g.measureText(line).width)) <= (SEAL_R - 12) * 1.5;
     let size = 24;
@@ -436,8 +492,9 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
 
   // 签名，左右各一条朱红细线
   g.fillStyle = INK;
-  const titleGap = en ? 2 : 18;
-  const titleFace = en ? face : SERIF;
+  // 韩文签名是带空格的短句，跟英文一样不拉开字距，只留一点
+  const titleGap = en ? 2 : vertical ? 18 : 4;
+  const titleFace = face;
   const measureTitle = () =>
     [...text.title].reduce((w, c) => w + g.measureText(c).width, 0) + titleGap * ([...text.title].length - 1);
   // 簽名兩側各有一條 22 + 40 的朱紅短線：長的英文簽名先縮字，縮到最小還放不下就不畫短線，
@@ -478,8 +535,8 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
     g.stroke();
   }
   // 直排是一格一格正著畫的：引號要用直排的形（﹁﹂），橫排的「」立起來會是兩個歪掉的角
-  const soulMeaning = en ? `“${meaning}”` : `﹁${meaning}﹂`;
-  if (en) {
+  const soulMeaning = vertical ? `﹁${meaning}﹂` : `“${meaning}”`;
+  if (!vertical) {
     drawHorizontal(
       g,
       [
@@ -491,13 +548,14 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
     );
   } else {
     const poemStep = Math.min(42, Math.floor((BODY - 52) / 7));
+    const upright = language === 'ja' ? toVerticalForms : (value: string) => value;
     drawVertical(
       g,
       [
         // 七言一列要放得下：一個字的高度照這一格的高度算（BODY 會因為繪馬變高而縮）
-        { text: text.poem[0], font: `500 ${Math.min(38, poemStep - 4)}px ${SERIF}`, color: INK, step: poemStep },
-        { text: text.poem[1], font: `500 ${Math.min(38, poemStep - 4)}px ${SERIF}`, color: INK, step: poemStep },
-        { text: soulMeaning, font: `400 29px ${SERIF}`, color: INK_2, step: 34 },
+        { text: upright(text.poem[0]), font: `500 ${Math.min(38, poemStep - 4)}px ${face}`, color: INK, step: poemStep },
+        { text: upright(text.poem[1]), font: `500 ${Math.min(38, poemStep - 4)}px ${face}`, color: INK, step: poemStep },
+        { text: upright(soulMeaning), font: `400 29px ${face}`, color: INK_2, step: 34, kinsoku: language === 'ja' },
       ],
       { centerX: center, top: y + 26, height: BODY - 52, gap: 26 },
     );
@@ -506,8 +564,8 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
 
   // 今日幸運指南（Lucky Guide：吉色 + 開運小物）
   g.font = `600 21px ${face}`;
-  const luckyText = en ? `Lucky tone · ${lucky.en}` : `吉色 · ${lucky.zh}`;
-  const itemText = en ? `Lucky charm · ${text.luckyItem}` : `开运 · ${text.luckyItem}`;
+  const luckyText = paper.luckyTone(lucky[language]);
+  const itemText = paper.luckyCharm(text.luckyItem);
   const lw1 = g.measureText(luckyText).width + 64;
   const lw2 = g.measureText(itemText).width + 64;
   const guideCx = qrImage ? paperX + (paperW - QR_SIZE - PAD) / 2 : center;
@@ -558,7 +616,7 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
     g.fillStyle = INK_2;
     g.font = `500 17px ${face}`;
     g.textAlign = 'center';
-    g.fillText(en ? 'SCAN TO DRAW' : '扫码求一签', qx + QR_SIZE / 2, qy + QR_SIZE + 20);
+    g.fillText(paper.scanToDraw, qx + QR_SIZE / 2, qy + QR_SIZE + 20);
   }
 
   // 以前紙下面還有兩行頁腳（「签为参考，路要自己走」和網址），使用者要拿掉；
@@ -588,15 +646,12 @@ export async function shareImage(
   stick: FortuneStick,
   language: Language,
 ): Promise<ShareOutcome> {
-  const en = language === 'en';
-  const name = en ? `fortune-stick-${stick.no}.png` : `问一签-第${stick.no}签.png`;
-  const file = new File([blob], name, { type: 'image/png' });
+  const paper = PAPER_COPY[language];
+  const file = new File([blob], paper.fileName(stick.no), { type: 'image/png' });
   const shareData = {
     files: [file],
     title: APP_NAME,
-    text: en
-      ? `No. ${stick.no} · ${LEVEL_LABEL.en[stick.level]}\n${shareLink(stick, language, 'link')}`
-      : `第 ${stick.no} 签 · ${stick.level}\n${shareLink(stick, language, 'link')}`,
+    text: `${paper.shortNumber(stick.no)} · ${LEVEL_LABEL[language][stick.level]}\n${shareLink(stick, language, 'link')}`,
   };
   if (navigator.canShare?.(shareData)) {
     try {
@@ -624,8 +679,6 @@ export const shareText = (stick: FortuneStick, meaning: string, language: Langua
   const text = stickText(stick, language);
   const cleanMeaning = withoutDashes(meaning);
   const link = shareLink(stick, language, 'link');
-  if (language === 'en') {
-    return `${APP_NAME} · No. ${stick.no} · ${LEVEL_LABEL.en[stick.level]}\n${text.poem[0]} / ${text.poem[1]}\n${cleanMeaning}\n${link}`;
-  }
-  return `${APP_NAME} · 第 ${stick.no} 签 · ${stick.level}\n${text.poem[0]}，${text.poem[1]}\n${cleanMeaning}\n${link}`;
+  const paper = PAPER_COPY[language];
+  return `${APP_NAME} · ${paper.shortNumber(stick.no)} · ${LEVEL_LABEL[language][stick.level]}\n${paper.joinPoem(text.poem[0], text.poem[1])}\n${cleanMeaning}\n${link}`;
 };

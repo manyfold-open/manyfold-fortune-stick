@@ -13,6 +13,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { Language } from '../../shared/lang';
+import { translatorFor } from '../i18n';
 import type { Reading } from '../../shared/types';
 import {
   CURL_LEN,
@@ -74,7 +75,8 @@ interface Drive {
 
 export default function FortunePaperRoll(props: FortunePaperRollProps) {
   const { state, sheet, fault, language, soundEnabled, onShake, disabled } = props;
-  const en = language === 'en';
+  // 器具上的提示跟着器具拿到的 language 走（抽到之前是界面语言，印出来之后是这一局的语言）
+  const vt = translatorFor(language);
 
   const hostRef = useRef<HTMLDivElement | null>(null);
   const sceneRef = useRef<RollScene | null>(null);
@@ -292,9 +294,7 @@ export default function FortunePaperRoll(props: FortunePaperRollProps) {
     return (
       <div className="roll-stage">
         <p className="roll-fallback">
-          {en
-            ? 'This browser cannot run the 3D press. Switch to the retro printer above.'
-            : '這台瀏覽器跑不動 3D 滾印機，請在上方改選復古印表機。'}
+          {vt('rollFailed')}
         </p>
       </div>
     );
@@ -316,7 +316,7 @@ export default function FortunePaperRoll(props: FortunePaperRollProps) {
         }}
         role="button"
         tabIndex={disabled ? -1 : 0}
-        aria-label={en ? 'Interactive 3D woodblock fortune press' : '3D 木刻滾印籤紙機'}
+        aria-label={vt('rollAria')}
       />
 
       <div className="roll-action-area">
@@ -327,21 +327,19 @@ export default function FortunePaperRoll(props: FortunePaperRollProps) {
           </div>
         ) : state === 'idle' ? (
           <p className="roll-hint">
-            {en ? 'Write your thoughts above to ink the block' : '請先在上方虔心寫下所求之事'}
+            {vt('rollAsk')}
           </p>
         ) : state === 'ready' ? (
           <p className="roll-hint">
-            {en
-              ? 'Move left and right to steer the press · Click to set it rolling'
-              : '左右移動駕馭印滾 · 點擊落印定籤'}
+            {vt('rollReady')}
           </p>
         ) : state === 'shaking' ? (
           <p className="roll-hint active">
-            {en ? 'The block turns, the paper runs…' : '木刻印滾碾過案几，長卷正在鋪展…'}
+            {vt('rollRolling')}
           </p>
         ) : (
           <p className="roll-hint highlight">
-            {en ? '✦ The impression is set. Reading your fortune… ✦' : '✦ 落印已定，正為您呈遞神諭籤詩… ✦'}
+            {vt('rollDone')}
           </p>
         )}
       </div>

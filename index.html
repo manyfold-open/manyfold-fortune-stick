@@ -36,9 +36,21 @@
       media="print"
       onload="this.media='all'"
     />
+    <!-- 日文、韩文的纸另开一笔：中文、英文那一笔的网址不动（缓存照旧），
+         这一笔只登记字体，只有页面上真的出现日文、韩文时浏览器才去下载那几片字。 -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;900&family=Noto+Serif+KR:wght@400;500;700;900&family=Klee+One:wght@400;600&display=optional"
+      rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
+    />
     <noscript>
       <link
         href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;700;900&family=LXGW+WenKai+TC:wght@400;700&display=optional"
+        rel="stylesheet"
+      />
+      <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;900&family=Noto+Serif+KR:wght@400;500;700;900&family=Klee+One:wght@400;600&display=optional"
         rel="stylesheet"
       />
     </noscript>

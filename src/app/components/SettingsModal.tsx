@@ -1,6 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
 import type { Prefs } from '../storage';
-import type { Language } from '../../shared/lang';
+import { HTML_LANG, LANGUAGES, type Language } from '../../shared/lang';
+
+/** 设置里那一排语言按钮上的字：每种语言用自己的文字写。 */
+const SEGMENT_LABEL: Record<Language, string> = { zh: '中文', en: 'English', ja: '日本語', ko: '한국어' };
 import { useT } from '../i18n';
 
 interface SettingsModalProps {
@@ -167,29 +170,26 @@ export default function SettingsModal({
           </div>
 
           {/* 语言设定 */}
-          <div className="settings-row">
+          <div className="settings-row lang-row">
             <div className="settings-label-wrap">
               <span className="settings-label">
                 <span className="settings-icon">🌐</span> {t('settingsLanguageTitle')}
               </span>
             </div>
             <div className="settings-segment">
-              <button
-                type="button"
-                className={`segment-btn${language === 'zh' ? ' active' : ''}`}
-                onClick={() => updatePrefs({ language: 'zh' })}
-                aria-pressed={language === 'zh'}
-              >
-                中文
-              </button>
-              <button
-                type="button"
-                className={`segment-btn${language === 'en' ? ' active' : ''}`}
-                onClick={() => updatePrefs({ language: 'en' })}
-                aria-pressed={language === 'en'}
-              >
-                English
-              </button>
+              {LANGUAGES.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  className={`segment-btn${language === option ? ' active' : ''}`}
+                  onClick={() => updatePrefs({ language: option })}
+                  aria-pressed={language === option}
+                  lang={HTML_LANG[option]}
+                  data-lang={option}
+                >
+                  {SEGMENT_LABEL[option]}
+                </button>
+              ))}
             </div>
           </div>
 

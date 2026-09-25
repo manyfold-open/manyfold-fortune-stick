@@ -11,7 +11,7 @@
  *     （真的雕版就是反着刻的，印出来才正。MIRROR_BLOCK 一行可关）。
  */
 
-import type { Language } from '../../shared/lang';
+import { writesVertically, type Language } from '../../shared/lang';
 import { LEVEL_LABEL, stickText, type FortuneStick } from '../../shared/sticks';
 import { N, W } from '../../shared/roll/kinematics';
 import {
@@ -32,6 +32,12 @@ export { ATLAS_H, ATLAS_W, CARD_PX, MIRROR_BLOCK, PAPER_FIBRES, atlasCellRect, p
 
 const SERIF = '"Kaiti SC", "STKaiti", "BiauKai", "DFKai-SB", "Noto Serif TC", serif';
 const LATIN = '"Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif';
+/** 日文的版画：Klee One 跟楷书同一路手写，汉字是日文字形。 */
+const SERIF_JA = `"Klee One", "Noto Serif JP", ${SERIF}`;
+/** 韩文横排：字母数字仍是 LATIN，谚文落到 Noto Serif KR。 */
+const LATIN_KO = `"Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Noto Serif KR", serif`;
+/** canvas 直排不会把横排的符号立起来，日文的长音、顿号、句号换成直排字形（跟分享图同一招）。 */
+const VERTICAL_FORMS: Record<string, string> = { 'ー': '︱', '、': '︑', '。': '︒', '「': '﹁', '」': '﹂' };
 
 
 /* ── 底子 ── */
@@ -248,43 +254,48 @@ function paintCard(
   paintSeal(g, rect.w - 58, 60, 52, SEAL_TEXTS[slot % SEAL_TEXTS.length]);
   g.restore();
 
-  if (language === 'zh') {
+  if (writesVertically(language)) {
     // 中部直排：签号等级大字 + 两行签诗 + 签意，共四列，自右向左
+    const ja = language === 'ja';
+    const serif = ja ? SERIF_JA : SERIF;
+    const upright = (value: string) => (ja ? [...value].map((char) => VERTICAL_FORMS[char] ?? char).join('') : value);
     g.fillStyle = ink;
-    g.font = `800 34px ${SERIF}`;
-    paintVertical(g, `第${stick.no}签`, 56, 64, 38, 6);
-    g.font = `800 30px ${SERIF}`;
+    g.font = `800 34px ${serif}`;
+    paintVertical(g, ja ? `第${stick.no}番` : `第${stick.no}签`, 56, 64, 38, 6);
+    g.font = `800 30px ${serif}`;
     g.fillStyle = paper ? 'rgba(146, 30, 26, 0.88)' : 'rgba(228, 196, 128, 0.9)';
     paintVertical(g, level, 56, 262, 34, 4);
 
     g.fillStyle = ink;
-    g.font = `600 26px ${SERIF}`;
-    paintVertical(g, text.poem[0], rect.w - 132, 110, 30, 11);
-    paintVertical(g, text.poem[1], rect.w - 174, 110, 30, 11);
-    g.font = `500 19px ${SERIF}`;
+    g.font = `600 26px ${serif}`;
+    paintVertical(g, upright(text.poem[0]), rect.w - 132, 110, 30, 11);
+    paintVertical(g, upright(text.poem[1]), rect.w - 174, 110, 30, 11);
+    g.font = `500 19px ${serif}`;
     g.fillStyle = faint;
-    paintVertical(g, text.meaning, rect.w - 212, 110, 22, 15);
+    paintVertical(g, upright(text.meaning), rect.w - 212, 110, 22, 15);
 
-    // 签名四字，横过中路
+    // 签名四字，横过中路（日文签名最长六个字，放不下就缩字）
     g.fillStyle = ink;
-    g.font = `800 44px ${SERIF}`;
+    if (ja) fitFont(g, text.title, rect.w - 76, 44, 26, '800', serif);
+    else g.font = `800 44px ${SERIF}`;
     g.fillText(text.title, rect.w / 2 + 10, rect.h - 96);
   } else {
+    const latin = language === 'ko' ? LATIN_KO : LATIN;
     const maxW = rect.w - 76;
     const measure = (s: string) => g.measureText(s).width;
 
-    g.font = `700 22px ${LATIN}`;
+    g.font = `700 22px ${latin}`;
     g.fillText(`NO. ${stick.no}`, 88, 62);
     g.fillStyle = paper ? 'rgba(146, 30, 26, 0.88)' : 'rgba(228, 196, 128, 0.9)';
-    g.font = `700 20px ${LATIN}`;
+    g.font = `700 20px ${latin}`;
     g.fillText(level, 88, 92);
 
     g.fillStyle = ink;
-    fitFont(g, text.title, maxW, 34, 22, '700', LATIN);
+    fitFont(g, text.title, maxW, 34, 22, '700', latin);
     g.fillText(text.title, rect.w / 2, 158);
 
     // 两句诗各自最多折两行，排完才知道签意从哪一行起 —— 所以先排诗再排签意。
-    g.font = `italic 17px ${LATIN}`;
+    g.font = `italic 17px ${latin}`;
     let y = 200;
     for (const line of [text.poem[0], text.poem[1]]) {
       for (const part of wrapText(measure, line, maxW, 2)) {
@@ -294,7 +305,7 @@ function paintCard(
     }
 
     g.fillStyle = faint;
-    g.font = `15px ${LATIN}`;
+    g.font = `15px ${latin}`;
     y += 3;
     for (const part of wrapText(measure, text.meaning, maxW, 3)) {
       g.fillText(part, rect.w / 2, y);

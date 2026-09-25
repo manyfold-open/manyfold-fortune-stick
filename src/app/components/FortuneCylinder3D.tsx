@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import type { Language } from '../../shared/lang';
+import { translatorFor } from '../i18n';
 import type { Reading } from '../../shared/types';
 import {
   createMotions,
@@ -167,7 +168,8 @@ interface Drive {
 
 export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
   const { state, sheet, fault, language, soundEnabled, reducedMotion, onShake, onRevealed, onNeedQuestion, disabled } = props;
-  const en = language === 'en';
+  // 器具上的提示跟着器具拿到的 language 走（抽到之前是界面语言，印出来之后是这一局的语言）
+  const vt = translatorFor(language);
 
   const hostRef = useRef<HTMLDivElement | null>(null);
   const sceneRef = useRef<CylinderScene | null>(null);
@@ -647,9 +649,7 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
     return (
       <div className="roll-stage cyl3d-stage">
         <p className="roll-fallback">
-          {en
-            ? 'This browser cannot run the 3D cylinder. Switch to the retro printer above.'
-            : '這台瀏覽器跑不動 3D 籤筒，請在上方改選復古印表機。'}
+          {vt('cylFailed')}
         </p>
       </div>
     );
@@ -661,21 +661,21 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
       ? // 還沒寫問題時不放常駐提示：題目框和例句就在上面，再說一次「請先寫下」是多的（使用者要求拿掉）。
         // 只有真的來攪了，才短暫說一聲
         askFirst
-        ? en ? 'Write your question on the ema above first' : '先在上面的繪馬寫下心事'
+        ? vt('cylAskFirst')
         : null
       : // 籤紙會自己打開，不叫人去點（使用者回饋：寫「點一下打開」不對）。
         // 想早點看的人照樣點得開（skippable），只是不特別說
         stageLabel === 'pulling' || stageLabel === 'done'
-        ? en ? '✦ Your stick is drawn ✦' : '✦ 神籤已出 ✦'
+        ? vt('cylDrawn')
         : stageLabel === 'shaking'
           ? progress >= 1
             ? dragging
-              ? en ? 'A stick is up. Let go to draw' : '籤起來了，放手就抽'
-              : en ? 'A stick is coming up…' : '籤就要出來了…'
+              ? vt('cylLetGo')
+              : vt('cylComing')
             : dragging
-              ? en ? 'Stir them round…' : '攪一攪…'
-              : en ? 'Just a few more circles' : '再攪幾圈就好'
-          : en ? 'Hold and stir the sticks, let go when ready' : '按住籤攪一攪，想攪多久都可以，放手就抽';
+              ? vt('cylStir')
+              : vt('cylMore')
+          : vt('cylHint');
 
   /*
    * 題目寫了、還沒真的攪過，就放一隻手示範「按住、繞圈、放開」—— 使用者回饋：不知道要
@@ -701,7 +701,7 @@ export default function FortuneCylinder3D(props: FortuneCylinder3DProps) {
         }}
         role="button"
         tabIndex={disabled ? -1 : 0}
-        aria-label={en ? 'Stir the sticks in the 3D fortune cylinder' : '攪動籤筒裡的籤'}
+        aria-label={vt('cylAria')}
       >
         <SakuraBloom active={blooming} reducedMotion={reducedMotion ?? false} />
       </div>

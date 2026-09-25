@@ -1,11 +1,11 @@
 /**
  * 界面文案（简体中文）。这张表是基准：`Copy` 的形状由它推出来，
- * en.ts 用 `satisfies Copy` 约束，漏掉任何一个键都编译不过。
+ * en.ts、ja.ts、ko.ts 用 `satisfies Copy` 约束，漏掉任何一个键都编译不过。
  *
  * 这里只放「机器说的话」—— 按钮、屏上的提示、记录页和设置页的外壳。
  * 签纸上的字和 AI 写的解读不在这里，它们跟着问题的语言走（src/shared/sticks.ts）。
  *
- * 占位符写成 {name}，两种语言必须用同一组占位符（tests/i18n.test.ts 会查）。
+ * 占位符写成 {name}，每种语言必须用同一组占位符（tests/i18n.test.ts 会查）。
  *
  * 屏上那截状态码（READY / PRINT / E-01）不在这里：它们是机器码，不是文案，
  * 两种语言下都一样，写在 FortuneGame 里就够了。
@@ -36,8 +36,6 @@ export const zh = {
   footerMotionReduced: '已减少',
   footerMotionNormal: '正常',
   footerNote: '签为参考，路要自己走',
-  langSwitch: 'EN',
-  langSwitchLabel: 'Switch to English',
   loading: '载入中…',
   loadingSticks: '签筒载入中…',
   loadFailed: '连不上服务：{detail}',
@@ -288,6 +286,33 @@ export const zh = {
   errInternal: '出了点问题，再试一次。',
   errUnknown: '出了点问题，再试一次。',
   fallbackUnparseable: '解签内容没有按预期返回，先给你这支签的通用解释。',
+
+  /* ── 籤筒与另外两台器具上的提示（它们跟着器具的 language 走） ── */
+  cylFailed: '這台瀏覽器跑不動 3D 籤筒，請在上方改選復古印表機。',
+  cylAskFirst: '先在上面的繪馬寫下心事',
+  cylDrawn: '✦ 神籤已出 ✦',
+  cylLetGo: '籤起來了，放手就抽',
+  cylComing: '籤就要出來了…',
+  cylStir: '攪一攪…',
+  cylMore: '再攪幾圈就好',
+  cylHint: '按住籤攪一攪，想攪多久都可以，放手就抽',
+  cylAria: '攪動籤筒裡的籤',
+  tubeAria: '3D 互動問籤筒',
+  tubeAsk: '請先在上方虔心寫下所求之事',
+  tubePutBackAria: '放回籤筒',
+  tubePutBack: '放回籤筒 · 換抽別支',
+  tubeConfirmAria: '確定解第 {n} 籤',
+  tubeConfirm: '心誠擲定 · 確定解第 {n} 籤',
+  tubeStirring: '攪動籤筒中... 隨時點選竹籤抽起試看',
+  tubeDragHint: '按住拖曳攪動竹籤 · 點選任意一籤抽起試看',
+  tubeShaking: '心誠則靈，3D 竹籤碰撞搖晃中...',
+  tubeDrawn: '✦ 神籤破筒拔出！正為您呈遞神諭籤詩... ✦',
+  rollFailed: '這台瀏覽器跑不動 3D 滾印機，請在上方改選復古印表機。',
+  rollAria: '3D 木刻滾印籤紙機',
+  rollAsk: '請先在上方虔心寫下所求之事',
+  rollReady: '左右移動駕馭印滾 · 點擊落印定籤',
+  rollRolling: '木刻印滾碾過案几，長卷正在鋪展…',
+  rollDone: '✦ 落印已定，正為您呈遞神諭籤詩… ✦',
 } as const;
 
 export type Copy = Record<keyof typeof zh, string>;

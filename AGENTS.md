@@ -62,8 +62,9 @@ Rules for anyone — human or AI agent — iterating on it. These are the load-b
    onto the background. The site is daylight-only for now (no dark mode); keep the two scales separate anyway,
    or a future night theme will make text vanish.
 9. **The machine speaks the interface language, the paper speaks the question's language.**
-   The switch in the top-right corner sets the interface language (default British English,
-   kept in `localStorage`; a visitor who already chose 简体中文 keeps it). It moves the LCD, the actions, errors, history chrome and settings — and
+   The language menu in the top-right corner sets the interface language (简体中文, English,
+   日本語, 한국어; default British English, kept in `localStorage`; a visitor who already chose
+   another language keeps it). It moves the LCD, the actions, errors, history chrome and settings — and
    nothing else. A round's language comes from the question and is fixed when the print key
    is pressed: the slip, the interpretation, the four headings over it and every follow-up
    stay in it no matter what the switch does afterwards. Switching language must never
@@ -123,9 +124,11 @@ npm run smoke -- https://your-app.workers.dev
 
 ## What is safe to change
 
-Everything else. The stick texts in `src/shared/sticks.ts` (keep every field filled in **both**
-`zh` and `en` — `general` and `action` double as the AI-unavailable fallback), the interface
-copy in `src/shared/i18n/` (both tables, or the build fails; the English is British English
+Everything else. The stick texts in `src/shared/sticks.ts`, `sticks-ja.ts` and `sticks-ko.ts`
+(keep every field filled in **all four** languages — `general` and `action` double as the
+AI-unavailable fallback; Japanese poem lines stay within 7 characters so the vertical column
+never wraps, which `tests/sticks-layout.test.ts` enforces), the interface
+copy in `src/shared/i18n/` (all four tables, or the build fails; the English is British English
 and uses no dashes or hyphens, which `tests/i18n.test.ts` enforces), the styles, the page structure,
 extra tables, extra routes, extra pages. Keep the connect flow (`src/worker/connect.ts`,
 `src/worker/a2a.ts`, `src/worker/crypto.ts`) as long as interpretations come from a Manyfold
