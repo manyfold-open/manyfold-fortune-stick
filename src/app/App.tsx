@@ -23,6 +23,8 @@ import SharedStickView from './components/SharedStickView';
 import { parseSharedStick } from '../shared/share-link';
 import ShrineBackdrop from './components/ShrineBackdrop';
 import { LanguageProvider, useT, useUiLanguage } from './i18n';
+import LanguageMenu from './components/LanguageMenu';
+import { HTML_LANG } from '../shared/lang';
 import { getPrefs, setCurrentReadingId, setPrefs, type Prefs } from './storage';
 import { installAudioUnlock } from './sound';
 import { appUrl, BASE } from './base';
@@ -186,7 +188,7 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
   // <html lang> 决定读屏软件怎么念这一页，所以它得跟着界面语言走，不能钉死在一种语言上。
   // 标题和描述同理 —— 标签页上显示的是当前这个人看得懂的那个名字。
   useEffect(() => {
-    document.documentElement.lang = language === 'en' ? 'en-GB' : 'zh-CN';
+    document.documentElement.lang = HTML_LANG[language];
     document.title = t('documentTitle');
     document
       .querySelector('meta[name="description"]')
@@ -231,14 +233,7 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
 
         <span className="topbar-actions">
           {/* 只换界面。已经印出来的签一个字都不会动。 */}
-          <button
-            type="button"
-            className="text-action lang-switch"
-            aria-label={t('langSwitchLabel')}
-            onClick={() => updatePrefs({ language: language === 'zh' ? 'en' : 'zh' })}
-          >
-            {t('langSwitch')}
-          </button>
+          <LanguageMenu language={language} onChange={(next) => updatePrefs({ language: next })} />
           <a
             className="text-action history-link"
             href={route === 'game' ? '#history' : appUrl('/')}

@@ -11,7 +11,8 @@
 
 import { LEVEL_LABEL, STICK_COUNT, stickByNo, stickText, type FortuneStick } from './sticks';
 import { hanNumber } from './numerals';
-import type { Language } from './lang';
+import { PAPER } from './paper';
+import { isLanguage, type Language } from './lang';
 
 export interface SharedStick {
   stick: FortuneStick;
@@ -27,7 +28,8 @@ export function parseSharedStick(search: string): SharedStick | null {
   if (no < 1 || no > STICK_COUNT) return null;
   const stick = stickByNo(no);
   if (!stick) return null;
-  return { stick, language: params.get('l') === 'zh' ? 'zh' : 'en' };
+  const language = params.get('l');
+  return { stick, language: isLanguage(language) ? language : 'en' };
 }
 
 /**
@@ -41,15 +43,13 @@ export const sharedStickQuery = (no: number, language: Language, via?: 'qr' | 'l
 export function sharedStickMeta({ stick, language }: SharedStick): { title: string; description: string } {
   const text = stickText(stick, language);
   const level = LEVEL_LABEL[language][stick.level];
-  if (language === 'en') {
-    return {
-      title: `No. ${stick.no} · ${level} · ${text.title}`,
-      description: `${text.poem[0]} / ${text.poem[1]}. Draw your own slip at the shrine.`,
-    };
-  }
+  const paper = PAPER[language];
+  // 中文的标题用签纸上那种国字签号（第十八签），其余语言用短签号
+  const number = language === 'zh' ? `第${hanNumber(stick.no)}签` : paper.shortNumber(stick.no);
+  const stop = language === 'en' || language === 'ko' ? '. ' : '。';
   return {
-    title: `第${hanNumber(stick.no)}签 · ${stick.level} · ${text.title}`,
-    description: `${text.poem[0]}，${text.poem[1]}。来求一支你自己的签。`,
+    title: `${number} · ${level} · ${text.title}`,
+    description: `${paper.joinPoem(text.poem[0], text.poem[1])}${stop}${paper.inviteOwn}`,
   };
 }
 

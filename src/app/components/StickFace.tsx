@@ -12,10 +12,10 @@
  * 右上角那个界面开关。
  */
 
-import type { Language } from '../../shared/lang';
+import { writesVertically, type Language } from '../../shared/lang';
+import { PAPER } from '../../shared/paper';
 import { LEVEL_LABEL, STICK_COUNT, stickText, type FortuneStick } from '../../shared/sticks';
 import { LEVEL_TONE } from '../constants';
-import { hanNumber } from '../../shared/numerals';
 
 export default function StickFace(props: {
   stick: FortuneStick;
@@ -27,21 +27,23 @@ export default function StickFace(props: {
   const tone = LEVEL_TONE[stick.level];
   const text = stickText(stick, language);
   const level = LEVEL_LABEL[language][stick.level];
-  const en = language === 'en';
+  const paper = PAPER[language];
+  const vertical = writesVertically(language);
 
   if (props.size === 'small') {
-    // 左邊一條朱紅籤頭（中文直排「第五签」），右邊一顆吉色小徽章加籤名。
+    const tab = paper.tab(stick.no);
+    // 左邊一條朱紅籤頭（中文、日文直排「第五签」），右邊一顆吉色小徽章加籤名。
     // 外層是 display: contents —— 兩塊各自落進記錄卡的格線（styles.css 的 .history-summary）。
     return (
       <div className="slip-mini" data-tone={tone.key} data-lang={language}>
         <span className="slip-mini-tab">
-          {en ? (
+          {tab.small ? (
             <>
-              <small>NO.</small>
-              {stick.no}
+              <small>{tab.small}</small>
+              {tab.main}
             </>
           ) : (
-            `第${hanNumber(stick.no)}签`
+            tab.main
           )}
         </span>
         <span className="slip-mini-head">
@@ -55,13 +57,13 @@ export default function StickFace(props: {
     );
   }
 
-  // 三個字（上上签）的印要小一號才放得下
-  const longLevel = [...level].length >= 3 || en;
+  // 三個字（上上签）的印要小一號才放得下；英文一律是長字
+  const longLevel = [...level].length >= 3 || language === 'en';
   return (
     <article className="slip" data-tone={tone.key} data-lang={language}>
       <header className="slip-head">
-        <span className="slip-head-band">{en ? 'OMIKUJI' : '御神签'}</span>
-        <span className="slip-no">{en ? `NO. ${stick.no} OF ${STICK_COUNT}` : `第${hanNumber(stick.no)}签`}</span>
+        <span className="slip-head-band">{paper.band}</span>
+        <span className="slip-no">{paper.number(stick.no, STICK_COUNT)}</span>
       </header>
 
       {/* 等級是一顆朱紅大印：落印動畫套在整顆印上 */}
@@ -76,7 +78,7 @@ export default function StickFace(props: {
       </div>
 
       <div className="slip-body">
-        {language === 'zh' ? (
+        {vertical ? (
           <div className="slip-grid-columns">
             <p className="slip-column slip-poem">{text.poem[0]}</p>
             <p className="slip-column slip-poem">{text.poem[1]}</p>
@@ -95,7 +97,7 @@ export default function StickFace(props: {
         <span className="slip-lucky-badge">
           <span className="lucky-pip" aria-hidden="true" />
           <span className="slip-lucky">
-            {en ? `Lucky tone · ${tone.luckyColor.en}` : `吉色 · ${tone.luckyColor.zh}`}
+            {paper.luckyTone(tone.luckyColor[language])}
           </span>
         </span>
         <span className="slip-sakura" aria-hidden="true" />

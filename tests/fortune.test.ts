@@ -493,3 +493,64 @@ describe('clipText', () => {
   });
 });
 
+
+describe('日文、韩文的解签', () => {
+  const cases = [
+    { language: 'ja', question: '仕事を変えるべきですか？', followUp: 'どこから始めればいい？', rule: '新しくおみくじを引くことはなく' },
+    { language: 'ko', question: '이직을 해야 할까요?', followUp: '어디서부터 시작할까요?', rule: '새로 제비를 뽑지 않고' },
+  ] as const;
+
+  for (const { language, question, followUp, rule } of cases) {
+    it(`${language}：问题、这支签自己的${language}签文和等级都写进提示词，不混进中文或英文那一套`, () => {
+      const prompt = buildInterpretPrompt(question, stick, language);
+      const text = stickText(stick, language);
+      expect(prompt).toContain(question);
+      expect(prompt).toContain(text.title);
+      expect(prompt).toContain(text.poem[0]);
+      expect(prompt).toContain(text.general);
+      expect(prompt).toContain(LEVEL_LABEL[language][stick.level]);
+      expect(prompt).not.toContain(stickText(stick, 'zh').poem[0]);
+      expect(prompt).not.toContain(stickText(stick, 'en').title);
+      expect(prompt).toContain('"answer"');
+    });
+
+    it(`${language}：兜底整段都是这种语言，并记下语言`, () => {
+      const fallback = fallbackInterpretation(stick, language);
+      expect(fallback.answer).toBe(stickText(stick, language).general);
+      expect(fallback.language).toBe(language);
+      expect(detectLanguage(fallback.notice)).toBe(language);
+    });
+
+    it(`${language}：解析出来缺字段时落回同语言的预写内容`, () => {
+      const parsed = parseInterpretation(JSON.stringify({ answer: 'ok' }), stick, language);
+      expect(parsed?.language).toBe(language);
+      expect(parsed?.meaning).toBe(stickText(stick, language).meaning);
+      expect(parsed?.action).toBe(stickText(stick, language).action);
+    });
+
+    it(`${language}：追问仍然就着同一支签、同一个问题，不重新抽签`, () => {
+      const interpretation = fallbackInterpretation(stick, language);
+      const reading: Reading = {
+        id: 'r1',
+        question,
+        stick,
+        status: 'interpreted',
+        interpretation,
+        error: null,
+        language,
+        createdAt: new Date().toISOString(),
+      };
+      const prompt = buildFollowUpPrompt(reading, interpretation, followUp, language);
+      expect(prompt).toContain(question);
+      expect(prompt).toContain(followUp);
+      expect(prompt).toContain(stickText(stick, language).title);
+      expect(prompt).toContain(rule);
+    });
+  }
+
+  it('下签在日文、韩文里同样要求不恐吓', () => {
+    const low = STICKS.find((one) => one.level === '下签')!;
+    expect(buildInterpretPrompt('どうすれば？', low, 'ja')).toContain('怖がらせる言い方は絶対にせず');
+    expect(buildInterpretPrompt('어떻게 할까요?', low, 'ko')).toContain('겁주는 표현은 절대 쓰지 말고');
+  });
+});

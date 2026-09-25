@@ -20,8 +20,8 @@ export const LEVEL_TONE: Record<
   StickLevel,
   { key: string; luckyColor: Record<Language, string> }
 > = {
-  上上签: { key: 'best', luckyColor: { zh: '靛蓝', en: 'Indigo' } },
-  上签: { key: 'good', luckyColor: { zh: '金黄', en: 'Gold' } },
-  中签: { key: 'fair', luckyColor: { zh: '青绿', en: 'Jade' } },
-  下签: { key: 'low', luckyColor: { zh: '陶褐', en: 'Terracotta' } },
+  上上签: { key: 'best', luckyColor: { zh: '靛蓝', en: 'Indigo', ja: '藍色', ko: '쪽빛' } },
+  上签: { key: 'good', luckyColor: { zh: '金黄', en: 'Gold', ja: '山吹色', ko: '황금빛' } },
+  中签: { key: 'fair', luckyColor: { zh: '青绿', en: 'Jade', ja: '若竹色', ko: '옥빛' } },
+  下签: { key: 'low', luckyColor: { zh: '陶褐', en: 'Terracotta', ja: '弁柄色', ko: '황토빛' } },
 };

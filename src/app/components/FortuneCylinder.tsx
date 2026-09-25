@@ -14,6 +14,7 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import type { Language } from '../../shared/lang';
+import { translatorFor } from '../i18n';
 import type { Reading } from '../../shared/types';
 import { LEVEL_TONE } from '../constants';
 import { bambooDrawSound, bambooDropSound, bambooRustle } from '../sound';
@@ -290,7 +291,8 @@ function buildStickAtlasTexture(totalSticks: number): THREE.CanvasTexture {
 
 export default function FortuneCylinder(props: FortuneCylinderProps) {
   const { state, sheet, fault, language, soundEnabled = true, onShake, disabled } = props;
-  const en = language === 'en';
+  // 器具上的提示跟着器具拿到的 language 走（抽到之前是界面语言，印出来之后是这一局的语言）
+  const vt = translatorFor(language);
   const shaking = state === 'shaking';
   const ejecting = state === 'ejecting';
 
@@ -879,7 +881,7 @@ export default function FortuneCylinder(props: FortuneCylinderProps) {
         onPointerLeave={handlePointerLeave}
         role="button"
         tabIndex={disabled ? -1 : 0}
-        aria-label={en ? 'Interactive 3D Fortune Cylinder' : '3D 互動問籤筒'}
+        aria-label={vt('tubeAria')}
       />
 
       {/* 底部交互指引与动作区 */}
@@ -891,7 +893,7 @@ export default function FortuneCylinder(props: FortuneCylinderProps) {
           </div>
         ) : state === 'idle' ? (
           <p className="cylinder-hint">
-            {en ? 'Write your thoughts above to consult' : '請先在上方虔心寫下所求之事'}
+            {vt('tubeAsk')}
           </p>
         ) : state === 'ready' ? (
           inspectedStickId !== null ? (
@@ -901,23 +903,21 @@ export default function FortuneCylinder(props: FortuneCylinderProps) {
                 className="cylinder-putback-btn"
                 onClick={handlePutBack}
                 disabled={disabled}
-                aria-label={en ? 'Put stick back into cylinder' : '放回籤筒'}
+                aria-label={vt('tubePutBackAria')}
               >
                 <span aria-hidden="true">↩</span>
-                <span>{en ? 'Put Back / Reselect' : '放回籤筒 · 換抽別支'}</span>
+                <span>{vt('tubePutBack')}</span>
               </button>
               <button
                 type="button"
                 className="cylinder-confirm-btn"
                 onClick={handleConfirm}
                 disabled={disabled}
-                aria-label={en ? `Confirm Stick #${inspectedStickId + 1}` : `確定解第 ${inspectedStickId + 1} 籤`}
+                aria-label={vt('tubeConfirmAria', { n: inspectedStickId + 1 })}
               >
                 <span aria-hidden="true">✦</span>
                 <span>
-                  {en
-                    ? `Confirm Stick #${inspectedStickId + 1}`
-                    : `心誠擲定 · 確定解第 ${inspectedStickId + 1} 籤`}
+                  {vt('tubeConfirm', { n: inspectedStickId + 1 })}
                 </span>
               </button>
             </div>
@@ -925,14 +925,14 @@ export default function FortuneCylinder(props: FortuneCylinderProps) {
             <div className="cylinder-stir-prompt stirring">
               <span className="stir-hand-icon spinning" aria-hidden="true">🎋</span>
               <span className="stir-prompt-text">
-                {en ? 'Stirring the cylinder... tap any stick to draw' : '攪動籤筒中... 隨時點選竹籤抽起試看'}
+                {vt('tubeStirring')}
               </span>
             </div>
           ) : (
             <div className="cylinder-stir-prompt">
               <span className="stir-hand-icon" aria-hidden="true">🖐️</span>
               <span className="stir-prompt-text">
-                {en ? 'Drag to stir sticks · Tap any stick to inspect' : '按住拖曳攪動竹籤 · 點選任意一籤抽起試看'}
+                {vt('tubeDragHint')}
               </span>
             </div>
           )
@@ -940,15 +940,13 @@ export default function FortuneCylinder(props: FortuneCylinderProps) {
           <div className="cylinder-shaking-indicator">
             <span className="shaking-dots" aria-hidden="true" />
             <p className="cylinder-hint active">
-              {en ? 'Shaking the bamboo tallies in 3D...' : '心誠則靈，3D 竹籤碰撞搖晃中...'}
+              {vt('tubeShaking')}
             </p>
           </div>
         ) : ejecting ? (
           <div className="cylinder-risen-indicator">
             <p className="cylinder-hint highlight">
-              {en
-                ? `✦ Lucky stick drawn in 3D! Revealing oracle... ✦`
-                : `✦ 神籤破筒拔出！正為您呈遞神諭籤詩... ✦`}
+              {vt('tubeDrawn')}
             </p>
           </div>
         ) : null}

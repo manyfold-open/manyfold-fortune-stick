@@ -164,6 +164,8 @@ export async function deleteReading(env: Env, id: string): Promise<void> {
 const FALLBACK_NOTICE: Record<Language, string> = {
   zh: '这一份是这支签的通用解释，还没有结合你的问题。',
   en: 'This is the stick\u2019s general reading. It has not been matched to your question yet.',
+  ja: 'これはこのおみくじの一般的な読み解きで、まだあなたの問いには合わせていません。',
+  ko: '이것은 이 제비의 일반 풀이로, 아직 질문에 맞추지 않았어요.',
 };
 
 /** 存进 readings.error 的 agent 原文最多留这么长：够看出它回了什么，又不至于占满一行。 */
@@ -203,11 +205,14 @@ type FieldLimits = Record<keyof Omit<Interpretation, 'source' | 'language'>, num
 const FIELD_LIMITS: Record<Language, FieldLimits> = {
   zh: { meaning: 120, answer: 600, notice: 200, action: 120 },
   en: { meaning: 260, answer: 1100, notice: 260, action: 200 },
+  // 日文同样的意思比中文多用约三成的字（假名），韩文有空格，再多一些
+  ja: { meaning: 160, answer: 800, notice: 260, action: 160 },
+  ko: { meaning: 180, answer: 900, notice: 280, action: 180 },
 };
 
 /**
- * 超长时收短，但不从词中间断：英文退到最后一个空格，再补一个省略号。
- * 中文没有空格，按字切本来就不会切坏一个字。
+ * 超长时收短，但不从词中间断：英文、韩文退到最后一个空格，再补一个省略号。
+ * 中文、日文没有空格，按字切本来就不会切坏一个字。
  */
 export function clipText(text: string, limit: number): string {
   if ([...text].length <= limit) return text;
@@ -414,6 +419,22 @@ export function parseInterpretation(
 function stickBlock(stick: FortuneStick, language: Language): string {
   const text = stickText(stick, language);
   const level = LEVEL_LABEL[language][stick.level];
+  if (language === 'ja') {
+    return [
+      `第${stick.no}番 · ${level} · ${text.title}`,
+      `詩：${text.poem[0]}、${text.poem[1]}`,
+      `このおみくじの決まった意味：${text.meaning}`,
+      `このおみくじの一般的な読み解き：${text.general}`,
+    ].join('\n');
+  }
+  if (language === 'ko') {
+    return [
+      `${stick.no}번 · ${level} · ${text.title}`,
+      `시: ${text.poem[0]} / ${text.poem[1]}`,
+      `이 제비의 정해진 뜻: ${text.meaning}`,
+      `이 제비의 일반 풀이: ${text.general}`,
+    ].join('\n');
+  }
   if (language === 'en') {
     return [
       `No. ${stick.no} · ${level} · ${text.title}`,
@@ -447,6 +468,18 @@ const TONE_BY_LEVEL: Record<Language, Record<FortuneStick['level'], string>> = {
     下签:
       'This is a cautionary level. Talk about slowing down, looking carefully, and adjusting course. Stay warm, never frightening, and do not predict a bad outcome.',
   },
+  ja: {
+    上上签: 'これは大吉です。チャンスや流れに乗ることを話してかまいませんが、順調だからといってこれまでの習慣を手放さないよう添えてください。',
+    上签: 'これは吉です。前向きな調子で、次の一歩を踏み出せるところを示してください。ただし結果は約束しないこと。',
+    中签: 'これは末吉です。落ち着いた調子で、ペース、条件、先に確かめるべきことを話してください。',
+    下签: 'これは凶です。ペースを落とすこと、よく見ること、進み方を調整することを話してください。怖がらせる言い方は絶対にせず、悪い結果を予言しないこと。',
+  },
+  ko: {
+    上上签: '이것은 대길이에요. 기회와 흐름을 타는 이야기를 해도 좋지만, 순조롭다고 원래의 습관을 놓지 않도록 일러 주세요.',
+    上签: '이것은 길이에요. 긍정적인 분위기로 다음 한 걸음을 내디딜 수 있는 곳을 짚어 주되, 결과를 약속하지는 마세요.',
+    中签: '이것은 소길이에요. 차분한 분위기로 속도, 조건, 먼저 확인할 것을 이야기해 주세요.',
+    下签: '이것은 흉이에요. 속도를 늦추고, 잘 살피고, 방향을 조정하는 이야기를 해 주세요. 겁주는 표현은 절대 쓰지 말고, 나쁜 결과를 예언하지 마세요.',
+  },
 };
 
 export function buildInterpretPrompt(
@@ -454,6 +487,54 @@ export function buildInterpretPrompt(
   stick: FortuneStick,
   language: Language,
 ): string {
+  if (language === 'ja') {
+    return `あなたは「問一籤」の読み解き役です。相談者がいまおみくじを一枚引きました。その人が実際に聞いた問いに答える読み解きを書いてください。
+
+【相談者の問い】
+${question}
+
+【引いたおみくじ】（機械が決めたもので変えられません。詩をそのまま繰り返さないでください）
+${stickBlock(stick, 'ja')}
+
+【書き方】
+1. あたたかく、具体的で、話しかけるように。その人の状況をわかっている友だちのように。占い師の口調や神秘的な言い回しは使わない。
+2. 自然な日本語で、です・ます調で書く。中国語の文の組み立てや比喩を直訳しない。
+3. 必ず起こることは予言しない。「必ず」「きっと〜になる」「運命」のような言い方は使わない。渡すのは問いの見方と、実行できる助言です。
+4. ${TONE_BY_LEVEL.ja[stick.level]}
+5. 健康、お金、法律など大事な判断に関わる問いなら、断定せずに考えるべき条件を整理し、必要なら専門家への相談をすすめる。
+6. すべて日本語で書く。markdown の見出しや箇条書きの記号は使わない。
+7. ダッシュ（——、―、ー以外の長い横線）やハイフンは使わない。読点、句点、かっこを使う。
+
+【出力形式】
+JSON オブジェクトを一つだけ出力し、ほかの文字は書かないこと。コードブロックで囲まないこと。
+文字列の中に半角のダブルクォートを入れないこと。引用したいときは「」を使う：
+{"meaning":"このおみくじがその人の問いにとって何を意味するか、やさしい言葉で一文、45 字以内","answer":"その人の問いに沿って、100 から 180 字","notice":"見落としているかもしれない一つの視点、45 字以内","action":"今日できる具体的な小さなこと一つ、35 字以内"}`;
+  }
+
+  if (language === 'ko') {
+    return `당신은 「問一籤」의 제비 풀이꾼이에요. 상대가 방금 제비를 한 장 뽑았어요. 그 사람이 실제로 물은 질문에 답하는 풀이를 써 주세요.
+
+[상대의 질문]
+${question}
+
+[뽑은 제비] (기계가 정한 것이라 바꿀 수 없고, 시를 그대로 되풀이하지 마세요)
+${stickBlock(stick, 'ko')}
+
+[쓰는 법]
+1. 따뜻하고 구체적으로, 말하듯이. 그 사람의 처지를 아는 친구처럼. 점쟁이 말투나 신비로운 표현은 쓰지 마세요.
+2. 자연스러운 한국어 해요체로 쓰세요. 중국어 문장 구조나 비유를 직역하지 마세요. 한자는 쓰지 말고 한글로만 쓰세요.
+3. 반드시 일어날 일은 예언하지 마세요. "반드시", "틀림없이", "운명" 같은 표현은 쓰지 마세요. 주는 것은 질문을 보는 관점과 실행할 수 있는 조언이에요.
+4. ${TONE_BY_LEVEL.ko[stick.level]}
+5. 건강, 돈, 법률처럼 중요한 결정에 관한 질문이라면 단정하지 말고 따져 볼 조건을 정리하고, 필요하면 전문가 상담을 권하세요.
+6. 모두 한국어로 쓰세요. markdown 제목이나 목록 기호는 쓰지 마세요.
+7. 대시나 하이픈 같은 가로줄 문장 부호는 쓰지 마세요. 쉼표, 마침표, 괄호를 쓰세요.
+
+[출력 형식]
+JSON 객체 하나만 출력하고 다른 글자는 쓰지 마세요. 코드 블록으로 감싸지 마세요.
+문자열 안에 반각 큰따옴표를 넣지 마세요. 인용이 필요하면 작은따옴표를 쓰세요:
+{"meaning":"이 제비가 그 사람의 질문에 무엇을 뜻하는지 쉬운 말로 한 문장, 50자 이내","answer":"그 사람의 질문에 맞춰서 120자에서 220자","notice":"놓치고 있을지 모르는 관점 하나, 50자 이내","action":"오늘 할 수 있는 구체적인 작은 일 하나, 40자 이내"}`;
+  }
+
   if (language === 'en') {
     return `You are the stick reader for Fortune Printer. Someone has just drawn a stick. Write them a reading that answers the question they actually asked.
 
@@ -506,6 +587,48 @@ export function buildFollowUpPrompt(
   question: string,
   language: Language,
 ): string {
+  if (language === 'ja') {
+    return `あなたは「問一籤」の中で、同じおみくじについての追加の問いに答えています。
+
+【背景、いつも参照すること】
+最初の問い：${reading.question}
+引いたおみくじ：${stickBlock(reading.stick, 'ja')}
+すでに伝えた読み解き：
+· 意味：${interpretation.meaning}
+· 問いへの答え：${interpretation.answer}
+· 気にとめたいこと：${interpretation.notice}
+· 今日できること：${interpretation.action}
+
+【ルール】
+これは追加の問いです。新しくおみくじを引くことはなく、このおみくじの運勢も上の読み解きも変えません。同じおみくじについて話を続けてください。
+答えは 200 字以内で、まっすぐに。上の内容を繰り返さず、JSON も markdown も使わない。自然な日本語の、です・ます調で。
+ダッシュやハイフンは使わない。読点、句点、かっこを使う。
+
+【追加の問い】
+${question}`;
+  }
+
+  if (language === 'ko') {
+    return `당신은 「問一籤」 안에서 같은 제비에 대한 추가 질문에 답하고 있어요.
+
+[배경, 늘 참고할 것]
+처음 질문: ${reading.question}
+뽑은 제비: ${stickBlock(reading.stick, 'ko')}
+이미 전한 풀이:
+· 뜻: ${interpretation.meaning}
+· 질문에 대한 답: ${interpretation.answer}
+· 눈여겨볼 점: ${interpretation.notice}
+· 오늘 할 수 있는 일: ${interpretation.action}
+
+[규칙]
+이번 차례는 추가 질문이에요. 새로 제비를 뽑지 않고, 이 제비의 운세와 위의 풀이도 바꾸지 않아요. 같은 제비에 대해 이야기를 이어 가세요.
+답은 250자 이내로 바로 말하세요. 위 내용을 되풀이하지 말고, JSON도 markdown도 쓰지 마세요. 자연스러운 한국어 해요체로, 한글로만 쓰세요.
+대시나 하이픈은 쓰지 마세요. 쉼표, 마침표, 괄호를 쓰세요.
+
+[추가 질문]
+${question}`;
+  }
+
   if (language === 'en') {
     return `You are answering a follow-up about the same stick, inside Fortune Printer.
 

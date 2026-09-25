@@ -14,3 +14,14 @@ export function hanNumber(n: number): string {
   const head = tens === 1 ? '十' : tens === 2 ? '廿' : tens === 3 ? '卅' : HAN_DIGITS[tens] + '十';
   return ones === 0 ? head : head + HAN_DIGITS[ones];
 }
+
+/**
+ * 日文签号：第二十三番。日本的御神签用的是普通的汉数字，不用签筒上的廿、卅 ——
+ * 那两个字日文读者认得，但印在签纸上像古文。
+ */
+export function kanjiNumber(n: number): string {
+  if (n < 10) return HAN_DIGITS[n];
+  const tens = Math.floor(n / 10);
+  const ones = n % 10;
+  return `${tens === 1 ? '' : HAN_DIGITS[tens]}十${ones === 0 ? '' : HAN_DIGITS[ones]}`;
+}

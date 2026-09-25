@@ -24,7 +24,8 @@ interface FollowUpRound {
 }
 
 function roundOrdinal(num: number, lang: Language): string {
-  if (lang === 'en') return `Q${num}`;
+  // 大写数字只有中文读者认得；日文、韩文和英文一样用 Q1、Q2
+  if (lang !== 'zh') return `Q${num}`;
   const digits = ['零', '壹', '貳', '參', '肆', '伍', '陸', '柒', '捌', '玖', '拾'];
   if (num <= 10) return digits[num];
   return `第${num}問`;

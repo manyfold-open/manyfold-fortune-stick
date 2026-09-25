@@ -9,7 +9,7 @@
  * localStorage 直接抛错，那种情况下游戏应当照常能玩，只是记不住历史。
  */
 
-import type { Language } from '../shared/lang';
+import { isLanguage, type Language } from '../shared/lang';
 import { browserStorage, safeGet, safeRemove, safeSet } from '../shared/safe-storage';
 import type { Interpretation, Reading } from '../shared/types';
 
@@ -132,7 +132,7 @@ export function getPrefs(): Prefs {
   return {
     sound: stored.sound ?? true,
     reducedMotion: stored.reducedMotion ?? systemReducedMotion(),
-    language: stored.language === 'zh' ? 'zh' : 'en',
+    language: isLanguage(stored.language) ? stored.language : 'en',
   };
 }
 
