@@ -59,9 +59,9 @@ describe('签纸放得下', () => {
     }
   });
 
-  it('签意是一句话：日文 40 字、韩文 45 字以内（签纸上最多占三列、两行）', () => {
+  it('签意是一句话：日文 20 字以内（直排跟中文一样最多三列，不会剩一个字自己占一列），韩文 45 字以内', () => {
     for (const stick of STICKS) {
-      expect(chars(stick.ja.meaning), stick.ja.meaning).toBeLessThanOrEqual(40);
+      expect(chars(stick.ja.meaning), stick.ja.meaning).toBeLessThanOrEqual(20);
       expect(chars(stick.ko.meaning), stick.ko.meaning).toBeLessThanOrEqual(45);
     }
   });
