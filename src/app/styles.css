@@ -441,6 +441,59 @@ html, body {
   text-align: center;
 }
 
+/* ── 統計同意：直接印在底色上的一行字，不是框（AGENTS.md 第 7 條）──
+   固定在頁底，手機上頁腳整個收起來了也看得到。背後只墊一層往上淡掉的底色，字才讀得清，
+   沒有邊、沒有圓角。「不同意」「同意」同一個樣式，誰也不比誰淡。 */
+.consent-line {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px 22px;
+  padding: 28px max(20px, env(safe-area-inset-right, 0px)) max(14px, env(safe-area-inset-bottom, 0px))
+    max(20px, env(safe-area-inset-left, 0px));
+  background: linear-gradient(to top, var(--ground) 62%, transparent);
+  color: var(--on-ground);
+  animation: consent-in 0.5s ease both;
+}
+
+@keyframes consent-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+.shell.calm .consent-line { animation: none; }
+
+.consent-text {
+  margin: 0;
+  max-width: 560px;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--on-ground-2);
+  text-align: center;
+  text-wrap: pretty;
+}
+
+/* 日文按詞組折，不把「送られません」劈成兩行（<html lang> 跟著界面語言走，這條才生效） */
+:root:lang(ja) .consent-text { word-break: auto-phrase; }
+
+.consent-answer {
+  display: inline-flex;
+  gap: 22px;
+}
+
+.consent-answer .text-action {
+  font-size: 13.5px;
+  opacity: 1;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+}
+
 /* ── 神社參拜設置面板（Settings Drawer / Sheet）── */
 
 .settings-backdrop {
@@ -3323,6 +3376,14 @@ html:lang(en) .history .history-plaque h2 {
 
 .privacy-section p {
   margin: 4px 0 8px;
+}
+
+.privacy-consent {
+  margin-top: 10px;
+}
+
+.privacy-consent .text-action {
+  font-size: 13px;
 }
 
 .privacy-controls-action {

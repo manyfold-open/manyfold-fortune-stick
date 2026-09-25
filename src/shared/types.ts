@@ -50,6 +50,12 @@ export interface AppState {
   agents: ConnectedAgent[];
   /** Can a reading be interpreted right now? False when no agent is connected. */
   interpreterReady: boolean;
+  /**
+   * Is this visitor, by the request's country, owed the analytics consent line
+   * (EEA, UK, Switzerland, or unknown)? Only decides whether the line is shown;
+   * the tag's own defaults already deny storage there (src/worker/analytics.ts).
+   */
+  consentRequired: boolean;
 }
 
 /* ───────── 问一签 ───────── */

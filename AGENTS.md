@@ -106,6 +106,18 @@ Rules for anyone — human or AI agent — iterating on it. These are the load-b
 15. **Keep new routes behind the admin gate.** Any route added under `/api/` is protected by
    the `ADMIN_PASSWORD` middleware automatically — do not add exceptions beyond `/api/health`
    and `/api/state` without a reason as good as theirs.
+16. **Leave the analytics rules alone** (`src/worker/analytics.ts`, `src/app/analytics.ts`):
+   - the measurement id is the `GA_MEASUREMENT_ID` var, never a constant in `index.html`, so
+     clearing it serves nothing from Google Analytics at all;
+   - the consent defaults are pushed before `config`, and the EEA/UK/CH split is Google's
+     `region` parameter rather than a per request geo decision, which keeps the HTML identical
+     for every visitor; `/api/state`'s `consentRequired` only decides whether the consent line
+     is shown;
+   - the settings page is not measured (`/settings` gets no tag; `#settings` sets
+     `ga-disable-<id>` before the first hit), and no event ever carries the question, the
+     stick or the reading;
+   - the consent line is a line of type on the ground (invariant 7), and its two answers stay
+     the same size and weight.
 
 ## Checks
 

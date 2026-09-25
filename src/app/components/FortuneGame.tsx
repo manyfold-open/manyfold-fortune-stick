@@ -38,6 +38,7 @@ import QuestionForm from './QuestionForm';
 import ReadingResult, { type EmaRect } from './ReadingResult';
 import StickFace from './StickFace';
 import { takeVisitSourceForDraw } from '../visit';
+import { track } from '../analytics';
 
 /*
  * 3D 籤筒連同 three.js 是整包程式裡最大的一塊（光 three 的渲染器就五百多 KB）。
@@ -312,6 +313,7 @@ export default function FortuneGame(props: {
       });
       setCurrentReadingId(body.reading.id);
       saveRecord(body.reading);
+      track('stick_drawn', { language: body.reading.language });
 
       if (calm) {
         setReading(body.reading);

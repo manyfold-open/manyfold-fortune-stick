@@ -49,6 +49,30 @@ Your reading history is kept locally in your browser.
 
 The operator settings page is separate from the game and is available only at `#settings`.
 
+## Analytics
+
+The live site measures itself with Google Analytics 4. The id is the `GA_MEASUREMENT_ID` var in
+`wrangler.jsonc`, not something baked into `index.html`: the Worker writes the tag into each page's
+`<head>` on the way out (`src/worker/analytics.ts`). Clear the var and no analytics is served at all,
+which is what a fork should do until it has its own id.
+
+Consent Mode v2 ships with the tag and runs before it. In the EEA, the UK and Switzerland every
+storage type starts `denied` and a single line at the foot of the page asks; elsewhere it starts on.
+Either way the visitor can change it on `/privacy`. The settings page is never measured.
+
+Five events describe a round, and none of them carries the question, the stick or the reading:
+
+| Event | When |
+| --- | --- |
+| `stick_drawn` | the Worker has drawn a stick (`language`: the round's language) |
+| `reading_completed` | the interpretation is first shown; mark this one as a key event |
+| `follow_up_asked` | a further question is sent |
+| `reading_shared` | the share image went out (`method`: `share` or `download`) |
+| `tarot_opened` | the visitor went on to Tarot |
+
+For local work, put `GA_MEASUREMENT_ID=G-TESTLOCAL0` in `.dev.vars`: the tag, the consent line
+and the events all work, and `npm run dev` stays out of the real numbers.
+
 ## Run locally
 
 ```bash

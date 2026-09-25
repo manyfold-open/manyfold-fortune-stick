@@ -26,6 +26,11 @@ export const ja = {
   settingsMotionCalm: 'しずか',
   settingsLanguageTitle: '表示言語',
   privacyNav: 'プライバシーとデータ',
+  consentLabel: 'アナリティクス',
+  consentLine: 'Google Analytics でサイトの使われ方を知り、広告の効果も測りたいと考えています。問いやお告げの内容は送られません。',
+  consentAccept: '同意する',
+  consentDecline: '同意しない',
+  consentMore: 'プライバシー',
   railLeft: 'MODEL WY-36 · MADE IN CHINA',
   railRight: '三 十 六 本 · 一 問 一 答',
   footerSound: '音 {state}',
@@ -134,12 +139,12 @@ export const ja = {
   privacyBadge: 'おみくじ · プライバシー',
   privacyTitle: 'プライバシーとデータ',
   privacyIntro:
-    'このサイトは Cookie、広告の追跡、ピクセル、アナリティクスを使いません。以下は、このコードが実際に保存し送信するものだけを説明しています。',
+    'ここには広告のピクセルも操作の録画もありません。以下は、このコードが実際に保存し送信するものの説明です。運営者が Google Analytics を有効にしているときは、それも含みます。',
   privacyStoredTitle: 'ブラウザに保存されるもの',
   privacyStoredRecords:
     'localStorage の wenyiqian.records：最大 100 件の記録。問い、おみくじの番号、お告げ、追加の問い、日時を含みます。',
   privacyStoredPrefs:
-    'localStorage の wenyiqian.current と wenyiqian.prefs：現在のおみくじの ID と、音、動き、表示言語の設定。',
+    'localStorage の wenyiqian.current と wenyiqian.prefs：現在のおみくじの ID と、音、動き、表示言語の設定。wenyiqian.consent には、アナリティクスについてのあなたの答え（答えた場合）が入ります。',
   privacyStoredPassword:
     'sessionStorage の adminPassword：このサイトに ADMIN_PASSWORD が設定されているときだけ使われます。タブを閉じると消え、リクエストヘッダーで送られ、Cookie や URL には入りません。',
   privacyServerTitle: 'サーバーに保存されるもの',
@@ -157,12 +162,22 @@ export const ja = {
   privacyFonts:
     'ページは Google Fonts から Noto Serif などのフォントを読み込みます。フォントのリクエストは Google が処理し、このアプリが問いやお告げをそこに入れることはありません。',
   privacyCloudflare:
-    'サイト、Worker、D1 は Cloudflare 上で動いています。wrangler.jsonc で Cloudflare Worker の observability も有効なため、Cloudflare がそのサービスとしてリクエストのメタデータ、ログ、メトリクスを扱うことがあります。このアプリが独自に分析や行動の追跡を加えることはありません。',
+    'サイト、Worker、D1 は Cloudflare 上で動いています。wrangler.jsonc で Cloudflare Worker の observability も有効なため、Cloudflare がそのサービスとしてリクエストのメタデータ、ログ、メトリクスを扱うことがあります。これは下に書いたアナリティクスとは別のものです。',
   privacyCookiesTitle: 'Cookie とアナリティクス',
   privacyCookies:
     'このアプリは Cookie を設定も読み取りもせず、Cookie に依存しません。リクエストをまたぐ匿名の識別子も必要ないので、Cookie の期限や撤回の操作はありません。',
   privacyAnalytics:
     '現在、Google Analytics、GTM、Meta Pixel、Sentry、Hotjar、PostHog などの分析スクリプトはありません。サイトは自分で 1 日ごとの合計だけを数えています。たとえば引かれたおみくじの数、シェアの回数、訪問がシェアのリンク、QR コード、タロット、検索エンジン、SNS のどこから来たか、などです。来たサイトはブラウザの中でこうした分類にまとめられ、アドレスは送られません。あなたが誰か、何を聞いたか、どのおみくじを引いたかは含まない単なる日ごとの回数なので、同意のバナーは表示していません。',
+  privacyCookiesGoogle:
+    'このアプリ自体は Cookie を設定も読み取りもせず、Cookie に依存しません。Cookie は Google Analytics のもの（_ga と、このサイトの測定 ID の名前がついたもの）だけで、アナリティクスの保存が許可されてから書き込まれます。再訪を見分けるためのランダムな識別子が入っていて、Google は最長 2 年保持します。',
+  privacyAnalyticsGoogle:
+    'このサイトは Google Analytics を読み込み、サイトの使われ方を知り、広告の効果を測ります。記録されるのは開いたページと、1 回のおみくじの中の五つの場面です。おみくじを引いた、お告げを開いた、追加で問うた、シェアした、タロットへ移った。問いやお告げの本文は送られず、イベントが伝えるのはせいぜいその回の言語だけです。ページのアドレスはそのまま送られるので、友だちがシェアしたリンクならおみくじの番号が含まれますが、問いが含まれることはありません。EEA、英国、スイスでは、ページ下の一行に答えるまでアナリティクスや広告のためには何も保存されません（Google Consent Mode）。それ以外の地域では最初から有効です。どちらの場合も、ここで変えられます。',
+  privacyOwnCounts:
+    'それとは別に、サイトは自分で 1 日ごとの合計を数えています。たとえば引かれたおみくじの数、シェアの回数、訪問がシェアのリンク、QR コード、タロット、検索エンジン、SNS のどこから来たか、などです。来たサイトはブラウザの中でこうした分類にまとめられ、アドレスは送られません。あなたが誰か、何を聞いたか、どのおみくじを引いたかは含まない単なる日ごとの回数なので、同意は必要ありません。',
+  privacyConsentOn: 'このブラウザではアナリティクスが有効です。',
+  privacyConsentOff: 'このブラウザではアナリティクスが無効です。',
+  privacyConsentAllow: 'アナリティクスを許可する',
+  privacyConsentRefuse: 'アナリティクスを止める',
   privacySharingTitle: 'シェアで見えるもの',
   privacySharing:
     'シェアはあなたのブラウザの中で画像を作り、システムの共有に渡すかダウンロードするだけで、このアプリの共有サービスには送りません。画像にはおみくじの番号、運勢、詩、ひとこと、入れることにした問い、QR コードが含まれることがあります。画像を渡した相手と、そのサービスが見ることになります。',

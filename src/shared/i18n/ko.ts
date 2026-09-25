@@ -23,6 +23,11 @@ export const ko = {
   settingsMotionCalm: '고요함',
   settingsLanguageTitle: '표시 언어',
   privacyNav: '개인정보와 데이터',
+  consentLabel: '분석',
+  consentLine: 'Google Analytics로 사이트가 어떻게 쓰이는지 알아보고 광고 효과도 재고 싶어요. 질문과 풀이 내용은 보내지 않아요.',
+  consentAccept: '동의',
+  consentDecline: '거절',
+  consentMore: '개인정보',
   railLeft: 'MODEL WY-36 · MADE IN CHINA',
   railRight: '서 른 여 섯 개 의 제 비',
   footerSound: '소리 {state}',
@@ -131,12 +136,12 @@ export const ko = {
   privacyBadge: '오미쿠지 · 개인정보',
   privacyTitle: '개인정보와 데이터',
   privacyIntro:
-    '이 사이트는 쿠키, 광고 추적, 픽셀, 분석 도구를 쓰지 않아요. 아래는 이 코드가 실제로 저장하고 보내는 것만 설명해요.',
+    '여기에는 광고 픽셀도, 화면 조작 녹화도 없어요. 아래는 이 코드가 실제로 저장하고 보내는 것을 설명해요. 운영자가 Google Analytics를 켜 두었다면 그것도 포함해요.',
   privacyStoredTitle: '브라우저에 저장되는 것',
   privacyStoredRecords:
     'localStorage의 wenyiqian.records: 최대 100개의 기록. 질문, 제비 번호, 풀이, 추가 질문, 시간이 들어 있어요.',
   privacyStoredPrefs:
-    'localStorage의 wenyiqian.current와 wenyiqian.prefs: 현재 제비의 ID와 소리, 움직임, 표시 언어 설정.',
+    'localStorage의 wenyiqian.current와 wenyiqian.prefs: 현재 제비의 ID와 소리, 움직임, 표시 언어 설정. wenyiqian.consent에는 분석에 대한 답(답한 경우)이 담겨요.',
   privacyStoredPassword:
     'sessionStorage의 adminPassword: 이 사이트에 ADMIN_PASSWORD가 설정된 경우에만 있어요. 탭을 닫으면 사라지고, 요청 헤더로 보내며 쿠키나 URL에는 넣지 않아요.',
   privacyServerTitle: '서버에 저장되는 것',
@@ -154,12 +159,22 @@ export const ko = {
   privacyFonts:
     '페이지는 Google Fonts에서 Noto Serif 등의 글꼴을 불러와요. 글꼴 요청은 Google이 처리하며, 이 앱은 질문이나 풀이를 글꼴 요청에 넣지 않아요.',
   privacyCloudflare:
-    '사이트, Worker, D1은 Cloudflare에서 돌아가요. wrangler.jsonc에서 Cloudflare Worker observability도 켜져 있어서, Cloudflare가 자체 서비스로 요청 메타데이터, 로그, 지표를 처리할 수 있어요. 이 앱이 따로 분석이나 행동 추적을 더하지는 않아요.',
+    '사이트, Worker, D1은 Cloudflare에서 돌아가요. wrangler.jsonc에서 Cloudflare Worker observability도 켜져 있어서, Cloudflare가 자체 서비스로 요청 메타데이터, 로그, 지표를 처리할 수 있어요. 이건 아래에 적은 분석과는 별개예요.',
   privacyCookiesTitle: '쿠키와 분석',
   privacyCookies:
     '이 앱은 쿠키를 만들지도 읽지도 않고, 쿠키에 의존하지 않아요. 요청 사이에 이어지는 익명 식별자도 필요 없어서, 쿠키 기간이나 철회 절차가 없어요.',
   privacyAnalytics:
     '현재 Google Analytics, GTM, Meta Pixel, Sentry, Hotjar, PostHog 같은 분석 스크립트는 없어요. 사이트는 스스로 하루 합계만 세요. 예를 들어 뽑힌 제비 수, 공유 횟수, 방문이 공유 링크, QR 코드, 타로, 검색 엔진, SNS 중 어디서 왔는지 같은 것이에요. 방문을 보낸 사이트는 브라우저 안에서 이런 분류로만 묶이고 주소는 보내지 않아요. 누가 무엇을 물었는지, 어떤 제비를 뽑았는지는 담기지 않은 하루 횟수일 뿐이라 동의 배너는 띄우지 않아요.',
+  privacyCookiesGoogle:
+    '이 앱 자체는 쿠키를 만들지도 읽지도 않고, 쿠키에 의존하지 않아요. 쿠키는 Google Analytics의 것(_ga, 그리고 이 사이트의 측정 ID 이름이 붙은 것)뿐이고, 분석 저장을 허용한 뒤에만 기록돼요. 다시 찾아온 방문을 알아보기 위한 무작위 식별자가 들어 있고, Google은 최대 2년 동안 보관해요.',
+  privacyAnalyticsGoogle:
+    '이 사이트는 Google Analytics를 불러와 사이트가 어떻게 쓰이는지 알아보고 광고 효과를 재요. 기록되는 건 연 페이지와 한 번의 제비뽑기 중 다섯 순간이에요. 제비를 뽑음, 풀이를 엶, 추가로 물음, 공유함, 타로로 이동함. 질문과 풀이 본문은 보내지 않고, 이벤트가 알려 주는 건 기껏해야 그 회차의 언어뿐이에요. 페이지 주소는 그대로 보내지므로 친구가 공유한 링크라면 제비 번호가 담기지만, 질문이 담기는 일은 없어요. EEA, 영국, 스위스에서는 페이지 아래의 한 줄에 답하기 전까지 분석이나 광고를 위해 아무것도 저장하지 않아요(Google Consent Mode). 그 밖의 지역에서는 처음부터 켜져 있어요. 어느 쪽이든 여기서 바꿀 수 있어요.',
+  privacyOwnCounts:
+    '그와 별개로 사이트는 스스로 하루 합계를 세요. 예를 들어 뽑힌 제비 수, 공유 횟수, 방문이 공유 링크, QR 코드, 타로, 검색 엔진, SNS 중 어디서 왔는지 같은 것이에요. 방문을 보낸 사이트는 브라우저 안에서 이런 분류로만 묶이고 주소는 보내지 않아요. 누가 무엇을 물었는지, 어떤 제비를 뽑았는지는 담기지 않은 하루 횟수일 뿐이라 동의가 필요 없어요.',
+  privacyConsentOn: '이 브라우저에서는 분석이 켜져 있어요.',
+  privacyConsentOff: '이 브라우저에서는 분석이 꺼져 있어요.',
+  privacyConsentAllow: '분석 허용',
+  privacyConsentRefuse: '분석 끄기',
   privacySharingTitle: '공유하면 보이는 것',
   privacySharing:
     '공유는 브라우저 안에서 이미지를 만들어 시스템 공유로 넘기거나 다운로드할 뿐, 이 앱의 공유 서비스로 올리지 않아요. 이미지에는 제비 번호, 운세, 시, 한마디, 넣기로 한 질문, QR 코드가 들어갈 수 있어요. 이미지를 받은 사람과 그 서비스가 보게 돼요.',

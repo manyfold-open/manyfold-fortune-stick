@@ -15,6 +15,7 @@ import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 're
 import { stickText } from '../../shared/sticks';
 import type { FollowUpMessage, Reading } from '../../shared/types';
 import { createTarotClaim, storedErrorText } from '../api';
+import { track } from '../analytics';
 import { rememberedTarotReturn, TAROT_URL, tarotHandoffUrl } from '../tarotBridge';
 import TarotIcon from './TarotIcon';
 import { LEVEL_TONE } from '../constants';
@@ -100,6 +101,15 @@ export default function ReadingResult(props: {
   const hasBack = Boolean(interpretation) || props.interpreting;
   const showBack = flipped && hasBack;
   const isSettled = showBack && settled;
+
+  // 解籤第一次攤在眼前的那一刻，記一次 reading_completed。掛上來時就已經解好的
+  // （重新整理、從記錄打開）以前記過了，不再記
+  const completed = useRef(Boolean(interpretation));
+  useEffect(() => {
+    if (!showBack || !interpretation || completed.current) return;
+    completed.current = true;
+    track('reading_completed');
+  }, [showBack, interpretation]);
 
   // 一按「解签」就翻到背面，骨架在背面等著
   useEffect(() => {
@@ -191,6 +201,7 @@ export default function ReadingResult(props: {
   const openTarot = async () => {
     if (tarotBridgePending) return;
     setTarotBridgePending(true);
+    track('tarot_opened');
     const tab = window.open('', '_blank');
     let target = tarotHandoffUrl(TAROT_URL, uiLanguage, null);
     try {
