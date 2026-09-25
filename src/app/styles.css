@@ -6355,6 +6355,9 @@ html { overflow-x: clip; }
    notes around them are on the ground (.muted, --on-ground). */
 .stats-panel { display: flex; flex-direction: column; gap: 12px; }
 .stats-range { gap: 14px; }
+/* The refresh sits at the far end of the range row, with when it last read. */
+.stats-refresh { margin-left: auto; display: inline-flex; align-items: baseline; gap: 10px; }
+.stats-refresh .small { font-size: 12px; }
 
 .stats-cards {
   list-style: none;

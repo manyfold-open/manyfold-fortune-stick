@@ -102,21 +102,31 @@ export default function StatsPanel() {
   const [range, setRange] = useState<(typeof RANGES)[number]>(14);
   const [days, setDays] = useState<DailyStats[] | null>(null);
   const [error, setError] = useState('');
+  /** Bumped by the refresh button: the same range, fetched again. */
+  const [reload, setReload] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     setError('');
+    setLoading(true);
     api<{ days: DailyStats[] }>(`/api/stats?days=${range}`)
       .then((body) => {
-        if (!cancelled) setDays(body.days);
+        if (cancelled) return;
+        setDays(body.days);
+        setUpdatedAt(new Date());
       })
       .catch((cause) => {
         if (!cancelled) setError(errorMessage(cause, t));
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
       });
     return () => {
       cancelled = true;
     };
-  }, [range, t]);
+  }, [range, reload, t]);
 
   const total = (value: Read): number => (days ?? []).reduce((acc, row) => acc + value(row), 0);
   const metricTotal = (metric: Metric): number => total((row) => row.counts[metric] ?? 0);
@@ -185,6 +195,22 @@ export default function StatsPanel() {
             {t('statsDays', { n })}
           </button>
         ))}
+        {/* The numbers are written the moment something happens; this reads them again. */}
+        <span className="stats-refresh">
+          <button
+            type="button"
+            className="text-action tiny"
+            onClick={() => setReload((n) => n + 1)}
+            disabled={loading}
+          >
+            {loading ? t('statsRefreshing') : t('statsRefresh')}
+          </button>
+          {updatedAt && (
+            <span className="muted small" aria-live="polite">
+              {t('statsUpdatedAt', { time: updatedAt.toLocaleTimeString() })}
+            </span>
+          )}
+        </span>
       </div>
 
       {error && <div className="notice error">{error}</div>}
