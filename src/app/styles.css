@@ -6192,7 +6192,9 @@ html { overflow-x: clip; }
 
   /* 保險：籤卡在手機上是定高的（填滿剩下的螢幕），再矮的螢幕、再長的籤，
      多出來的只讓籤詩那一段自己捲，表頭和吉色徽章永遠完整露在框裡。
-     置中改用 margin: auto —— align-items: center 溢出時會把上緣推到捲不到的地方 */
+     置中改用 margin: auto —— align-items: center 溢出時會把上緣推到捲不到的地方。
+     要寫成實體的 margin-top / margin-bottom：直排那一塊（.slip-grid-columns，vertical-rl）
+     的 margin-block 是左右，不是上下 —— 以前寫 margin-block，中文、日文的籤詩就一直黏在上面 */
   .face-front .slip-body {
     min-height: 0;
     overflow-y: auto;
@@ -6201,7 +6203,8 @@ html { overflow-x: clip; }
   }
 
   .face-front .slip-body > * {
-    margin-block: auto;
+    margin-top: auto;
+    margin-bottom: auto;
   }
 
   .face-front .slip {
