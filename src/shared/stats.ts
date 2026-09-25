@@ -7,7 +7,8 @@
  * Worker (which only accepts the metric names listed here).
  */
 
-/** Where a visit came from, when it came from somewhere we can name. */
+/** Where a visit came from. Every visit has one: what is not a share, a Tarot
+ *  link or a tagged campaign is organic, bucketed by the site that sent it. */
 export const VISIT_SOURCES = [
   'share-qr',
   'share-link',
@@ -16,6 +17,11 @@ export const VISIT_SOURCES = [
   'tarot-locked',
   'tarot-other',
   'tarot-share',
+  'organic-direct',
+  'organic-search',
+  'organic-social',
+  'organic-other',
+  'campaign',
 ] as const;
 export type VisitSource = (typeof VISIT_SOURCES)[number];
 
@@ -29,6 +35,8 @@ export const METRICS = [
   'share:sent',
   'share:downloaded',
   'tarot:opened',
+  'visitor:new',
+  'visitor:returning',
 ] as const;
 export type Metric = (typeof METRICS)[number];
 
@@ -38,16 +46,34 @@ export const isMetric = (value: unknown): value is Metric =>
 export const isVisitSource = (value: unknown): value is VisitSource =>
   typeof value === 'string' && (VISIT_SOURCES as readonly string[]).includes(value);
 
+const SEARCH_HOSTS = /(^|\.)(google|bing|yahoo|duckduckgo|baidu|yandex|naver|ecosia|search\.brave)\./;
+const SOCIAL_HOSTS =
+  /(^|\.)(instagram\.com|facebook\.com|fb\.com|fb\.me|messenger\.com|threads\.net|threads\.com|line\.me|t\.co|twitter\.com|x\.com|reddit\.com|tiktok\.com|linkedin\.com|lnkd\.in|pinterest\.[a-z.]+|youtube\.com|youtu\.be|dcard\.tw|ptt\.cc|weibo\.com|xiaohongshu\.com|discord\.com|telegram\.org|t\.me|whatsapp\.com)$/;
+
+/** The organic bucket for the site that sent a visitor, from its hostname alone. */
+export function organicSourceFrom(referrerHost: string | null): VisitSource {
+  if (!referrerHost) return 'organic-direct';
+  const host = referrerHost.toLowerCase();
+  if (SEARCH_HOSTS.test(host)) return 'organic-search';
+  if (SOCIAL_HOSTS.test(host)) return 'organic-social';
+  return 'organic-other';
+}
+
 /**
- * Where this visit came from, read off the address it arrived at:
+ * Where this visit came from, read off the address it arrived at and, failing
+ * that, the site that sent it:
  *   ?s=12&via=qr            a shared stick, from the QR on the share image
  *   ?s=12&via=link          a shared stick, from the text link
  *   ?s=12                   a shared stick, from an older share with no marker
  *   ?utm_source=tarot&utm_content=outro|locked   Tarot's own links
  *   ?utm_source=tarot-share Tarot's share page
- * A plain visit is null and is not counted as a visit.
+ *   any other ?utm_source   a tagged campaign (an ad, a newsletter): not organic
+ *   otherwise               organic: direct, search, social or another site,
+ *                           judged by the referrer's hostname only
+ * A referrer from this same site (a reload, say) counts as direct; one from
+ * Tarot without its tags still counts as Tarot.
  */
-export function visitSourceFrom(search: string): VisitSource | null {
+export function visitSourceFrom(search: string, referrer = '', selfOrigin = ''): VisitSource {
   const params = new URLSearchParams(search);
   if (params.get('s')) {
     const via = params.get('via');
@@ -59,7 +85,19 @@ export function visitSourceFrom(search: string): VisitSource | null {
     return placement === 'outro' ? 'tarot-outro' : placement === 'locked' ? 'tarot-locked' : 'tarot-other';
   }
   if (utm === 'tarot-share') return 'tarot-share';
-  return null;
+  if (utm) return 'campaign';
+  let from: URL | null = null;
+  try {
+    from = referrer ? new URL(referrer) : null;
+  } catch {
+    from = null;
+  }
+  if (!from) return 'organic-direct';
+  if (/(^|\.)tarot\.manyfold\.ai$/.test(from.hostname) || /^\/tarot(\/|$)/.test(from.pathname)) {
+    if (!selfOrigin || from.origin === selfOrigin || from.hostname.startsWith('tarot.')) return 'tarot-other';
+  }
+  if (selfOrigin && from.origin === selfOrigin) return 'organic-direct';
+  return organicSourceFrom(from.hostname);
 }
 
 /** One day of counts, as the settings page receives it. */

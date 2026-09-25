@@ -24,20 +24,49 @@ const TAROT_VISITS: Metric[] = ['visit:tarot-outro', 'visit:tarot-locked', 'visi
 const TAROT_DRAWS: Metric[] = ['draw:tarot-outro', 'draw:tarot-locked', 'draw:tarot-share', 'draw:tarot-other'];
 const SHARE_VISITS: Metric[] = ['visit:share-qr', 'visit:share-link', 'visit:share-unknown'];
 const SHARE_DRAWS: Metric[] = ['draw:share-qr', 'draw:share-link', 'draw:share-unknown'];
+const ORGANIC_VISITS: Metric[] = ['visit:organic-direct', 'visit:organic-search', 'visit:organic-social', 'visit:organic-other'];
+const ORGANIC_DRAWS: Metric[] = ['draw:organic-direct', 'draw:organic-search', 'draw:organic-social', 'draw:organic-other'];
+const ALL_VISITS: Metric[] = [...SHARE_VISITS, ...TAROT_VISITS, ...ORGANIC_VISITS, 'visit:campaign'];
 
 type Read = (row: DailyStats) => number;
+const one = (metric: Metric): Read => (row) => row.counts[metric] ?? 0;
+const visits: Read = (row) => sum(row, ALL_VISITS);
 const draws: Read = (row) => row.draws;
+const organic: Read = (row) => sum(row, ORGANIC_VISITS);
+const organicDrew: Read = (row) => sum(row, ORGANIC_DRAWS);
 const fromTarot: Read = (row) => sum(row, TAROT_VISITS);
 const fromTarotDrew: Read = (row) => sum(row, TAROT_DRAWS);
-const toTarot: Read = (row) => sum(row, ['tarot:opened']);
+const toTarot = one('tarot:opened');
 const claims: Read = (row) => row.claims;
 const shares: Read = (row) => sum(row, ['share:sent', 'share:downloaded']);
 const fromShare: Read = (row) => sum(row, SHARE_VISITS);
 const fromShareDrew: Read = (row) => sum(row, SHARE_DRAWS);
 
+/** A day with anything on it. Days before counting began are all empty. */
+const hasData = (row: DailyStats): boolean =>
+  row.draws > 0 || row.claims > 0 || Object.values(row.counts).some((n) => (n ?? 0) > 0);
+
 /** The table: column groups, each a heading over its columns. */
 const GROUPS: Array<{ key: keyof Copy; columns: Array<{ key: keyof Copy; value: Read }> }> = [
-  { key: 'statsGroupDraws', columns: [{ key: 'statsDraws', value: draws }] },
+  {
+    key: 'statsGroupVisits',
+    columns: [
+      { key: 'statsVisits', value: visits },
+      { key: 'statsNewVisitors', value: one('visitor:new') },
+      { key: 'statsReturning', value: one('visitor:returning') },
+      { key: 'statsDraws', value: draws },
+    ],
+  },
+  {
+    key: 'statsGroupOrganic',
+    columns: [
+      { key: 'statsDirect', value: one('visit:organic-direct') },
+      { key: 'statsSearch', value: one('visit:organic-search') },
+      { key: 'statsSocial', value: one('visit:organic-social') },
+      { key: 'statsOtherSites', value: one('visit:organic-other') },
+      { key: 'statsOfThemDrew', value: organicDrew },
+    ],
+  },
   {
     key: 'statsGroupTarot',
     columns: [
@@ -51,13 +80,21 @@ const GROUPS: Array<{ key: keyof Copy; columns: Array<{ key: keyof Copy; value: 
     key: 'statsGroupShare',
     columns: [
       { key: 'statsShares', value: shares },
-      { key: 'statsScanned', value: (row) => sum(row, ['visit:share-qr']) },
-      { key: 'statsLinked', value: (row) => sum(row, ['visit:share-link']) },
-      { key: 'statsOldShares', value: (row) => sum(row, ['visit:share-unknown']) },
+      { key: 'statsScanned', value: one('visit:share-qr') },
+      { key: 'statsLinked', value: one('visit:share-link') },
+      { key: 'statsOldShares', value: one('visit:share-unknown') },
       { key: 'statsOfThemDrew', value: fromShareDrew },
     ],
   },
+  {
+    key: 'statsGroupCampaign',
+    columns: [
+      { key: 'statsCampaign', value: one('visit:campaign') },
+      { key: 'statsOfThemDrew', value: one('draw:campaign') },
+    ],
+  },
 ];
+
 const percent = (part: number, whole: number): string => (whole > 0 ? `${Math.round((part / whole) * 100)}%` : '0%');
 
 export default function StatsPanel() {
@@ -84,15 +121,31 @@ export default function StatsPanel() {
   const total = (value: Read): number => (days ?? []).reduce((acc, row) => acc + value(row), 0);
   const metricTotal = (metric: Metric): number => total((row) => row.counts[metric] ?? 0);
 
-  /** The few numbers worth seeing before the table, for the chosen range. */
+  /** The answers first: how many came, organically, from Tarot, back to Tarot, from a share. */
   const cards: Array<{ label: keyof Copy; value: number; detail: string }> = days
     ? [
-        { label: 'statsDraws', value: total(draws), detail: t('statsCardDrawsDetail', { n: range }) },
+        {
+          label: 'statsVisits',
+          value: total(visits),
+          detail: t('statsCardVisitsDetail', { fresh: metricTotal('visitor:new'), back: metricTotal('visitor:returning') }),
+        },
+        {
+          label: 'statsOrganic',
+          value: total(organic),
+          detail: t('statsCardOrganicDetail', {
+            direct: metricTotal('visit:organic-direct'),
+            search: metricTotal('visit:organic-search'),
+            social: metricTotal('visit:organic-social'),
+            other: metricTotal('visit:organic-other'),
+            drew: total(organicDrew),
+          }),
+        },
         {
           label: 'statsFromTarot',
           value: total(fromTarot),
           detail: t('statsCardDrew', { n: total(fromTarotDrew), rate: percent(total(fromTarotDrew), total(fromTarot)) }),
         },
+        { label: 'statsToTarot', value: total(toTarot), detail: t('statsCardClaims', { n: total(claims) }) },
         {
           label: 'statsFromShare',
           value: total(fromShare),
@@ -100,28 +153,22 @@ export default function StatsPanel() {
             qr: metricTotal('visit:share-qr'),
             link: metricTotal('visit:share-link'),
             old: metricTotal('visit:share-unknown'),
+            drew: total(fromShareDrew),
           }),
         },
-        {
-          label: 'statsFromShareDrewCard',
-          value: total(fromShareDrew),
-          detail: t('statsCardRate', { rate: percent(total(fromShareDrew), total(fromShare)) }),
-        },
-        {
-          label: 'statsToTarot',
-          value: total(toTarot),
-          detail: t('statsCardClaims', { n: total(claims) }),
-        },
-        {
-          label: 'statsShares',
-          value: total(shares),
-          detail: t('statsCardSharesDetail', {
-            sent: metricTotal('share:sent'),
-            saved: metricTotal('share:downloaded'),
-          }),
-        },
+        { label: 'statsDraws', value: total(draws), detail: t('statsCardDrawsDetail', { n: total(shares) }) },
       ]
     : [];
+
+  /** Newest first; stop at the oldest day that has anything, so the days before counting began are not listed. */
+  const shown = (() => {
+    if (!days) return [];
+    let last = 0;
+    days.forEach((row, index) => {
+      if (hasData(row)) last = index;
+    });
+    return days.slice(0, last + 1);
+  })();
 
   return (
     <div className="stats-panel">
@@ -191,7 +238,7 @@ export default function StatsPanel() {
                     )),
                   )}
                 </tr>
-                {days.map((row) => (
+                {shown.map((row) => (
                   <tr key={row.day}>
                     <th scope="row" className="stats-day">
                       {row.day.slice(5)}

@@ -11,7 +11,7 @@ if (typeof window !== 'undefined') {
   }
   window.scrollTo(0, 0);
   rememberTarotReturn(window.location.href);
-  recordVisit(window.location.href);
+  recordVisit(window.location.href, document.referrer);
 }
 
 createRoot(document.getElementById('root')!).render(
