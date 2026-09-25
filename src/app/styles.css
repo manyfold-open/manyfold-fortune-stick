@@ -6350,15 +6350,90 @@ html { overflow-x: clip; }
   }
 }
 
-/* ── #settings: daily numbers ── */
-.stats-panel { display: flex; flex-direction: column; gap: 10px; }
+/* ── #settings: daily numbers ──
+   Cards and table sit on paper, so their text uses the --ink scale; only the
+   notes around them are on the ground (.muted, --on-ground). */
+.stats-panel { display: flex; flex-direction: column; gap: 12px; }
 .stats-range { gap: 14px; }
-/* A wide table on a phone scrolls inside its own box, never the page. */
-.stats-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
-.stats-table { border-collapse: collapse; font-size: 13px; white-space: nowrap; }
+
+.stats-cards {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: grid;
+  /* Six cards: two rows of three where there is room, three rows of two on a phone. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+@media (min-width: 600px) {
+  .stats-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+.stats-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  background: var(--paper);
+  border: 1px solid var(--hair);
+  border-radius: 10px;
+  color: var(--ink);
+}
+.stats-card-label { font-size: 12.5px; color: var(--ink-2); }
+.stats-card-value { font-size: 26px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.stats-card-detail { font-size: 12px; line-height: 1.5; color: var(--ink-3); }
+
+/* A wide table scrolls inside its own paper, never the page; the date column
+   stays put while it does. */
+.stats-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+  background: var(--paper);
+  border: 1px solid var(--hair);
+  border-radius: 10px;
+}
+.stats-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 100%;
+  font-size: 13px;
+  white-space: nowrap;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
 .stats-table th,
-.stats-table td { padding: 6px 10px; text-align: right; border-bottom: 1px solid color-mix(in srgb, var(--ink) 12%, transparent); }
-.stats-table thead th { font-weight: 600; font-size: 12px; vertical-align: bottom; }
-.stats-table tbody th { text-align: left; font-weight: 600; }
-.stats-table .stats-total { background: color-mix(in srgb, var(--seal) 7%, transparent); font-weight: 700; }
-.stats-table td.is-zero { opacity: 0.4; }
+.stats-table td { padding: 7px 12px; text-align: right; border-bottom: 1px solid var(--hair); }
+.stats-table thead th { font-weight: 600; font-size: 12px; color: var(--ink-2); vertical-align: bottom; }
+.stats-table .stats-groups th {
+  text-align: center;
+  font-size: 11.5px;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  border-bottom-color: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.stats-table .stats-day {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  text-align: left;
+  font-weight: 600;
+  background: var(--paper);
+  box-shadow: 1px 0 0 var(--hair);
+}
+/* The date heading spans both header rows; it reads as a column heading, not a group. */
+.stats-table .stats-groups th.stats-day {
+  text-align: left;
+  font-size: 12px;
+  letter-spacing: normal;
+  color: var(--ink-2);
+  border-left: 0;
+  border-bottom-color: var(--hair);
+}
+/* A rule down the left of each group's first column. */
+.stats-table .group-start,
+.stats-table .stats-groups th { border-left: 1px solid var(--hair); }
+.stats-table .stats-total td,
+.stats-table .stats-total th { font-weight: 700; background: var(--paper-2); }
+.stats-table td.is-zero { color: var(--ink-3); opacity: 0.55; }
+.stats-table tbody tr:last-child th,
+.stats-table tbody tr:last-child td { border-bottom: 0; }
