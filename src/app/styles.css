@@ -2112,9 +2112,10 @@ html, body {
 .slip[data-lang='en'] .slip-meaning { font-family: var(--font-mincho); font-size: 13.5px; letter-spacing: 0.01em; text-wrap: balance; margin-top: 6px; }
 .slip[data-lang='en'] .slip-lucky { font-size: 11px; }
 
-/* 日文籤紙沿用中文的直排；籤意比中文長一點，折成兩三列時讓每列差不多長，
-   不要最後一列只剩一個「た」 */
-.slip[data-lang='ja'] .slip-meaning { text-wrap: balance; word-break: auto-phrase; }
+/* 日文籤紙沿用中文的直排；籤意比中文長一點，會折成兩三列。
+   按詞組（文節）折，不把「新しい」劈成兩半，也不會最後一列只剩一個「た」
+   （要配 StickFace 上的 lang="ja" 才生效） */
+.slip[data-lang='ja'] .slip-meaning { word-break: auto-phrase; }
 
 /* 韓文籤紙：橫排（跟英文同一套 .slip-western-poem），字號跟中文走。
    中文那幾條的大字距（籤名 0.42em、籤詩 0.18em）是給一個個方塊字排的，

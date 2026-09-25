@@ -15,7 +15,7 @@ export const ko = {
   navSettings: '설정',
   shrineSettingsTitle: '신사 설정',
   settingsClose: '닫기',
-  settingsSoundDesc: '제비를 뽑을 때의 방울 소리와 종이 소리',
+  settingsSoundDesc: '방울 소리와 종이 소리',
   settingsMotionDesc: '흩날리는 벚꽃과 은은한 흔들림',
   settingsSoundTitle: '참배 소리',
   settingsMotionTitle: '벚꽃과 흔들림',
