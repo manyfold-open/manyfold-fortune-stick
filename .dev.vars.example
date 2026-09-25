@@ -22,3 +22,8 @@
 
 # Optional: point local/preview results at the matching Tarot app.
 # TAROT_HANDOFF_URL=http://localhost:5173/tarot/
+
+# Google Analytics 4. wrangler.jsonc carries the production id; override it here so
+# `npm run dev` never mixes into the real numbers. A made up id keeps the tag, the
+# consent line and the events working locally; an empty value serves no analytics.
+# GA_MEASUREMENT_ID=G-TESTLOCAL0

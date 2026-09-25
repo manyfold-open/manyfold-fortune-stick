@@ -47,6 +47,28 @@ AI 只负责解读，不会决定签号、签诗、等级或签名。
 
 部署者使用的设置页与游戏分开，只能通过 `#settings` 进入。
 
+## 统计
+
+线上站点用 Google Analytics 4 统计。测量 id 是 `wrangler.jsonc` 里的 `GA_MEASUREMENT_ID` 变量，
+不写死在 `index.html` 里：Worker 在返回页面时把代码写进 `<head>`（`src/worker/analytics.ts`）。
+把这个变量清空就完全不加载任何统计代码 —— fork 出去、还没有自己的 id 时就该这样。
+
+Consent Mode v2 与它一起下发，并且跑在它前面。在欧洲经济区、英国和瑞士，所有存储类别默认 `denied`，
+页面底部出现一行字来问；其他地区默认开启。两种情况都可以在 `/privacy` 改。设置页永远不统计。
+
+五个事件描述一局，其中没有任何一个带上问题、签或解读：
+
+| 事件 | 触发时机 |
+| --- | --- |
+| `stick_drawn` | Worker 已经抽定一支签（`language`：这一局的语言） |
+| `reading_completed` | 解签第一次展示出来 —— 在 GA 里标成关键事件的就是这一个 |
+| `follow_up_asked` | 送出一次追问 |
+| `reading_shared` | 分享图已经送出（`method`：`share` 或 `download`） |
+| `tarot_opened` | 访客前往塔罗 |
+
+本地开发时在 `.dev.vars` 里填一个假的 id（`GA_MEASUREMENT_ID=G-TESTLOCAL0`）：代码、同意那一行和事件都照常工作，
+而 `npm run dev` 不会混进真实的数字里。
+
 ## 本地运行
 
 ```bash

@@ -28,6 +28,7 @@ import { isSettingsApiPath } from './auth';
 import { HttpError, type Env } from './types';
 import { ensureSchema } from './db';
 import { withShareMeta } from './meta';
+import { consentRequiredFor, measurementIdFor, withAnalytics } from './analytics';
 import { claimTarotBonus, findTarotClaim, tarotReturnUrl } from './tarot-bridge';
 import { bumpStat, readStats } from './stats';
 import { isMetric, isVisitSource } from '../shared/stats';
@@ -135,6 +136,7 @@ app.get('/api/state', async (c) => {
     connect: { session },
     agents,
     interpreterReady: await interpreterReady(c.env),
+    consentRequired: consentRequiredFor(c.req.raw.cf?.country),
   };
   return c.json(state);
 });
@@ -260,7 +262,15 @@ app.all('/api/*', () => {
 });
 
 // Anything else that reaches the Worker is a static asset (or the SPA fallback).
-app.all('*', (c) => c.env.ASSETS.fetch(c.req.raw));
+// The pages among them get the Google tag on the way past (src/worker/analytics.ts);
+// with GA_MEASUREMENT_ID unset this is the plain assets response.
+app.all('*', async (c) =>
+  withAnalytics(await c.env.ASSETS.fetch(c.req.raw), {
+    measurementId: measurementIdFor(c.env),
+    pathname: new URL(c.req.url).pathname,
+    method: c.req.method,
+  }),
+);
 
 /* ───────── mount path ───────── */
 

@@ -15,6 +15,7 @@ import { api, errorMessage } from '../api';
 import { FOLLOW_UP_MAX } from '../constants';
 import { copyFor, useT } from '../i18n';
 import { streamFollowUp } from '../sse';
+import { track } from '../analytics';
 import type { Language } from '../../shared/lang';
 
 interface FollowUpRound {
@@ -119,6 +120,7 @@ export default function FollowUp(props: {
       textareaRef.current.style.height = 'auto';
     }
     setError('');
+    track('follow_up_asked');
     setMessages((current) => [
       ...current,
       {

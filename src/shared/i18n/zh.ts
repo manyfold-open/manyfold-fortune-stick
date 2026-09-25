@@ -27,6 +27,11 @@ export const zh = {
   settingsMotionCalm: '宁静',
   settingsLanguageTitle: '界面语言',
   privacyNav: '隐私与数据',
+  consentLabel: '统计',
+  consentLine: '我们想用 Google Analytics 了解网站的使用情况，也用它衡量广告效果。你的问题和解签内容不会被送去。',
+  consentAccept: '同意',
+  consentDecline: '不同意',
+  consentMore: '隐私说明',
   railLeft: 'MODEL WY-36 · MADE IN CHINA',
   railRight: '三 十 六 签 · 一 问 一 答',
   footerSound: '声音{state}',
@@ -138,13 +143,12 @@ export const zh = {
   /* ── 隐私与数据 ── */
   privacyBadge: '御神签 · 隐私',
   privacyTitle: '隐私与数据',
-  privacyIntro:
-    '这个部署不使用 Cookie、广告追踪、像素或 analytics。以下说明只描述这份代码实际会保存和传送的资料。',
+  privacyIntro: '这里没有广告像素，也不录制你的操作。以下说明只描述这份代码实际会保存和传送的资料，部署方开启 Google Analytics 时也包括它。',
   privacyStoredTitle: '浏览器会保存什么',
   privacyStoredRecords:
     'localStorage 的 wenyiqian.records：最多 100 条求签记录，包括问题、签号、解读、追问内容和时间。',
   privacyStoredPrefs:
-    'localStorage 的 wenyiqian.current 和 wenyiqian.prefs：当前求签 ID，以及声音、动画和界面语言偏好。',
+    'localStorage 的 wenyiqian.current 和 wenyiqian.prefs：当前求签 ID，以及声音、动画和界面语言偏好。wenyiqian.consent 记着你对统计的选择（如果你选过）。',
   privacyStoredPassword:
     'sessionStorage 的 adminPassword：只有部署设置 ADMIN_PASSWORD 时才会有，标签页关闭后消失，并以请求 header 发送，不放进 Cookie 或 URL。',
   privacyServerTitle: '服务器会保存什么',
@@ -162,12 +166,22 @@ export const zh = {
   privacyFonts:
     '页面会从 Google Fonts 请求 Noto Serif 字体。字体请求由 Google 处理；本应用不会把问题或解读放进字体请求。',
   privacyCloudflare:
-    '网站、Worker 和 D1 运行在 Cloudflare。wrangler.jsonc 也开启了 Cloudflare Worker observability，因此 Cloudflare 可能按其平台服务处理请求元数据、logs 和 metrics；本应用没有额外加入 analytics 或行为追踪。',
+    '网站、Worker 和 D1 运行在 Cloudflare。wrangler.jsonc 也开启了 Cloudflare Worker observability，因此 Cloudflare 可能按其平台服务处理请求元数据、logs 和 metrics；这和下面说的统计是两回事。',
   privacyCookiesTitle: 'Cookie 与 analytics',
   privacyCookies:
     '本应用不设置、读取或依赖 Cookie，也不需要匿名用户跨请求识别，因此没有 Cookie 期限或撤回操作。',
   privacyAnalytics:
     '当前没有 Google Analytics、GTM、Meta Pixel、Sentry、Hotjar、PostHog 或其他 analytics script。本站只自己记录每天的总数，例如抽了几支签、分享了几次、访问是从分享链接、扫码、塔罗、搜索引擎还是社群过来的（来源网站只在你的浏览器里归成这类类别，不会传出网址）；这些只是每日次数，不包含你是谁、问了什么或抽到哪支签，所以不会显示额外 consent banner。',
+  privacyCookiesGoogle:
+    '本应用自己不设置、读取或依赖 Cookie。唯一的 Cookie 来自 Google Analytics（_ga，以及一个以本站测量 ID 命名的），而且只在允许统计存储之后才会写入。它们存一个随机识别码，让再次来访能被认出，Google 最多保留两年。',
+  privacyAnalyticsGoogle:
+    '这个部署会载入 Google Analytics，用来了解网站的使用情况，也用来衡量广告效果。它记录你打开的页面，以及一局里的五个节点：抽出一支签、打开解签、追问、分享、前往塔罗。你的问题和解签正文都不会送出；事件最多只说明这一局用的是哪种语言。页面网址会原样送出，所以朋友分享来的链接会带着那支签的签号，但从不带问题。在欧洲经济区、英国和瑞士，你在页面底部那一行作答之前，统计和广告都不会存任何东西（Google Consent Mode）；其他地区默认开启。无论哪种，都可以在这里更改。',
+  privacyOwnCounts:
+    '另外，本站自己记录每天的总数，例如抽了几支签、分享了几次、访问是从分享链接、扫码、塔罗、搜索引擎还是社群过来的（来源网站只在你的浏览器里归成这类类别，不会传出网址）；这些只是每日次数，不包含你是谁、问了什么或抽到哪支签，不需要征得同意。',
+  privacyConsentOn: '这个浏览器的统计已开启。',
+  privacyConsentOff: '这个浏览器的统计已关闭。',
+  privacyConsentAllow: '允许统计',
+  privacyConsentRefuse: '关闭统计',
   privacySharingTitle: '分享会公开什么',
   privacySharing:
     '分享只在你的浏览器生成图片并交给系统分享或下载，不会上传到本应用的分享服务。图片可能包含签号、等级、签诗、一句话签意、可选的问题和 QR code；你把图片发给谁，就由那个平台和收件人看到。',

@@ -29,7 +29,10 @@
     "directory": "./dist/client",
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
-    "run_worker_first": ["/", "/api/*", "/fortune-stick", "/fortune-stick/*"]
+    // The API, plus the pages the Worker adds to on the way past: link previews
+    // (src/worker/meta.ts) and the Google tag (src/worker/analytics.ts). Under
+    // BASE_PATH everything wakes the Worker, because the prefix has to come off first.
+    "run_worker_first": ["/", "/privacy", "/api/*", "/fortune-stick", "/fortune-stick/*"]
   },
   "d1_databases": [
     {
@@ -48,7 +51,11 @@
     // Preview builds can override this to the matching Tarot preview URL.
     "TAROT_HANDOFF_URL": "https://app.manyfold.ai/tarot/",
     // Other Tarot hosts a visitor may have come from; the Tarot link sends them back there.
-    "TAROT_RETURN_URLS": "https://tarot.manyfold.ai/"
+    "TAROT_RETURN_URLS": "https://tarot.manyfold.ai/",
+    // GA4 measurement id for app.manyfold.ai/fortune-stick. Forks: clear it (or put your
+    // own id here); empty means no analytics is served at all. Consent Mode v2 defaults
+    // ship with the tag (src/worker/analytics.ts).
+    "GA_MEASUREMENT_ID": "G-86RWKZYYJB"
   }
   // Optional hardening, neither is required to deploy:
   //   npx wrangler secret put ADMIN_PASSWORD          # protects agent management in /settings

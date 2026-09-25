@@ -24,6 +24,7 @@ import { parseSharedStick } from '../shared/share-link';
 import ShrineBackdrop from './components/ShrineBackdrop';
 import { LanguageProvider, useT, useUiLanguage } from './i18n';
 import LanguageMenu from './components/LanguageMenu';
+import Consent from './components/Consent';
 import { HTML_LANG } from '../shared/lang';
 import { getPrefs, setCurrentReadingId, setPrefs, type Prefs } from './storage';
 import { installAudioUnlock } from './sound';
@@ -264,7 +265,7 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
         />
       )}
       {route === 'history' && <HistoryView />}
-      {route === 'privacy' && <PrivacyView />}
+      {route === 'privacy' && <PrivacyView consentRequired={state?.consentRequired ?? null} />}
       </Suspense>
       {route === 'game' && shared && <SharedStickView shared={shared} onDrawOwn={leaveShared} />}
       {route === 'game' && !shared && (
@@ -316,6 +317,9 @@ function Shell(props: { prefs: Prefs; updatePrefs: (patch: Partial<Prefs>) => vo
         updatePrefs={updatePrefs}
         language={language}
       />
+
+      {/* 設定頁不統計，也就不問；隱私頁自己有開關，重新掛上時會重讀那個答案 */}
+      {route !== 'settings' && route !== 'privacy' && <Consent required={state?.consentRequired ?? null} />}
 
       {gateOpen && <PasswordGate onSubmitted={refreshState} />}
     </main>

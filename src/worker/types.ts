@@ -23,6 +23,8 @@ export interface Env {
   TAROT_HANDOFF_URL?: string;
   /** Comma-separated other Tarot URLs a visitor may be sent back to (e.g. the legacy host). */
   TAROT_RETURN_URLS?: string;
+  /** GA4 measurement id (G-…). Unset or malformed means no analytics is served at all. */
+  GA_MEASUREMENT_ID?: string;
 }
 
 /** Everything needed to talk to one agent over A2A. */

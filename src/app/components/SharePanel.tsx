@@ -9,6 +9,7 @@ import type { Interpretation } from '../../shared/types';
 import { useT } from '../i18n';
 import { renderShareImage, shareImage, shareText, type ShareOutcome } from '../share';
 import { recordShare } from '../visit';
+import { track } from '../analytics';
 import type { Language } from '../../shared/lang';
 
 export default function SharePanel(props: {
@@ -74,6 +75,7 @@ export default function SharePanel(props: {
       // Closing the share sheet is not a share: say nothing and count nothing.
       if (outcome === 'cancelled') return;
       recordShare(outcome === 'shared' ? 'sent' : 'downloaded');
+      track('reading_shared', { method: outcome === 'shared' ? 'share' : 'download' });
       setStatus(outcome === 'shared' ? t('shareShared') : t('shareDownloaded'));
     };
     // 图好了：在这一下点击里直接叫分享，前面不能有任何 await
