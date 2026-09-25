@@ -8,6 +8,7 @@ import { stickText, type FortuneStick } from '../../shared/sticks';
 import type { Interpretation } from '../../shared/types';
 import { useT } from '../i18n';
 import { renderShareImage, shareImage, shareText, type ShareOutcome } from '../share';
+import { recordShare } from '../visit';
 import type { Language } from '../../shared/lang';
 
 export default function SharePanel(props: {
@@ -69,7 +70,12 @@ export default function SharePanel(props: {
     if (sharingRef.current) return;
     setStatus('');
     setFallbackText('');
-    const done = (outcome: ShareOutcome) => setStatus(outcome === 'shared' ? t('shareShared') : t('shareDownloaded'));
+    const done = (outcome: ShareOutcome) => {
+      // Closing the share sheet is not a share: say nothing and count nothing.
+      if (outcome === 'cancelled') return;
+      recordShare(outcome === 'shared' ? 'sent' : 'downloaded');
+      setStatus(outcome === 'shared' ? t('shareShared') : t('shareDownloaded'));
+    };
     // 图好了：在这一下点击里直接叫分享，前面不能有任何 await
     if (ready.current?.key === key) {
       sharingRef.current = true;

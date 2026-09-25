@@ -29,6 +29,8 @@ import { HttpError, type Env } from './types';
 import { ensureSchema } from './db';
 import { withShareMeta } from './meta';
 import { claimTarotBonus, findTarotClaim, tarotReturnUrl } from './tarot-bridge';
+import { bumpStat, readStats } from './stats';
+import { isMetric, isVisitSource } from '../shared/stats';
 import { ConfigError, safeEqual } from './crypto';
 import { A2AError } from './a2a';
 import {
@@ -140,8 +142,10 @@ app.get('/api/state', async (c) => {
 /* ───────── 求签 ───────── */
 
 app.post('/api/readings', async (c) => {
-  const body = (await c.req.json().catch(() => null)) as { question?: unknown } | null;
+  const body = (await c.req.json().catch(() => null)) as { question?: unknown; via?: unknown } | null;
   const reading = await createReading(c.env, body?.question);
+  // A visit that arrived from a share or from Tarot says so on its first draw.
+  if (isVisitSource(body?.via)) await bumpStat(c.env, `draw:${body.via}`);
   return c.json({ reading }, 201);
 });
 
@@ -151,6 +155,7 @@ app.post('/api/readings/:id/tarot-claim', async (c) => {
     throw new HttpError(409, 'reading_not_complete', 'Finish reading this stick before opening Tarot.');
   }
   const body = (await c.req.json().catch(() => null)) as { returnUrl?: unknown } | null;
+  await bumpStat(c.env, 'tarot:opened');
   // token is null when the reading is too old to earn today's reward; the
   // browser still opens Tarot, just without a claim Tarot would refuse.
   return c.json({
@@ -158,6 +163,24 @@ app.post('/api/readings/:id/tarot-claim', async (c) => {
     tarotUrl: tarotReturnUrl(c.env, body?.returnUrl),
   });
 });
+
+/* ───────── the deployer's daily counts ───────── */
+
+// Public, like the game: the page reports a visit's source or a share. Only the
+// fixed metric names in shared/stats.ts are counted; anything else is refused.
+app.post('/api/stats/:metric', async (c) => {
+  const metric = c.req.param('metric');
+  if (!isMetric(metric) || metric.startsWith('draw:') || metric === 'tarot:opened') {
+    throw new HttpError(400, 'unknown_metric', 'No such metric.');
+  }
+  await bumpStat(c.env, metric);
+  return c.json({ ok: true });
+});
+
+// Admin only (isSettingsApiPath): the counts behind #settings.
+app.get('/api/stats', async (c) =>
+  c.json({ days: await readStats(c.env, Number(c.req.query('days') ?? 14)) }),
+);
 
 // Tarot's Worker asks here (over its service binding) before granting a reward.
 // The answer is only the day a code is good for; a code is 32 random bytes, so

@@ -30,8 +30,12 @@ export function parseSharedStick(search: string): SharedStick | null {
   return { stick, language: params.get('l') === 'zh' ? 'zh' : 'en' };
 }
 
-/** 分享連結的查詢字串（含 `?`）。 */
-export const sharedStickQuery = (no: number, language: Language): string => `?s=${no}&l=${language}`;
+/**
+ * 分享連結的查詢字串（含 `?`）。via 標出它是從分享圖上的 QR 碼（qr）還是文字連結（link）
+ * 來的，只給 #settings 的每日統計用；讀籤時不看它。
+ */
+export const sharedStickQuery = (no: number, language: Language, via?: 'qr' | 'link'): string =>
+  `?s=${no}&l=${language}${via ? `&via=${via}` : ''}`;
 
 /** 連結預覽（og:title / og:description）要寫的字：籤號、等級、籤名，底下兩句籤詩。 */
 export function sharedStickMeta({ stick, language }: SharedStick): { title: string; description: string } {

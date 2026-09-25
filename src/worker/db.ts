@@ -94,6 +94,15 @@ CREATE INDEX IF NOT EXISTS idx_reading_messages ON reading_messages (reading_id,
 -- the link, which Tarot's Worker looks up here (over a service binding) before
 -- it grants anything. One code per reading, so drawing it twice cannot mint two.
 -- day is the Taipei calendar day the claim is good for.
+-- The deployer's daily counts for #settings (src/worker/stats.ts): one number
+-- per Taipei day and metric, and nothing about who or what was counted.
+CREATE TABLE IF NOT EXISTS daily_stats (
+  day    TEXT NOT NULL,
+  metric TEXT NOT NULL,
+  count  INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (day, metric)
+);
+
 CREATE TABLE IF NOT EXISTS tarot_claims (
   id         TEXT PRIMARY KEY,
   reading_id TEXT NOT NULL UNIQUE,

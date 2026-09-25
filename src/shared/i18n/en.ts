@@ -169,7 +169,7 @@ export const en = {
   privacyCookies:
     'This app does not set, read, or depend on cookies. It does not need an anonymous identifier that persists between requests, so there is no cookie expiry or cookie withdrawal action.',
   privacyAnalytics:
-    'There is currently no Google Analytics, GTM, Meta Pixel, Sentry, Hotjar, PostHog, or other analytics script. Without a measurement ID, no analytics script or event is sent, so no extra consent banner is shown.',
+    'There is currently no Google Analytics, GTM, Meta Pixel, Sentry, Hotjar, PostHog, or other analytics script. The site does keep its own daily totals, such as how many sticks were drawn or shared and whether a visit came from a shared link, a QR code or Tarot. They are plain counts per day with nothing about who you are, what you asked or which stick you drew, so no consent banner is shown.',
   privacySharingTitle: 'What sharing exposes',
   privacySharing:
     'Sharing generates an image in your browser and hands it to the system share sheet or downloads it; this app has no public sharing service. The image may contain the stick number, level, poem, short meaning, an optional question, and a QR code. Whoever receives the image can see whatever you included, and the receiving platform has its own handling.',
@@ -213,6 +213,41 @@ export const en = {
   settingsAboutTitle: 'About this deployment',
   settingsAboutBody:
     'Agent tokens are encrypted with AES GCM in D1 and are never sent to the browser. ADMIN_PASSWORD protects agent management operations on this settings page only; the game remains public. Setting CONFIG_ENCRYPTION_KEY keeps the encryption key out of the database. See the README.',
+
+  /* ── daily counts on #settings ── */
+  statsTitle: 'Daily numbers',
+  statsNote:
+    'Counts per Taipei day, kept by this site until proper analytics are set up. Only totals are stored, never who, what they asked or which stick. Visits from a share or from Tarot are counted once per browser tab.',
+  statsRangeLabel: 'How many days to show',
+  statsDays: '{n} days',
+  statsLoading: 'Loading the numbers…',
+  statsDay: 'Day',
+  statsTotal: 'Total',
+  statsTableLabel: 'Numbers by day',
+  statsGroupDraws: 'Draws',
+  statsGroupTarot: 'With Tarot',
+  statsGroupShare: 'Sharing',
+  statsOfThemDrew: 'of them drew',
+  statsFromShare: 'Came from a share',
+  statsFromShareDrewCard: 'Share visitors who drew',
+  statsCardDrawsDetail: 'in the last {n} days',
+  statsCardDrew: '{n} of them drew a stick ({rate})',
+  statsCardShareDetail: 'QR {qr} · link {link} · older share {old}',
+  statsCardRate: '{rate} of share visitors',
+  statsCardClaims: '{n} Tarot rewards issued',
+  statsCardSharesDetail: 'share sheet {sent} · saved image {saved}',
+  statsDraws: 'Sticks drawn',
+  statsFromTarot: 'Came from Tarot',
+  statsToTarot: 'Opened Tarot',
+  statsClaims: 'Tarot rewards issued',
+  statsShares: 'Shared',
+  statsScanned: 'Came by QR',
+  statsLinked: 'Came by link',
+  statsOldShares: 'Came by older share',
+  statsTarotBreakdown:
+    'Where Tarot visitors clicked: end of a reading {outro}, readings used up {locked}, Tarot share page {share}, other {other}.',
+  statsHowTo:
+    'Opened Tarot counts every click on the Tarot link; Tarot rewards issued counts sticks finished today whose reward went out. Whether the reward was then used is recorded on the Tarot side. Older share images have no QR marker, so their visitors show as older share.',
 
   /* ── connecting to Manyfold ── */
   connectStart: 'Connect a Manyfold agent',

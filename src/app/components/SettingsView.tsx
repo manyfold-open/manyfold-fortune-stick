@@ -12,6 +12,7 @@ import { withoutDashes } from '../../shared/text';
 import { api, errorMessage } from '../api';
 import { useT } from '../i18n';
 import ConnectPanel from './ConnectPanel';
+import StatsPanel from './StatsPanel';
 
 export default function SettingsView(props: {
   agents: ConnectedAgent[];
@@ -121,6 +122,9 @@ export default function SettingsView(props: {
       <h3>{t('settingsMoreTitle')}</h3>
       <p className="muted">{t('settingsMoreNote')}</p>
       <ConnectPanel initialSession={props.initialSession} onConnected={props.refreshState} />
+
+      <h3>{t('statsTitle')}</h3>
+      <StatsPanel />
 
       <h3>{t('settingsAboutTitle')}</h3>
       <p className="muted">{t('settingsAboutBody')}</p>
