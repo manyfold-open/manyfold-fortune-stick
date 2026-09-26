@@ -31,7 +31,7 @@ export default function StickFace(props: {
   const vertical = writesVertically(language);
   // 日文、韩文的纸标上 lang：浏览器要知道是日文，才会按词组（文節）换行，不把「新しい」劈成两半。
   // 中文、英文照旧不标 —— 那两种纸的样子一个像素都不动。
-  const paperLang = language === 'ja' || language === 'ko' ? HTML_LANG[language] : undefined;
+  const paperLang = language === 'zh' || language === 'en' ? undefined : HTML_LANG[language];
 
   if (props.size === 'small') {
     const tab = paper.tab(stick.no);

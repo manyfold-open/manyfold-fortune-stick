@@ -9,7 +9,7 @@
  * localStorage 直接抛错，那种情况下游戏应当照常能玩，只是记不住历史。
  */
 
-import { isLanguage, type Language } from '../shared/lang';
+import { isLanguage, languageFromLocales, type Language } from '../shared/lang';
 import { browserStorage, safeGet, safeRemove, safeSet } from '../shared/safe-storage';
 import type { Interpretation, Reading } from '../shared/types';
 
@@ -38,8 +38,8 @@ export interface Prefs {
   /** 减少动画。默认跟随系统的 prefers-reduced-motion。 */
   reducedMotion: boolean;
   /**
-   * 界面语言。所有人进来都是简体中文 —— 不猜浏览器语言：这个游戏的默认读者
-   * 是中文读者，猜错一次的代价比多按一下右上角的开关大。
+   * 界面语言。自己选过的一律照旧；还没选过的人按浏览器的语言挑一种我们有的
+   * （languageFromLocales，只看语言不看国家），都没有就是英文。
    *
    * 注意这只管界面。签纸和解读的语言由问题本身决定（src/shared/lang.ts），
    * 改这个值不会动到任何一张已经印出来的签。
@@ -127,12 +127,22 @@ const systemReducedMotion = (): boolean => {
   }
 };
 
+/** 浏览器想要的语言列表。拿不到（很旧的浏览器、测试环境）就当没有偏好。 */
+const browserLanguage = (): Language | null => {
+  try {
+    const list = navigator.languages?.length ? navigator.languages : [navigator.language];
+    return languageFromLocales(list.filter(Boolean));
+  } catch {
+    return null;
+  }
+};
+
 export function getPrefs(): Prefs {
   const stored = read<Partial<Prefs>>(PREFS_KEY, {});
   return {
     sound: stored.sound ?? true,
     reducedMotion: stored.reducedMotion ?? systemReducedMotion(),
-    language: isLanguage(stored.language) ? stored.language : 'en',
+    language: isLanguage(stored.language) ? stored.language : (browserLanguage() ?? 'en'),
   };
 }
 

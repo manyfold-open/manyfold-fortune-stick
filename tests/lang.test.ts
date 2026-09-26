@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { detectLanguage } from '../src/shared/lang';
+import { detectLanguage, languageFromLocales } from '../src/shared/lang';
 
 describe('detectLanguage', () => {
   it('纯中文问题是中文', () => {
@@ -47,11 +47,42 @@ describe('detectLanguage', () => {
     expect(detectLanguage('ㅋㅋ should I')).toBe('ko');
   });
 
+  it('有一个天城文字母就是印地语', () => {
+    expect(detectLanguage('क्या मुझे नौकरी बदलनी चाहिए?')).toBe('hi');
+    expect(detectLanguage('मेरा career कैसा रहेगा')).toBe('hi');
+    expect(detectLanguage('Should I go । ok')).toBe('hi');
+  });
+
+  it('罗马字写的印地语（Hinglish）认不出来，落到英文', () => {
+    expect(detectLanguage('kya mujhe naukri badalni chahiye')).toBe('en');
+  });
+
   it('夹着汉字的韩文仍是韩文', () => {
     expect(detectLanguage('今年 운세는 어때요')).toBe('ko');
   });
 
   it('空字符串落到英文，不抛错', () => {
     expect(detectLanguage('')).toBe('en');
+  });
+});
+
+describe('languageFromLocales', () => {
+  it('按浏览器的偏好顺序，第一个我们有的语言胜出', () => {
+    expect(languageFromLocales(['hi-IN', 'en-IN'])).toBe('hi');
+    expect(languageFromLocales(['en-IN', 'hi-IN'])).toBe('en');
+    expect(languageFromLocales(['fa-IR', 'en-US'])).toBe('en');
+    expect(languageFromLocales(['ja-JP'])).toBe('ja');
+    expect(languageFromLocales(['ko_KR'])).toBe('ko');
+  });
+
+  it('繁体中文地区也给中文', () => {
+    expect(languageFromLocales(['zh-TW'])).toBe('zh');
+    expect(languageFromLocales(['zh-Hant-HK'])).toBe('zh');
+  });
+
+  it('一个都不认得就是 null，调用方落回英文', () => {
+    expect(languageFromLocales(['id-ID', 'fa'])).toBeNull();
+    expect(languageFromLocales([])).toBeNull();
+    expect(languageFromLocales([''])).toBeNull();
   });
 });

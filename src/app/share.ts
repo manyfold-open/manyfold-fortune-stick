@@ -13,7 +13,7 @@
  */
 
 import QRCode from 'qrcode';
-import { wrapsByWord, writesVertically, type Language } from '../shared/lang';
+import { joinsLetters, wrapsByWord, writesVertically, type Language } from '../shared/lang';
 import { PAPER as PAPER_COPY } from '../shared/paper';
 import { sharedStickQuery } from '../shared/share-link';
 import { withoutDashes } from '../shared/text';
@@ -333,7 +333,7 @@ async function waitForFonts(sample: string, language: Language): Promise<void> {
       document.fonts.load(`400 30px ${SERIF_EN}`, sample),
       document.fonts.load(`500 36px ${handFor(language)}`, sample),
       // 日文、韩文的纸用自己的那一套明朝
-      ...(language === 'ja' || language === 'ko'
+      ...(language === 'ja' || language === 'ko' || language === 'hi'
         ? [700, 600, 500, 400].map((weight) => document.fonts.load(`${weight} 40px ${minchoFor(language)}`, sample))
         : []),
     ]);
@@ -495,8 +495,11 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
   // 韩文签名是带空格的短句，跟英文一样不拉开字距，只留一点
   const titleGap = en ? 2 : vertical ? 18 : 4;
   const titleFace = face;
+  // 天城文整串量、整串画（spacedText 对它不加字距）
   const measureTitle = () =>
-    [...text.title].reduce((w, c) => w + g.measureText(c).width, 0) + titleGap * ([...text.title].length - 1);
+    joinsLetters(language)
+      ? g.measureText(text.title).width
+      : [...text.title].reduce((w, c) => w + g.measureText(c).width, 0) + titleGap * ([...text.title].length - 1);
   // 簽名兩側各有一條 22 + 40 的朱紅短線：長的英文簽名先縮字，縮到最小還放不下就不畫短線，
   // 不然短線（甚至字）會畫到紙框外面
   const RULES = 2 * (22 + 40) + 16;

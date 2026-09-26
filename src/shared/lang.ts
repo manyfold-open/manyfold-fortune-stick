@@ -5,6 +5,7 @@
  *  - 有一个假名（平假名、片假名）就是日文 —— 日文句子几乎一定带假名（助词、语尾），
  *    而中文句子里不会有；所以这一条要排在汉字前面，否则「明日の面接」会被判成中文；
  *  - 有一个谚文（韩文字母）就是韩文；
+ *  - 有一个天城文字母就是印地语（天城文也写马拉地语、尼泊尔语，读的人照样看得懂印地语）；
  *  - 有一个汉字就是中文；
  *  - 都没有就是英文。
  * 钝有两个好处 —— 用户能预测（我打日文就得到日文），以及 workerd 和浏览器跑的是
@@ -19,10 +20,24 @@
  * 都不代表这个人要读哪一种文字的解签。
  */
 
-export type Language = 'zh' | 'en' | 'ja' | 'ko';
+export type Language = 'zh' | 'en' | 'ja' | 'ko' | 'hi';
+
+/**
+ * 第一次来、还没自己选过界面语言的人，按浏览器的语言列表（navigator.languages）挑一种：
+ * 从最想要的那一个往下找，第一个我们有的就用它；一个都没有就是 null，调用方落回英文。
+ * 只看语言，不看国家 —— 印度的访客很多用的是 en-IN，照国家猜会把读英文的人推去印地语。
+ * zh-TW、zh-HK 也给简体中文：比落到英文好读。只管界面，签纸仍然跟着问题走。
+ */
+export function languageFromLocales(locales: readonly string[]): Language | null {
+  for (const locale of locales) {
+    const base = locale.toLowerCase().split(/[-_]/)[0];
+    if (isLanguage(base)) return base;
+  }
+  return null;
+}
 
 /** 界面语言选单的顺序。 */
-export const LANGUAGES: readonly Language[] = ['zh', 'en', 'ja', 'ko'];
+export const LANGUAGES: readonly Language[] = ['zh', 'en', 'ja', 'ko', 'hi'];
 
 export const isLanguage = (value: unknown): value is Language =>
   typeof value === 'string' && (LANGUAGES as readonly string[]).includes(value);
@@ -33,10 +48,13 @@ const HAN = /[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/;
 const KANA = /[\u3041-\u3096\u30a1-\u30fa\u31f0-\u31ff\uff66-\uff9d]/;
 /** 谚文：音节、字母（兼容区与组合区）。 */
 const HANGUL = /[\uac00-\ud7a3\u1100-\u11ff\u3130-\u318f]/;
+/** 天城文：基本区与扩展区（句号「।」也在里面，只有写印地语的人才会打出它）。 */
+const DEVANAGARI = /[\u0900-\u097f\ua8e0-\ua8ff]/;
 
 export function detectLanguage(question: string): Language {
   if (KANA.test(question)) return 'ja';
   if (HANGUL.test(question)) return 'ko';
+  if (DEVANAGARI.test(question)) return 'hi';
   if (HAN.test(question)) return 'zh';
   return 'en';
 }
@@ -52,7 +70,14 @@ export const writesVertically = (language: Language): boolean =>
  * 在哪里换行：英文和韩文词与词之间有空格，按词换；中文和日文按字换
  * （日文另有禁则，交给浏览器的 line-break: strict）。
  */
-export const wrapsByWord = (language: Language): boolean => language === 'en' || language === 'ko';
+export const wrapsByWord = (language: Language): boolean =>
+  language === 'en' || language === 'ko' || language === 'hi';
+
+/**
+ * 天城文的字母要连成一条顶线（शिरोरेखा），拉开字距就会断开、甚至拆坏合体字。
+ * 所以印地语的纸和界面一律不加字距，分享图也不一个字一个字地画。
+ */
+export const joinsLetters = (language: Language): boolean => language === 'hi';
 
 /** `<html lang>` 的值。读屏软件靠它决定怎么念。 */
 export const HTML_LANG: Record<Language, string> = {
@@ -60,6 +85,7 @@ export const HTML_LANG: Record<Language, string> = {
   en: 'en-GB',
   ja: 'ja',
   ko: 'ko',
+  hi: 'hi',
 };
 
 /**
@@ -71,6 +97,7 @@ export const LANGUAGE_NAME: Record<Language, string> = {
   en: 'English',
   ja: '日本語',
   ko: '한국어',
+  hi: 'हिन्दी',
 };
 
 /** 顶栏开关上的短名字：只标当前是哪一种，点开再选。 */
@@ -79,4 +106,5 @@ export const LANGUAGE_SHORT: Record<Language, string> = {
   en: 'EN',
   ja: '日本語',
   ko: '한국어',
+  hi: 'हिन्दी',
 };

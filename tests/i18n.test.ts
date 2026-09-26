@@ -3,6 +3,7 @@ import { zh } from '../src/shared/i18n/zh';
 import { en } from '../src/shared/i18n/en';
 import { ja } from '../src/shared/i18n/ja';
 import { ko } from '../src/shared/i18n/ko';
+import { hi } from '../src/shared/i18n/hi';
 import { TABLES, copyFor, format, translatorFor } from '../src/shared/i18n';
 import { LANGUAGES } from '../src/shared/lang';
 import { STICKS } from '../src/shared/sticks';
@@ -11,7 +12,7 @@ const HAN = /[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/;
 
 describe('界面字典', () => {
   it('每张表的键都跟中文那张完全一致 —— 漏一个就编译不过，这里再兜一层', () => {
-    for (const table of [en, ja, ko]) {
+    for (const table of [en, ja, ko, hi]) {
       expect(Object.keys(table).sort()).toEqual(Object.keys(zh).sort());
     }
   });
@@ -26,7 +27,7 @@ describe('界面字典', () => {
 
   it('同一个键在每种语言里占位符也要一样，否则插值会漏', () => {
     const slots = (text: string) => (text.match(/\{(\w+)\}/g) ?? []).sort();
-    for (const table of [en, ja, ko]) {
+    for (const table of [en, ja, ko, hi]) {
       for (const key of Object.keys(zh) as (keyof typeof zh)[]) {
         expect(slots(table[key]), `${String(key)} 的占位符对不上`).toEqual(slots(zh[key]));
       }
@@ -47,6 +48,20 @@ describe('界面字典', () => {
       const { poem, ...rest } = stick.ko;
       for (const value of [...poem, ...Object.values(rest)]) {
         expect(HAN.test(value), `第 ${stick.no} 签的韩文里有汉字：${value}`).toBe(false);
+      }
+    }
+  });
+
+  it('印地语表和印地语签文不夹汉字，签文用天城文写', () => {
+    const devanagari = /[\u0900-\u097f]/;
+    for (const [key, value] of Object.entries<string>(hi)) {
+      expect(HAN.test(value), `${key} 的印地语里有汉字`).toBe(false);
+    }
+    for (const stick of STICKS) {
+      const { poem, ...rest } = stick.hi;
+      for (const value of [...poem, ...Object.values(rest)]) {
+        expect(HAN.test(value), `第 ${stick.no} 签的印地语里有汉字`).toBe(false);
+        expect(devanagari.test(value), `第 ${stick.no} 签的印地语不是天城文：${value}`).toBe(true);
       }
     }
   });

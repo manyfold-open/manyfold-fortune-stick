@@ -299,8 +299,19 @@ export function drawSakuraMark(g: CanvasRenderingContext2D, cx: number, cy: numb
   g.restore();
 }
 
+/** 字母要连在一起写、不能拉开字距的文字（天城文）。 */
+const JOINED_SCRIPT = /[\u0900-\u097f\ua8e0-\ua8ff]/;
+
 /** 字距自己排（canvas 的 letterSpacing 支持還不齊），整行在 cx 上置中。 */
 export function spacedText(g: CanvasRenderingContext2D, text: string, cx: number, y: number, gap: number): void {
+  // 天城文一个字一个字地画会拆坏合体字、断开顶线（src/shared/lang.ts 的 joinsLetters）：整串画，不加字距
+  if (JOINED_SCRIPT.test(text)) {
+    const align = g.textAlign;
+    g.textAlign = 'center';
+    g.fillText(text, cx, y);
+    g.textAlign = align;
+    return;
+  }
   const chars = [...text];
   const widths = chars.map((c) => g.measureText(c).width);
   const total = widths.reduce((s, v) => s + v, 0) + gap * (chars.length - 1);

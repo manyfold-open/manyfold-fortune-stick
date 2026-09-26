@@ -36,6 +36,8 @@ const LATIN = '"Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif'
 const SERIF_JA = `"Klee One", "Noto Serif JP", ${SERIF}`;
 /** 韩文横排：字母数字仍是 LATIN，谚文落到 Noto Serif KR。 */
 const LATIN_KO = `"Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Noto Serif KR", serif`;
+/** 印地语横排：天城文落到 Noto Serif Devanagari。 */
+const LATIN_HI = `"Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Noto Serif Devanagari", serif`;
 /** canvas 直排不会把横排的符号立起来，日文的长音、顿号、句号换成直排字形（跟分享图同一招）。 */
 const VERTICAL_FORMS: Record<string, string> = { 'ー': '︱', '、': '︑', '。': '︒', '「': '﹁', '」': '﹂' };
 
@@ -280,7 +282,7 @@ function paintCard(
     else g.font = `800 44px ${SERIF}`;
     g.fillText(text.title, rect.w / 2 + 10, rect.h - 96);
   } else {
-    const latin = language === 'ko' ? LATIN_KO : LATIN;
+    const latin = language === 'ko' ? LATIN_KO : language === 'hi' ? LATIN_HI : LATIN;
     const maxW = rect.w - 76;
     const measure = (s: string) => g.measureText(s).width;
 

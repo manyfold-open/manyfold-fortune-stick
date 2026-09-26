@@ -25,11 +25,14 @@ export const MINCHO_KO = `"Shippori Mincho B1 Letters", "Noto Serif KR", "AppleM
 /** 日文的手写字：Klee One 是霞鹜文楷的原型，同一只手。韩文还没有配得上的手写字，先用明朝。 */
 export const HAND_JA = `"Klee One", "LXGW WenKai TC", ${MINCHO_JA}`;
 export const HAND_KO = MINCHO_KO;
+/** 印地语的纸：Noto Serif Devanagari，拉丁字母和数字仍是 Shippori。手写字暂时也用它。 */
+export const MINCHO_HI = `"Shippori Mincho B1 Letters", "Noto Serif Devanagari", "Kohinoor Devanagari", "Mangal", ${MINCHO_CJK}`;
+export const HAND_HI = MINCHO_HI;
 
 /** 某一种语言的纸用哪一套明朝。 */
 export const minchoFor = (language: Language): string =>
-  ({ zh: MINCHO_ZH, en: MINCHO_EN, ja: MINCHO_JA, ko: MINCHO_KO })[language];
+  ({ zh: MINCHO_ZH, en: MINCHO_EN, ja: MINCHO_JA, ko: MINCHO_KO, hi: MINCHO_HI })[language];
 
 /** 某一种语言写在木头上用哪一套手写字。中文和英文共用霞鹜文楷。 */
 export const handFor = (language: Language): string =>
-  ({ zh: HAND, en: HAND, ja: HAND_JA, ko: HAND_KO })[language];
+  ({ zh: HAND, en: HAND, ja: HAND_JA, ko: HAND_KO, hi: HAND_HI })[language];

@@ -4,7 +4,7 @@ import { STICK_COUNT } from '../src/shared/sticks';
 
 describe('分享連結 ?s=&l=', () => {
   it('寫出去的連結讀得回同一支籤、同一種語言', () => {
-    for (const language of ['en', 'zh', 'ja', 'ko'] as const) {
+    for (const language of ['en', 'zh', 'ja', 'ko', 'hi'] as const) {
       for (let no = 1; no <= STICK_COUNT; no += 1) {
         const shared = parseSharedStick(sharedStickQuery(no, language));
         expect(shared?.stick.no).toBe(no);
@@ -36,5 +36,6 @@ describe('分享連結 ?s=&l=', () => {
     expect(zh.description).toMatch(/。来求一支你自己的签。$/);
     expect(sharedStickMeta(parseSharedStick('?s=13&l=ja')!).title).toMatch(/^第13番 · /);
     expect(sharedStickMeta(parseSharedStick('?s=13&l=ko')!).title).toMatch(/^13번 · /);
+    expect(sharedStickMeta(parseSharedStick('?s=13&l=hi')!).title).toMatch(/^क्रमांक 13 · /);
   });
 });

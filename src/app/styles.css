@@ -130,6 +130,25 @@
   overflow-wrap: break-word;
 }
 
+/* 印地语：按词换行（有空格），天城文的字母上有一条连着的顶线，拉开字距就断开、合体字也会拆坏 ——
+   所以印地语的纸，和界面是印地语时不属于任何一张纸的字，一律不加字距。
+   text-indent 在这个站上只用来抵消字距（让拉开的字居中），一起归零。
+   :not([data-lang] *) 把别种语言的纸排除在外：印地语界面上看一张中文签，中文签照旧拉开字距 */
+:root:lang(hi),
+[data-lang='hi'] {
+  --font-mincho: var(--font-mincho-hi);
+  --font-hand: var(--font-hand-hi);
+  font-family: var(--font-mincho);
+  overflow-wrap: break-word;
+}
+
+:root:lang(hi) body *:not([data-lang] *):not([data-lang]),
+[data-lang='hi'],
+[data-lang='hi'] * {
+  letter-spacing: 0 !important;
+  text-indent: 0 !important;
+}
+
 :root {
   /* 繪馬與木札的木頭（3D 籤筒台與結果頁共用） */
   --wood-edge: #8f6a43;
@@ -195,6 +214,9 @@
   --font-mincho-ko: 'Shippori Mincho B1 Letters', 'Noto Serif KR', 'AppleMyungjo', 'Batang', 'Noto Serif SC', serif;
   --font-hand-ja: 'Klee One', 'LXGW WenKai TC', var(--font-mincho-ja);
   --font-hand-ko: var(--font-mincho-ko);
+  /* 印地语：Noto Serif Devanagari，拉丁字母、数字仍是 Shippori。手写字暂时也用它 */
+  --font-mincho-hi: 'Shippori Mincho B1 Letters', 'Noto Serif Devanagari', 'Kohinoor Devanagari', 'Mangal', 'Noto Serif SC', serif;
+  --font-hand-hi: var(--font-mincho-hi);
   --font-mono: ui-monospace, 'SF Mono', 'SFMono-Regular', Menlo, Consolas, monospace;
   color-scheme: light;
 }
@@ -637,6 +659,9 @@ html, body {
 
 .settings-row.lang-row .settings-segment {
   margin-left: auto;
+  /* 五種語言在窄螢幕上一排放不下：自己折成兩排，靠右，不撐出畫面 */
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .settings-segment {
@@ -2178,6 +2203,12 @@ html, body {
 .slip[data-lang='ko'] .slip-meaning { letter-spacing: 0; text-wrap: balance; margin-top: 6px; }
 .slip[data-lang='ko'] .slip-no { letter-spacing: 0.1em; text-indent: 0.1em; }
 
+/* 印地語籤紙：橫排，跟韓文同一套。天城文上下都有符號（ि ु），行距要比中文寬一點 */
+.slip[data-lang='hi'] .slip-title { font-size: 18px; line-height: 1.5; }
+.slip[data-lang='hi'] .slip-poem { line-height: 1.7; text-wrap: balance; }
+.slip[data-lang='hi'] .slip-meaning { line-height: 1.7; text-wrap: balance; margin-top: 6px; }
+.slip[data-lang='hi'] .slip-level-box .slip-level { font-size: 17px; line-height: 1.3; max-width: 76px; }
+
 /* 默认落印基准 */
 .sheet-stack .slip-level-box {
   animation: stamp 0.44s cubic-bezier(0.2, 1.35, 0.35, 1) both;
@@ -3108,7 +3139,8 @@ html:lang(en) .history .history-plaque h2 {
 }
 
 .slip-mini[data-lang='en'] .slip-mini-tab,
-.slip-mini[data-lang='ko'] .slip-mini-tab {
+.slip-mini[data-lang='ko'] .slip-mini-tab,
+.slip-mini[data-lang='hi'] .slip-mini-tab {
   writing-mode: horizontal-tb;
   flex-direction: column;
   gap: 3px;
@@ -3158,7 +3190,8 @@ html:lang(en) .history .history-plaque h2 {
 }
 
 .slip-mini[data-lang='en'] .slip-mini-title,
-.slip-mini[data-lang='ko'] .slip-mini-title {
+.slip-mini[data-lang='ko'] .slip-mini-title,
+.slip-mini[data-lang='hi'] .slip-mini-title {
   font-family: var(--font-mincho);
   font-weight: 500;
   letter-spacing: 0.02em;
