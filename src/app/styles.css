@@ -3781,6 +3781,16 @@ code {
   white-space: nowrap;
 }
 
+/* 天城文的元音符號（ि ी ँ）畫在字母上方、行框外面：overflow: hidden 會把它們切掉，
+   「मेरी पर्चियाँ」變成「मरा पाचया」。印地語只在橫向裁切（clip 不會把直向變成可捲動），
+   行高也放寬一點。不支援 clip 的舊瀏覽器落回上面那條 hidden */
+:root:lang(hi) .history-link-label {
+  overflow-x: clip;
+  overflow-y: visible;
+  line-height: 1.5;
+  margin-block: -2px;
+}
+
 @media (max-width: 400px) {
   .shell {
     padding-top: max(14px, env(safe-area-inset-top, 14px));
