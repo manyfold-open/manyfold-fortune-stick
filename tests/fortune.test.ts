@@ -498,6 +498,7 @@ describe('日文、韩文的解签', () => {
   const cases = [
     { language: 'ja', question: '仕事を変えるべきですか？', followUp: 'どこから始めればいい？', rule: '新しくおみくじを引くことはなく' },
     { language: 'ko', question: '이직을 해야 할까요?', followUp: '어디서부터 시작할까요?', rule: '새로 제비를 뽑지 않고' },
+    { language: 'hi', question: 'क्या मुझे नौकरी बदलनी चाहिए?', followUp: 'शुरुआत कहाँ से करूँ?', rule: 'इसमें नई पर्ची नहीं निकलती' },
   ] as const;
 
   for (const { language, question, followUp, rule } of cases) {
@@ -552,5 +553,6 @@ describe('日文、韩文的解签', () => {
     const low = STICKS.find((one) => one.level === '下签')!;
     expect(buildInterpretPrompt('どうすれば？', low, 'ja')).toContain('怖がらせる言い方は絶対にせず');
     expect(buildInterpretPrompt('어떻게 할까요?', low, 'ko')).toContain('겁주는 표현은 절대 쓰지 말고');
+    expect(buildInterpretPrompt('क्या करूँ?', low, 'hi')).toContain('कभी डराइए मत');
   });
 });

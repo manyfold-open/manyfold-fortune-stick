@@ -46,7 +46,7 @@ export function sharedStickMeta({ stick, language }: SharedStick): { title: stri
   const paper = PAPER[language];
   // 中文的标题用签纸上那种国字签号（第十八签），其余语言用短签号
   const number = language === 'zh' ? `第${hanNumber(stick.no)}签` : paper.shortNumber(stick.no);
-  const stop = language === 'en' || language === 'ko' ? '. ' : '。';
+  const stop = language === 'zh' || language === 'ja' ? '。' : language === 'hi' ? '। ' : '. ';
   return {
     title: `${number} · ${level} · ${text.title}`,
     description: `${paper.joinPoem(text.poem[0], text.poem[1])}${stop}${paper.inviteOwn}`,

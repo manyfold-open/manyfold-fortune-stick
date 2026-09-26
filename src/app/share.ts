@@ -13,7 +13,7 @@
  */
 
 import QRCode from 'qrcode';
-import { wrapsByWord, writesVertically, type Language } from '../shared/lang';
+import { joinsLetters, wrapsByWord, writesVertically, type Language } from '../shared/lang';
 import { PAPER as PAPER_COPY } from '../shared/paper';
 import { sharedStickQuery } from '../shared/share-link';
 import { withoutDashes } from '../shared/text';
@@ -333,7 +333,7 @@ async function waitForFonts(sample: string, language: Language): Promise<void> {
       document.fonts.load(`400 30px ${SERIF_EN}`, sample),
       document.fonts.load(`500 36px ${handFor(language)}`, sample),
       // 日文、韩文的纸用自己的那一套明朝
-      ...(language === 'ja' || language === 'ko'
+      ...(language === 'ja' || language === 'ko' || language === 'hi'
         ? [700, 600, 500, 400].map((weight) => document.fonts.load(`${weight} 40px ${minchoFor(language)}`, sample))
         : []),
     ]);
@@ -474,12 +474,15 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
   y += NO;
 
   // 等级大红印：三个字的等级小一号，英文两个词各一行
-  const sealLines = en ? level.split(' ') : [level];
+  // 英文、印地语的等级是一两个词：各占一行，放不进内圈就缩字
+  const fitSeal = en || language === 'hi';
+  const sealLines = fitSeal ? level.split(' ') : [level];
   // 英文最长那个词（FORTUNE、BLESSING）要留在内圈里：Shippori 比以前的字宽，放不下就缩字
-  let sealFont = en ? `700 24px ${face}` : `800 ${[...level].length >= 3 ? 40 : 54}px ${face}`;
-  if (en) {
+  const sealStart = language === 'hi' ? 40 : 24;
+  let sealFont = fitSeal ? `700 ${sealStart}px ${face}` : `800 ${[...level].length >= 3 ? 40 : 54}px ${face}`;
+  if (fitSeal) {
     const fits = () => Math.max(...sealLines.map((line) => g.measureText(line).width)) <= (SEAL_R - 12) * 1.5;
-    let size = 24;
+    let size = sealStart;
     g.font = sealFont;
     while (!fits() && size > 16) {
       size -= 1;
@@ -487,7 +490,7 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
       g.font = sealFont;
     }
   }
-  drawSeal(g, center, y + SEAL_BLOCK / 2, SEAL_R, sealLines, sealFont, en ? 30 : 54);
+  drawSeal(g, center, y + SEAL_BLOCK / 2, SEAL_R, sealLines, sealFont, en ? 30 : language === 'hi' ? 46 : 54);
   y += SEAL_BLOCK;
 
   // 签名，左右各一条朱红细线
@@ -495,8 +498,11 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
   // 韩文签名是带空格的短句，跟英文一样不拉开字距，只留一点
   const titleGap = en ? 2 : vertical ? 18 : 4;
   const titleFace = face;
+  // 天城文整串量、整串画（spacedText 对它不加字距）
   const measureTitle = () =>
-    [...text.title].reduce((w, c) => w + g.measureText(c).width, 0) + titleGap * ([...text.title].length - 1);
+    joinsLetters(language)
+      ? g.measureText(text.title).width
+      : [...text.title].reduce((w, c) => w + g.measureText(c).width, 0) + titleGap * ([...text.title].length - 1);
   // 簽名兩側各有一條 22 + 40 的朱紅短線：長的英文簽名先縮字，縮到最小還放不下就不畫短線，
   // 不然短線（甚至字）會畫到紙框外面
   const RULES = 2 * (22 + 40) + 16;

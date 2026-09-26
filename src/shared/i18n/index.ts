@@ -1,5 +1,5 @@
 /**
- * 界面文案的四张表（中、英、日、韩），外加取文案的纯函数。
+ * 界面文案的几张表（中、英、日、韩、印地），外加取文案的纯函数。
  *
  * 放在 shared 而不是 app 下，原因很实在：tests/ 是在 worker 那个 tsconfig 项目里
  * 编译的（它只认 src/worker 和 src/shared），而这几张表最值得测的恰恰是
@@ -15,11 +15,12 @@ import { zh, type Copy } from './zh';
 import { en } from './en';
 import { ja } from './ja';
 import { ko } from './ko';
+import { hi } from './hi';
 
 export type { Copy };
-export { zh, en, ja, ko };
+export { zh, en, ja, ko, hi };
 
-export const TABLES: Record<Language, Copy> = { zh, en, ja, ko };
+export const TABLES: Record<Language, Copy> = { zh, en, ja, ko, hi };
 
 const display = (table: Copy): Copy =>
   Object.fromEntries(Object.entries(table).map(([key, value]) => [key, withoutDashes(value)])) as Copy;
@@ -29,6 +30,7 @@ const DISPLAY_TABLES: Record<Language, Copy> = {
   en: display(en),
   ja: display(ja),
   ko: display(ko),
+  hi: display(hi),
 };
 
 /** 某种语言下的整张表。给那些不跟界面走的地方用（比如记录里某一条自己的语言）。 */

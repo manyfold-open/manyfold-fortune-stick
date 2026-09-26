@@ -19,6 +19,7 @@
 import type { Language } from './lang';
 import { STICKS_JA } from './sticks-ja';
 import { STICKS_KO } from './sticks-ko';
+import { STICKS_HI } from './sticks-hi';
 
 export type StickLevel = '上上签' | '上签' | '中签' | '下签';
 
@@ -51,6 +52,8 @@ export interface FortuneStick {
   /** 日文和韩文各自在 sticks-ja.ts / sticks-ko.ts，按签号并进来。 */
   ja: StickText;
   ko: StickText;
+  /** 印地语在 sticks-hi.ts。 */
+  hi: StickText;
 }
 
 /** 等级给人看的名字。中文就是等级本身，英文是纸票上那一行大写字。 */
@@ -66,12 +69,14 @@ export const LEVEL_LABEL: Record<Language, Record<StickLevel, string>> = {
   ja: { 上上签: '大吉', 上签: '吉', 中签: '末吉', 下签: '凶' },
   // 韩文照同一个意思用谚文写：대길（大吉）、길（吉）、소길（小吉）、흉（凶）。
   ko: { 上上签: '대길', 上签: '길', 中签: '소길', 下签: '흉' },
+  // 印地语：परम शुभ（极吉）、शुभ（吉）、सामान्य（平常）、अशुभ（不吉）。
+  hi: { 上上签: 'परम शुभ', 上签: 'शुभ', 中签: 'सामान्य', 下签: 'अशुभ' },
 };
 
 /** 取一支签在某种语言下的文字。除了这里，没有别处直接读 stick.zh / stick.en。 */
 export const stickText = (stick: FortuneStick, language: Language): StickText => stick[language];
 
-const BASE_STICKS: readonly Omit<FortuneStick, 'ja' | 'ko'>[] = [
+const BASE_STICKS: readonly Omit<FortuneStick, 'ja' | 'ko' | 'hi'>[] = [
   {
     no: 1,
     level: '上上签',
@@ -978,6 +983,7 @@ export const STICKS: readonly FortuneStick[] = BASE_STICKS.map((stick, index) =>
   ...stick,
   ja: STICKS_JA[index],
   ko: STICKS_KO[index],
+  hi: STICKS_HI[index],
 }));
 
 /** 按签号取签；签号越界时返回 null。 */

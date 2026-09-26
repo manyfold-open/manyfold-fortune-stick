@@ -3,6 +3,7 @@ import { LANGUAGES, writesVertically } from '../src/shared/lang';
 import { LEVEL_LABEL, STICKS, STICK_COUNT } from '../src/shared/sticks';
 import { STICKS_JA } from '../src/shared/sticks-ja';
 import { STICKS_KO } from '../src/shared/sticks-ko';
+import { STICKS_HI } from '../src/shared/sticks-hi';
 import { PAPER } from '../src/shared/paper';
 
 /**
@@ -16,6 +17,7 @@ describe('每一种语言的签文都填满了', () => {
   it('日文、韩文各 36 支，跟签号一一对上', () => {
     expect(STICKS_JA).toHaveLength(STICK_COUNT);
     expect(STICKS_KO).toHaveLength(STICK_COUNT);
+    expect(STICKS_HI).toHaveLength(STICK_COUNT);
   });
 
   it('每支签的每种语言都没有空字段 —— general 和 action 同时是 AI 失败时的兜底', () => {
@@ -66,6 +68,14 @@ describe('签纸放得下', () => {
     }
   });
 
+  it('印地语：签名一行放得下（26 个码点以内），签意一句话（90 个码点以内），开运小物是个短词', () => {
+    for (const stick of STICKS) {
+      expect(chars(stick.hi.title), stick.hi.title).toBeLessThanOrEqual(26);
+      expect(chars(stick.hi.meaning), stick.hi.meaning).toBeLessThanOrEqual(90);
+      expect(chars(stick.hi.luckyItem), stick.hi.luckyItem).toBeLessThanOrEqual(24);
+    }
+  });
+
   it('开运小物是个短词，分享图上那颗胶囊放得下', () => {
     for (const stick of STICKS) {
       expect(chars(stick.ja.luckyItem), stick.ja.luckyItem).toBeLessThanOrEqual(10);
@@ -75,7 +85,7 @@ describe('签纸放得下', () => {
 
   it('日文、韩文签文里没有 dash', () => {
     for (const stick of STICKS) {
-      for (const language of ['ja', 'ko'] as const) {
+      for (const language of ['ja', 'ko', 'hi'] as const) {
         const { poem, ...rest } = stick[language];
         for (const value of [...poem, ...Object.values(rest)]) {
           expect(value, `第 ${stick.no} 签 ${language}`).not.toMatch(/[‐-―−﹘﹣－]|--/);

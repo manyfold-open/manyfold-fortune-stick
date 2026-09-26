@@ -3,7 +3,7 @@ import type { Prefs } from '../storage';
 import { HTML_LANG, LANGUAGES, type Language } from '../../shared/lang';
 
 /** 设置里那一排语言按钮上的字：每种语言用自己的文字写。 */
-const SEGMENT_LABEL: Record<Language, string> = { zh: '中文', en: 'English', ja: '日本語', ko: '한국어' };
+const SEGMENT_LABEL: Record<Language, string> = { zh: '中文', en: 'English', ja: '日本語', ko: '한국어', hi: 'हिन्दी' };
 import { useT } from '../i18n';
 
 interface SettingsModalProps {
