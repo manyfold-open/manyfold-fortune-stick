@@ -6,6 +6,8 @@
  * 籤號、等級和籤名，說明寫兩句籤詩 —— 都是 sticks.ts 裡的字，連結裡沒有問題，這裡也就沒有。
  *
  * og:image 必須是絕對網址：用這次請求實際的 origin 加上掛載點（app.manyfold.ai/fortune-stick）。
+ * 分享連結的圖是那一支籤自己的（public/og/{no}-{lang}.jpg，由 scripts/og-previews.mjs 事先畫好；
+ * worker 裡沒有 canvas），其餘頁面用通用的 og.jpg。
  */
 
 import { SITE_META, parseSharedStick, sharedStickMeta, sharedStickQuery } from '../shared/share-link';
@@ -17,7 +19,7 @@ const escapeAttr = (value: string): string =>
 export function shareMetaTags(publicUrl: URL, base: string): { title: string; tags: string } {
   const shared = parseSharedStick(publicUrl.search);
   const meta = shared ? sharedStickMeta(shared) : SITE_META;
-  const image = `${publicUrl.origin}${base}/og.jpg`;
+  const image = `${publicUrl.origin}${base}/${shared ? `og/${shared.stick.no}-${shared.language}.jpg` : 'og.jpg'}`;
   // 只寫標準的那一條，網址上別人多加的參數不往外帶
   const pageUrl = `${publicUrl.origin}${base}/${shared ? sharedStickQuery(shared.stick.no, shared.language) : ''}`;
   const tags = [

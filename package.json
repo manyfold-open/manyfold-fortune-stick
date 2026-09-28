@@ -11,7 +11,8 @@
     "check": "tsc -b && vite build && wrangler deploy --dry-run",
     "test": "NODE_OPTIONS=--no-experimental-webstorage vitest run",
     "deploy": "npm run build && wrangler deploy",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "og": "node scripts/og-previews.mjs"
   },
   "engines": {
     "node": ">=22"
