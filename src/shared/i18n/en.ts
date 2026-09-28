@@ -323,10 +323,14 @@ export const en = {
   healthFinalCard: 'Ended on the fallback',
   healthFinalDetail: 'AI {ai} · fallback {fallback} · stuck {stuck}',
   healthClaimCard: 'Went back to Tarot',
-  healthClaimDetail: '{n} clicks after {shown} readings seen',
+  healthClaimDetail: '{n} clicks from {drew} Tarot visitors who drew a stick',
+  healthAgainCard: 'Drew again',
+  healthAgainDetail: '{n} of {draws} sticks drawn; {unseen} of them before the reading was seen',
+  healthAgain: 'Drew again',
+  healthAgainUnseen: 'before seeing it',
   healthTriesWhy: 'Why a try fell back: unreadable reply {unparseable}, empty reply {empty}, timed out {timeout}, Manyfold down or refused {manyfold}, no agent connected {noAgent}, other {other}.',
   healthFinalWhy: 'Why sticks ended on the fallback: unreadable reply {unparseable}, empty reply {empty}, timed out {timeout}, Manyfold down or refused {manyfold}, no agent connected {noAgent}, other {other}.',
-  healthHowTo: 'Seen and waiting only count a stick drawn in that visit, not one reopened later. Ready means the reading was already there when Read it was pressed; Left means they closed the page or drew again before it came, and some phones never report that, so it is a floor. A try is one request to the agent; a retry is a try on a stick whose last one fell back. Stuck means drawn over two minutes ago and never interpreted, usually because the page closed while the reading was on its way. A retry overwrites where a stick ended, so that side shows the last try only.',
+  healthHowTo: 'Seen and waiting only count a stick drawn in that visit, not one reopened later. Ready means the reading was already there when Read it was pressed; Left means they closed the page or drew again before it came, and some phones never report that, so it is a floor. A try is one request to the agent; a retry is a try on a stick whose last one fell back. Stuck means drawn over two minutes ago and never interpreted, usually because the page closed while the reading was on its way. A retry overwrites where a stick ended, so that side shows the last try only. Drew again counts each press of Draw another on a result page, from the day it began to be counted.',
 
   /* ── the share experiment on #settings ── */
   shareExpTitle: 'Share experiment',

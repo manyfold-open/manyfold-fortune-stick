@@ -47,7 +47,7 @@ import { EmaChrome } from './Ema';
 import QuestionForm from './QuestionForm';
 import ReadingResult, { type EmaRect } from './ReadingResult';
 import StickFace from './StickFace';
-import { takeVisitSourceForDraw } from '../visit';
+import { recordDrawAgain, takeVisitSourceForDraw } from '../visit';
 import { track } from '../analytics';
 
 /*
@@ -393,6 +393,8 @@ export default function FortuneGame(props: {
   const newlyCollected = useRef<{ id: string; count: number } | null>(null);
   /** 結籤：上一支籤正飛向注連繩 */
   const [flight, setFlight] = useState<Flight | null>(null);
+  /** 解籤翻到眼前過的那一支：再求一籤時記「看過解籤才再抽」還是「沒看就再抽」 */
+  const seenId = useRef<string | null>(null);
   const shownId = useRef<string | null>(null);
   shownId.current = reading?.id ?? null;
   const warmUp = useCallback(
@@ -491,6 +493,7 @@ export default function FortuneGame(props: {
       if (props.prefs.sound) paperSettleSound(0.22);
       return;
     }
+    recordDrawAgain(seenId.current === tying.id);
     const knot = tieStick(tying.stick.no, { readingId: tying.id, language: tying.language });
     // 捲回頂端之後才量繩子：鳥居跟著頁面捲
     const rope = document.querySelector('.shimenawa')?.getBoundingClientRect();
@@ -558,6 +561,9 @@ export default function FortuneGame(props: {
         onInterpret={() => void interpret()}
         onFollowUpMessages={onFollowUpMessages}
         onRestart={restart}
+        onSeen={() => {
+          seenId.current = reading.id;
+        }}
         sound={props.prefs.sound}
         emaFrom={emaFrom}
         drawnHere={drawnHere.current === reading.id}

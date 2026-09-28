@@ -28,6 +28,14 @@ export const VISIT_SOURCES = [
 ] as const;
 export type VisitSource = (typeof VISIT_SOURCES)[number];
 
+/** First draws of a visit that came from any of Tarot's links. */
+export const TAROT_DRAWS = [
+  'draw:tarot-outro',
+  'draw:tarot-locked',
+  'draw:tarot-share',
+  'draw:tarot-other',
+] as const;
+
 /** Tarot's own links, which tell the visitor that drawing a stick earns one more
  *  Tarot reading. Its share page makes no such promise. */
 const TAROT_REWARD_SOURCES: readonly VisitSource[] = ['tarot-outro', 'tarot-locked', 'tarot-other'];
@@ -72,6 +80,9 @@ export const METRICS = [
   // Reported by the page, for a stick drawn in this visit only.
   'reading:shown-ai',
   'reading:shown-fallback',
+  // 再求一籤 on a result page: whether the reading had been on screen by then.
+  'reading:again-seen',
+  'reading:again-unseen',
   ...WAIT_BUCKETS.map((bucket) => `wait:${bucket}` as const),
 ] as const;
 export type Metric = (typeof METRICS)[number];

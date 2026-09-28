@@ -13,6 +13,7 @@
 
 import {
   FALLBACK_REASONS,
+  TAROT_DRAWS,
   REPLY_BUCKETS,
   type DailyStats,
   type FallbackReason,
@@ -25,7 +26,11 @@ const FALLBACKS = FALLBACK_REASONS.map((reason) => `interpret:fallback-${reason}
 const REPLIES = REPLY_BUCKETS.map((bucket) => `interpret:${bucket}` as const);
 const SHOWN: Metric[] = ['reading:shown-ai', 'reading:shown-fallback'];
 
+const AGAIN: Metric[] = ['reading:again-seen', 'reading:again-unseen'];
+
 const shown: Read = (row) => sum(row, SHOWN);
+const again: Read = (row) => sum(row, AGAIN);
+const tarotDrew: Read = (row) => sum(row, TAROT_DRAWS);
 const triesOk = one('interpret:ok');
 const triesFellBack: Read = (row) => sum(row, FALLBACKS);
 const endedFellBack: Read = (row) =>
@@ -42,6 +47,8 @@ const GROUPS: Group[] = [
       { key: 'statsDraws', value: (row) => row.draws },
       { key: 'healthSaw', value: shown },
       { key: 'healthOfThemFallback', value: one('reading:shown-fallback') },
+      { key: 'healthAgain', value: again },
+      { key: 'healthAgainUnseen', value: one('reading:again-unseen') },
     ],
   },
   {
@@ -83,6 +90,8 @@ export default function ReadingHealth(props: { days: DailyStats[]; rows: DailySt
   const { days } = props;
   const since = days.filter(counted);
   const firstCounted = since[since.length - 1]?.day;
+  // 再求一籤 began to be counted later than the rest, so it keeps its own days.
+  const againSince = days.filter((row) => again(row) > 0);
   const of = (value: Read) => total(days, value);
   const metric = (m: Metric) => of(one(m));
   const tries = of(triesOk) + of(triesFellBack);
@@ -111,11 +120,21 @@ export default function ReadingHealth(props: { days: DailyStats[]; rows: DailySt
       }),
     },
     {
-      // The step the reward hangs on: of the readings people saw, how often they
-      // went on to Tarot. Tarot clicks from history can make this pass 100%.
+      // Of the Tarot visitors who drew, how often someone went back. Divided by
+      // draws, not by readings seen: the claim plaque sits above 解籤, so many go
+      // back without ever opening the reading. Same basis as the 43% baseline.
       label: 'healthClaimCard',
-      value: percent(total(since, one('tarot:opened')), total(since, shown)),
-      detail: t('healthClaimDetail', { n: total(since, one('tarot:opened')), shown: total(since, shown) }),
+      value: percent(of(one('tarot:opened')), of(tarotDrew)),
+      detail: t('healthClaimDetail', { n: of(one('tarot:opened')), drew: of(tarotDrew) }),
+    },
+    {
+      label: 'healthAgainCard',
+      value: percent(total(againSince, again), total(againSince, (row) => row.draws)),
+      detail: t('healthAgainDetail', {
+        n: total(againSince, again),
+        draws: total(againSince, (row) => row.draws),
+        unseen: total(againSince, one('reading:again-unseen')),
+      }),
     },
     {
       label: 'healthWaitCard',

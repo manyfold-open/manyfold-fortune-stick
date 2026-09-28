@@ -92,3 +92,9 @@ export function recordReadingShown(source: 'ai' | 'fallback', waitedMs: number |
 export function recordWaitLeft(): void {
   count('wait:left', { keepalive: true });
 }
+
+/** 再求一籤 was pressed on a result page (or the logo tapped there), and
+ *  whether that stick's reading had been on screen before it. */
+export function recordDrawAgain(sawReading: boolean): void {
+  count(sawReading ? 'reading:again-seen' : 'reading:again-unseen');
+}
