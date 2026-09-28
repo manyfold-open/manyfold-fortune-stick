@@ -312,10 +312,14 @@ export const ja = {
   healthFinalCard: '最後が定型文',
   healthFinalDetail: 'AI {ai} · 定型文 {fallback} · 止まったまま {stuck}',
   healthClaimCard: 'タロットに戻った',
-  healthClaimDetail: '読み解き {shown} 件のあと、タロットへ {n} 回',
+  healthClaimDetail: 'おみくじを引いたタロット訪問者 {drew} 人、タロットへ {n} 回',
+  healthAgainCard: 'もう一度引いた',
+  healthAgainDetail: '{draws} 本中 {n} 回、うち読み解きを見る前に {unseen} 回',
+  healthAgain: 'もう一度',
+  healthAgainUnseen: '見る前',
   healthTriesWhy: '試行が定型文になった理由：読めない返答 {unparseable}、空の返答 {empty}、タイムアウト {timeout}、Manyfold の障害や拒否 {manyfold}、エージェント未接続 {noAgent}、その他 {other}。',
   healthFinalWhy: '最後が定型文になった理由：読めない返答 {unparseable}、空の返答 {empty}、タイムアウト {timeout}、Manyfold の障害や拒否 {manyfold}、エージェント未接続 {noAgent}、その他 {other}。',
-  healthHowTo: '表示と待ち時間は、その訪問で新しく引いたおみくじだけを数え、記録から開き直したものは数えません。準備済みは「読む」を押した時点で読み解きが届いていたこと、離脱は届く前にページを閉じたか引き直したことです。知らせない端末もあるので下限です。試行はエージェントへの1回の問い合わせで、再試行は前回定型文になったおみくじでの試行です。止まったままは、引いてから2分以上たっても読み解きがないもので、多くは届く前にページが閉じられたものです。再試行は最終的な行き先を上書きするので、そちらは最後の試行だけを表します。',
+  healthHowTo: '表示と待ち時間は、その訪問で新しく引いたおみくじだけを数え、記録から開き直したものは数えません。準備済みは「読む」を押した時点で読み解きが届いていたこと、離脱は届く前にページを閉じたか引き直したことです。知らせない端末もあるので下限です。試行はエージェントへの1回の問い合わせで、再試行は前回定型文になったおみくじでの試行です。止まったままは、引いてから2分以上たっても読み解きがないもので、多くは届く前にページが閉じられたものです。再試行は最終的な行き先を上書きするので、そちらは最後の試行だけを表します。もう一度引いたは、結果ページで「もう一度引く」が押されるたびに数え、数え始めた日から集計します。',
 
   /* ── the share experiment on #settings ── */
   shareExpTitle: 'シェアの実験',

@@ -309,10 +309,14 @@ export const ko = {
   healthFinalCard: '기본 풀이로 끝남',
   healthFinalDetail: 'AI {ai} · 기본 풀이 {fallback} · 멈춤 {stuck}',
   healthClaimCard: '타로로 돌아감',
-  healthClaimDetail: '풀이 {shown}개를 본 뒤 타로로 {n}번',
+  healthClaimDetail: '제비를 뽑은 타로 방문자 {drew}명, 타로로 {n}번',
+  healthAgainCard: '다시 뽑음',
+  healthAgainDetail: '{draws}개 중 {n}번, 그중 풀이를 보기 전 {unseen}번',
+  healthAgain: '다시 뽑음',
+  healthAgainUnseen: '보기 전',
   healthTriesWhy: '시도가 기본 풀이로 넘어간 이유: 읽을 수 없는 답 {unparseable}, 빈 답 {empty}, 시간 초과 {timeout}, Manyfold 장애나 거절 {manyfold}, 에이전트 미연결 {noAgent}, 기타 {other}.',
   healthFinalWhy: '기본 풀이로 끝난 이유: 읽을 수 없는 답 {unparseable}, 빈 답 {empty}, 시간 초과 {timeout}, Manyfold 장애나 거절 {manyfold}, 에이전트 미연결 {noAgent}, 기타 {other}.',
-  healthHowTo: '표시와 대기는 그 방문에서 새로 뽑은 제비만 세고, 기록에서 다시 연 것은 세지 않아요. 준비됨은 풀이 버튼을 눌렀을 때 이미 풀이가 와 있었다는 뜻이고, 떠남은 오기 전에 페이지를 닫거나 다시 뽑았다는 뜻이에요. 알리지 않는 기기도 있어 최소치예요. 시도는 에이전트에 한 번 묻는 것이고, 재시도는 지난번 기본 풀이로 끝난 제비에서 다시 하는 시도예요. 멈춤은 뽑은 지 2분이 넘도록 풀이가 없는 것으로, 대개 풀이가 오는 중에 페이지가 닫힌 경우예요. 재시도는 최종 결과를 덮어쓰므로 그쪽은 마지막 시도만 보여 줘요.',
+  healthHowTo: '표시와 대기는 그 방문에서 새로 뽑은 제비만 세고, 기록에서 다시 연 것은 세지 않아요. 준비됨은 풀이 버튼을 눌렀을 때 이미 풀이가 와 있었다는 뜻이고, 떠남은 오기 전에 페이지를 닫거나 다시 뽑았다는 뜻이에요. 알리지 않는 기기도 있어 최소치예요. 시도는 에이전트에 한 번 묻는 것이고, 재시도는 지난번 기본 풀이로 끝난 제비에서 다시 하는 시도예요. 멈춤은 뽑은 지 2분이 넘도록 풀이가 없는 것으로, 대개 풀이가 오는 중에 페이지가 닫힌 경우예요. 재시도는 최종 결과를 덮어쓰므로 그쪽은 마지막 시도만 보여 줘요. 다시 뽑음은 결과 화면에서 다시 뽑기를 누를 때마다 세며, 세기 시작한 날부터 집계해요.',
 
   /* ── the share experiment on #settings ── */
   shareExpTitle: '공유 실험',

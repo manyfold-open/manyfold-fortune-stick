@@ -76,6 +76,8 @@ export default function ReadingResult(props: {
   onInterpret: () => void;
   onFollowUpMessages: (messages: FollowUpMessage[]) => void;
   onRestart: () => void;
+  /** 解籤（AI 的或通用的）攤在眼前了。重新整理時已經翻好的也算 */
+  onSeen?: () => void;
   /** 使用者的「声音」開關：翻面的紙聲也要聽它的 */
   sound: boolean;
   /**
@@ -163,6 +165,11 @@ export default function ReadingResult(props: {
       recordReadingShown(interpretation.source, typeof at === 'number' ? Date.now() - at : null);
     }
   }, [showBack, interpretation, counting]);
+
+  const { onSeen } = props;
+  useEffect(() => {
+    if (showBack && interpretation) onSeen?.();
+  }, [showBack, interpretation, onSeen]);
 
   // 按了解籤、還沒等到就走了：關掉分頁，或在這一頁上再求一籤、回首頁（這一頁被拆掉）
   useEffect(() => {

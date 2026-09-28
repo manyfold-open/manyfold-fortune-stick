@@ -10,7 +10,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import type { DailyStats, Metric } from '../../shared/stats';
+import { TAROT_DRAWS, type DailyStats, type Metric } from '../../shared/stats';
 import { api, errorMessage } from '../api';
 import { useT } from '../i18n';
 import ReadingHealth from './ReadingHealth';
@@ -20,7 +20,6 @@ import { StatsCards, StatsTable, one, percent, sum, total as totalOf, type Card,
 const RANGES = [7, 14, 30] as const;
 
 const TAROT_VISITS: Metric[] = ['visit:tarot-outro', 'visit:tarot-locked', 'visit:tarot-share', 'visit:tarot-other'];
-const TAROT_DRAWS: Metric[] = ['draw:tarot-outro', 'draw:tarot-locked', 'draw:tarot-share', 'draw:tarot-other'];
 const SHARE_VISITS: Metric[] = ['visit:share-qr', 'visit:share-link', 'visit:share-unknown'];
 const SHARE_DRAWS: Metric[] = ['draw:share-qr', 'draw:share-link', 'draw:share-unknown'];
 const ORGANIC_VISITS: Metric[] = ['visit:organic-direct', 'visit:organic-search', 'visit:organic-social', 'visit:organic-other'];
