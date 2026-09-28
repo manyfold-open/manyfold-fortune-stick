@@ -44,9 +44,10 @@ const checks = [
     name: 'POST /api/readings validates the question (game API is wired)',
     run: async () => {
       // 空问题必须被拒 —— 顺便证明抽签路由活着，而且不会真的抽一支签出来留在库里。
+      // Origin 只有 scheme+host：部署在子路径（…/fortune-stick）时，带路径的 base 会被同源校验拒成 403。
       const response = await fetch(`${base}/api/readings`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json', origin: base },
+        headers: { 'content-type': 'application/json', origin: new URL(base).origin },
         body: JSON.stringify({ question: '' }),
       });
       // 401 = 这个部署设了 ADMIN_PASSWORD，路由本身依然是通的。
