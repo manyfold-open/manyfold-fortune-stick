@@ -8,9 +8,11 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
+import { glowKnots, peekOnTie } from '../../shared/knot-hint';
 import { knotJitter, knotU, type Knot } from '../../shared/knots';
 import { createPetals, petalAt, petalCount, type Petal } from '../../shared/sakura';
-import { KNOTS_EVENT, listKnots } from '../storage';
+import { track } from '../analytics';
+import { KNOTS_EVENT, getKnotHint, listKnots, markKnotPeeked, markKnotSeen } from '../storage';
 import KnotSlip from './KnotSlip';
 import {
   BRANCH_COLOR,
@@ -43,7 +45,19 @@ import {
  */
 const knotKey = (knot: Knot): string => `${knot.slot}-${knot.at}`;
 
-function Torii({ knots, fresh, open }: { knots: readonly Knot[]; fresh: string | null; open: string | null }) {
+function Torii({
+  knots,
+  fresh,
+  open,
+  glow,
+  calm,
+}: {
+  knots: readonly Knot[];
+  fresh: string | null;
+  open: string | null;
+  glow: boolean;
+  calm: boolean;
+}) {
   return (
     <>
       <div className="torii-nuki" />
@@ -54,6 +68,14 @@ function Torii({ knots, fresh, open }: { knots: readonly Knot[]; fresh: string |
           <path d={`M0 ${ROPE_Y0} Q500 ${ROPE_Y0 + 2 * ROPE_SAG} 1000 ${ROPE_Y0}`} className="rope-under" vectorEffect="non-scaling-stroke" />
           <path d={`M0 ${ROPE_Y0} Q500 ${ROPE_Y0 + 2 * ROPE_SAG} 1000 ${ROPE_Y0}`} className="rope" vectorEffect="non-scaling-stroke" />
           <path d={`M0 ${ROPE_Y0} Q500 ${ROPE_Y0 + 2 * ROPE_SAG} 1000 ${ROPE_Y0}`} className="rope-twist" vectorEffect="non-scaling-stroke" />
+          {/* 結上的微光用的漸層。畫在這根一定看得見的繩上，藏起來的舊結（手機）才不會拿不到它 */}
+          <defs>
+            <radialGradient id="knot-halo">
+              <stop offset="0" stopColor="#ffc95c" stopOpacity="0.85" />
+              <stop offset="0.55" stopColor="#ffc95c" stopOpacity="0.32" />
+              <stop offset="1" stopColor="#ffc95c" stopOpacity="0" />
+            </radialGradient>
+          </defs>
         </svg>
         {SHIDE_AT.map((u) => (
           <svg key={u} className="shide" viewBox={`0 0 ${SHIDE_VIEW.w} ${SHIDE_VIEW.h}`} style={{ left: `${u * 100}%`, top: ropeY(u) - 2 }} aria-hidden>
@@ -68,6 +90,8 @@ function Torii({ knots, fresh, open }: { knots: readonly Knot[]; fresh: string |
             knot={knot}
             fresh={fresh === knotKey(knot)}
             untied={open === knotKey(knot)}
+            glow={glow}
+            calm={calm}
             // 手機上繩子短，12 個結會疊成一團：只留最新的 6 個（CSS 看 data-older）
             older={knots.filter((other) => other.at > knot.at).length >= 6}
           />
@@ -102,7 +126,21 @@ function Torii({ knots, fresh, open }: { knots: readonly Knot[]; fresh: string |
 const KNOT_LONG_D = 'M7.6 6.5 L11.6 7 L10.4 33 L7.8 35.2 L6.2 32.6 Z';
 const KNOT_SHORT_D = 'M11.2 5.6 L13.4 7.6 L17.8 17.6 L15.2 19.2 Z';
 
-function RopeKnot({ knot, fresh, older, untied }: { knot: Knot; fresh: boolean; older: boolean; untied: boolean }) {
+function RopeKnot({
+  knot,
+  fresh,
+  older,
+  untied,
+  glow,
+  calm,
+}: {
+  knot: Knot;
+  fresh: boolean;
+  older: boolean;
+  untied: boolean;
+  glow: boolean;
+  calm: boolean;
+}) {
   const u = knotU(knot.slot);
   const { dy, rot } = knotJitter(knot);
   return (
@@ -114,6 +152,13 @@ function RopeKnot({ knot, fresh, older, untied }: { knot: Knot; fresh: boolean; 
       style={{ left: `${u * 100}%`, top: ropeY(u) - 5 + dy, ['--knot-rot' as string]: `${rot}deg` }}
       aria-hidden
     >
+      {/* 還沒人點開過結：結周圍一圈慢慢呼吸的微光，告訴人這裡可以點（規則在 shared/knot-hint.ts）。
+          用 SMIL 而不是 CSS 動畫，才不會跟結自己的晃動、啪地冒出來打架；減少動畫時就是不動的一圈 */}
+      {glow && (
+        <ellipse className="knot-halo" cx="10" cy="17" rx="17" ry="23" fill="url(#knot-halo)" opacity={calm ? 0.7 : undefined}>
+          {!calm && <animate attributeName="opacity" values="0.3;0.95;0.3" dur="3.2s" repeatCount="indefinite" />}
+        </ellipse>
+      )}
       {/* 單號的短尾翹向另一邊：一排結才不會像同一個印出來的 */}
       <g transform={knot.stickNo % 2 ? 'translate(20 0) scale(-1 1)' : undefined}>
       <g className="knot-shadow" transform="translate(0.6 1.5)">
@@ -159,6 +204,8 @@ export default function ShrineBackdrop({ calm }: { calm: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [knots, setKnots] = useState<Knot[]>(listKnots);
   const [fresh, setFresh] = useState<string | null>(null);
+  /** 結上的微光：直到這位使用者親手點開過一個結 */
+  const [glow, setGlow] = useState(() => glowKnots(getKnotHint()));
   /** 點開的那個結，與它在頁面上的位置 */
   const [open, setOpen] = useState<{ key: string; anchor: { x: number; bottom: number } } | null>(null);
   const openKey = useRef<string | null>(null);
@@ -214,6 +261,10 @@ export default function ShrineBackdrop({ calm }: { calm: boolean }) {
       }
       const r = el.getBoundingClientRect();
       setOpen({ key, anchor: { x: r.left + r.width / 2 + window.scrollX, bottom: r.bottom + window.scrollY } });
+      // 親手點開才算知道了：自動解開不算。微光與自動解開從此停止
+      markKnotSeen();
+      setGlow(false);
+      track('knot_opened');
     };
     let hovering = false;
     const onMove = (event: PointerEvent): void => {
@@ -253,11 +304,19 @@ export default function ShrineBackdrop({ calm }: { calm: boolean }) {
       shown = new Set(next.map((k) => `${k.slot}-${k.at}`));
       setFresh(added ? `${added.slot}-${added.at}` : null);
       setKnots(next);
+      const hint = getKnotHint();
+      setGlow(glowKnots(hint));
       // 隔天回來自動結的那一支：冒出來之後自己解開，給人看一眼「昨天那支在這裡」，
-      // 順便讓人知道結點得開。五秒後摺回去；點任何地方也會收起
+      // 順便讓人知道結點得開。五秒後摺回去；點任何地方也會收起。
+      // 從沒點過結的人，第一次自己打的結也一樣解開一下（只一次；之後靠微光）
       const openId = (event as CustomEvent<{ open?: string }>).detail?.open;
-      const target = openId ? next.find((k) => k.readingId === openId) : undefined;
+      const target = openId
+        ? next.find((k) => k.readingId === openId)
+        : added && peekOnTie(hint)
+          ? added
+          : undefined;
       if (!target) return;
+      if (!hint.seen) markKnotPeeked();
       const key = knotKey(target);
       window.clearTimeout(autoOpen);
       window.clearTimeout(autoClose);
@@ -356,7 +415,7 @@ export default function ShrineBackdrop({ calm }: { calm: boolean }) {
         <div className="shrine-light" />
       </div>
       <div className="shrine-torii" aria-hidden>
-        <Torii knots={knots} fresh={fresh} open={open?.key ?? null} />
+        <Torii knots={knots} fresh={fresh} open={open?.key ?? null} glow={glow} calm={calm} />
         <SakuraBranch side="left" />
         <SakuraBranch side="right" />
       </div>

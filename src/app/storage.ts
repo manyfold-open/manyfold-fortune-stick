@@ -10,6 +10,7 @@
  */
 
 import { addToCollection, collectionFrom, parseCollection, type Collection } from '../shared/collection';
+import { readKnotHint, type KnotHint } from '../shared/knot-hint';
 import { parseKnots, tieKnot, type Knot, type KnotMeta } from '../shared/knots';
 import { isLanguage, languageFromLocales, type Language } from '../shared/lang';
 import { browserStorage, safeGet, safeRemove, safeSet } from '../shared/safe-storage';
@@ -20,6 +21,8 @@ const CURRENT_KEY = 'wenyiqian.current';
 const PREFS_KEY = 'wenyiqian.prefs';
 const COLLECTED_KEY = 'wenyiqian.collected';
 const KNOTS_KEY = 'wenyiqian.knots';
+const KNOT_SEEN_KEY = 'wenyiqian.knotSeen';
+const KNOT_PEEKED_KEY = 'wenyiqian.knotPeeked';
 /** 繩上的結換了：ShrineBackdrop 聽這個重讀 */
 export const KNOTS_EVENT = 'wenyiqian:knots';
 const RECORD_LIMIT = 100;
@@ -123,6 +126,8 @@ export const clearLocalData = (): void => {
   remove(PREFS_KEY);
   remove(COLLECTED_KEY);
   remove(KNOTS_KEY);
+  remove(KNOT_SEEN_KEY);
+  remove(KNOT_PEEKED_KEY);
   notifyKnots();
 };
 
@@ -169,6 +174,23 @@ export function tieStick(stickNo: number, meta: KnotMeta = {}, at: string = new 
 
 /** 飛上去的紙條到位了：這時候才讓繩上的結出現。給了記錄 id，那個結冒出來後自己解開一下。 */
 export const showKnots = (openReadingId?: string): void => notifyKnots(openReadingId);
+
+/** 使用者點開過結了嗎、結為了提示自己解開過了嗎（規則在 shared/knot-hint.ts） */
+export const getKnotHint = (): KnotHint =>
+  readKnotHint(
+    safeGet(browserStorage('localStorage'), KNOT_SEEN_KEY),
+    safeGet(browserStorage('localStorage'), KNOT_PEEKED_KEY),
+  );
+
+/** 親手點開了一個結：微光與自動解開從此停止 */
+export const markKnotSeen = (): void => {
+  safeSet(browserStorage('localStorage'), KNOT_SEEN_KEY, '1');
+};
+
+/** 結已經為了提示自己解開過一次 */
+export const markKnotPeeked = (): void => {
+  safeSet(browserStorage('localStorage'), KNOT_PEEKED_KEY, '1');
+};
 
 /** 這一局已經綁在繩上了嗎（避免同一支綁兩次） */
 export const isTied = (readingId: string): boolean => listKnots().some((knot) => knot.readingId === readingId);
