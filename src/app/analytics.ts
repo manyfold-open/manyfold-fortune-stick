@@ -11,6 +11,10 @@
  * further question, a share, a trip to Tarot. `reading_completed` is the one
  * worth marking as a key event. None of them carries the question, the stick or
  * the text of the reading; the round's language is the most any of them says.
+ *
+ * `knot_opened` sits outside the round: a visitor tapped a knot on the rope to see
+ * an earlier slip. It carries nothing at all. It exists to tell whether the cue that
+ * the knots can be tapped works (docs/superpowers/specs/2026-09-28-knot-hint-and-ga4-design.md).
  */
 
 import { browserStorage, safeGet, safeSet } from '../shared/safe-storage';
@@ -62,7 +66,8 @@ export type AnalyticsEvent =
   | 'reading_completed'
   | 'follow_up_asked'
   | 'reading_shared'
-  | 'tarot_opened';
+  | 'tarot_opened'
+  | 'knot_opened';
 
 /** One named moment in the round. Silent when nothing is measuring. */
 export const track = (event: AnalyticsEvent, params: Record<string, string> = {}): void => {
