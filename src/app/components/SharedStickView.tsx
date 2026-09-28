@@ -6,6 +6,7 @@
  * 版面沿用結果頁：繪馬掛在鳥居下，下面一張御神籤，底下一行「求一支自己的籤」。
  */
 
+import { PAPER } from '../../shared/paper';
 import type { SharedStick } from '../../shared/share-link';
 import { LEVEL_TONE } from '../constants';
 import { copyFor, useT } from '../i18n';
@@ -24,7 +25,7 @@ export default function SharedStickView(props: { shared: SharedStick; onDrawOwn:
         <div className="sheet-stack">
           <div className="ema-card" data-lang={language}>
             <EmaChrome caption={paper.emaCaption}>
-              <p className="asked">{paper.sharedEma}</p>
+              <p className="asked">{PAPER[language].friendDrew(stick.level)}</p>
             </EmaChrome>
           </div>
 

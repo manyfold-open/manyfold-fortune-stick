@@ -49,7 +49,7 @@ export function sharedStickMeta({ stick, language }: SharedStick): { title: stri
   const stop = language === 'zh' || language === 'ja' ? '。' : language === 'hi' ? '। ' : '. ';
   return {
     title: `${number} · ${level} · ${text.title}`,
-    description: `${paper.joinPoem(text.poem[0], text.poem[1])}${stop}${paper.inviteOwn}`,
+    description: `${paper.joinPoem(text.poem[0], text.poem[1])}${stop}${paper.challenge(stick.level)}`,
   };
 }
 

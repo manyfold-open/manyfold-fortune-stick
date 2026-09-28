@@ -115,7 +115,8 @@ export const ko = {
   shareFailed: '이번에는 이미지를 만들지 못했어요. 아래 글을 복사해 주세요.',
   shareStory: '스토리 크기 (9:16)',
   shareLinkNote: '링크도 함께 붙어요. 친구가 열면 이 제비만 보이고, 내 질문과 풀이는 보이지 않아요.',
-  sharedEma: '친구가 보내 준 제비',
+  shareNudgeTop: '대길! 친구에게도 행운을 나눠 주세요',
+  shareNudgeBottom: '흉… 친구에게 보내서 함께 넘겨 봐요',
   sharedDrawOwn: '나도 뽑아 보기',
 
   /* ── 기록 ── */
@@ -304,6 +305,16 @@ export const ko = {
   healthTriesWhy: '시도가 기본 풀이로 넘어간 이유: 읽을 수 없는 답 {unparseable}, 빈 답 {empty}, 시간 초과 {timeout}, Manyfold 장애나 거절 {manyfold}, 에이전트 미연결 {noAgent}, 기타 {other}.',
   healthFinalWhy: '기본 풀이로 끝난 이유: 읽을 수 없는 답 {unparseable}, 빈 답 {empty}, 시간 초과 {timeout}, Manyfold 장애나 거절 {manyfold}, 에이전트 미연결 {noAgent}, 기타 {other}.',
   healthHowTo: '표시와 대기는 그 방문에서 새로 뽑은 제비만 세고, 기록에서 다시 연 것은 세지 않아요. 준비됨은 풀이 버튼을 눌렀을 때 이미 풀이가 와 있었다는 뜻이고, 떠남은 오기 전에 페이지를 닫거나 다시 뽑았다는 뜻이에요. 알리지 않는 기기도 있어 최소치예요. 시도는 에이전트에 한 번 묻는 것이고, 재시도는 지난번 기본 풀이로 끝난 제비에서 다시 하는 시도예요. 멈춤은 뽑은 지 2분이 넘도록 풀이가 없는 것으로, 대개 풀이가 오는 중에 페이지가 닫힌 경우예요. 재시도는 최종 결과를 덮어쓰므로 그쪽은 마지막 시도만 보여 줘요.',
+
+  /* ── the share experiment on #settings ── */
+  shareExpTitle: '공유 실험',
+  shareExpNote: '대길과 흉(뽑기의 약 3분의 1)은 결과 페이지에서 공유를 권하고, 나머지는 권하지 않아요. 두 공유율을 나란히 보는 것이 이 실험이에요. 첫 온전한 하루인 {day}부터 셉니다.',
+  shareExpNotYet: '이 기간에는 아직 실험이 시작되지 않았어요.',
+  shareExpOpened: '공유 열기',
+  shareExpOpenedDetail: '실제로 공유된 것 {done}번 ({rate})',
+  shareExpExtreme: '대길과 흉',
+  shareExpOther: '나머지 제비',
+  shareExpRateDetail: '{draws}개 중 {done}번 공유, 공유 열기 {opened}번',
 
   /* ── Manyfold 연결 ── */
   connectStart: 'Manyfold agent 연결',

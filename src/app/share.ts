@@ -657,7 +657,7 @@ export async function shareImage(
   const shareData = {
     files: [file],
     title: APP_NAME,
-    text: `${paper.shortNumber(stick.no)} · ${LEVEL_LABEL[language][stick.level]}\n${shareLink(stick, language, 'link')}`,
+    text: `${paper.shortNumber(stick.no)} · ${LEVEL_LABEL[language][stick.level]}\n${paper.challenge(stick.level)}\n${shareLink(stick, language, 'link')}`,
   };
   if (navigator.canShare?.(shareData)) {
     try {
@@ -686,5 +686,5 @@ export const shareText = (stick: FortuneStick, meaning: string, language: Langua
   const cleanMeaning = withoutDashes(meaning);
   const link = shareLink(stick, language, 'link');
   const paper = PAPER_COPY[language];
-  return `${APP_NAME} · ${paper.shortNumber(stick.no)} · ${LEVEL_LABEL[language][stick.level]}\n${paper.joinPoem(text.poem[0], text.poem[1])}\n${cleanMeaning}\n${link}`;
+  return `${APP_NAME} · ${paper.shortNumber(stick.no)} · ${LEVEL_LABEL[language][stick.level]}\n${paper.joinPoem(text.poem[0], text.poem[1])}\n${cleanMeaning}\n${paper.challenge(stick.level)}\n${link}`;
 };

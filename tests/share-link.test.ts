@@ -33,7 +33,7 @@ describe('分享連結 ?s=&l=', () => {
     expect(en.description.length).toBeGreaterThan(20);
     const zh = sharedStickMeta(parseSharedStick('?s=13&l=zh')!);
     expect(zh.title).toMatch(/^第十三签 · /);
-    expect(zh.description).toMatch(/。来求一支你自己的签。$/);
+    expect(zh.description).toMatch(/。我抽到.+签，你呢？来求一支你自己的签。$/);
     expect(sharedStickMeta(parseSharedStick('?s=13&l=ja')!).title).toMatch(/^第13番 · /);
     expect(sharedStickMeta(parseSharedStick('?s=13&l=ko')!).title).toMatch(/^13번 · /);
     expect(sharedStickMeta(parseSharedStick('?s=13&l=hi')!).title).toMatch(/^क्रमांक 13 · /);

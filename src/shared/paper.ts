@@ -8,6 +8,18 @@
 
 import type { Language } from './lang';
 import { hanNumber, kanjiNumber } from './numerals';
+import type { StickLevel } from './sticks';
+
+/** A level said inside a sentence, not stamped on a seal ('GREAT FORTUNE' is the seal). */
+const EN_LEVEL: Record<StickLevel, string> = {
+  上上签: 'a Great Fortune',
+  上签: 'a Good Fortune',
+  中签: 'a Middling slip',
+  下签: 'a Poor Fortune',
+};
+const JA_LEVEL: Record<StickLevel, string> = { 上上签: '大吉', 上签: '吉', 中签: '末吉', 下签: '凶' };
+const KO_LEVEL: Record<StickLevel, string> = { 上上签: '대길', 上签: '길', 中签: '소길', 下签: '흉' };
+const HI_LEVEL: Record<StickLevel, string> = { 上上签: 'परम शुभ', 上签: 'शुभ', 中签: 'सामान्य', 下签: 'अशुभ' };
 
 export interface PaperCopy {
   /** 签纸顶上那条朱红带。 */
@@ -31,8 +43,10 @@ export interface PaperCopy {
   fileName: (no: number) => string;
   /** 两句签诗接成一行（分享文字、连结预览）。 */
   joinPoem: (first: string, second: string) => string;
-  /** 连结预览的描述结尾：请朋友也来求一支。 */
-  inviteOwn: string;
+  /** 分享文字和连结预览的结尾：用分享的人的口吻，说他抽到什么，换朋友来抽。 */
+  challenge: (level: StickLevel) => string;
+  /** 朋友打开分享连结时，绘马上写的那一句。 */
+  friendDrew: (level: StickLevel) => string;
 }
 
 export const PAPER: Record<Language, PaperCopy> = {
@@ -47,7 +61,8 @@ export const PAPER: Record<Language, PaperCopy> = {
     scanToDraw: '扫码求一签',
     fileName: (no) => `问一签-第${no}签.png`,
     joinPoem: (first, second) => `${first}，${second}`,
-    inviteOwn: '来求一支你自己的签。',
+    challenge: (level) => `我抽到${level}，你呢？来求一支你自己的签。`,
+    friendDrew: (level) => `朋友抽到${level}，换你试试手气`,
   },
   en: {
     band: 'OMIKUJI',
@@ -60,7 +75,8 @@ export const PAPER: Record<Language, PaperCopy> = {
     scanToDraw: 'SCAN TO DRAW',
     fileName: (no) => `fortune-stick-${no}.png`,
     joinPoem: (first, second) => `${first} / ${second}`,
-    inviteOwn: 'Draw your own slip at the shrine.',
+    challenge: (level) => `I drew ${EN_LEVEL[level]}. What will you draw?`,
+    friendDrew: (level) => `A friend drew ${EN_LEVEL[level]}. Your turn to try your luck`,
   },
   ja: {
     band: 'おみくじ',
@@ -73,7 +89,8 @@ export const PAPER: Record<Language, PaperCopy> = {
     scanToDraw: 'おみくじを引く',
     fileName: (no) => `おみくじ-第${no}番.png`,
     joinPoem: (first, second) => `${first}、${second}`,
-    inviteOwn: 'あなたも一枚引いてみて。',
+    challenge: (level) => `${JA_LEVEL[level]}を引きました。あなたも一枚引いてみて。`,
+    friendDrew: (level) => `友だちは${JA_LEVEL[level]}。次はあなたの番`,
   },
   hi: {
     band: 'ओमिकुजी',
@@ -86,7 +103,8 @@ export const PAPER: Record<Language, PaperCopy> = {
     scanToDraw: 'स्कैन करें',
     fileName: (no) => `omikuji-${no}.png`,
     joinPoem: (first, second) => `${first} / ${second}`,
-    inviteOwn: 'आप भी अपनी पर्ची निकालें।',
+    challenge: (level) => `मुझे ${HI_LEVEL[level]} मिला। आपको क्या मिलेगा?`,
+    friendDrew: (level) => `दोस्त को ${HI_LEVEL[level]} मिला। अब आपकी बारी`,
   },
   ko: {
     band: '오미쿠지',
@@ -99,6 +117,7 @@ export const PAPER: Record<Language, PaperCopy> = {
     scanToDraw: '스캔해서 뽑기',
     fileName: (no) => `오미쿠지-${no}번.png`,
     joinPoem: (first, second) => `${first} / ${second}`,
-    inviteOwn: '당신도 한 장 뽑아 보세요.',
+    challenge: (level) => `저는 ${KO_LEVEL[level]}이 나왔어요. 당신은요?`,
+    friendDrew: (level) => `친구는 ${KO_LEVEL[level]}이 나왔어요. 이제 당신 차례예요`,
   },
 };

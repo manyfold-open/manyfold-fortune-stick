@@ -5620,6 +5620,23 @@ html { overflow-x: clip; }
   border-top: 0;
 }
 
+/* 上上签、下签：分享那排上面推一把的小字。在籤紙上，所以用 --ink */
+.result .share-nudge {
+  margin: 14px 0 0;
+  text-align: center;
+  font-family: var(--font-mincho);
+  font-size: 13.5px;
+  letter-spacing: 0.06em;
+  color: var(--seal-deep, var(--ink-2));
+  animation: actions-in 0.38s 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* 小字和分享那排是同一句話，中間不畫虛線 */
+.result .share-nudge + .result-actions {
+  margin-top: 8px;
+  border-top: 0;
+}
+
 /* 「解籤」底下那行小字：印在背景上，不是紙上，所以用 --on-ground */
 .result .sheet-actions .tarot-reward-hint {
   width: 100%;

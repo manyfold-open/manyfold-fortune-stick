@@ -8,6 +8,7 @@ import { stickText, type FortuneStick } from '../../shared/sticks';
 import type { Interpretation } from '../../shared/types';
 import { useT } from '../i18n';
 import { renderShareImage, shareImage, shareText, type ShareOutcome } from '../share';
+import { isExtreme } from '../../shared/stats';
 import { recordShare } from '../visit';
 import { track } from '../analytics';
 import type { Language } from '../../shared/lang';
@@ -74,7 +75,7 @@ export default function SharePanel(props: {
     const done = (outcome: ShareOutcome) => {
       // Closing the share sheet is not a share: say nothing and count nothing.
       if (outcome === 'cancelled') return;
-      recordShare(outcome === 'shared' ? 'sent' : 'downloaded');
+      recordShare(outcome === 'shared' ? 'sent' : 'downloaded', isExtreme(stick.level));
       track('reading_shared', { method: outcome === 'shared' ? 'share' : 'download' });
       setStatus(outcome === 'shared' ? t('shareShared') : t('shareDownloaded'));
     };

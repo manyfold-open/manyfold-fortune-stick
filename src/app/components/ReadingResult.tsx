@@ -16,7 +16,8 @@ import { stickText } from '../../shared/sticks';
 import type { FollowUpMessage, Reading } from '../../shared/types';
 import { createTarotClaim, storedErrorText } from '../api';
 import { track } from '../analytics';
-import { cameFromTarot, recordReadingShown, recordWaitLeft } from '../visit';
+import { isExtreme } from '../../shared/stats';
+import { cameFromTarot, recordReadingShown, recordShareOpened, recordWaitLeft } from '../visit';
 import { rememberedTarotReturn, TAROT_URL, tarotHandoffUrl } from '../tarotBridge';
 import TarotIcon from './TarotIcon';
 import { LEVEL_TONE } from '../constants';
@@ -233,7 +234,16 @@ export default function ReadingResult(props: {
     }
   };
 
-  const togglePanel = (next: Exclude<Panel, null>) => setPanel((open) => (open === next ? null : next));
+  /**
+   * 上上签、下签值得传出去（炫耀一下、或自嘲一下）：这两种签的分享是朱红木札，上面一行小字推一把。
+   * 其余的签照旧 —— 两边的分享率摆在一起，就是这个实验（shared/stats.ts 的 isExtreme）。
+   */
+  const extreme = isExtreme(reading.stick.level);
+
+  const togglePanel = (next: Exclude<Panel, null>) => {
+    if (next === 'share' && panel !== 'share') recordShareOpened(extreme);
+    setPanel((open) => (open === next ? null : next));
+  };
 
   /**
    * Tarot opens in a new tab, so this stick and its reading stay put. The tab
@@ -432,12 +442,18 @@ export default function ReadingResult(props: {
                       </div>
                     )}
 
+                    {interpretation && !panel && extreme && (
+                      <p className="share-nudge">
+                        {t(reading.stick.level === '上上签' ? 'shareNudgeTop' : 'shareNudgeBottom')}
+                      </p>
+                    )}
+
                     {interpretation && !panel && (
                       <nav className="result-actions" data-lang={uiLanguage}>
-                        {/* 領獎那塊是這一面唯一的朱紅木札，分享讓一步 */}
+                        {/* 領獎那塊是這一面唯一的朱紅木札，分享讓一步 —— 除非這支籤本身就值得傳出去 */}
                         <button
                           type="button"
-                          className={`text-action${rewardMode ? '' : ' strong'}`}
+                          className={`text-action${rewardMode && !extreme ? '' : ' strong'}`}
                           onClick={() => togglePanel('share')}
                         >
                           {t('actionShare')}
