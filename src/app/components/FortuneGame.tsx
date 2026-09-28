@@ -20,18 +20,28 @@ import {
   motor,
   paperRollRumble,
   paperSettleSound,
+  paperUnfurl,
   press as pressSound,
   stampSound,
   suzu,
   typeTick,
 } from '../sound';
 import {
+  collectStick,
   getCurrentReadingId,
+  isTied,
   saveRecord,
   setCurrentReadingId,
+  showKnots,
+  tieStick,
   type LocalFollowUp,
   type Prefs,
 } from '../storage';
+import { collectedCount } from '../../shared/collection';
+import { knotU } from '../../shared/knots';
+import { drawnBeforeToday } from '../../shared/streak';
+import { ropeY } from '../shrineArt';
+import TyingSlip, { type Flight } from './TyingSlip';
 import { acceptsGesture, chimeAtSlip, drawStartSound, enterDraws } from '../../shared/cylinder/interaction';
 import { EmaChrome } from './Ema';
 import QuestionForm from './QuestionForm';
@@ -199,6 +209,17 @@ export default function FortuneGame(props: {
     void api<{ reading: Reading }>(`/api/readings/${encodeURIComponent(id)}`)
       .then((body) => {
         if (cancelled) return;
+        // 昨天（或更早）抽的那一支：回來就是新的一天，不再停在舊的結果頁。
+        // 它自己結上繩（冒出來、解開給人看一眼），畫面換成新的一局。籤沒有重抽，記錄都在；
+        // 同一天內重新整理照舊停在同一支（AGENTS.md 規則 4）
+        if (drawnBeforeToday(body.reading.createdAt)) {
+          setCurrentReadingId(null);
+          if (!isTied(body.reading.id)) {
+            tieStick(body.reading.stick.no, { readingId: body.reading.id, language: body.reading.language });
+          }
+          showKnots(body.reading.id);
+          return;
+        }
         setReading(body.reading);
         setQuestion(body.reading.question);
       })
@@ -314,6 +335,9 @@ export default function FortuneGame(props: {
       setCurrentReadingId(body.reading.id);
       drawnHere.current = body.reading.id;
       saveRecord(body.reading);
+      // 籤譜：沒收過的這支，籤紙上會蓋「新收 8/36」（只有這次造訪剛抽的才蓋）
+      const got = collectStick(body.reading.stick.no, body.reading.id, body.reading.createdAt);
+      newlyCollected.current = got.isNew ? { id: body.reading.id, count: collectedCount(got.collection) } : null;
       track('stick_drawn', { language: body.reading.language });
 
       if (calm) {
@@ -365,6 +389,10 @@ export default function FortuneGame(props: {
   const warm = useRef<{ id: string; promise: Promise<Reading> } | null>(null);
   /** 這次造訪裡抽出來的那一支：結果頁只替它記「看到了沒、等了多久」，重新整理、從記錄打開的不記 */
   const drawnHere = useRef<string | null>(null);
+  /** 這次造訪剛抽、而且是籤譜裡沒有的那一支，登記後收了幾支 */
+  const newlyCollected = useRef<{ id: string; count: number } | null>(null);
+  /** 結籤：上一支籤正飛向注連繩 */
+  const [flight, setFlight] = useState<Flight | null>(null);
   const shownId = useRef<string | null>(null);
   shownId.current = reading?.id ?? null;
   const warmUp = useCallback(
@@ -436,10 +464,16 @@ export default function FortuneGame(props: {
     [reading],
   );
 
-  /** 再求一签：清空上一次的问题，回到打印机前，开启全新一轮。 */
+  /**
+   * 再求一签：清空上一次的问题，回到打印机前，开启全新一轮。
+   *
+   * 上一支籤不是消失，是綁到鳥居的注連繩上（結籤）：籤紙收成紙條飛上繩，到位時結才冒出來。
+   * 求籤畫面在起飛那一刻就換好。減少動畫時不飛，結直接出現。
+   */
   const restart = useCallback(() => {
-    if (props.prefs.sound) paperSettleSound(0.22);
     triggerHaptic(20);
+    const tying = reading;
+    const card = document.querySelector('.stage.result .omikuji-card')?.getBoundingClientRect();
     clearTimers();
     stopMotor.current?.();
     pendingReading.current = null;
@@ -452,7 +486,42 @@ export default function FortuneGame(props: {
     setFault(null);
     setPhase('ask');
     window.scrollTo({ top: 0, behavior: 'auto' });
-  }, [clearTimers, props.prefs.sound, triggerHaptic]);
+
+    if (!tying) {
+      if (props.prefs.sound) paperSettleSound(0.22);
+      return;
+    }
+    const knot = tieStick(tying.stick.no, { readingId: tying.id, language: tying.language });
+    // 捲回頂端之後才量繩子：鳥居跟著頁面捲
+    const rope = document.querySelector('.shimenawa')?.getBoundingClientRect();
+    if (props.prefs.reducedMotion || !card || !rope || card.width === 0) {
+      if (props.prefs.sound) paperSettleSound(0.22);
+      showKnots();
+      return;
+    }
+    if (props.prefs.sound) paperUnfurl();
+    const u = knotU(knot.slot);
+    setFlight({
+      from: { top: card.top, left: card.left, width: card.width, height: card.height },
+      to: { x: rope.left + u * rope.width, y: rope.top + ropeY(u) - 5 },
+    });
+  }, [clearTimers, props.prefs.sound, props.prefs.reducedMotion, reading, triggerHaptic]);
+
+  /** 紙條到了繩上：結冒出來、紙聲、手機輕震一下 */
+  const knotLanded = useCallback(() => {
+    setFlight(null);
+    showKnots();
+    if (props.prefs.sound) paperSettleSound(0.2);
+    triggerHaptic(12);
+  }, [props.prefs.sound, triggerHaptic]);
+
+  const tyingSlip = flight ? <TyingSlip flight={flight} onLanded={knotLanded} /> : null;
+  // 飛到一半就離開這一頁（去看記錄）：紙條跟著卸載，結還是要綁上去
+  const flying = useRef(false);
+  flying.current = flight !== null;
+  useEffect(() => () => {
+    if (flying.current) showKnots();
+  }, []);
 
   /*
    * 點 logo = 回首頁。看著結果時就是「再求一籤」那一步：清掉這一局、回到空白繪馬 ——
@@ -492,6 +561,7 @@ export default function FortuneGame(props: {
         sound={props.prefs.sound}
         emaFrom={emaFrom}
         drawnHere={drawnHere.current === reading.id}
+        newCollected={newlyCollected.current?.id === reading.id ? newlyCollected.current.count : null}
       />
     );
   }
@@ -552,6 +622,7 @@ export default function FortuneGame(props: {
 
   return (
     <section className="stage" data-tone={sheet ? LEVEL_TONE[sheet.stick.level].key : undefined}>
+      {tyingSlip}
       <div className={`ask-slot${printing ? ' printed' : ''}`}>
         {printing ? (
           vessel === 'cylinder3d' ? (

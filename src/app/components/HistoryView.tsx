@@ -10,15 +10,22 @@
  * 用那种语言写下的文字，换个语言重新标注等于说错话。
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { detectLanguage } from '../../shared/lang';
 import { withoutDashes } from '../../shared/text';
 import { stickByNo } from '../../shared/sticks';
 import { api } from '../api';
 import { LEVEL_TONE } from '../constants';
 import { copyFor, useT } from '../i18n';
-import { clearRecords, deleteRecord, listRecords, type LocalRecord } from '../storage';
+import { clearRecords, deleteRecord, getCollection, listRecords, type LocalRecord } from '../storage';
+import { STICK_TOTAL, collectedCount } from '../../shared/collection';
+import { STICKS } from '../../shared/sticks';
 import StickFace from './StickFace';
+
+const recordFromHash = (): string | null => {
+  const match = /^#\/?history\/(.+)$/.exec(window.location.hash);
+  return match ? decodeURIComponent(match[1]) : null;
+};
 
 const formatTime = (value: string): string => {
   const date = new Date(value);
@@ -38,10 +45,60 @@ function Plaque({ caption, title }: { caption: string; title: string }) {
   );
 }
 
+/**
+ * 籤譜：36 格小木札，抽到過的寫籤號、帶籤等的色，沒抽過的空著。跟記錄分開存，
+ * 刪記錄、清空都不會少（設計：docs/superpowers/specs/2026-09-28-collection-and-knots-design.md）。
+ * 一支都沒收過就不畫。這一版只看，不能點。
+ */
+function CollectionBook() {
+  const t = useT();
+  const [collection] = useState(() => getCollection());
+  const count = collectedCount(collection);
+  if (count === 0) return null;
+  const title = t('bookTitle', { count, total: STICK_TOTAL });
+  return (
+    <section className="collection-book" aria-label={title}>
+      <h3 className="collection-title">{title}</h3>
+      <ol className="collection-grid">
+        {STICKS.map((stick) => {
+          const got = Boolean(collection[stick.no]);
+          return (
+            <li
+              key={stick.no}
+              className={`collection-cell${got ? ' got' : ''}`}
+              data-tone={got ? LEVEL_TONE[stick.level].key : undefined}
+              aria-hidden={!got}
+            >
+              {got ? stick.no : ''}
+            </li>
+          );
+        })}
+      </ol>
+      <p className="muted small collection-note">{t('bookNote')}</p>
+    </section>
+  );
+}
+
 export default function HistoryView() {
   const t = useT();
   const [records, setRecords] = useState<LocalRecord[]>(() => listRecords());
-  const [openId, setOpenId] = useState<string | null>(null);
+  // 從繩上的結點「看這支籤的記錄」過來（#history/<id>）：那一條直接展開、捲到眼前。
+  // 只有從連結來的才捲；自己點開一條不捲
+  const [openId, setOpenId] = useState<string | null>(recordFromHash);
+  const [linked, setLinked] = useState<string | null>(recordFromHash);
+  useEffect(() => {
+    const onHash = (): void => {
+      const id = recordFromHash();
+      if (!id) return;
+      setOpenId(id);
+      setLinked(id);
+    };
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+  useEffect(() => {
+    if (linked) document.getElementById(`record-${linked}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, [linked]);
   const [confirmClear, setConfirmClear] = useState(false);
 
   const removeOne = async (id: string) => {
@@ -64,6 +121,7 @@ export default function HistoryView() {
     return (
       <section className="history">
         <Plaque caption={t('historyCaption')} title={t('historyTitle')} />
+        <CollectionBook />
         <div className="history-empty">
           <p className="muted">{t('historyEmpty')}</p>
           <a
@@ -84,6 +142,7 @@ export default function HistoryView() {
   return (
     <section className="history">
       <Plaque caption={t('historyCaption')} title={t('historyTitle')} />
+      <CollectionBook />
       <div className="history-head">
         <p className="muted small">{t('historyLocalNote')}</p>
         {confirmClear ? (
@@ -114,6 +173,7 @@ export default function HistoryView() {
             className={`history-item${open ? ' open' : ''}`}
             data-tone={LEVEL_TONE[stick.level].key}
             key={record.id}
+            id={`record-${record.id}`}
           >
             <button className="history-summary" aria-expanded={open} onClick={() => setOpenId(open ? null : record.id)}>
               <StickFace stick={stick} language={language} size="small" />

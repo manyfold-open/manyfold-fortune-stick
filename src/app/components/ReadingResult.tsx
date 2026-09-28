@@ -23,15 +23,37 @@ import TarotIcon from './TarotIcon';
 import { LEVEL_TONE } from '../constants';
 import { copyFor, useT, useUiLanguage } from '../i18n';
 import { format } from '../../shared/i18n';
+import { STICK_TOTAL } from '../../shared/collection';
 import { streakDays } from '../../shared/streak';
 import { listRecords } from '../storage';
 import { withoutDashes } from '../../shared/text';
 import { EmaChrome } from './Ema';
-import { paperSettleSound } from '../sound';
+import { paperSettleSound, stampSound } from '../sound';
 import FollowUp from './FollowUp';
 import StickFace from './StickFace';
 
 type Panel = 'share' | 'followup' | null;
+
+/**
+ * 籤譜的「新收」朱印：蓋在籤紙正面右下，吉凶章落下之後才落（CSS 的延遲）。
+ * 寫在紙上，所以跟紙的語言走（跟繪馬上的「連續第 3 天」一樣）。收齊那一支印「圓滿」。
+ */
+function CollectSeal({ count, copy, language }: { count: number; copy: ReturnType<typeof copyFor>; language: string }) {
+  const full = count >= STICK_TOTAL;
+  return (
+    <p
+      className={`collect-seal${full ? ' full' : ''}`}
+      data-lang={language}
+      role="img"
+      aria-label={format(full ? copy.collectFullLabel : copy.collectLabel, { count, total: STICK_TOTAL })}
+    >
+      <span className="collect-seal-word">{full ? copy.collectFull : copy.collectNew}</span>
+      <span className="collect-seal-count">
+        {count}/{STICK_TOTAL}
+      </span>
+    </p>
+  );
+}
 
 /** 分享（出圖、二維碼）要到按下「分享」才下載 —— 大多數人抽完不一定分享，首屏不必背它 */
 const SharePanel = lazy(() => import('./SharePanel'));
@@ -64,6 +86,8 @@ export default function ReadingResult(props: {
   emaFrom?: EmaRect | null;
   /** 這次造訪剛抽出來的籤（不是重新整理、也不是從記錄打開的） */
   drawnHere?: boolean;
+  /** 這一支是籤譜裡新收的：登記後一共收了幾支。收過的、不是剛抽的都是 null */
+  newCollected?: number | null;
 }) {
   const t = useT();
   // 按鈕上的字是機器說的話，跟界面語言走；拿籤紙的語言去排版，英文字會被撐成中文的字距
@@ -101,6 +125,14 @@ export default function ReadingResult(props: {
    */
   const [streak] = useState(() => streakDays(listRecords().map((record) => record.createdAt)));
   const emaCaption = streak >= 2 ? format(sheet.emaStreak, { days: streak }) : sheet.emaCaption;
+  // 新收印落下的那一格（CSS 延遲 0.9s ＋ 落章約 0.3s）補一聲輕的蓋章聲。只在掛上來時一次
+  const [sealSound] = useState(() => props.newCollected != null && props.sound);
+  useEffect(() => {
+    if (!sealSound) return;
+    const id = window.setTimeout(() => stampSound(undefined, 0.12), 1150);
+    return () => window.clearTimeout(id);
+  }, [sealSound]);
+
   /** 背面有東西可看：解好了，或正在解（先放骨架） */
   const hasBack = Boolean(interpretation) || props.interpreting;
   const showBack = flipped && hasBack;
@@ -386,6 +418,9 @@ export default function ReadingResult(props: {
             <div className="omikuji-inner" onTransitionEnd={handleTransitionEnd}>
               <div className="omikuji face face-front" aria-hidden={showBack}>
                 <StickFace stick={reading.stick} language={reading.language} />
+                {props.newCollected != null && (
+                  <CollectSeal count={props.newCollected} copy={sheet} language={reading.language} />
+                )}
                 {hasBack && (
                   <button type="button" className="flip-tag" onClick={pressFlipToReading}>
                     {t('flipToReading')} ⟳

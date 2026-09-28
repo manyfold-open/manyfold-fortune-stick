@@ -41,7 +41,10 @@ Rules for anyone — human or AI agent — iterating on it. These are the load-b
    - the drawn stick is decided server-side and written to `readings` the moment the print
      key is pressed, and is never re-rolled — a reload, a failed interpretation and a *retry*
      all read the same row back. The paper-feed animation only plays back a stick that is
-     already fixed. Only a deliberate 再求一签 starts a new one;
+     already fixed. Only a deliberate 再求一签 starts a new one — or a new day: a visitor who
+     comes back after the local day has turned finds the old stick tied to the shrine rope
+     (row and record untouched, never re-drawn) and a fresh round. A reload on the same day
+     always lands on the same stick;
    - 追问 is always grounded in the stored question, stick and reading
      (`buildFollowUpPrompt`), so it cannot drift onto a different stick even if the
      agent-side context is lost.
