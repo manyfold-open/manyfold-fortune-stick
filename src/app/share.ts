@@ -343,6 +343,35 @@ async function waitForFonts(sample: string, language: Language): Promise<void> {
   }
 }
 
+/**
+ * 等级大红印上的字：三个字的等级小一号；英文、印地语的等级是一两个词，各占一行，放不进内圈就缩字。
+ * 字号是照半径 88 的印调的，别的大小按比例放大缩小。
+ */
+function sealText(
+  g: CanvasRenderingContext2D,
+  level: string,
+  language: Language,
+  r: number,
+): { lines: string[]; font: string; lineHeight: number } {
+  const k = r / 88;
+  const face = minchoFor(language);
+  const fitSeal = language === 'en' || language === 'hi';
+  const lines = fitSeal ? level.split(' ') : [level];
+  // 英文最长那个词（FORTUNE、BLESSING）要留在内圈里：Shippori 比以前的字宽，放不下就缩字
+  let size = Math.round((language === 'hi' ? 40 : fitSeal ? 24 : [...level].length >= 3 ? 40 : 54) * k);
+  let font = `${fitSeal ? 700 : 800} ${size}px ${face}`;
+  if (fitSeal) {
+    g.font = font;
+    const fits = () => Math.max(...lines.map((line) => g.measureText(line).width)) <= (r - 12) * 1.5;
+    while (!fits() && size > 16) {
+      size -= 1;
+      font = `700 ${size}px ${face}`;
+      g.font = font;
+    }
+  }
+  return { lines, font, lineHeight: (language === 'en' ? 30 : language === 'hi' ? 46 : 54) * k };
+}
+
 export async function renderShareImage(input: ShareInput): Promise<Blob> {
   const story = input.format === 'story';
   const H = story ? STORY_HEIGHT : HEIGHT;
@@ -473,24 +502,8 @@ export async function renderShareImage(input: ShareInput): Promise<Blob> {
   spacedText(g, paper.number(stick.no, STICK_COUNT), center, y + 38, vertical ? 10 : 4);
   y += NO;
 
-  // 等级大红印：三个字的等级小一号，英文两个词各一行
-  // 英文、印地语的等级是一两个词：各占一行，放不进内圈就缩字
-  const fitSeal = en || language === 'hi';
-  const sealLines = fitSeal ? level.split(' ') : [level];
-  // 英文最长那个词（FORTUNE、BLESSING）要留在内圈里：Shippori 比以前的字宽，放不下就缩字
-  const sealStart = language === 'hi' ? 40 : 24;
-  let sealFont = fitSeal ? `700 ${sealStart}px ${face}` : `800 ${[...level].length >= 3 ? 40 : 54}px ${face}`;
-  if (fitSeal) {
-    const fits = () => Math.max(...sealLines.map((line) => g.measureText(line).width)) <= (SEAL_R - 12) * 1.5;
-    let size = sealStart;
-    g.font = sealFont;
-    while (!fits() && size > 16) {
-      size -= 1;
-      sealFont = `700 ${size}px ${face}`;
-      g.font = sealFont;
-    }
-  }
-  drawSeal(g, center, y + SEAL_BLOCK / 2, SEAL_R, sealLines, sealFont, en ? 30 : language === 'hi' ? 46 : 54);
+  const seal = sealText(g, level, language, SEAL_R);
+  drawSeal(g, center, y + SEAL_BLOCK / 2, SEAL_R, seal.lines, seal.font, seal.lineHeight);
   y += SEAL_BLOCK;
 
   // 签名，左右各一条朱红细线
@@ -688,3 +701,150 @@ export const shareText = (stick: FortuneStick, meaning: string, language: Langua
   const paper = PAPER_COPY[language];
   return `${APP_NAME} · ${paper.shortNumber(stick.no)} · ${LEVEL_LABEL[language][stick.level]}\n${paper.joinPoem(text.poem[0], text.poem[1])}\n${cleanMeaning}\n${paper.challenge(stick.level)}\n${link}`;
 };
+
+/* ───────── 連結預覽圖（og:image） ───────── */
+
+const PREVIEW_WIDTH = 1200;
+const PREVIEW_HEIGHT = 630;
+
+/**
+ * 分享連結的預覽圖：WhatsApp、iMessage、Telegram、X 貼上 `?s=13&l=en` 時那張卡片上的圖。
+ *
+ * worker 裡沒有 canvas，也放不下中日韓印的字型，所以這張圖不在請求時畫：
+ * 開發時用 tools/og-preview.html 把 36 支 × 5 種語言全部畫好，存成 public/og/{no}-{lang}.jpg，
+ * worker（src/worker/meta.ts）只負責指到對的那一張。
+ *
+ * 版面照 WhatsApp 排：它有時把預覽裁成正中間的一小格正方形，所以印、籤號、籤名都在中間那一欄，
+ * 兩句籤詩放在左右兩翼 —— 裁掉了也還認得出是哪一支、什麼等級。
+ * 跟分享圖一樣只有籤本身的字，沒有問題、沒有解籤。
+ */
+export async function renderLinkPreview(stick: FortuneStick, language: Language): Promise<HTMLCanvasElement> {
+  const canvas = document.createElement('canvas');
+  canvas.width = PREVIEW_WIDTH;
+  canvas.height = PREVIEW_HEIGHT;
+  const g = canvas.getContext('2d');
+  if (!g) throw new Error('这个浏览器不支持生成图片。');
+
+  const en = language === 'en';
+  const vertical = writesVertically(language);
+  const paper = PAPER_COPY[language];
+  const face = minchoFor(language);
+  const text = stickText(stick, language);
+  const level = LEVEL_LABEL[language][stick.level];
+  const challenge = withoutDashes(paper.challenge(stick.level));
+  await waitForFonts(
+    [text.title, ...text.poem, level, paper.band, paper.number(stick.no, STICK_COUNT), challenge, '0123456789'].join(''),
+    language,
+  );
+
+  paintShrine(g, PREVIEW_WIDTH, PREVIEW_HEIGHT);
+  const center = PREVIEW_WIDTH / 2;
+
+  // 紙：夾在兩根柱子中間，底下留一行字的地面
+  const paperX = 104;
+  const paperW = PREVIEW_WIDTH - paperX * 2;
+  const paperTop = 146;
+  const paperH = 424;
+  const paperBottom = paperTop + paperH;
+  g.save();
+  g.shadowColor = 'rgba(38, 26, 18, 0.22)';
+  g.shadowBlur = 30;
+  g.shadowOffsetY = 12;
+  g.fillStyle = PAPER;
+  g.fillRect(paperX, paperTop, paperW, paperH);
+  g.restore();
+  g.strokeStyle = SEAL;
+  g.lineWidth = 4;
+  g.strokeRect(paperX + 2, paperTop + 2, paperW - 4, paperH - 4);
+  g.lineWidth = 1.6;
+  g.strokeStyle = 'rgba(192, 50, 31, 0.7)';
+  g.strokeRect(paperX + 10, paperTop + 10, paperW - 20, paperH - 20);
+  drawWashiTape(g, center, paperTop + 4, 200, 28, -2.2);
+
+  // 中間一欄（裁成正方形也留得住的那塊）：表頭、籤號、大紅印、籤名
+  const columnW = 520;
+  g.textAlign = 'center';
+  g.fillStyle = SEAL;
+  g.font = en ? `700 24px ${face}` : `700 28px ${face}`;
+  spacedText(g, paper.band, center, paperTop + 64, en ? 12 : 24);
+  g.fillStyle = INK_2;
+  g.font = `400 22px ${face}`;
+  spacedText(g, paper.number(stick.no, STICK_COUNT), center, paperTop + 98, vertical ? 8 : 3);
+
+  const SEAL_R = 98;
+  const seal = sealText(g, level, language, SEAL_R);
+  drawSeal(g, center, paperTop + 222, SEAL_R, seal.lines, seal.font, seal.lineHeight);
+
+  // 籤名：放不下就縮字；天城文整串量（spacedText 對它不加字距）
+  const titleGap = en ? 2 : vertical ? 14 : 4;
+  const measureTitle = () =>
+    joinsLetters(language)
+      ? g.measureText(text.title).width
+      : [...text.title].reduce((w, c) => w + g.measureText(c).width, 0) + titleGap * ([...text.title].length - 1);
+  let titleSize = en ? 36 : 40;
+  g.font = `600 ${titleSize}px ${face}`;
+  while (measureTitle() > columnW - 40 && titleSize > 22) {
+    titleSize -= 1;
+    g.font = `600 ${titleSize}px ${face}`;
+  }
+  g.fillStyle = INK;
+  spacedText(g, text.title, center, paperTop + 384, titleGap);
+
+  // 兩翼：兩句籤詩，跟中間一欄隔一條淡朱紅線
+  const wingInner = center - columnW / 2;
+  const wingW = wingInner - (paperX + 24);
+  const bodyTop = paperTop + 44;
+  const bodyH = paperH - 88;
+  g.strokeStyle = 'rgba(192, 50, 31, 0.35)';
+  g.lineWidth = 1.6;
+  for (const x of [wingInner, PREVIEW_WIDTH - wingInner]) {
+    g.beginPath();
+    g.moveTo(x, bodyTop);
+    g.lineTo(x, bodyTop + bodyH);
+    g.stroke();
+  }
+  const leftCx = paperX + 24 + wingW / 2;
+  const rightCx = PREVIEW_WIDTH - leftCx;
+  if (vertical) {
+    // 直排從右往左讀：第一句在右翼，第二句在左翼
+    const upright = language === 'ja' ? toVerticalForms : (value: string) => value;
+    const step = 46;
+    const longest = Math.max(...text.poem.map((line) => [...line].length));
+    const top = bodyTop + Math.max(0, (bodyH - step * longest) / 2);
+    for (const [line, cx] of [
+      [text.poem[0], rightCx],
+      [text.poem[1], leftCx],
+    ] as const) {
+      drawVertical(g, [{ text: upright(line), font: `500 38px ${face}`, color: INK, step }], {
+        centerX: cx,
+        top,
+        height: bodyH,
+        gap: 0,
+      });
+    }
+  } else {
+    const wrap = wrapsByWord(language) ? wrapBalanced : wrapFor(language);
+    const size = language === 'hi' ? 26 : 28;
+    for (const [line, cx] of [
+      [text.poem[0], leftCx],
+      [text.poem[1], rightCx],
+    ] as const) {
+      drawHorizontal(g, [{ text: line, font: `500 ${size}px ${face}`, color: INK, step: size * 1.45 }], {
+        centerX: cx,
+        top: bodyTop,
+        width: wingW - 36,
+        height: bodyH,
+        gap: 0,
+        wrapText: wrap,
+      });
+    }
+  }
+
+  // 紙下面那一行：用分享的人的口吻，換朋友來抽
+  g.fillStyle = INK;
+  g.font = `500 ${en ? 24 : 26}px ${face}`;
+  g.textAlign = 'center';
+  g.fillText(challenge, center, paperBottom + (PREVIEW_HEIGHT - paperBottom) / 2 + 10);
+
+  return canvas;
+}
