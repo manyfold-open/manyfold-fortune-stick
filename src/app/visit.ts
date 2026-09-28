@@ -11,9 +11,18 @@
 
 import { api } from './api';
 import { browserStorage, safeGet, safeRemove, safeSet } from '../shared/safe-storage';
-import { isVisitSource, visitSourceFrom, waitBucket, type Metric, type VisitSource } from '../shared/stats';
+import {
+  isVisitSource,
+  promisesTarotReward,
+  visitSourceFrom,
+  waitBucket,
+  type Metric,
+  type VisitSource,
+} from '../shared/stats';
 
 const SOURCE_KEY = 'wenyiqian.visitSource';
+/** Set for the tab when it arrived on a Tarot link that promised a reward. */
+const FROM_TAROT_KEY = 'wenyiqian.fromTarot';
 const COUNTED_KEY = 'wenyiqian.visitCounted';
 /** Set on a browser's first visit, so a later one counts as returning. */
 const SEEN_KEY = 'wenyiqian.seen';
@@ -30,6 +39,7 @@ export function recordVisit(href: string, referrer: string): void {
   const source = visitSourceFrom(url.search, referrer, url.origin);
   safeSet(storage, COUNTED_KEY, url.search);
   safeSet(storage, SOURCE_KEY, source);
+  if (promisesTarotReward(source)) safeSet(storage, FROM_TAROT_KEY, '1');
   const local = browserStorage('localStorage');
   const returning = Boolean(safeGet(local, SEEN_KEY) || safeGet(local, RECORDS_KEY));
   safeSet(local, SEEN_KEY, '1');
@@ -38,6 +48,10 @@ export function recordVisit(href: string, referrer: string): void {
     body: JSON.stringify({ returning }),
   }).catch(() => undefined);
 }
+
+/** Whether this tab came from a Tarot link that promised a reading in return
+ *  for a stick: then the way back to Tarot is the reward, and says so. */
+export const cameFromTarot = (): boolean => safeGet(browserStorage('sessionStorage'), FROM_TAROT_KEY) === '1';
 
 /** The source to credit this visit's first draw to; later draws are not credited again. */
 export function takeVisitSourceForDraw(): VisitSource | null {

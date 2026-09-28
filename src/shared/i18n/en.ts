@@ -93,6 +93,9 @@ export const en = {
   flipToSlip: 'Slip',
   actionRestart: 'Draw another',
   actionTarotBridge: 'Ask your own Tarot question',
+  actionTarotClaim: 'Claim your extra Tarot reading →',
+  actionTarotBack: 'Back to Tarot →',
+  tarotRewardHint: 'Read it, then claim one more Tarot reading',
   tarotBridgeOpening: 'Preparing the Tarot link…',
 
   /* ── follow-up ── */
@@ -310,6 +313,8 @@ export const en = {
   healthReplyDetail: 'under 20s {t20} · under 30s {t30} · under 60s {t60} · longer {more}',
   healthFinalCard: 'Ended on the fallback',
   healthFinalDetail: 'AI {ai} · fallback {fallback} · stuck {stuck}',
+  healthClaimCard: 'Went back to Tarot',
+  healthClaimDetail: '{n} clicks after {shown} readings seen',
   healthTriesWhy: 'Why a try fell back: unreadable reply {unparseable}, empty reply {empty}, timed out {timeout}, Manyfold down or refused {manyfold}, no agent connected {noAgent}, other {other}.',
   healthFinalWhy: 'Why sticks ended on the fallback: unreadable reply {unparseable}, empty reply {empty}, timed out {timeout}, Manyfold down or refused {manyfold}, no agent connected {noAgent}, other {other}.',
   healthHowTo: 'Seen and waiting only count a stick drawn in that visit, not one reopened later. Ready means the reading was already there when Read it was pressed; Left means they closed the page or drew again before it came, and some phones never report that, so it is a floor. A try is one request to the agent; a retry is a try on a stick whose last one fell back. Stuck means drawn over two minutes ago and never interpreted, usually because the page closed while the reading was on its way. A retry overwrites where a stick ended, so that side shows the last try only.',

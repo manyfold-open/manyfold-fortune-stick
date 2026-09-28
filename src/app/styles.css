@@ -5565,6 +5565,71 @@ html { overflow-x: clip; }
   border-radius: 0.3em;
 }
 
+/* 從 Tarot 來、這次抽的籤：領獎的木札不埋在解籤底下，翻過來就在「分享／追問」上面。
+   這一面唯一的朱紅木札（分享讓一步），跟 .result-actions .strong 同一種漆 */
+.result .tarot-claim {
+  display: flex;
+  justify-content: center;
+  margin-top: 14px;
+  animation: actions-in 0.38s 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.result .tarot-claim .text-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  min-height: 44px;
+  padding: 8px 22px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #cc412b, #a52a1b);
+  box-shadow: inset 0 0 0 1px rgba(255, 236, 214, 0.25), 0 3px 7px rgba(120, 30, 20, 0.28);
+  color: #fbf3e6;
+  font-family: var(--font-mincho);
+  font-weight: 700;
+  font-size: clamp(13px, 3.9vw, 16px);
+  letter-spacing: 0.1em;
+  /* 一行放得下就一行；最窄的手機上寧可平均折成兩行，也不撐出籤紙 */
+  max-width: 100%;
+  text-align: center;
+  text-wrap: balance;
+  text-decoration: none;
+  opacity: 1;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* 英文字母本身就寬，字距再拉開就放不進手機 */
+.result .tarot-claim[data-lang='en'] .text-action {
+  letter-spacing: 0.03em;
+}
+
+.result .tarot-claim .text-action:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: inset 0 0 0 1px rgba(255, 236, 214, 0.3), 0 5px 10px rgba(120, 30, 20, 0.32);
+}
+
+.result .tarot-claim .app-icon {
+  flex: none;
+  width: 1.4em;
+  height: 1.4em;
+  border-radius: 0.3em;
+}
+
+/* 領取之後，分享／追問那排跟木札之間不再畫一條虛線，看起來是同一組 */
+.result .tarot-claim + .result-actions {
+  margin-top: 10px;
+  border-top: 0;
+}
+
+/* 「解籤」底下那行小字：印在背景上，不是紙上，所以用 --on-ground */
+.result .sheet-actions .tarot-reward-hint {
+  width: 100%;
+  margin: 2px 0 0;
+  font-family: var(--font-mincho);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: var(--on-ground-2);
+}
+
 .result .tarot-bridge-action {
   margin: 24px 0 8px;
   padding-top: 14px;
