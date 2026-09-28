@@ -89,6 +89,9 @@ export const ja = {
   flipToSlip: '札の表',
   actionRestart: 'もう一枚引く',
   actionTarotBridge: 'タロットで自分で聞く',
+  actionTarotClaim: 'タロットをもう一回受け取る →',
+  actionTarotBack: 'タロットに戻る →',
+  tarotRewardHint: '読み解きを見れば、タロットをもう一回できます',
   tarotBridgeOpening: 'タロットのリンクを準備中…',
 
   /* ── 追問 ── */
@@ -299,6 +302,8 @@ export const ja = {
   healthReplyDetail: '20秒未満 {t20} · 30秒未満 {t30} · 60秒未満 {t60} · それ以上 {more}',
   healthFinalCard: '最後が定型文',
   healthFinalDetail: 'AI {ai} · 定型文 {fallback} · 止まったまま {stuck}',
+  healthClaimCard: 'タロットに戻った',
+  healthClaimDetail: '読み解き {shown} 件のあと、タロットへ {n} 回',
   healthTriesWhy: '試行が定型文になった理由：読めない返答 {unparseable}、空の返答 {empty}、タイムアウト {timeout}、Manyfold の障害や拒否 {manyfold}、エージェント未接続 {noAgent}、その他 {other}。',
   healthFinalWhy: '最後が定型文になった理由：読めない返答 {unparseable}、空の返答 {empty}、タイムアウト {timeout}、Manyfold の障害や拒否 {manyfold}、エージェント未接続 {noAgent}、その他 {other}。',
   healthHowTo: '表示と待ち時間は、その訪問で新しく引いたおみくじだけを数え、記録から開き直したものは数えません。準備済みは「読む」を押した時点で読み解きが届いていたこと、離脱は届く前にページを閉じたか引き直したことです。知らせない端末もあるので下限です。試行はエージェントへの1回の問い合わせで、再試行は前回定型文になったおみくじでの試行です。止まったままは、引いてから2分以上たっても読み解きがないもので、多くは届く前にページが閉じられたものです。再試行は最終的な行き先を上書きするので、そちらは最後の試行だけを表します。',

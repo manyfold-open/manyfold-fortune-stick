@@ -16,7 +16,7 @@ import { stickText } from '../../shared/sticks';
 import type { FollowUpMessage, Reading } from '../../shared/types';
 import { createTarotClaim, storedErrorText } from '../api';
 import { track } from '../analytics';
-import { recordReadingShown, recordWaitLeft } from '../visit';
+import { cameFromTarot, recordReadingShown, recordWaitLeft } from '../visit';
 import { rememberedTarotReturn, TAROT_URL, tarotHandoffUrl } from '../tarotBridge';
 import TarotIcon from './TarotIcon';
 import { LEVEL_TONE } from '../constants';
@@ -114,6 +114,12 @@ export default function ReadingResult(props: {
    * pressedAt：還沒按是 undefined，按的時候已經解好是 null，否則是按下的那一刻。
    */
   const [counting] = useState(() => Boolean(props.drawnHere));
+  /**
+   * 從 Tarot 那條「抽一支籤就能再玩一次塔羅」的連結來、這次抽的這一支：回 Tarot 就是領獎，
+   * 要講明白、放在翻過來就看得到的地方，不埋在解籤最底下。點過一次（新分頁已開）改成「回到塔羅」。
+   */
+  const [rewardMode] = useState(() => Boolean(props.drawnHere) && cameFromTarot());
+  const [claimed, setClaimed] = useState(false);
   const pressedAt = useRef<number | null | undefined>(undefined);
   useEffect(() => {
     if (!showBack || !interpretation || completed.current) return;
@@ -239,6 +245,7 @@ export default function ReadingResult(props: {
   const openTarot = async () => {
     if (tarotBridgePending) return;
     setTarotBridgePending(true);
+    setClaimed(true);
     track('tarot_opened');
     const tab = window.open('', '_blank');
     let target = tarotHandoffUrl(TAROT_URL, uiLanguage, null);
@@ -392,7 +399,7 @@ export default function ReadingResult(props: {
 
                     <div className="sheet-scroll" onWheel={handleScrollWheel}>
                       {interpretation ? interpretationBlocks : loadingSkeleton}
-                      {interpretation && !panel && (
+                      {interpretation && !panel && !rewardMode && (
                         <div className="tarot-bridge-action">
                           <button
                             type="button"
@@ -407,9 +414,32 @@ export default function ReadingResult(props: {
                       )}
                     </div>
 
+                    {interpretation && !panel && rewardMode && (
+                      <div className="tarot-claim" data-lang={uiLanguage}>
+                        <button
+                          type="button"
+                          className="text-action strong"
+                          onClick={() => void openTarot()}
+                          disabled={tarotBridgePending}
+                        >
+                          <TarotIcon />
+                          {tarotBridgePending
+                            ? t('tarotBridgeOpening')
+                            : claimed
+                              ? t('actionTarotBack')
+                              : t('actionTarotClaim')}
+                        </button>
+                      </div>
+                    )}
+
                     {interpretation && !panel && (
                       <nav className="result-actions" data-lang={uiLanguage}>
-                        <button type="button" className="text-action strong" onClick={() => togglePanel('share')}>
+                        {/* 領獎那塊是這一面唯一的朱紅木札，分享讓一步 */}
+                        <button
+                          type="button"
+                          className={`text-action${rewardMode ? '' : ' strong'}`}
+                          onClick={() => togglePanel('share')}
+                        >
                           {t('actionShare')}
                         </button>
                         <button type="button" className="text-action" onClick={() => togglePanel('followup')}>
@@ -478,6 +508,8 @@ export default function ReadingResult(props: {
                   {t('actionRestart')}
                 </button>
               </div>
+              {/* 領獎的第一步就是按「解籤」：從 Tarot 來的人在這裡先知道。排在木札那一行底下，不擠它 */}
+              {rewardMode && <p className="tarot-reward-hint">{t('tarotRewardHint')}</p>}
               {props.error && <p className="fault">{props.error}</p>}
             </div>
           )}

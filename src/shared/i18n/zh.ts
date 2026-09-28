@@ -93,6 +93,9 @@ export const zh = {
   flipToSlip: '签面',
   actionRestart: '再求一签',
   actionTarotBridge: '去塔罗自己提问',
+  actionTarotClaim: '领取你的一次塔罗 →',
+  actionTarotBack: '回到塔罗 →',
+  tarotRewardHint: '看完解签，就能回塔罗再玩一次',
   tarotBridgeOpening: '正在准备塔罗链接…',
 
   /* ── 追问 ── */
@@ -303,6 +306,8 @@ export const zh = {
   healthReplyDetail: '20 秒内 {t20} · 30 秒内 {t30} · 60 秒内 {t60} · 更久 {more}',
   healthFinalCard: '最后是通用解释',
   healthFinalDetail: 'AI {ai} · 通用解释 {fallback} · 卡住 {stuck}',
+  healthClaimCard: '看完后回塔罗',
+  healthClaimDetail: '看到 {shown} 份解签后，点回塔罗 {n} 次',
   healthTriesWhy: '尝试失败的原因：回复读不懂 {unparseable}、空回复 {empty}、超时 {timeout}、Manyfold 故障或拒绝 {manyfold}、没接 agent {noAgent}、其他 {other}。',
   healthFinalWhy: '最后停在通用解释的原因：回复读不懂 {unparseable}、空回复 {empty}、超时 {timeout}、Manyfold 故障或拒绝 {manyfold}、没接 agent {noAgent}、其他 {other}。',
   healthHowTo: '看到与等待只算这次访问里新抽的签，从记录重新打开的不算。已就绪是按下「解签」时解签已经好了；离开是还没等到就关掉页面或再求一签，有些手机不会回报，所以是下限。一次尝试是问 agent 一次；重试是在上次落到通用解释的签上再试。卡住是抽出超过两分钟仍没有解签，多半是解签还在路上页面就关了。重试会覆盖签的最后去向，所以那一栏只反映最后一次。',

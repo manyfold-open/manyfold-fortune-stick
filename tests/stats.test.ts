@@ -4,7 +4,7 @@ import { isSettingsApiPath } from '../src/worker/auth';
 import { readStats } from '../src/worker/stats';
 import { taipeiDay } from '../src/worker/tarot-bridge';
 import { parseSharedStick, sharedStickQuery } from '../src/shared/share-link';
-import { fallbackReason, replyBucket, visitSourceFrom, waitBucket } from '../src/shared/stats';
+import { fallbackReason, promisesTarotReward, replyBucket, visitSourceFrom, waitBucket } from '../src/shared/stats';
 import type { Env } from '../src/worker/types';
 import { createD1, type FakeD1 } from './support/d1';
 
@@ -81,6 +81,17 @@ describe('where a visit came from', () => {
     expect(visitSourceFrom('', 'https://tarot.manyfold.ai/', self)).toBe('tarot-other');
     expect(visitSourceFrom('?utm_source=newsletter', '', self)).toBe('campaign');
     expect(visitSourceFrom('?utm_source=facebook_ads', 'https://www.facebook.com/', self)).toBe('campaign');
+  });
+
+  it("treats Tarot's own links as promising a Tarot reading, and nothing else", () => {
+    expect(promisesTarotReward('tarot-outro')).toBe(true);
+    expect(promisesTarotReward('tarot-locked')).toBe(true);
+    expect(promisesTarotReward('tarot-other')).toBe(true);
+    // Tarot's share page makes no promise.
+    expect(promisesTarotReward('tarot-share')).toBe(false);
+    expect(promisesTarotReward('organic-direct')).toBe(false);
+    expect(promisesTarotReward('share-qr')).toBe(false);
+    expect(promisesTarotReward('campaign')).toBe(false);
   });
 
   it('still reads the same stick off a link that carries via', () => {

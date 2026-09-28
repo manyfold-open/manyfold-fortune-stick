@@ -111,6 +111,13 @@ export default function ReadingHealth(props: { days: DailyStats[]; rows: DailySt
       }),
     },
     {
+      // The step the reward hangs on: of the readings people saw, how often they
+      // went on to Tarot. Tarot clicks from history can make this pass 100%.
+      label: 'healthClaimCard',
+      value: percent(total(since, one('tarot:opened')), total(since, shown)),
+      detail: t('healthClaimDetail', { n: total(since, one('tarot:opened')), shown: total(since, shown) }),
+    },
+    {
       label: 'healthWaitCard',
       value: percent(metric('wait:ready'), waits),
       detail: t('healthWaitDetail', {

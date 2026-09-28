@@ -27,6 +27,11 @@ export const VISIT_SOURCES = [
 ] as const;
 export type VisitSource = (typeof VISIT_SOURCES)[number];
 
+/** Tarot's own links, which tell the visitor that drawing a stick earns one more
+ *  Tarot reading. Its share page makes no such promise. */
+const TAROT_REWARD_SOURCES: readonly VisitSource[] = ['tarot-outro', 'tarot-locked', 'tarot-other'];
+export const promisesTarotReward = (source: VisitSource): boolean => TAROT_REWARD_SOURCES.includes(source);
+
 /** How a shared link says it was passed on: the QR on the image, or the text link. */
 export type ShareVia = 'qr' | 'link';
 
