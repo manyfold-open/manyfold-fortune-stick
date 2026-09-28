@@ -151,9 +151,10 @@ export function collectStick(stickNo: number, readingId: string, at: string): { 
 
 export const listKnots = (): Knot[] => parseKnots(read<unknown>(KNOTS_KEY, []));
 
-function notifyKnots(): void {
+/** detail.open：這一局的結冒出來之後自己解開一下（隔天回來自動結的那一支） */
+function notifyKnots(open?: string): void {
   try {
-    window.dispatchEvent(new Event(KNOTS_EVENT));
+    window.dispatchEvent(new CustomEvent(KNOTS_EVENT, { detail: { open } }));
   } catch {
     /* 沒有 window（測試環境）就算了 */
   }
@@ -166,8 +167,11 @@ export function tieStick(stickNo: number, meta: KnotMeta = {}, at: string = new 
   return knots[knots.length - 1];
 }
 
-/** 飛上去的紙條到位了：這時候才讓繩上的結出現。 */
-export const showKnots = (): void => notifyKnots();
+/** 飛上去的紙條到位了：這時候才讓繩上的結出現。給了記錄 id，那個結冒出來後自己解開一下。 */
+export const showKnots = (openReadingId?: string): void => notifyKnots(openReadingId);
+
+/** 這一局已經綁在繩上了嗎（避免同一支綁兩次） */
+export const isTied = (readingId: string): boolean => listKnots().some((knot) => knot.readingId === readingId);
 
 /* ───────── 偏好 ───────── */
 

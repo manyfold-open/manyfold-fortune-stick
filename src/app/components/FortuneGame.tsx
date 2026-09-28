@@ -29,6 +29,7 @@ import {
 import {
   collectStick,
   getCurrentReadingId,
+  isTied,
   saveRecord,
   setCurrentReadingId,
   showKnots,
@@ -38,6 +39,7 @@ import {
 } from '../storage';
 import { collectedCount } from '../../shared/collection';
 import { knotU } from '../../shared/knots';
+import { drawnBeforeToday } from '../../shared/streak';
 import { ropeY } from '../shrineArt';
 import TyingSlip, { type Flight } from './TyingSlip';
 import { acceptsGesture, chimeAtSlip, drawStartSound, enterDraws } from '../../shared/cylinder/interaction';
@@ -207,6 +209,17 @@ export default function FortuneGame(props: {
     void api<{ reading: Reading }>(`/api/readings/${encodeURIComponent(id)}`)
       .then((body) => {
         if (cancelled) return;
+        // 昨天（或更早）抽的那一支：回來就是新的一天，不再停在舊的結果頁。
+        // 它自己結上繩（冒出來、解開給人看一眼），畫面換成新的一局。籤沒有重抽，記錄都在；
+        // 同一天內重新整理照舊停在同一支（AGENTS.md 規則 4）
+        if (drawnBeforeToday(body.reading.createdAt)) {
+          setCurrentReadingId(null);
+          if (!isTied(body.reading.id)) {
+            tieStick(body.reading.stick.no, { readingId: body.reading.id, language: body.reading.language });
+          }
+          showKnots(body.reading.id);
+          return;
+        }
         setReading(body.reading);
         setQuestion(body.reading.question);
       })

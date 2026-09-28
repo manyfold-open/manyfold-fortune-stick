@@ -26,3 +26,14 @@ export function streakDays(dates: readonly string[], today: Date = new Date()): 
   }
   return count;
 }
+
+/**
+ * 這一支是今天以前抽的嗎（本地時區）？回訪時用：昨天的籤自動結上繩，開一局新的；
+ * 同一天內重新整理照舊停在同一支（AGENTS.md 規則 4）。壞掉的日期當作今天 —— 寧可不動。
+ */
+export function drawnBeforeToday(iso: string, today: Date = new Date()): boolean {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return false;
+  const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  return d.getTime() < start.getTime();
+}

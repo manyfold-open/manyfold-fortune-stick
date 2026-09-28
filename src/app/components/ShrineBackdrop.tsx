@@ -245,16 +245,37 @@ export default function ShrineBackdrop({ calm }: { calm: boolean }) {
   // 繩上的結換了（再求一籤綁上去、清掉本機資料）：重讀，剛多出來的那一個啪地出現
   useEffect(() => {
     let shown = new Set(listKnots().map((k) => `${k.slot}-${k.at}`));
-    const reload = (): void => {
+    let autoOpen = 0;
+    let autoClose = 0;
+    const reload = (event: Event): void => {
       const next = listKnots();
       const added = next.find((k) => !shown.has(`${k.slot}-${k.at}`));
       shown = new Set(next.map((k) => `${k.slot}-${k.at}`));
       setFresh(added ? `${added.slot}-${added.at}` : null);
       setKnots(next);
+      // 隔天回來自動結的那一支：冒出來之後自己解開，給人看一眼「昨天那支在這裡」，
+      // 順便讓人知道結點得開。五秒後摺回去；點任何地方也會收起
+      const openId = (event as CustomEvent<{ open?: string }>).detail?.open;
+      const target = openId ? next.find((k) => k.readingId === openId) : undefined;
+      if (!target) return;
+      const key = knotKey(target);
+      window.clearTimeout(autoOpen);
+      window.clearTimeout(autoClose);
+      autoOpen = window.setTimeout(() => {
+        const el = document.querySelector<SVGSVGElement>(`.rope-knot[data-knot="${key}"]`);
+        const r = el?.getBoundingClientRect();
+        if (!r || r.width === 0) return;
+        setOpen({ key, anchor: { x: r.left + r.width / 2 + window.scrollX, bottom: r.bottom + window.scrollY } });
+        autoClose = window.setTimeout(() => setOpen((now) => (now?.key === key ? null : now)), 5000);
+      }, calm ? 0 : 700);
     };
     window.addEventListener(KNOTS_EVENT, reload);
-    return () => window.removeEventListener(KNOTS_EVENT, reload);
-  }, []);
+    return () => {
+      window.removeEventListener(KNOTS_EVENT, reload);
+      window.clearTimeout(autoOpen);
+      window.clearTimeout(autoClose);
+    };
+  }, [calm]);
 
   useEffect(() => {
     const cv = canvasRef.current;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { streakDays } from '../src/shared/streak';
+import { drawnBeforeToday, streakDays } from '../src/shared/streak';
 
 const at = (y: number, m: number, d: number, h = 12) => new Date(y, m - 1, d, h).toISOString();
 
@@ -20,5 +20,18 @@ describe('連續抽籤天數', () => {
 
   it('跨月也接得起來；壞掉的日期略過', () => {
     expect(streakDays([at(2026, 10, 1), at(2026, 9, 30), 'not a date'], new Date(2026, 9, 1, 9))).toBe(2);
+  });
+});
+
+describe('是不是今天以前抽的', () => {
+  const today = new Date(2026, 8, 29, 9);
+
+  it('昨天深夜抽的算以前；今天清晨抽的不算', () => {
+    expect(drawnBeforeToday(at(2026, 9, 28, 23), today)).toBe(true);
+    expect(drawnBeforeToday(new Date(2026, 8, 29, 0, 5).toISOString(), today)).toBe(false);
+  });
+
+  it('壞掉的日期不算以前（寧可停在原來那支）', () => {
+    expect(drawnBeforeToday('nope', today)).toBe(false);
   });
 });
