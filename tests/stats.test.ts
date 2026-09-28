@@ -4,7 +4,17 @@ import { isSettingsApiPath } from '../src/worker/auth';
 import { readStats } from '../src/worker/stats';
 import { taipeiDay } from '../src/worker/tarot-bridge';
 import { parseSharedStick, sharedStickQuery } from '../src/shared/share-link';
-import { fallbackReason, promisesTarotReward, replyBucket, visitSourceFrom, waitBucket } from '../src/shared/stats';
+import {
+  EXTREME_STICK_NOS,
+  fallbackReason,
+  isExtreme,
+  promisesTarotReward,
+  replyBucket,
+  visitSourceFrom,
+  waitBucket,
+} from '../src/shared/stats';
+import { STICKS } from '../src/shared/sticks';
+import { PAPER } from '../src/shared/paper';
 import type { Env } from '../src/worker/types';
 import { createD1, type FakeD1 } from './support/d1';
 
@@ -162,6 +172,7 @@ describe('reading the numbers', () => {
     expect(days[1]!).toEqual({
       day: days[1]!.day,
       draws: 0,
+      extremeDraws: 0,
       claims: 0,
       outcomes: { ai: 0, fallback: {}, stuck: 0 },
       counts: {},
@@ -259,6 +270,42 @@ describe('reading health', () => {
     const [day] = await readStats(env, 1, Date.parse('2030-01-01T04:00:00.000Z'));
     expect(day!.day).toBe('2030-01-01');
     expect(day!.draws).toBe(6);
+    // Every row above is stick 1, a 上上签.
+    expect(day!.extremeDraws).toBe(6);
     expect(day!.outcomes).toEqual({ ai: 2, fallback: { unparseable: 1, timeout: 1 }, stuck: 1 });
+  });
+});
+
+describe('the share experiment', () => {
+  it('asks the top and bottom sticks to be shared, about a third of them', () => {
+    expect(isExtreme('上上签')).toBe(true);
+    expect(isExtreme('下签')).toBe(true);
+    expect(isExtreme('上签')).toBe(false);
+    expect(isExtreme('中签')).toBe(false);
+    expect(EXTREME_STICK_NOS).toEqual(STICKS.filter((s) => isExtreme(s.level)).map((s) => s.no));
+    expect(EXTREME_STICK_NOS.length).toBe(11);
+  });
+
+  it('lets the page report opening Share and sharing a top or bottom stick', async () => {
+    for (const metric of ['share:opened', 'share:extreme-opened', 'share:extreme-done']) {
+      expect((await call(`/api/stats/${metric}`, { body: {} })).status).toBe(200);
+      expect(count(metric)).toBeGreaterThan(0);
+    }
+  });
+
+  it("says what the sharer drew in every language, with no dashes and the Korean in Hangul", () => {
+    const dash = /[\u2010-\u2015\u2212]|[A-Za-z]-[A-Za-z]|\s-\s/;
+    for (const [language, paper] of Object.entries(PAPER)) {
+      for (const level of ['上上签', '上签', '中签', '下签'] as const) {
+        for (const line of [paper.challenge(level), paper.friendDrew(level)]) {
+          expect(line, `${language} ${level}`).not.toMatch(dash);
+          if (language === 'ko' || language === 'hi' || language === 'en') {
+            expect(line, `${language} ${level}`).not.toMatch(/[\u4e00-\u9fff]/);
+          }
+        }
+      }
+    }
+    expect(PAPER.en.challenge('上上签')).toBe('I drew a Great Fortune. What will you draw?');
+    expect(PAPER.zh.friendDrew('下签')).toBe('朋友抽到下签，换你试试手气');
   });
 });

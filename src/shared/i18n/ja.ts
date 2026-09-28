@@ -118,7 +118,8 @@ export const ja = {
   shareFailed: '今回は画像ができませんでした。下の文章をコピーしてください。',
   shareStory: 'ストーリーのサイズ（9:16）',
   shareLinkNote: 'リンクも一緒に付きます。開いた友だちに見えるのはこのおみくじだけで、あなたの問いやお告げは見えません。',
-  sharedEma: '友だちから届いたおみくじ',
+  shareNudgeTop: '大吉！友だちにも運をおすそわけ',
+  shareNudgeBottom: '凶……友だちに送って、一緒に受け止めてもらおう',
   sharedDrawOwn: '自分でも引く',
 
   /* ── 記録 ── */
@@ -307,6 +308,16 @@ export const ja = {
   healthTriesWhy: '試行が定型文になった理由：読めない返答 {unparseable}、空の返答 {empty}、タイムアウト {timeout}、Manyfold の障害や拒否 {manyfold}、エージェント未接続 {noAgent}、その他 {other}。',
   healthFinalWhy: '最後が定型文になった理由：読めない返答 {unparseable}、空の返答 {empty}、タイムアウト {timeout}、Manyfold の障害や拒否 {manyfold}、エージェント未接続 {noAgent}、その他 {other}。',
   healthHowTo: '表示と待ち時間は、その訪問で新しく引いたおみくじだけを数え、記録から開き直したものは数えません。準備済みは「読む」を押した時点で読み解きが届いていたこと、離脱は届く前にページを閉じたか引き直したことです。知らせない端末もあるので下限です。試行はエージェントへの1回の問い合わせで、再試行は前回定型文になったおみくじでの試行です。止まったままは、引いてから2分以上たっても読み解きがないもので、多くは届く前にページが閉じられたものです。再試行は最終的な行き先を上書きするので、そちらは最後の試行だけを表します。',
+
+  /* ── the share experiment on #settings ── */
+  shareExpTitle: 'シェアの実験',
+  shareExpNote: '大吉と凶（全体の約三割）は結果ページでシェアをすすめ、それ以外はすすめません。二つのシェア率を並べて見るのがこの実験です。最初の丸一日である {day} から数えます。',
+  shareExpNotYet: 'この期間にはまだ実験が始まっていません。',
+  shareExpOpened: 'シェアを開いた',
+  shareExpOpenedDetail: '実際にシェアされたのは {done} 回（{rate}）',
+  shareExpExtreme: '大吉と凶',
+  shareExpOther: 'それ以外のおみくじ',
+  shareExpRateDetail: '{draws} 本中 {done} 回シェア、シェアを開いた {opened} 回',
 
   /* ── Manyfold への接続 ── */
   connectStart: 'Manyfold の agent を接続',

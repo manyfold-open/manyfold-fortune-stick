@@ -14,6 +14,7 @@ import type { DailyStats, Metric } from '../../shared/stats';
 import { api, errorMessage } from '../api';
 import { useT } from '../i18n';
 import ReadingHealth from './ReadingHealth';
+import ShareExperiment from './ShareExperiment';
 import { StatsCards, StatsTable, one, percent, sum, total as totalOf, type Card, type Group, type Read } from './StatsTable';
 
 const RANGES = [7, 14, 30] as const;
@@ -225,6 +226,8 @@ export default function StatsPanel() {
           <p className="muted small">{t('statsHowTo')}</p>
 
           <ReadingHealth days={days} rows={shown} />
+
+          <ShareExperiment days={days} />
         </>
       )}
     </div>

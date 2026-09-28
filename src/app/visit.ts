@@ -61,14 +61,21 @@ export function takeVisitSourceForDraw(): VisitSource | null {
   return isVisitSource(source) ? source : null;
 }
 
-/** A share went out (the share sheet) or was saved (a download). */
-export function recordShare(outcome: 'sent' | 'downloaded'): void {
-  void api(`/api/stats/share:${outcome}`, { method: 'POST', body: '{}' }).catch(() => undefined);
-}
-
 const count = (metric: Metric, init: RequestInit = {}): void => {
   void api(`/api/stats/${metric}`, { method: 'POST', body: '{}', ...init }).catch(() => undefined);
 };
+
+/** The share panel was opened; `extreme` for a top or bottom stick (isExtreme). */
+export function recordShareOpened(extreme: boolean): void {
+  count('share:opened');
+  if (extreme) count('share:extreme-opened');
+}
+
+/** A share went out (the share sheet) or was saved (a download). */
+export function recordShare(outcome: 'sent' | 'downloaded', extreme: boolean): void {
+  count(`share:${outcome}`);
+  if (extreme) count('share:extreme-done');
+}
 
 /**
  * A freshly drawn stick's reading came into view: whether it was the agent's

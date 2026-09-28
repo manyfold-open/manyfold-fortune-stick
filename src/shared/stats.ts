@@ -8,6 +8,7 @@
  */
 
 import { UNPARSEABLE } from './error-copy';
+import { STICKS, type StickLevel } from './sticks';
 
 /** Where a visit came from. Every visit has one: what is not a share, a Tarot
  *  link or a tagged campaign is organic, bucketed by the site that sent it. */
@@ -55,6 +56,11 @@ export const METRICS = [
   ...VISIT_SOURCES.map((source) => `draw:${source}` as const),
   'share:sent',
   'share:downloaded',
+  // The share experiment: every opening of the share panel, and for the top
+  // and bottom sticks (which ask to be shared) the openings and shares alone.
+  'share:opened',
+  'share:extreme-opened',
+  'share:extreme-done',
   'tarot:opened',
   'visitor:new',
   'visitor:returning',
@@ -72,6 +78,18 @@ export type Metric = (typeof METRICS)[number];
 
 export const isMetric = (value: unknown): value is Metric =>
   typeof value === 'string' && (METRICS as readonly string[]).includes(value);
+
+/**
+ * The share experiment. The top and bottom sticks (上上签, 下签, about a third of
+ * draws) say something worth passing on, a boast or a groan, so their result
+ * page asks to be shared; the rest do not. Their two share rates side by side
+ * are the experiment. It began on the first full day after it went out.
+ */
+export const isExtreme = (level: StickLevel): boolean => level === '上上签' || level === '下签';
+export const EXTREME_STICK_NOS: readonly number[] = STICKS.filter((stick) => isExtreme(stick.level)).map(
+  (stick) => stick.no,
+);
+export const SHARE_EXPERIMENT_SINCE = '2026-09-29';
 
 /** Metrics the page may report on its own; the rest are counted by the Worker
  *  alongside what they belong to. */
@@ -173,6 +191,8 @@ export interface DailyStats {
   day: string;
   /** Every stick drawn that day, from the readings table itself. */
   draws: number;
+  /** Of those, the top and bottom sticks (isExtreme). */
+  extremeDraws: number;
   /** Tarot reward codes issued that day (one per finished reading at most). */
   claims: number;
   /** Where that day's sticks ended up, read back from the readings table. */

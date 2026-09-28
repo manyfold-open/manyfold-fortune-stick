@@ -5,7 +5,7 @@
  * the tables that already hold them, so they need no counting of their own.
  */
 
-import { fallbackReason, isMetric, type DailyStats, type Metric } from '../shared/stats';
+import { EXTREME_STICK_NOS, fallbackReason, isMetric, type DailyStats, type Metric } from '../shared/stats';
 import { taipeiDay } from './tarot-bridge';
 import type { Env } from './types';
 
@@ -43,11 +43,13 @@ export async function readStats(env: Env, days: number, nowMs: number = Date.now
       .bind(since)
       .all<{ day: string; metric: string; count: number }>(),
     env.DB.prepare(
-      `SELECT date(created_at, '+8 hours') AS day, COUNT(*) AS n FROM readings
-       WHERE date(created_at, '+8 hours') >= ? GROUP BY 1`,
+      // The extreme stick numbers are this app's own constants, never input.
+      `SELECT date(created_at, '+8 hours') AS day, COUNT(*) AS n,
+              SUM(stick_no IN (${EXTREME_STICK_NOS.join(', ')})) AS extreme
+       FROM readings WHERE date(created_at, '+8 hours') >= ? GROUP BY 1`,
     )
       .bind(since)
-      .all<{ day: string; n: number }>(),
+      .all<{ day: string; n: number; extreme: number }>(),
     env.DB.prepare('SELECT day, COUNT(*) AS n FROM tarot_claims WHERE day >= ? GROUP BY day')
       .bind(since)
       .all<{ day: string; n: number }>(),
@@ -63,7 +65,7 @@ export async function readStats(env: Env, days: number, nowMs: number = Date.now
       .all<{ day: string; status: string; error: string | null; n: number; old: number }>(),
   ]);
   const byDay = new Map<string, DailyStats>(
-    dayList.map((day) => [day, { day, draws: 0, claims: 0, outcomes: { ai: 0, fallback: {}, stuck: 0 }, counts: {} }]),
+    dayList.map((day) => [day, { day, draws: 0, extremeDraws: 0, claims: 0, outcomes: { ai: 0, fallback: {}, stuck: 0 }, counts: {} }]),
   );
   for (const row of counts.results ?? []) {
     const entry = byDay.get(row.day);
@@ -71,7 +73,9 @@ export async function readStats(env: Env, days: number, nowMs: number = Date.now
   }
   for (const row of draws.results ?? []) {
     const entry = byDay.get(row.day);
-    if (entry) entry.draws = Number(row.n);
+    if (!entry) continue;
+    entry.draws = Number(row.n);
+    entry.extremeDraws = Number(row.extreme ?? 0);
   }
   for (const row of claims.results ?? []) {
     const entry = byDay.get(row.day);

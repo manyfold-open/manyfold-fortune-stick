@@ -123,8 +123,9 @@ export const en = {
   shareFailed: 'The image did not come out this time. You can copy the text below instead.',
   shareStory: 'Story size, 9:16',
   shareLinkNote: 'A link goes with it. Friends who open it see this stick, never your question or reading.',
+  shareNudgeTop: 'Great Fortune! Pass some of the luck to a friend',
+  shareNudgeBottom: 'Poor Fortune… send it to a friend to carry it with you',
   /* a stick a friend shared (?s=) */
-  sharedEma: 'A friend shared this slip with you',
   sharedDrawOwn: 'Draw your own',
 
   /* ── history ── */
@@ -318,6 +319,16 @@ export const en = {
   healthTriesWhy: 'Why a try fell back: unreadable reply {unparseable}, empty reply {empty}, timed out {timeout}, Manyfold down or refused {manyfold}, no agent connected {noAgent}, other {other}.',
   healthFinalWhy: 'Why sticks ended on the fallback: unreadable reply {unparseable}, empty reply {empty}, timed out {timeout}, Manyfold down or refused {manyfold}, no agent connected {noAgent}, other {other}.',
   healthHowTo: 'Seen and waiting only count a stick drawn in that visit, not one reopened later. Ready means the reading was already there when Read it was pressed; Left means they closed the page or drew again before it came, and some phones never report that, so it is a floor. A try is one request to the agent; a retry is a try on a stick whose last one fell back. Stuck means drawn over two minutes ago and never interpreted, usually because the page closed while the reading was on its way. A retry overwrites where a stick ended, so that side shows the last try only.',
+
+  /* ── the share experiment on #settings ── */
+  shareExpTitle: 'Share experiment',
+  shareExpNote: 'Great Fortune and Poor Fortune sticks, about a third of draws, ask to be shared on their result page; the rest do not. Their share rates side by side are the experiment. Counted from {day}, the first full day.',
+  shareExpNotYet: 'The experiment has not started in this range yet.',
+  shareExpOpened: 'Opened Share',
+  shareExpOpenedDetail: '{done} went out ({rate})',
+  shareExpExtreme: 'Great and Poor Fortune',
+  shareExpOther: 'Every other stick',
+  shareExpRateDetail: '{done} shared of {draws} drawn; opened Share {opened}',
 
   /* ── connecting to Manyfold ── */
   connectStart: 'Connect a Manyfold agent',
