@@ -16,6 +16,7 @@ import { stickText } from '../../shared/sticks';
 import type { FollowUpMessage, Reading } from '../../shared/types';
 import { createTarotClaim, storedErrorText } from '../api';
 import { track } from '../analytics';
+import { recordReadingShown, recordWaitLeft } from '../visit';
 import { rememberedTarotReturn, TAROT_URL, tarotHandoffUrl } from '../tarotBridge';
 import TarotIcon from './TarotIcon';
 import { LEVEL_TONE } from '../constants';
@@ -60,6 +61,8 @@ export default function ReadingResult(props: {
    * 刷新、從記錄打開的沒有它，整疊照舊一起攤開。
    */
   emaFrom?: EmaRect | null;
+  /** 這次造訪剛抽出來的籤（不是重新整理、也不是從記錄打開的） */
+  drawnHere?: boolean;
 }) {
   const t = useT();
   // 按鈕上的字是機器說的話，跟界面語言走；拿籤紙的語言去排版，英文字會被撐成中文的字距
@@ -105,11 +108,46 @@ export default function ReadingResult(props: {
   // 解籤第一次攤在眼前的那一刻，記一次 reading_completed。掛上來時就已經解好的
   // （重新整理、從記錄打開）以前記過了，不再記
   const completed = useRef(Boolean(interpretation));
+  /**
+   * 這次造訪剛抽出來、還沒攤開過的這一支，才替 #settings 記「看到了沒、等了多久」——
+   * 重新整理、從記錄打開的不記，不然同一支會被記兩次。
+   * pressedAt：還沒按是 undefined，按的時候已經解好是 null，否則是按下的那一刻。
+   */
+  const [counting] = useState(() => Boolean(props.drawnHere));
+  const pressedAt = useRef<number | null | undefined>(undefined);
   useEffect(() => {
     if (!showBack || !interpretation || completed.current) return;
     completed.current = true;
     track('reading_completed');
-  }, [showBack, interpretation]);
+    if (counting) {
+      const at = pressedAt.current;
+      recordReadingShown(interpretation.source, typeof at === 'number' ? Date.now() - at : null);
+    }
+  }, [showBack, interpretation, counting]);
+
+  // 按了解籤、還沒等到就走了：關掉分頁，或在這一頁上再求一籤、回首頁（這一頁被拆掉）
+  useEffect(() => {
+    if (!counting) return;
+    const leave = () => {
+      if (completed.current || typeof pressedAt.current !== 'number') return;
+      completed.current = true;
+      recordWaitLeft();
+    };
+    window.addEventListener('pagehide', leave);
+    return () => {
+      window.removeEventListener('pagehide', leave);
+      leave();
+    };
+  }, [counting]);
+
+  const pressInterpret = () => {
+    if (pressedAt.current === undefined) pressedAt.current = Date.now();
+    props.onInterpret();
+  };
+  const pressFlipToReading = () => {
+    if (pressedAt.current === undefined) pressedAt.current = null;
+    flip(true);
+  };
 
   // 一按「解签」就翻到背面，骨架在背面等著
   useEffect(() => {
@@ -332,7 +370,7 @@ export default function ReadingResult(props: {
               <div className="omikuji face face-front" aria-hidden={showBack}>
                 <StickFace stick={reading.stick} language={reading.language} />
                 {hasBack && (
-                  <button type="button" className="flip-tag" onClick={() => flip(true)}>
+                  <button type="button" className="flip-tag" onClick={pressFlipToReading}>
                     {t('flipToReading')} ⟳
                   </button>
                 )}
@@ -422,14 +460,14 @@ export default function ReadingResult(props: {
           {!showBack && (
             <div className="sheet-actions" data-lang={uiLanguage}>
               {interpretation ? (
-                <button type="button" className="text-action lead-action" onClick={() => flip(true)}>
+                <button type="button" className="text-action lead-action" onClick={pressFlipToReading}>
                   {t('flipToReading')} ⟳
                 </button>
               ) : (
                 <button
                   type="button"
                   className="text-action lead-action"
-                  onClick={props.onInterpret}
+                  onClick={pressInterpret}
                   disabled={props.interpreting}
                 >
                   {props.interpreting ? t('interpreting') : t('interpret')}

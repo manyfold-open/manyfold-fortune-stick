@@ -11,7 +11,7 @@
 
 import { api } from './api';
 import { browserStorage, safeGet, safeRemove, safeSet } from '../shared/safe-storage';
-import { isVisitSource, visitSourceFrom, type VisitSource } from '../shared/stats';
+import { isVisitSource, visitSourceFrom, waitBucket, type Metric, type VisitSource } from '../shared/stats';
 
 const SOURCE_KEY = 'wenyiqian.visitSource';
 const COUNTED_KEY = 'wenyiqian.visitCounted';
@@ -50,4 +50,24 @@ export function takeVisitSourceForDraw(): VisitSource | null {
 /** A share went out (the share sheet) or was saved (a download). */
 export function recordShare(outcome: 'sent' | 'downloaded'): void {
   void api(`/api/stats/share:${outcome}`, { method: 'POST', body: '{}' }).catch(() => undefined);
+}
+
+const count = (metric: Metric, init: RequestInit = {}): void => {
+  void api(`/api/stats/${metric}`, { method: 'POST', body: '{}', ...init }).catch(() => undefined);
+};
+
+/**
+ * A freshly drawn stick's reading came into view: whether it was the agent's
+ * or the stick's own text, and how long 解籤 kept them waiting (`null` when
+ * it was already there when they pressed it).
+ */
+export function recordReadingShown(source: 'ai' | 'fallback', waitedMs: number | null): void {
+  count(`reading:shown-${source}`);
+  count(`wait:${waitBucket(waitedMs)}`);
+}
+
+/** They pressed 解籤 and went before the reading came. Sent as the page goes
+ *  away, so it has to outlive it. */
+export function recordWaitLeft(): void {
+  count('wait:left', { keepalive: true });
 }

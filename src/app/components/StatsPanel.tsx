@@ -10,15 +10,13 @@
  */
 
 import { useEffect, useState } from 'react';
-import type { Copy } from '../../shared/i18n';
 import type { DailyStats, Metric } from '../../shared/stats';
 import { api, errorMessage } from '../api';
 import { useT } from '../i18n';
+import ReadingHealth from './ReadingHealth';
+import { StatsCards, StatsTable, one, percent, sum, total as totalOf, type Card, type Group, type Read } from './StatsTable';
 
 const RANGES = [7, 14, 30] as const;
-
-const sum = (row: DailyStats, metrics: Metric[]): number =>
-  metrics.reduce((total, metric) => total + (row.counts[metric] ?? 0), 0);
 
 const TAROT_VISITS: Metric[] = ['visit:tarot-outro', 'visit:tarot-locked', 'visit:tarot-share', 'visit:tarot-other'];
 const TAROT_DRAWS: Metric[] = ['draw:tarot-outro', 'draw:tarot-locked', 'draw:tarot-share', 'draw:tarot-other'];
@@ -28,8 +26,6 @@ const ORGANIC_VISITS: Metric[] = ['visit:organic-direct', 'visit:organic-search'
 const ORGANIC_DRAWS: Metric[] = ['draw:organic-direct', 'draw:organic-search', 'draw:organic-social', 'draw:organic-other'];
 const ALL_VISITS: Metric[] = [...SHARE_VISITS, ...TAROT_VISITS, ...ORGANIC_VISITS, 'visit:campaign'];
 
-type Read = (row: DailyStats) => number;
-const one = (metric: Metric): Read => (row) => row.counts[metric] ?? 0;
 const visits: Read = (row) => sum(row, ALL_VISITS);
 const draws: Read = (row) => row.draws;
 const organic: Read = (row) => sum(row, ORGANIC_VISITS);
@@ -47,7 +43,7 @@ const hasData = (row: DailyStats): boolean =>
   row.draws > 0 || row.claims > 0 || Object.values(row.counts).some((n) => (n ?? 0) > 0);
 
 /** The table: column groups, each a heading over its columns. */
-const GROUPS: Array<{ key: keyof Copy; columns: Array<{ key: keyof Copy; value: Read }> }> = [
+const GROUPS: Group[] = [
   {
     key: 'statsGroupVisits',
     columns: [
@@ -95,8 +91,6 @@ const GROUPS: Array<{ key: keyof Copy; columns: Array<{ key: keyof Copy; value: 
   },
 ];
 
-const percent = (part: number, whole: number): string => (whole > 0 ? `${Math.round((part / whole) * 100)}%` : '0%');
-
 export default function StatsPanel() {
   const t = useT();
   const [range, setRange] = useState<(typeof RANGES)[number]>(14);
@@ -128,11 +122,11 @@ export default function StatsPanel() {
     };
   }, [range, reload, t]);
 
-  const total = (value: Read): number => (days ?? []).reduce((acc, row) => acc + value(row), 0);
+  const total = (value: Read): number => totalOf(days ?? [], value);
   const metricTotal = (metric: Metric): number => total((row) => row.counts[metric] ?? 0);
 
   /** The answers first: how many came, organically, from Tarot, back to Tarot, from a share. */
-  const cards: Array<{ label: keyof Copy; value: number; detail: string }> = days
+  const cards: Card[] = days
     ? [
         {
           label: 'statsVisits',
@@ -218,75 +212,8 @@ export default function StatsPanel() {
 
       {days && (
         <>
-          <ul className="stats-cards">
-            {cards.map((card) => (
-              <li className="stats-card" key={card.label}>
-                <span className="stats-card-label">{t(card.label)}</span>
-                <strong className="stats-card-value">{card.value}</strong>
-                <span className="stats-card-detail">{card.detail}</span>
-              </li>
-            ))}
-          </ul>
-
-          <div className="stats-table-wrap" tabIndex={0} aria-label={t('statsTableLabel')}>
-            <table className="stats-table">
-              <thead>
-                <tr className="stats-groups">
-                  <th scope="col" rowSpan={2} className="stats-day">
-                    {t('statsDay')}
-                  </th>
-                  {GROUPS.map((group) => (
-                    <th scope="colgroup" colSpan={group.columns.length} key={group.key}>
-                      {t(group.key)}
-                    </th>
-                  ))}
-                </tr>
-                <tr>
-                  {GROUPS.flatMap((group) =>
-                    group.columns.map((column, index) => (
-                      <th scope="col" key={`${group.key}-${column.key}`} className={index === 0 ? 'group-start' : undefined}>
-                        {t(column.key)}
-                      </th>
-                    )),
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="stats-total">
-                  <th scope="row" className="stats-day">
-                    {t('statsTotal')}
-                  </th>
-                  {GROUPS.flatMap((group) =>
-                    group.columns.map((column, index) => (
-                      <td key={`${group.key}-${column.key}`} className={index === 0 ? 'group-start' : undefined}>
-                        {total(column.value)}
-                      </td>
-                    )),
-                  )}
-                </tr>
-                {shown.map((row) => (
-                  <tr key={row.day}>
-                    <th scope="row" className="stats-day">
-                      {row.day.slice(5)}
-                    </th>
-                    {GROUPS.flatMap((group) =>
-                      group.columns.map((column, index) => {
-                        const value = column.value(row);
-                        const classes = [index === 0 ? 'group-start' : '', value === 0 ? 'is-zero' : '']
-                          .filter(Boolean)
-                          .join(' ');
-                        return (
-                          <td key={`${group.key}-${column.key}`} className={classes || undefined}>
-                            {value}
-                          </td>
-                        );
-                      }),
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <StatsCards cards={cards} />
+          <StatsTable label={t('statsTableLabel')} groups={GROUPS} totals={days} rows={shown} />
           <p className="muted small">
             {t('statsTarotBreakdown', {
               outro: metricTotal('visit:tarot-outro'),
@@ -296,6 +223,8 @@ export default function StatsPanel() {
             })}
           </p>
           <p className="muted small">{t('statsHowTo')}</p>
+
+          <ReadingHealth days={days} rows={shown} />
         </>
       )}
     </div>

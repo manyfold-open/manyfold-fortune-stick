@@ -7,6 +7,8 @@
  * Worker (which only accepts the metric names listed here).
  */
 
+import { UNPARSEABLE } from './error-copy';
+
 /** Where a visit came from. Every visit has one: what is not a share, a Tarot
  *  link or a tagged campaign is organic, bucketed by the site that sent it. */
 export const VISIT_SOURCES = [
@@ -28,6 +30,20 @@ export type VisitSource = (typeof VISIT_SOURCES)[number];
 /** How a shared link says it was passed on: the QR on the image, or the text link. */
 export type ShareVia = 'qr' | 'link';
 
+/** Why an interpretation fell back to the stick's own text, read off the code
+ *  or sentence stored in readings.error. */
+export const FALLBACK_REASONS = ['unparseable', 'empty', 'timeout', 'manyfold', 'no-interpreter', 'other'] as const;
+export type FallbackReason = (typeof FALLBACK_REASONS)[number];
+
+/** How long the agent took to answer one interpretation, in buckets of seconds. */
+export const REPLY_BUCKETS = ['t10', 't20', 't30', 't60', 't60plus'] as const;
+export type ReplyBucket = (typeof REPLY_BUCKETS)[number];
+
+/** How long someone waited between pressing 解籤 and seeing the reading;
+ *  `ready` means it was already there, `left` that they went before it came. */
+export const WAIT_BUCKETS = ['ready', 'lt3', 'lt10', 'lt30', '30plus', 'left'] as const;
+export type WaitBucket = (typeof WAIT_BUCKETS)[number];
+
 /** Every metric the Worker will count. Anything else is refused. */
 export const METRICS = [
   ...VISIT_SOURCES.map((source) => `visit:${source}` as const),
@@ -37,13 +53,59 @@ export const METRICS = [
   'tarot:opened',
   'visitor:new',
   'visitor:returning',
+  // One per attempt to interpret, counted by the Worker.
+  'interpret:ok',
+  ...FALLBACK_REASONS.map((reason) => `interpret:fallback-${reason}` as const),
+  'interpret:retry',
+  ...REPLY_BUCKETS.map((bucket) => `interpret:${bucket}` as const),
+  // Reported by the page, for a stick drawn in this visit only.
+  'reading:shown-ai',
+  'reading:shown-fallback',
+  ...WAIT_BUCKETS.map((bucket) => `wait:${bucket}` as const),
 ] as const;
 export type Metric = (typeof METRICS)[number];
 
 export const isMetric = (value: unknown): value is Metric =>
   typeof value === 'string' && (METRICS as readonly string[]).includes(value);
 
-export const isVisitSource = (value: unknown): value is VisitSource =>
+/** Metrics the page may report on its own; the rest are counted by the Worker
+ *  alongside what they belong to. */
+export const isPageMetric = (value: unknown): value is Metric =>
+  isMetric(value) && /^(visit|share|reading|wait):/.test(value);
+
+/**
+ * The bucket for a failed interpretation's stored error: a code the Worker
+ * wrote (unparseable, no_interpreter, manyfold_*), or the agent's own sentence,
+ * which is only ever sorted here and never shown on the numbers page.
+ */
+export function fallbackReason(error: string | null | undefined): FallbackReason {
+  if (!error) return 'other';
+  if (error === UNPARSEABLE || error.startsWith(`${UNPARSEABLE}:`)) return 'unparseable';
+  if (error === 'no_interpreter') return 'no-interpreter';
+  if (error.startsWith('manyfold_')) return 'manyfold';
+  if (/timed out|timeout/i.test(error)) return 'timeout';
+  if (/没有返回任何内容|returned nothing|empty/i.test(error)) return 'empty';
+  return 'other';
+}
+
+export function replyBucket(ms: number): ReplyBucket {
+  if (ms < 10_000) return 't10';
+  if (ms < 20_000) return 't20';
+  if (ms < 30_000) return 't30';
+  if (ms < 60_000) return 't60';
+  return 't60plus';
+}
+
+/** `null` when the reading was already there when 解籤 was pressed. */
+export function waitBucket(ms: number | null): Exclude<WaitBucket, 'left'> {
+  if (ms === null) return 'ready';
+  if (ms < 3_000) return 'lt3';
+  if (ms < 10_000) return 'lt10';
+  if (ms < 30_000) return 'lt30';
+  return '30plus';
+}
+
+export const isVisitSource =(value: unknown): value is VisitSource =>
   typeof value === 'string' && (VISIT_SOURCES as readonly string[]).includes(value);
 
 const SEARCH_HOSTS = /(^|\.)(google|bing|yahoo|duckduckgo|baidu|yandex|naver|ecosia|search\.brave)\./;
@@ -108,5 +170,20 @@ export interface DailyStats {
   draws: number;
   /** Tarot reward codes issued that day (one per finished reading at most). */
   claims: number;
+  /** Where that day's sticks ended up, read back from the readings table. */
+  outcomes: ReadingOutcomes;
   counts: Partial<Record<Metric, number>>;
+}
+
+/**
+ * The last state of each stick drawn that day. A retry overwrites the row, so
+ * this is where a stick ended, not how many tries it took.
+ */
+export interface ReadingOutcomes {
+  /** Interpreted by the agent. */
+  ai: number;
+  /** Showing the stick's own text, by why the last try failed. */
+  fallback: Partial<Record<FallbackReason, number>>;
+  /** Never interpreted, and drawn long enough ago that nothing is still on its way. */
+  stuck: number;
 }

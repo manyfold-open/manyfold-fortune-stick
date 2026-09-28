@@ -4,7 +4,7 @@ import { isSettingsApiPath } from '../src/worker/auth';
 import { readStats } from '../src/worker/stats';
 import { taipeiDay } from '../src/worker/tarot-bridge';
 import { parseSharedStick, sharedStickQuery } from '../src/shared/share-link';
-import { visitSourceFrom } from '../src/shared/stats';
+import { fallbackReason, replyBucket, visitSourceFrom, waitBucket } from '../src/shared/stats';
 import type { Env } from '../src/worker/types';
 import { createD1, type FakeD1 } from './support/d1';
 
@@ -148,11 +148,106 @@ describe('reading the numbers', () => {
     ]);
     expect(days[0]!.draws).toBeGreaterThanOrEqual(2);
     expect(days[0]!.counts['visit:share-qr']).toBeGreaterThanOrEqual(1);
-    expect(days[1]!).toEqual({ day: days[1]!.day, draws: 0, claims: 0, counts: {} });
+    expect(days[1]!).toEqual({
+      day: days[1]!.day,
+      draws: 0,
+      claims: 0,
+      outcomes: { ai: 0, fallback: {}, stuck: 0 },
+      counts: {},
+    });
   });
 
   it('keeps the range sensible', async () => {
     expect((await readStats(env, 0)).length).toBe(1);
     expect((await readStats(env, 10_000)).length).toBe(90);
+  });
+});
+
+describe('reading health', () => {
+  it('sorts a stored error into why the reading fell back', () => {
+    expect(fallbackReason('unparseable')).toBe('unparseable');
+    expect(fallbackReason('unparseable: {"meaning": "half')).toBe('unparseable');
+    expect(fallbackReason('no_interpreter')).toBe('no-interpreter');
+    expect(fallbackReason('manyfold_unavailable')).toBe('manyfold');
+    expect(fallbackReason('manyfold_rejected')).toBe('manyfold');
+    expect(fallbackReason('Request timed out. The operation was aborted')).toBe('timeout');
+    expect(fallbackReason('fortune-stick 没有返回任何内容。')).toBe('empty');
+    expect(fallbackReason('fortune-stick 在 working 状态下结束，没有返回任何内容。')).toBe('empty');
+    expect(fallbackReason('something else broke')).toBe('other');
+    expect(fallbackReason(null)).toBe('other');
+  });
+
+  it('buckets how long the agent took and how long someone waited', () => {
+    expect([9_999, 10_000, 19_999, 29_999, 59_999, 60_000].map(replyBucket)).toEqual([
+      't10',
+      't20',
+      't20',
+      't30',
+      't60',
+      't60plus',
+    ]);
+    expect([null, 0, 2_999, 3_000, 9_999, 29_999, 30_000].map(waitBucket)).toEqual([
+      'ready',
+      'lt3',
+      'lt3',
+      'lt10',
+      'lt10',
+      'lt30',
+      '30plus',
+    ]);
+  });
+
+  it('lets the page report what it saw and how long it waited, but never an interpretation', async () => {
+    for (const metric of ['reading:shown-ai', 'reading:shown-fallback', 'wait:ready', 'wait:30plus', 'wait:left']) {
+      expect((await call(`/api/stats/${metric}`, { body: {} })).status).toBe(200);
+      expect(count(metric)).toBeGreaterThan(0);
+    }
+    for (const metric of ['interpret:ok', 'interpret:retry', 'interpret:t10', 'reading:anything', 'wait:forever']) {
+      expect((await call(`/api/stats/${metric}`, { body: {} })).status).toBe(400);
+    }
+  });
+
+  it('counts each try at interpreting, and a second try on a failed stick as a retry', async () => {
+    const drawn = await call('/api/readings', { body: { question: 'Will the garden grow this spring?' } });
+    const { reading } = await drawn.json<{ reading: { id: string } }>();
+    const fellBack = count('interpret:fallback-no-interpreter');
+    const retries = count('interpret:retry');
+    const replies = ['t10', 't20', 't30', 't60', 't60plus'].reduce((n, b) => n + count(`interpret:${b}`), 0);
+
+    // No agent is connected here, so each try falls back without asking one.
+    expect((await call(`/api/readings/${reading.id}/interpret`, { body: {} })).status).toBe(200);
+    expect(count('interpret:fallback-no-interpreter')).toBe(fellBack + 1);
+    expect(count('interpret:retry')).toBe(retries);
+
+    await call(`/api/readings/${reading.id}/interpret`, { body: {} });
+    expect(count('interpret:fallback-no-interpreter')).toBe(fellBack + 2);
+    expect(count('interpret:retry')).toBe(retries + 1);
+    // Nobody was asked, so there is no reply time to count.
+    expect(['t10', 't20', 't30', 't60', 't60plus'].reduce((n, b) => n + count(`interpret:${b}`), 0)).toBe(replies);
+  });
+
+  it('reads back where each stick ended, and calls one stuck only once it has had time', async () => {
+    // A day of its own, far from the rows the other tests wrote.
+    const insert = (id: string, status: string, error: string | null, createdAt: string) =>
+      d1.query(
+        `INSERT INTO readings (id, question, stick_no, status, error, created_at, updated_at)
+         VALUES (?, 'q', 1, ?, ?, ?, ?)`,
+        id,
+        status,
+        error,
+        createdAt,
+        createdAt,
+      );
+    insert('h-ai-1', 'interpreted', null, '2030-01-01T02:00:00.000Z');
+    insert('h-ai-2', 'interpreted', null, '2030-01-01T02:10:00.000Z');
+    insert('h-bad', 'failed', 'unparseable: not json', '2030-01-01T02:20:00.000Z');
+    insert('h-slow', 'failed', 'Request timed out.', '2030-01-01T02:30:00.000Z');
+    insert('h-gone', 'drawn', null, '2030-01-01T02:40:00.000Z');
+    insert('h-new', 'drawn', null, '2030-01-01T03:59:30.000Z');
+
+    const [day] = await readStats(env, 1, Date.parse('2030-01-01T04:00:00.000Z'));
+    expect(day!.day).toBe('2030-01-01');
+    expect(day!.draws).toBe(6);
+    expect(day!.outcomes).toEqual({ ai: 2, fallback: { unparseable: 1, timeout: 1 }, stuck: 1 });
   });
 });
