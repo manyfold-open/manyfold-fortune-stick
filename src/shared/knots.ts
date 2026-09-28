@@ -7,13 +7,21 @@
  * 每個結依籤號與格位帶一點固定的歪斜：看起來是手綁的，重新整理也不會跳。這裡只有純函式。
  */
 
+import { isLanguage, type Language } from './lang';
+
 export interface Knot {
   stickNo: number;
   /** 綁上去的 ISO 時間 */
   at: string;
   /** 0 … KNOT_SLOTS-1 */
   slot: number;
+  /** 點開結時連到那一條記錄。最早的幾個結沒有 */
+  readingId?: string;
+  /** 那一局的語言（由問題推出來的）：點開的小籤紙用它印。沒有就跟界面 */
+  language?: Language;
 }
+
+export type KnotMeta = Pick<Knot, 'readingId' | 'language'>;
 
 export const KNOT_SLOTS = 12;
 const KNOT_FROM = 0.3;
@@ -34,17 +42,17 @@ export function knotJitter(knot: Pick<Knot, 'stickNo' | 'slot'>): { dy: number; 
 }
 
 /** 綁一個新結。回傳新的整串（不改原陣列）。 */
-export function tieKnot(knots: readonly Knot[], stickNo: number, at: string): Knot[] {
+export function tieKnot(knots: readonly Knot[], stickNo: number, at: string, meta: KnotMeta = {}): Knot[] {
   const taken = new Set(knots.map((knot) => knot.slot));
   const free = FILL_ORDER.find((slot) => !taken.has(slot));
-  if (free !== undefined) return [...knots, { stickNo, at, slot: free }];
+  if (free !== undefined) return [...knots, { stickNo, at, slot: free, ...meta }];
   // 滿了：頂掉最舊的（時間一樣就是排在前面的那個）
   let oldest = 0;
   knots.forEach((knot, index) => {
     if (knot.at < knots[oldest].at) oldest = index;
   });
   const slot = knots[oldest].slot;
-  return [...knots.filter((_, index) => index !== oldest), { stickNo, at, slot }];
+  return [...knots.filter((_, index) => index !== oldest), { stickNo, at, slot, ...meta }];
 }
 
 /** localStorage 裡讀回來的東西不能信：只留格式對、格位不重複的，最多 KNOT_SLOTS 個。 */
@@ -54,11 +62,14 @@ export function parseKnots(raw: unknown): Knot[] {
   const taken = new Set<number>();
   for (const item of raw) {
     if (!item || typeof item !== 'object') continue;
-    const { stickNo, at, slot } = item as Partial<Knot>;
+    const { stickNo, at, slot, readingId, language } = item as Partial<Knot>;
     if (typeof stickNo !== 'number' || typeof at !== 'string' || typeof slot !== 'number') continue;
     if (!Number.isInteger(slot) || slot < 0 || slot >= KNOT_SLOTS || taken.has(slot)) continue;
     taken.add(slot);
-    knots.push({ stickNo, at, slot });
+    const knot: Knot = { stickNo, at, slot };
+    if (typeof readingId === 'string' && readingId) knot.readingId = readingId;
+    if (isLanguage(language)) knot.language = language;
+    knots.push(knot);
   }
   return knots;
 }

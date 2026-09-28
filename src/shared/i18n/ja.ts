@@ -139,6 +139,8 @@ export const ja = {
   collectFullLabel: 'おみくじ帳がそろいました、全{total}本',
   bookTitle: 'おみくじ帳 {count}/{total}',
   bookNote: '引いたおみくじはここに残ります。記録を消しても減りません。',
+  knotTied: '{date} に結びました',
+  knotRecord: '記録を見る',
   historyNoReading: 'このおみくじは読み解いていません。',
   historyFollowUps: '追加の問い',
   historyDelete: 'この記録を消す',

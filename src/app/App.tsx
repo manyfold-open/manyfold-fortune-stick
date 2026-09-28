@@ -48,7 +48,8 @@ const routeFromHash = (): Route => {
   const pathname = location.pathname.slice(BASE.length).replace(/\/+$/, '') || '/';
   if (pathname === '/privacy' || hash === 'privacy') return 'privacy';
   if (pathname === '/settings' || hash === 'settings') return 'settings';
-  if (hash === 'history') return 'history';
+  // #history/<記錄 id>：從繩上的結點過來，記錄頁直接展開那一條
+  if (hash === 'history' || hash.startsWith('history/')) return 'history';
   return 'game';
 };
 

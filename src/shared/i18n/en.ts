@@ -145,6 +145,8 @@ export const en = {
   collectFullLabel: 'Collection complete, all {total} slips',
   bookTitle: 'Your collection {count} of {total}',
   bookNote: 'Every slip you have drawn is kept here, even if you delete its record.',
+  knotTied: 'Tied on {date}',
+  knotRecord: 'Open its record',
   historyNoReading: 'This one was never read.',
   historyFollowUps: 'Further questions',
   historyDelete: 'Delete this record',

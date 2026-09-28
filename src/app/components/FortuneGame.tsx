@@ -478,7 +478,7 @@ export default function FortuneGame(props: {
       if (props.prefs.sound) paperSettleSound(0.22);
       return;
     }
-    const knot = tieStick(tying.stick.no);
+    const knot = tieStick(tying.stick.no, { readingId: tying.id, language: tying.language });
     // 捲回頂端之後才量繩子：鳥居跟著頁面捲
     const rope = document.querySelector('.shimenawa')?.getBoundingClientRect();
     if (props.prefs.reducedMotion || !card || !rope || card.width === 0) {

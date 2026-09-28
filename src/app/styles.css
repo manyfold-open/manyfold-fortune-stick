@@ -5426,6 +5426,11 @@ html { overflow-x: clip; }
   .rope-knot[data-older] { display: none; }
 }
 
+.rope-knot { transition: opacity 0.25s ease; }
+/* 點開的那個結：解開了，只剩一點點繞在繩上 */
+.rope-knot.untied { opacity: 0.25; }
+html.knot-hover, html.knot-hover * { cursor: pointer !important; }
+
 @keyframes knot-sway {
   0% { transform: rotate(calc(var(--knot-rot, 0deg) - 2.2deg)); }
   100% { transform: rotate(calc(var(--knot-rot, 0deg) + 2.2deg)); }
@@ -7001,3 +7006,70 @@ html { overflow-x: clip; }
   background: #c0321f;
   opacity: 0.85;
 }
+
+/* 點開繩上的結（KnotSlip）：從結垂下一條細繩，吊著一張小籤紙。紙上的字用 --ink（寫在紙上） */
+.knot-slip {
+  --seal: #c0321f;
+  --seal-deep: #9e2517;
+  position: absolute;
+  z-index: 40;
+  padding-top: 22px;
+  transform-origin: var(--cord-x) 0;
+  animation: knot-slip-untie 0.38s cubic-bezier(0.2, 1.2, 0.4, 1) both;
+}
+
+.knot-slip-cord {
+  position: absolute;
+  top: 0;
+  left: var(--cord-x);
+  width: 1.5px;
+  height: 24px;
+  margin-left: -0.75px;
+  background: #b9ad94;
+}
+
+.knot-slip-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    'tab head'
+    'tab time'
+    'tab link';
+  column-gap: 12px;
+  row-gap: 2px;
+  align-items: center;
+  padding: 0 12px 0 0;
+  min-height: 84px;
+  background: var(--paper);
+  border: 2px solid #c0321f;
+  box-shadow: 0 6px 18px rgba(38, 26, 18, 0.2);
+  color: var(--ink);
+  text-align: left;
+}
+
+.knot-slip-card .slip-mini-tab { align-self: stretch; min-height: 84px; }
+.knot-slip-card .slip-mini-head { padding-top: 8px; }
+
+.knot-slip-time {
+  grid-area: time;
+  font-size: 11px;
+  color: var(--ink-3, var(--ink));
+  letter-spacing: 0.04em;
+}
+
+.knot-slip-link {
+  grid-area: link;
+  justify-self: start;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+@keyframes knot-slip-untie {
+  from { transform: scaleY(0.15) scaleX(0.4); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .knot-slip { animation: none; }
+}
+.knot-slip.calm { animation: none; }

@@ -136,6 +136,8 @@ export const ko = {
   collectFullLabel: '제비 도감 완성, {total}개 모두',
   bookTitle: '제비 도감 {count}/{total}',
   bookNote: '뽑은 제비는 여기에 남아요. 기록을 지워도 줄지 않아요.',
+  knotTied: '{date}에 묶었어요',
+  knotRecord: '기록 보기',
   historyNoReading: '이 제비는 풀이하지 않았어요.',
   historyFollowUps: '추가 질문',
   historyDelete: '이 기록 지우기',

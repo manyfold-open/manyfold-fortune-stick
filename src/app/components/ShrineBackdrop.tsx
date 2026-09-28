@@ -11,6 +11,7 @@ import { useEffect, useRef, useState } from 'react';
 import { knotJitter, knotU, type Knot } from '../../shared/knots';
 import { createPetals, petalAt, petalCount, type Petal } from '../../shared/sakura';
 import { KNOTS_EVENT, listKnots } from '../storage';
+import KnotSlip from './KnotSlip';
 import {
   BRANCH_COLOR,
   BRANCH_FLOWERS,
@@ -40,7 +41,9 @@ import {
  * 笠木、繩子用 preserveAspectRatio="none" 撐滿寬度：只在水平方向拉，弧線還是順的；
  * 紙垂不能被拉，另外用 HTML 定位。形狀跟分享圖共用（shrineArt.ts），尺寸寫在 styles.css。
  */
-function Torii({ knots, fresh }: { knots: readonly Knot[]; fresh: string | null }) {
+const knotKey = (knot: Knot): string => `${knot.slot}-${knot.at}`;
+
+function Torii({ knots, fresh, open }: { knots: readonly Knot[]; fresh: string | null; open: string | null }) {
   return (
     <>
       <div className="torii-nuki" />
@@ -61,9 +64,10 @@ function Torii({ knots, fresh }: { knots: readonly Knot[]; fresh: string | null 
         ))}
         {knots.map((knot) => (
           <RopeKnot
-            key={`${knot.slot}-${knot.at}`}
+            key={knotKey(knot)}
             knot={knot}
-            fresh={fresh === `${knot.slot}-${knot.at}`}
+            fresh={fresh === knotKey(knot)}
+            untied={open === knotKey(knot)}
             // 手機上繩子短，12 個結會疊成一團：只留最新的 6 個（CSS 看 data-older）
             older={knots.filter((other) => other.at > knot.at).length >= 6}
           />
@@ -98,13 +102,14 @@ function Torii({ knots, fresh }: { knots: readonly Knot[]; fresh: string | null 
 const KNOT_LONG_D = 'M7.6 6.5 L11.6 7 L10.4 33 L7.8 35.2 L6.2 32.6 Z';
 const KNOT_SHORT_D = 'M11.2 5.6 L13.4 7.6 L17.8 17.6 L15.2 19.2 Z';
 
-function RopeKnot({ knot, fresh, older }: { knot: Knot; fresh: boolean; older: boolean }) {
+function RopeKnot({ knot, fresh, older, untied }: { knot: Knot; fresh: boolean; older: boolean; untied: boolean }) {
   const u = knotU(knot.slot);
   const { dy, rot } = knotJitter(knot);
   return (
     <svg
-      className={`rope-knot${fresh ? ' fresh' : ''}`}
+      className={`rope-knot${fresh ? ' fresh' : ''}${untied ? ' untied' : ''}`}
       data-older={older || undefined}
+      data-knot={knotKey(knot)}
       viewBox="0 0 20 36"
       style={{ left: `${u * 100}%`, top: ropeY(u) - 5 + dy, ['--knot-rot' as string]: `${rot}deg` }}
       aria-hidden
@@ -154,6 +159,88 @@ export default function ShrineBackdrop({ calm }: { calm: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [knots, setKnots] = useState<Knot[]>(listKnots);
   const [fresh, setFresh] = useState<string | null>(null);
+  /** 點開的那個結，與它在頁面上的位置 */
+  const [open, setOpen] = useState<{ key: string; anchor: { x: number; bottom: number } } | null>(null);
+  const openKey = useRef<string | null>(null);
+  openKey.current = open?.key ?? null;
+
+  /*
+   * 點結。鳥居在所有內容後面，結常常被一層透明的版面容器蓋住、收不到點擊，所以在 document 上聽：
+   * 點的地方靠近一個結（至少 44px 見方的範圍），而且那裡沒有按鈕、輸入框、籤筒，
+   * 也沒有被看得見的東西（繪馬、籤紙這種有底色的）擋住，就算點到它。
+   * 只有滑鼠經過時也照同一套規則換成手指游標。
+   */
+  useEffect(() => {
+    const INTERACTIVE = 'a, button, input, textarea, select, label, [contenteditable], canvas, .knot-slip';
+    const opaque = (el: Element): boolean => {
+      if (el instanceof HTMLCanvasElement || el instanceof HTMLImageElement) return true;
+      const cs = getComputedStyle(el);
+      return (cs.backgroundColor !== 'rgba(0, 0, 0, 0)' && cs.backgroundColor !== 'transparent') || cs.backgroundImage !== 'none';
+    };
+    const hit = (x: number, y: number, target: EventTarget | null): SVGSVGElement | null => {
+      if (target instanceof Element && target.closest(INTERACTIVE)) return null;
+      let best: SVGSVGElement | null = null;
+      let bestD = Infinity;
+      document.querySelectorAll<SVGSVGElement>('.rope-knot').forEach((el) => {
+        const r = el.getBoundingClientRect();
+        if (r.width === 0) return; // 手機上藏起來的舊結
+        const cx = r.left + r.width / 2;
+        const cy = r.top + r.height / 2;
+        if (Math.abs(x - cx) > Math.max(22, r.width / 2 + 4) || Math.abs(y - cy) > Math.max(22, r.height / 2 + 4)) return;
+        const d = Math.hypot(x - cx, y - cy);
+        if (d < bestD) {
+          bestD = d;
+          best = el;
+        }
+      });
+      if (!best) return null;
+      // 被繪馬、籤紙這些看得見的東西擋住：點的是那個東西，不是後面的結
+      const found: SVGSVGElement = best;
+      const r = found.getBoundingClientRect();
+      for (const el of document.elementsFromPoint(r.left + r.width / 2, r.top + r.height / 2)) {
+        if (el === found || found.contains(el) || el.closest('.shrine-torii')) break;
+        if (el === document.body || el === document.documentElement) break;
+        if (opaque(el)) return null;
+      }
+      return found;
+    };
+    const onClick = (event: MouseEvent): void => {
+      if (event.target instanceof Element && event.target.closest('.knot-slip')) return;
+      const el = hit(event.clientX, event.clientY, event.target);
+      const key = el?.dataset.knot ?? null;
+      if (!el || !key || key === openKey.current) {
+        if (openKey.current) setOpen(null);
+        return;
+      }
+      const r = el.getBoundingClientRect();
+      setOpen({ key, anchor: { x: r.left + r.width / 2 + window.scrollX, bottom: r.bottom + window.scrollY } });
+    };
+    let hovering = false;
+    const onMove = (event: PointerEvent): void => {
+      if (event.pointerType !== 'mouse') return;
+      const over = hit(event.clientX, event.clientY, event.target) !== null;
+      if (over === hovering) return;
+      hovering = over;
+      document.documentElement.classList.toggle('knot-hover', over);
+    };
+    const onKey = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape' && openKey.current) setOpen(null);
+    };
+    const close = (): void => setOpen(null);
+    document.addEventListener('click', onClick);
+    document.addEventListener('pointermove', onMove, { passive: true });
+    document.addEventListener('keydown', onKey);
+    window.addEventListener('resize', close);
+    window.addEventListener('hashchange', close);
+    return () => {
+      document.removeEventListener('click', onClick);
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('keydown', onKey);
+      window.removeEventListener('resize', close);
+      window.removeEventListener('hashchange', close);
+      document.documentElement.classList.remove('knot-hover');
+    };
+  }, []);
 
   // 繩上的結換了（再求一籤綁上去、清掉本機資料）：重讀，剛多出來的那一個啪地出現
   useEffect(() => {
@@ -237,6 +324,8 @@ export default function ShrineBackdrop({ calm }: { calm: boolean }) {
     };
   }, [calm]);
 
+  const openKnot = open ? knots.find((knot) => knotKey(knot) === open.key) : undefined;
+
   return (
     <>
       {/* 三層：日光（fixed）→ 鳥居與櫻花枝（跟著頁面捲走）→ 花瓣（fixed）。
@@ -246,13 +335,14 @@ export default function ShrineBackdrop({ calm }: { calm: boolean }) {
         <div className="shrine-light" />
       </div>
       <div className="shrine-torii" aria-hidden>
-        <Torii knots={knots} fresh={fresh} />
+        <Torii knots={knots} fresh={fresh} open={open?.key ?? null} />
         <SakuraBranch side="left" />
         <SakuraBranch side="right" />
       </div>
       <div className="shrine" aria-hidden>
         <canvas ref={canvasRef} className="shrine-petals" />
       </div>
+      {openKnot && open && <KnotSlip knot={openKnot} anchor={open.anchor} calm={calm} onClose={() => setOpen(null)} />}
     </>
   );
 }

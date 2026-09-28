@@ -145,6 +145,8 @@ export const zh = {
   collectFullLabel: '签谱圆满，{total} 支都收齐了',
   bookTitle: '签谱 {count}/{total}',
   bookNote: '抽到过的签会收在这里，删掉记录也不会少。',
+  knotTied: '{date} 结在绳上',
+  knotRecord: '看这支签的记录',
   historyNoReading: '这一次没有解签。',
   historyFollowUps: '追问',
   historyDelete: '删除这条记录',

@@ -139,6 +139,8 @@ export const hi = {
   collectFullLabel: 'संग्रह पूरा, सभी {total} पर्चियाँ',
   bookTitle: 'आपका संग्रह {count}/{total}',
   bookNote: 'जो भी पर्ची निकली, यहाँ रहती है। रिकॉर्ड मिटाने पर भी कम नहीं होती।',
+  knotTied: '{date} को बाँधी',
+  knotRecord: 'रिकॉर्ड देखें',
   historyNoReading: 'इस पर्ची का अर्थ नहीं देखा गया।',
   historyFollowUps: 'आगे के सवाल',
   historyDelete: 'यह रिकॉर्ड मिटाएँ',

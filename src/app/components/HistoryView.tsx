@@ -10,7 +10,7 @@
  * 用那种语言写下的文字，换个语言重新标注等于说错话。
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { detectLanguage } from '../../shared/lang';
 import { withoutDashes } from '../../shared/text';
 import { stickByNo } from '../../shared/sticks';
@@ -21,6 +21,11 @@ import { clearRecords, deleteRecord, getCollection, listRecords, type LocalRecor
 import { STICK_TOTAL, collectedCount } from '../../shared/collection';
 import { STICKS } from '../../shared/sticks';
 import StickFace from './StickFace';
+
+const recordFromHash = (): string | null => {
+  const match = /^#\/?history\/(.+)$/.exec(window.location.hash);
+  return match ? decodeURIComponent(match[1]) : null;
+};
 
 const formatTime = (value: string): string => {
   const date = new Date(value);
@@ -77,7 +82,23 @@ function CollectionBook() {
 export default function HistoryView() {
   const t = useT();
   const [records, setRecords] = useState<LocalRecord[]>(() => listRecords());
-  const [openId, setOpenId] = useState<string | null>(null);
+  // 從繩上的結點「看這支籤的記錄」過來（#history/<id>）：那一條直接展開、捲到眼前。
+  // 只有從連結來的才捲；自己點開一條不捲
+  const [openId, setOpenId] = useState<string | null>(recordFromHash);
+  const [linked, setLinked] = useState<string | null>(recordFromHash);
+  useEffect(() => {
+    const onHash = (): void => {
+      const id = recordFromHash();
+      if (!id) return;
+      setOpenId(id);
+      setLinked(id);
+    };
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+  useEffect(() => {
+    if (linked) document.getElementById(`record-${linked}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, [linked]);
   const [confirmClear, setConfirmClear] = useState(false);
 
   const removeOne = async (id: string) => {
@@ -152,6 +173,7 @@ export default function HistoryView() {
             className={`history-item${open ? ' open' : ''}`}
             data-tone={LEVEL_TONE[stick.level].key}
             key={record.id}
+            id={`record-${record.id}`}
           >
             <button className="history-summary" aria-expanded={open} onClick={() => setOpenId(open ? null : record.id)}>
               <StickFace stick={stick} language={language} size="small" />

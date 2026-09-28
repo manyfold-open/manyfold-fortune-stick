@@ -44,6 +44,14 @@ describe('注連繩上的結', () => {
     }
   });
 
+  it('記得是哪一局：記錄 id 與紙的語言，壞掉的語言丟掉', () => {
+    const [knot] = tieKnot([], 7, 't', { readingId: 'r1', language: 'ja' });
+    expect(knot).toMatchObject({ stickNo: 7, readingId: 'r1', language: 'ja' });
+    expect(parseKnots([{ stickNo: 7, at: 't', slot: 0, readingId: 'r1', language: 'xx' }])).toEqual([
+      { stickNo: 7, at: 't', slot: 0, readingId: 'r1' },
+    ]);
+  });
+
   it('壞掉的存檔只留格式對、格位不重複的', () => {
     expect(parseKnots('x')).toEqual([]);
     expect(

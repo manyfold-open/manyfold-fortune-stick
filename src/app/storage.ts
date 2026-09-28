@@ -10,7 +10,7 @@
  */
 
 import { addToCollection, collectionFrom, parseCollection, type Collection } from '../shared/collection';
-import { parseKnots, tieKnot, type Knot } from '../shared/knots';
+import { parseKnots, tieKnot, type Knot, type KnotMeta } from '../shared/knots';
 import { isLanguage, languageFromLocales, type Language } from '../shared/lang';
 import { browserStorage, safeGet, safeRemove, safeSet } from '../shared/safe-storage';
 import type { Interpretation, Reading } from '../shared/types';
@@ -160,8 +160,8 @@ function notifyKnots(): void {
 }
 
 /** 把一支籤綁上繩。回傳新綁的那一個（給飛上去的動畫找格位）。 */
-export function tieStick(stickNo: number, at: string = new Date().toISOString()): Knot {
-  const knots = tieKnot(listKnots(), stickNo, at);
+export function tieStick(stickNo: number, meta: KnotMeta = {}, at: string = new Date().toISOString()): Knot {
+  const knots = tieKnot(listKnots(), stickNo, at, meta);
   write(KNOTS_KEY, knots);
   return knots[knots.length - 1];
 }
