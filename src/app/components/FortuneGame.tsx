@@ -312,6 +312,7 @@ export default function FortuneGame(props: {
         body: JSON.stringify({ question, via: takeVisitSourceForDraw() ?? undefined }),
       });
       setCurrentReadingId(body.reading.id);
+      drawnHere.current = body.reading.id;
       saveRecord(body.reading);
       track('stick_drawn', { language: body.reading.language });
 
@@ -362,6 +363,8 @@ export default function FortuneGame(props: {
    * 解好的時候人已經去求下一支了，就只存進記錄，不去動畫面上那一張。
    */
   const warm = useRef<{ id: string; promise: Promise<Reading> } | null>(null);
+  /** 這次造訪裡抽出來的那一支：結果頁只替它記「看到了沒、等了多久」，重新整理、從記錄打開的不記 */
+  const drawnHere = useRef<string | null>(null);
   const shownId = useRef<string | null>(null);
   shownId.current = reading?.id ?? null;
   const warmUp = useCallback(
@@ -488,6 +491,7 @@ export default function FortuneGame(props: {
         onRestart={restart}
         sound={props.prefs.sound}
         emaFrom={emaFrom}
+        drawnHere={drawnHere.current === reading.id}
       />
     );
   }

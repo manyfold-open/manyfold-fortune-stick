@@ -31,7 +31,7 @@ import { withShareMeta } from './meta';
 import { consentRequiredFor, measurementIdFor, withAnalytics } from './analytics';
 import { claimTarotBonus, findTarotClaim, tarotReturnUrl } from './tarot-bridge';
 import { bumpStat, readStats } from './stats';
-import { isMetric, isVisitSource } from '../shared/stats';
+import { isPageMetric, isVisitSource } from '../shared/stats';
 import { ConfigError, safeEqual } from './crypto';
 import { A2AError } from './a2a';
 import {
@@ -172,9 +172,9 @@ app.post('/api/readings/:id/tarot-claim', async (c) => {
 // fixed metric names in shared/stats.ts are counted; anything else is refused.
 app.post('/api/stats/:metric', async (c) => {
   const metric = c.req.param('metric');
-  // Draws, Tarot clicks and new/returning are counted by the server alongside
-  // what they belong to; the page cannot report them on their own.
-  if (!isMetric(metric) || !(metric.startsWith('visit:') || metric.startsWith('share:'))) {
+  // Draws, interpretations, Tarot clicks and new/returning are counted by the
+  // server alongside what they belong to; the page cannot report them on its own.
+  if (!isPageMetric(metric)) {
     throw new HttpError(400, 'unknown_metric', 'No such metric.');
   }
   await bumpStat(c.env, metric);

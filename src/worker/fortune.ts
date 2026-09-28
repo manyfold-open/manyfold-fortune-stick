@@ -32,6 +32,8 @@ import { HttpError, type AgentCredential, type Env } from './types';
 import { A2AError, consumeA2AStream, safeErrorText } from './a2a';
 import { credentialFor, listConnectedAgents } from './connect';
 import { now } from './db';
+import { bumpStatQuietly } from './stats';
+import { fallbackReason, replyBucket } from '../shared/stats';
 
 export const QUESTION_MIN_CHARS = 5;
 export const QUESTION_MAX_CHARS = 120;
@@ -838,9 +840,12 @@ export async function interpretReading(env: Env, id: string): Promise<Reading> {
   let error: string | null = null;
   let contextId = row.context_id;
   let taskId = row.active_task_id;
+  /** When the agent was asked; stays null if there was no agent to ask. */
+  let askedAt: number | null = null;
 
   try {
     const cred = await pickInterpreter(env);
+    askedAt = Date.now();
     const answer = await askAgent(
       cred,
       // 由存储行推导，不用随机值 —— 连点两下是同一则消息，刻意的重试是新的一则。
@@ -881,6 +886,14 @@ export async function interpretReading(env: Env, id: string): Promise<Reading> {
   )
     .bind(JSON.stringify(interpretation), status, error, contextId, taskId, now(), id)
     .run();
+
+  // One count per try, for #settings: how it went, whether it was a retry, and
+  // how long the agent took. Totals only; nothing names this reading.
+  await Promise.all([
+    bumpStatQuietly(env, status === 'interpreted' ? 'interpret:ok' : `interpret:fallback-${fallbackReason(error)}`),
+    row.status === 'failed' ? bumpStatQuietly(env, 'interpret:retry') : undefined,
+    askedAt === null ? undefined : bumpStatQuietly(env, `interpret:${replyBucket(Date.now() - askedAt)}`),
+  ]);
 
   return toReading(await readRow(env, id));
 }
