@@ -9,6 +9,8 @@
  * localStorage 直接抛错，那种情况下游戏应当照常能玩，只是记不住历史。
  */
 
+import { addToCollection, collectionFrom, parseCollection, type Collection } from '../shared/collection';
+import { parseKnots, tieKnot, type Knot } from '../shared/knots';
 import { isLanguage, languageFromLocales, type Language } from '../shared/lang';
 import { browserStorage, safeGet, safeRemove, safeSet } from '../shared/safe-storage';
 import type { Interpretation, Reading } from '../shared/types';
@@ -16,6 +18,10 @@ import type { Interpretation, Reading } from '../shared/types';
 const RECORDS_KEY = 'wenyiqian.records';
 const CURRENT_KEY = 'wenyiqian.current';
 const PREFS_KEY = 'wenyiqian.prefs';
+const COLLECTED_KEY = 'wenyiqian.collected';
+const KNOTS_KEY = 'wenyiqian.knots';
+/** 繩上的結換了：ShrineBackdrop 聽這個重讀 */
+export const KNOTS_EVENT = 'wenyiqian:knots';
 const RECORD_LIMIT = 100;
 
 export interface LocalFollowUp {
@@ -115,7 +121,53 @@ export const clearLocalData = (): void => {
   remove(RECORDS_KEY);
   remove(CURRENT_KEY);
   remove(PREFS_KEY);
+  remove(COLLECTED_KEY);
+  remove(KNOTS_KEY);
+  notifyKnots();
 };
+
+/* ───────── 籤譜 ───────── */
+
+/**
+ * 讀籤譜；還沒存過就從求籤記錄回填（排除 `excludeId`，也就是正在出的這一局）。
+ * 跟記錄分開存：刪記錄不會少收集。
+ */
+export function getCollection(excludeId?: string): Collection {
+  return parseCollection(read<unknown>(COLLECTED_KEY, null)) ?? collectionFrom(listRecords(), excludeId);
+}
+
+/**
+ * 出籤落定時登記這一支。回傳登記後的籤譜與它是不是新收的；
+ * 存不進去（無痕、禁用站點資料）就當不是新的 —— 不然每一支都會蓋「新收」。
+ */
+export function collectStick(stickNo: number, readingId: string, at: string): { collection: Collection; isNew: boolean } {
+  const result = addToCollection(getCollection(readingId), stickNo, at);
+  write(COLLECTED_KEY, result.collection);
+  const stored = parseCollection(read<unknown>(COLLECTED_KEY, null));
+  return stored && stored[stickNo] ? result : { collection: result.collection, isNew: false };
+}
+
+/* ───────── 注連繩上的結 ───────── */
+
+export const listKnots = (): Knot[] => parseKnots(read<unknown>(KNOTS_KEY, []));
+
+function notifyKnots(): void {
+  try {
+    window.dispatchEvent(new Event(KNOTS_EVENT));
+  } catch {
+    /* 沒有 window（測試環境）就算了 */
+  }
+}
+
+/** 把一支籤綁上繩。回傳新綁的那一個（給飛上去的動畫找格位）。 */
+export function tieStick(stickNo: number, at: string = new Date().toISOString()): Knot {
+  const knots = tieKnot(listKnots(), stickNo, at);
+  write(KNOTS_KEY, knots);
+  return knots[knots.length - 1];
+}
+
+/** 飛上去的紙條到位了：這時候才讓繩上的結出現。 */
+export const showKnots = (): void => notifyKnots();
 
 /* ───────── 偏好 ───────── */
 

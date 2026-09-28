@@ -2278,6 +2278,85 @@ html, body {
   }
 }
 
+/* 籤譜的「新收」朱印（ReadingResult 的 CollectSeal）：籤紙正面右上、紅帶底下，
+   歪一點蓋上去。等籤紙攤平、吉凶章落定之後才落（延遲 0.9s）。基礎樣式就是終態，
+   「动画」關掉時 animation: none 落下來剛好是蓋好的樣子 */
+.collect-seal {
+  position: absolute;
+  top: 46px;
+  right: 16px;
+  z-index: 3;
+  margin: 0;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  color: var(--seal);
+  border: 2px solid var(--seal);
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 2px var(--paper), inset 0 0 0 3px var(--seal);
+  background: rgba(255, 250, 242, 0.55);
+  transform: rotate(9deg);
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  animation: collect-seal-in 0.46s cubic-bezier(0.2, 1.4, 0.35, 1) 0.9s both;
+}
+
+.collect-seal-word {
+  font-family: var(--font-mincho-zh);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-indent: 0.08em;
+}
+
+.collect-seal-count {
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.collect-seal[data-lang='en'] .collect-seal-word,
+.collect-seal[data-lang='ko'] .collect-seal-word { font-size: 12px; letter-spacing: 0.02em; text-indent: 0; }
+/* 天城文不加字距，字母會散開 */
+.collect-seal[data-lang='hi'] .collect-seal-word { font-size: 13px; letter-spacing: 0; text-indent: 0; }
+.collect-seal[data-lang='en'] .collect-seal-word { text-transform: uppercase; font-family: var(--font-mincho-en); }
+.collect-seal[data-lang='ja'] .collect-seal-word { font-family: var(--font-mincho-ja); }
+.collect-seal[data-lang='ko'] .collect-seal-word { font-family: var(--font-mincho-ko); }
+.collect-seal[data-lang='hi'] .collect-seal-word { font-family: var(--font-mincho-hi); }
+
+/* 收齊 36 支：金一點、大一點 */
+.collect-seal.full {
+  width: 58px;
+  height: 58px;
+  color: #a8791f;
+  border-color: #c99c32;
+  box-shadow: inset 0 0 0 2px var(--paper), inset 0 0 0 3px #c99c32;
+}
+
+@keyframes collect-seal-in {
+  0% { transform: rotate(2deg) scale(1.9); opacity: 0; filter: blur(1.2px); }
+  55% { opacity: 1; filter: none; }
+  75% { transform: rotate(10deg) scale(0.94); }
+  100% { transform: rotate(9deg) scale(1); opacity: 1; }
+}
+
+@media (max-width: 640px) {
+  .collect-seal { top: 50px; right: 12px; width: 44px; height: 44px; }
+  .collect-seal-word { font-size: 13px; }
+  .collect-seal.full { width: 50px; height: 50px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .collect-seal { animation: none; }
+}
+
 
 
 /* ── 解签续页：接在签纸下面的同一卷纸 ── */
@@ -2975,6 +3054,78 @@ html:lang(en) .history .history-plaque h2 {
     radial-gradient(circle, var(--seal) 2.5px, transparent 3px) right center / 7px 7px no-repeat,
     linear-gradient(var(--seal), var(--seal)) center / calc(100% - 18px) 1px no-repeat;
   opacity: 0.8;
+}
+
+/* 籤譜（HistoryView 的 CollectionBook）：一塊木板上 36 格小木札。板上的字用木頭的墨（--wood-ink），
+   不是 --on-ground：字寫在木頭上，不是印在底色上 */
+.collection-book {
+  margin: 26px auto 0;
+  width: min(480px, 100%);
+  padding: 14px 16px 12px;
+  background: linear-gradient(180deg, var(--wood-hi), var(--wood));
+  border: 1px solid var(--wood-edge);
+  border-radius: 6px;
+  box-shadow: 0 6px 14px rgba(92, 62, 32, 0.16);
+  color: var(--wood-ink);
+  text-align: center;
+}
+
+.collection-title {
+  margin: 0 0 10px;
+  font-family: var(--font-mincho);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+}
+
+.collection-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  /* 桌機一排 12 格、三排；手機 9 格、四排 —— 籤譜是記錄頁的開場，不能一整個螢幕都是它 */
+  grid-template-columns: repeat(12, 1fr);
+  gap: 5px;
+}
+
+.collection-cell {
+  aspect-ratio: 5 / 6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  background: rgba(143, 106, 67, 0.12);
+  box-shadow: inset 0 1px 2px rgba(92, 62, 32, 0.18);
+  font-family: var(--font-mincho-en);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.collection-cell.got {
+  background: #fffdf8;
+  color: var(--tone);
+  border-top: 2px solid var(--tone);
+  box-shadow: 0 1px 2px rgba(92, 62, 32, 0.22);
+  animation: collection-cell-in 0.4s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+
+.collection-cell.got[data-tone='best'] { border-top-color: var(--tone-gold); }
+
+@keyframes collection-cell-in {
+  from { transform: scale(0.7); opacity: 0; }
+}
+
+.collection-note {
+  margin: 10px 0 0;
+  font-size: 11px;
+  color: var(--wood-ink);
+  opacity: 0.72;
+}
+
+@media (max-width: 640px) {
+  .collection-book { padding: 12px 12px 10px; }
+  .collection-grid { grid-template-columns: repeat(9, 1fr); gap: 4px; }
 }
 
 .history-head {
@@ -5238,6 +5389,60 @@ html { overflow-x: clip; }
   100% { transform: rotate(-1.2deg); }
 }
 
+/* 結籤：綁在注連繩上的籤（ShrineBackdrop 的 RopeKnot）。比紙垂小一號，跟著繩子輕晃 */
+.rope-knot {
+  position: absolute;
+  width: 20px;
+  height: 36px;
+  margin-left: -10px;
+  overflow: visible;
+  transform-origin: 50% 14%;
+  transform: rotate(var(--knot-rot, 0deg));
+  animation: knot-sway 6.4s ease-in-out infinite alternate;
+}
+
+.rope-knot:nth-of-type(2n) { animation-duration: 7.3s; animation-delay: -1.9s; }
+.rope-knot:nth-of-type(3n) { animation-duration: 5.8s; animation-delay: -3.4s; }
+
+.rope-knot .knot-shadow { fill: rgba(60, 40, 20, 0.14); }
+.rope-knot .knot-paper {
+  fill: #fffdf8;
+  stroke: #b9ad94;
+  stroke-width: 0.7px;
+  stroke-linejoin: round;
+}
+.rope-knot .knot-crease { fill: none; stroke: #c8beaa; stroke-width: 0.6px; stroke-linecap: round; }
+.rope-knot .knot-edge { fill: none; stroke: #c0321f; stroke-width: 0.9px; stroke-linecap: round; opacity: 0.8; }
+
+/* 剛綁上去：從繩上啪地冒出來、晃兩下才定 */
+.rope-knot.fresh {
+  animation:
+    knot-tie 0.62s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+    knot-sway 6.4s ease-in-out 0.62s infinite alternate;
+}
+
+@media (max-width: 640px) {
+  .rope-knot { width: 16px; height: 29px; margin-left: -8px; }
+  .rope-knot[data-older] { display: none; }
+}
+
+@keyframes knot-sway {
+  0% { transform: rotate(calc(var(--knot-rot, 0deg) - 2.2deg)); }
+  100% { transform: rotate(calc(var(--knot-rot, 0deg) + 2.2deg)); }
+}
+
+@keyframes knot-tie {
+  0% { transform: rotate(var(--knot-rot, 0deg)) scale(0.2, 0.1); opacity: 0; }
+  40% { opacity: 1; }
+  70% { transform: rotate(calc(var(--knot-rot, 0deg) + 9deg)) scale(1.12); }
+  100% { transform: rotate(var(--knot-rot, 0deg)) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rope-knot,
+  .rope-knot.fresh { animation: none; }
+}
+
 .shrine-branch {
   position: absolute;
   /* 從頂欄底下探出來：放在最頂端會橫過右上角的「EN 求签记录」 */
@@ -6771,4 +6976,28 @@ html { overflow-x: clip; }
     width: auto;
     padding: 20px 16px 24px;
   }
+}
+
+/* 結籤：飛向注連繩的那張籤紙（TyingSlip）。掛在 body 上、固定定位，形狀由 WAAPI 在收、在飛 */
+.tying-slip {
+  position: fixed;
+  z-index: 60;
+  pointer-events: none;
+  background: #fffdf8;
+  border: 2px solid #c0321f;
+  box-shadow: inset 0 0 0 4px #fffdf8, inset 0 0 0 5px rgba(192, 50, 31, 0.5), 0 10px 26px rgba(38, 26, 18, 0.18);
+  transform-origin: center;
+  will-change: transform, opacity;
+}
+
+.tying-slip-seal {
+  position: absolute;
+  left: 50%;
+  top: 30%;
+  width: 34%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: #c0321f;
+  opacity: 0.85;
 }

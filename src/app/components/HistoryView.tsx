@@ -17,7 +17,9 @@ import { stickByNo } from '../../shared/sticks';
 import { api } from '../api';
 import { LEVEL_TONE } from '../constants';
 import { copyFor, useT } from '../i18n';
-import { clearRecords, deleteRecord, listRecords, type LocalRecord } from '../storage';
+import { clearRecords, deleteRecord, getCollection, listRecords, type LocalRecord } from '../storage';
+import { STICK_TOTAL, collectedCount } from '../../shared/collection';
+import { STICKS } from '../../shared/sticks';
 import StickFace from './StickFace';
 
 const formatTime = (value: string): string => {
@@ -35,6 +37,40 @@ function Plaque({ caption, title }: { caption: string; title: string }) {
       </span>
       <h2>{title}</h2>
     </header>
+  );
+}
+
+/**
+ * 籤譜：36 格小木札，抽到過的寫籤號、帶籤等的色，沒抽過的空著。跟記錄分開存，
+ * 刪記錄、清空都不會少（設計：docs/superpowers/specs/2026-09-28-collection-and-knots-design.md）。
+ * 一支都沒收過就不畫。這一版只看，不能點。
+ */
+function CollectionBook() {
+  const t = useT();
+  const [collection] = useState(() => getCollection());
+  const count = collectedCount(collection);
+  if (count === 0) return null;
+  const title = t('bookTitle', { count, total: STICK_TOTAL });
+  return (
+    <section className="collection-book" aria-label={title}>
+      <h3 className="collection-title">{title}</h3>
+      <ol className="collection-grid">
+        {STICKS.map((stick) => {
+          const got = Boolean(collection[stick.no]);
+          return (
+            <li
+              key={stick.no}
+              className={`collection-cell${got ? ' got' : ''}`}
+              data-tone={got ? LEVEL_TONE[stick.level].key : undefined}
+              aria-hidden={!got}
+            >
+              {got ? stick.no : ''}
+            </li>
+          );
+        })}
+      </ol>
+      <p className="muted small collection-note">{t('bookNote')}</p>
+    </section>
   );
 }
 
@@ -64,6 +100,7 @@ export default function HistoryView() {
     return (
       <section className="history">
         <Plaque caption={t('historyCaption')} title={t('historyTitle')} />
+        <CollectionBook />
         <div className="history-empty">
           <p className="muted">{t('historyEmpty')}</p>
           <a
@@ -84,6 +121,7 @@ export default function HistoryView() {
   return (
     <section className="history">
       <Plaque caption={t('historyCaption')} title={t('historyTitle')} />
+      <CollectionBook />
       <div className="history-head">
         <p className="muted small">{t('historyLocalNote')}</p>
         {confirmClear ? (

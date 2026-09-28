@@ -7,8 +7,10 @@
  * 減少動畫時只畫一格靜止的花瓣、不跑 rAF；分頁看不見時停掉 rAF。
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { knotJitter, knotU, type Knot } from '../../shared/knots';
 import { createPetals, petalAt, petalCount, type Petal } from '../../shared/sakura';
+import { KNOTS_EVENT, listKnots } from '../storage';
 import {
   BRANCH_COLOR,
   BRANCH_FLOWERS,
@@ -38,7 +40,7 @@ import {
  * 笠木、繩子用 preserveAspectRatio="none" 撐滿寬度：只在水平方向拉，弧線還是順的；
  * 紙垂不能被拉，另外用 HTML 定位。形狀跟分享圖共用（shrineArt.ts），尺寸寫在 styles.css。
  */
-function Torii() {
+function Torii({ knots, fresh }: { knots: readonly Knot[]; fresh: string | null }) {
   return (
     <>
       <div className="torii-nuki" />
@@ -56,6 +58,15 @@ function Torii() {
             <path className="shide-body" d={SHIDE_D} />
             <path className="shide-folds" d={SHIDE_FOLDS_D} />
           </svg>
+        ))}
+        {knots.map((knot) => (
+          <RopeKnot
+            key={`${knot.slot}-${knot.at}`}
+            knot={knot}
+            fresh={fresh === `${knot.slot}-${knot.at}`}
+            // 手機上繩子短，12 個結會疊成一團：只留最新的 6 個（CSS 看 data-older）
+            older={knots.filter((other) => other.at > knot.at).length >= 6}
+          />
         ))}
       </div>
       <svg
@@ -75,6 +86,43 @@ function Torii() {
         </defs>
       </svg>
     </>
+  );
+}
+
+/**
+ * 結籤：綁在注連繩上的一支籤 —— 白紙摺成細條，繞繩一圈打結，兩尾垂下，結口一點朱紅。
+ * 所有籤等長一樣（神社的繩上看不出誰抽到什麼）。歪斜是固定的（knotJitter），重新整理不會跳。
+ * 位置跟紙垂用同一條繩的式子（ropeY）；剛綁上的那一個（fresh）啪地出現一下。
+ */
+/** 結的兩尾：長的一條垂下（邊上一道籤紙的朱紅框），短的一截斜斜翹出去 */
+const KNOT_LONG_D = 'M7.6 6.5 L11.6 7 L10.4 33 L7.8 35.2 L6.2 32.6 Z';
+const KNOT_SHORT_D = 'M11.2 5.6 L13.4 7.6 L17.8 17.6 L15.2 19.2 Z';
+
+function RopeKnot({ knot, fresh, older }: { knot: Knot; fresh: boolean; older: boolean }) {
+  const u = knotU(knot.slot);
+  const { dy, rot } = knotJitter(knot);
+  return (
+    <svg
+      className={`rope-knot${fresh ? ' fresh' : ''}`}
+      data-older={older || undefined}
+      viewBox="0 0 20 36"
+      style={{ left: `${u * 100}%`, top: ropeY(u) - 5 + dy, ['--knot-rot' as string]: `${rot}deg` }}
+      aria-hidden
+    >
+      {/* 單號的短尾翹向另一邊：一排結才不會像同一個印出來的 */}
+      <g transform={knot.stickNo % 2 ? 'translate(20 0) scale(-1 1)' : undefined}>
+      <g className="knot-shadow" transform="translate(0.6 1.5)">
+        <path d={KNOT_LONG_D} />
+        <path d={KNOT_SHORT_D} />
+      </g>
+      <path className="knot-paper" d={KNOT_SHORT_D} />
+      <path className="knot-paper" d={KNOT_LONG_D} />
+      <path className="knot-edge" d="M10.6 11 L9.5 30.5" />
+      <path className="knot-crease" d="M7.4 17 L10.6 18.2 M7 24.5 L10.2 25.7" />
+      <ellipse className="knot-paper" cx="10" cy="5.2" rx="4.4" ry="3.4" />
+      <path className="knot-crease" d="M7.2 4.2 Q10 6.6 12.8 4.4" />
+      </g>
+    </svg>
   );
 }
 
@@ -104,6 +152,22 @@ function SakuraBranch({ side }: { side: 'left' | 'right' }) {
 
 export default function ShrineBackdrop({ calm }: { calm: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [knots, setKnots] = useState<Knot[]>(listKnots);
+  const [fresh, setFresh] = useState<string | null>(null);
+
+  // 繩上的結換了（再求一籤綁上去、清掉本機資料）：重讀，剛多出來的那一個啪地出現
+  useEffect(() => {
+    let shown = new Set(listKnots().map((k) => `${k.slot}-${k.at}`));
+    const reload = (): void => {
+      const next = listKnots();
+      const added = next.find((k) => !shown.has(`${k.slot}-${k.at}`));
+      shown = new Set(next.map((k) => `${k.slot}-${k.at}`));
+      setFresh(added ? `${added.slot}-${added.at}` : null);
+      setKnots(next);
+    };
+    window.addEventListener(KNOTS_EVENT, reload);
+    return () => window.removeEventListener(KNOTS_EVENT, reload);
+  }, []);
 
   useEffect(() => {
     const cv = canvasRef.current;
@@ -182,7 +246,7 @@ export default function ShrineBackdrop({ calm }: { calm: boolean }) {
         <div className="shrine-light" />
       </div>
       <div className="shrine-torii" aria-hidden>
-        <Torii />
+        <Torii knots={knots} fresh={fresh} />
         <SakuraBranch side="left" />
         <SakuraBranch side="right" />
       </div>
