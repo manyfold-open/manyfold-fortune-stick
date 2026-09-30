@@ -11,6 +11,7 @@ import type { ConnectedAgent, ConnectSession } from '../../shared/types';
 import { withoutDashes } from '../../shared/text';
 import { api, errorMessage } from '../api';
 import { useT } from '../i18n';
+import AlertsPanel from './AlertsPanel';
 import ConnectPanel from './ConnectPanel';
 import StatsPanel from './StatsPanel';
 
@@ -122,6 +123,9 @@ export default function SettingsView(props: {
       <h3>{t('settingsMoreTitle')}</h3>
       <p className="muted">{t('settingsMoreNote')}</p>
       <ConnectPanel initialSession={props.initialSession} onConnected={props.refreshState} />
+
+      <h3>{t('alertsTitle')}</h3>
+      <AlertsPanel />
 
       <h3>{t('statsTitle')}</h3>
       <StatsPanel />

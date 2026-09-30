@@ -109,6 +109,16 @@ CREATE TABLE IF NOT EXISTS tarot_claims (
   day        TEXT NOT NULL,
   created_at TEXT NOT NULL
 );
+
+-- Recent failed agent turns, for #settings. Only where and why: never the
+-- question, the stick or the reading. Trimmed to the newest rows on every
+-- insert (src/worker/alerts.ts).
+CREATE TABLE IF NOT EXISTS agent_failures (
+  id     INTEGER PRIMARY KEY AUTOINCREMENT,
+  at     TEXT NOT NULL,
+  kind   TEXT NOT NULL,
+  reason TEXT NOT NULL
+);
 `;
 
 /**

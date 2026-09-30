@@ -6975,6 +6975,21 @@ html.knot-hover, html.knot-hover * { cursor: pointer !important; }
 }
 .panel.settings-page .muted { color: var(--ink-3); }
 .panel.settings-page h3 { margin-top: 28px; }
+/* The Discord webhook, on #settings: a line to write on, like the password gate's. */
+.alerts-webhook input {
+  flex: 1 1 260px;
+  min-width: 0;
+  padding: 8px 0;
+  border: 0;
+  border-bottom: 1px solid var(--hair);
+  background: transparent;
+  font: 14px var(--font-mono);
+  color: var(--ink);
+  outline: none;
+}
+.alerts-webhook input:focus { border-bottom-color: var(--ink); }
+.alerts-list { padding-left: 18px; color: var(--ink-2); }
+.alerts-list code { overflow-wrap: anywhere; }
 @media (max-width: 640px) {
   .panel.settings-page {
     margin: 78px 12px 32px;
