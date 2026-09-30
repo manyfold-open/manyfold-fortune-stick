@@ -30,6 +30,7 @@ import { UNPARSEABLE } from '../shared/error-copy';
 import { withoutDashes } from '../shared/text';
 import { HttpError, type AgentCredential, type Env } from './types';
 import { A2AError, consumeA2AStream, safeErrorText } from './a2a';
+import { reportAgentFailure, reportAgentSuccess } from './alerts';
 import { credentialFor, listConnectedAgents } from './connect';
 import { now } from './db';
 import { bumpStatQuietly } from './stats';
@@ -893,6 +894,9 @@ export async function interpretReading(env: Env, id: string): Promise<Reading> {
     bumpStatQuietly(env, status === 'interpreted' ? 'interpret:ok' : `interpret:fallback-${fallbackReason(error)}`),
     row.status === 'failed' ? bumpStatQuietly(env, 'interpret:retry') : undefined,
     askedAt === null ? undefined : bumpStatQuietly(env, `interpret:${replyBucket(Date.now() - askedAt)}`),
+    // The visitor still gets the stick's own text on a 200, so this is the
+    // only place a failed interpretation gets noticed (src/worker/alerts.ts).
+    status === 'interpreted' ? reportAgentSuccess(env) : reportAgentFailure(env, 'interpret', error),
   ]);
 
   return toReading(await readRow(env, id));
@@ -1028,10 +1032,12 @@ export async function handleFollowUp(options: {
         .bind(snapshot.contextId ?? row.context_id, null, now(), readingId)
         .run();
       await send({ type: 'done', text });
+      await reportAgentSuccess(env);
     } catch (cause) {
       const detail = withoutDashes(
         cause instanceof Error ? safeErrorText(cause.message) : safeErrorText(cause),
       );
+      await reportAgentFailure(env, 'follow-up', detail);
       await insertFollowUp(env, readingId, {
         role: 'agent',
         content: partial,

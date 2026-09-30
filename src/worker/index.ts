@@ -16,6 +16,9 @@
  *   GET    /api/agents                       admin  connected agents (never tokens)
  *   POST   /api/agents/:agentId/verify       admin  re-run the non-billing auth probe
  *   DELETE /api/agents/:agentId              admin  disconnect
+ *   GET    /api/alerts                       admin  failure alerts: webhook status + recent failures
+ *   PUT    /api/alerts/discord               admin  store the Discord webhook (sealed) and ping it
+ *   DELETE /api/alerts/discord               admin  forget it
  *
  * "admin" routes require the x-admin-password header when the ADMIN_PASSWORD
  * secret is set. The game stays public; the password only protects the settings
@@ -34,6 +37,7 @@ import { bumpStat, readStats } from './stats';
 import { isPageMetric, isVisitSource } from '../shared/stats';
 import { ConfigError, safeEqual } from './crypto';
 import { A2AError } from './a2a';
+import { alertsView, clearDiscordWebhook, saveDiscordWebhook } from './alerts';
 import {
   cancelConnect,
   disconnectAgent,
@@ -255,6 +259,24 @@ app.post('/api/agents/:agentId/verify', async (c) =>
 app.delete('/api/agents/:agentId', async (c) => {
   await disconnectAgent(c.env, c.req.param('agentId'));
   return c.json({ ok: true });
+});
+
+/* ───────── failure alerts (settings) ───────── */
+
+app.get('/api/alerts', async (c) => c.json(await alertsView(c.env)));
+
+app.put('/api/alerts/discord', async (c) => {
+  const body = (await c.req.json().catch(() => null)) as { url?: unknown } | null;
+  if (!body || typeof body.url !== 'string') {
+    throw new HttpError(400, 'bad_request', 'Body must be JSON with a string "url".');
+  }
+  const delivered = await saveDiscordWebhook(c.env, body.url);
+  return c.json({ delivered, alerts: await alertsView(c.env) });
+});
+
+app.delete('/api/alerts/discord', async (c) => {
+  await clearDiscordWebhook(c.env);
+  return c.json({ alerts: await alertsView(c.env) });
 });
 
 app.all('/api/*', () => {

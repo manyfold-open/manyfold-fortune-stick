@@ -236,6 +236,23 @@ export const en = {
   settingsMoreTitle: 'Connect another agent',
   settingsMoreNote:
     'Authorising an agent that is already connected again swaps its token in place. This is useful when an authorisation expires.',
+  /* ── agent failure alerts on #settings ── */
+  alertsTitle: 'Agent failure alerts',
+  alertsNote: 'When interpreting or a follow up fails, the visitor still sees the stick\'s own text, so nothing looks wrong in the request logs. Paste a Discord webhook here and failures are posted to that channel: at most one message every 15 minutes while it keeps failing, and one more when it recovers. Alerts say only where and why, never the question, the stick or the reading. In Discord: channel settings → Integrations → Webhooks → New Webhook → Copy Webhook URL.',
+  alertsConnected: 'Discord connected',
+  alertsNoWebhook: 'no webhook yet',
+  alertsFailingSince: 'The agent has been failing since {time}.',
+  alertsHealthy: 'No ongoing failures.',
+  alertsReplace: 'Replace the webhook URL',
+  alertsInputLabel: 'Discord webhook URL',
+  alertsSave: 'Save and test',
+  alertsSaving: 'Saving…',
+  alertsRemove: 'Remove',
+  alertsSaved: 'Saved. A test message was posted to the channel.',
+  alertsSavedUndelivered: 'Saved, but Discord did not accept the test message. Check that the webhook still exists.',
+  alertsRecent: 'Recent failures, newest first:',
+  alertsKindInterpret: 'interpretation',
+  alertsKindFollowUp: 'follow up',
   settingsAboutTitle: 'About this deployment',
   settingsAboutBody:
     'Agent tokens are encrypted with AES GCM in D1 and are never sent to the browser. ADMIN_PASSWORD protects agent management operations on this settings page only; the game remains public. Setting CONFIG_ENCRYPTION_KEY keeps the encryption key out of the database. See the README.',

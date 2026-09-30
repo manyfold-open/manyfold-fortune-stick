@@ -70,7 +70,9 @@ const isAdminAwarePath = (path: string): boolean =>
   path === '/api/connect' ||
   path.startsWith('/api/connect/') ||
   path === '/api/agents' ||
-  path.startsWith('/api/agents/');
+  path.startsWith('/api/agents/') ||
+  path === '/api/alerts' ||
+  path.startsWith('/api/alerts/');
 
 export function authHeaders(path = ''): Record<string, string> {
   if (!isAdminAwarePath(path)) return {};
