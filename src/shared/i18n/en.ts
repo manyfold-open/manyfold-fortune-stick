@@ -86,6 +86,7 @@ export const en = {
   blockAnswer: 'How it speaks to your question',
   blockNotice: 'One thing to keep in mind',
   blockAction: 'One thing you can do today',
+  blockAsks: 'Ask next',
   actionShare: 'Share',
   actionFollowUp: 'Ask more',
   /** 籤紙兩面紅帶右端的小木札：正面翻到解籤、背面翻回籤面 */
@@ -345,9 +346,13 @@ export const en = {
   healthAgainDetail: '{n} of {draws} sticks drawn; {unseen} of them before the reading was seen',
   healthAgain: 'Drew again',
   healthAgainUnseen: 'before seeing it',
+  healthAskCard: 'Asked more',
+  healthAskDetail: '{n} further questions on {seen} readings seen: {tag} from a tag, {typed} typed',
+  healthAskTag: 'from a tag',
+  healthAskTyped: 'typed',
   healthTriesWhy: 'Why a try fell back: unreadable reply {unparseable}, empty reply {empty}, timed out {timeout}, Manyfold down or refused {manyfold}, no agent connected {noAgent}, other {other}.',
   healthFinalWhy: 'Why sticks ended on the fallback: unreadable reply {unparseable}, empty reply {empty}, timed out {timeout}, Manyfold down or refused {manyfold}, no agent connected {noAgent}, other {other}.',
-  healthHowTo: 'Seen and waiting only count a stick drawn in that visit, not one reopened later. Ready means the reading was already there when Read it was pressed; Left means they closed the page or drew again before it came, and some phones never report that, so it is a floor. A try is one request to the agent; a retry is a try on a stick whose last one fell back. Stuck means drawn over two minutes ago and never interpreted, usually because the page closed while the reading was on its way. A retry overwrites where a stick ended, so that side shows the last try only. Drew again counts each press of Draw another on a result page, from the day it began to be counted.',
+  healthHowTo: 'Seen and waiting only count a stick drawn in that visit, not one reopened later. Ready means the reading was already there when Read it was pressed; Left means they closed the page or drew again before it came, and some phones never report that, so it is a floor. A try is one request to the agent; a retry is a try on a stick whose last one fell back. Stuck means drawn over two minutes ago and never interpreted, usually because the page closed while the reading was on its way. A retry overwrites where a stick ended, so that side shows the last try only. Drew again counts each press of Draw another on a result page, from the day it began to be counted. Asked more counts each further question sent from a result page; tapping a tag on the reading or in Ask more counts as from a tag, from the day it began to be counted.',
 
   /* ── the share experiment on #settings ── */
   shareExpTitle: 'Share experiment',

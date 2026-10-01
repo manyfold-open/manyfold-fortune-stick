@@ -16,6 +16,7 @@ import { FOLLOW_UP_MAX } from '../constants';
 import { copyFor, useT } from '../i18n';
 import { streamFollowUp } from '../sse';
 import { track } from '../analytics';
+import { recordFollowUp } from '../visit';
 import type { Language } from '../../shared/lang';
 
 interface FollowUpRound {
@@ -36,6 +37,10 @@ export default function FollowUp(props: {
   readingId: string;
   /** 这一局的语言 —— 决定快捷问句用哪种语言发出去。 */
   language: Language;
+  /** agent 替这一支写的追问；没有（通用解释、旧记录）就用固定的三句 */
+  asks?: string[];
+  /** 在解签背面点了哪块木牌：打开就替他问出去，只问一次 */
+  initialAsk?: string | null;
   onMessages: (messages: FollowUpMessage[]) => void;
 }) {
   const t = useT();
@@ -45,6 +50,9 @@ export default function FollowUp(props: {
   const [live, setLive] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [expandedRounds, setExpandedRounds] = useState<Record<string | number, boolean>>({});
+  /** 先读回旧的追问，再问木牌上那一句：不然读回来的旧列表会盖掉刚问出去的那一句 */
+  const [loaded, setLoaded] = useState(false);
+  const initialSent = useRef(false);
   const log = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const { readingId, onMessages } = props;
@@ -62,7 +70,10 @@ export default function FollowUp(props: {
         setMessages(clean);
         onMessages(clean);
       })
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(() => {
+        if (!cancelled) setLoaded(true);
+      });
     return () => {
       cancelled = true;
     };
@@ -112,7 +123,7 @@ export default function FollowUp(props: {
     }));
   };
 
-  const ask = async (text: string) => {
+  const ask = async (text: string, via: 'tag' | 'typed') => {
     const question = withoutDashes(text.trim());
     if (!question || live !== null) return;
     setDraft('');
@@ -120,7 +131,8 @@ export default function FollowUp(props: {
       textareaRef.current.style.height = 'auto';
     }
     setError('');
-    track('follow_up_asked');
+    track('follow_up_asked', { via });
+    recordFollowUp(via);
     setMessages((current) => [
       ...current,
       {
@@ -156,6 +168,17 @@ export default function FollowUp(props: {
         .catch(() => undefined);
     }
   };
+
+  useEffect(() => {
+    if (!loaded || !props.initialAsk || initialSent.current) return;
+    initialSent.current = true;
+    void ask(props.initialAsk, 'tag');
+    // ask 每次渲染都是新的；这里只看「读回来了」和那一句，只问一次
+  }, [loaded, props.initialAsk]);
+
+  const quickAsks = props.asks?.length
+    ? props.asks
+    : [quick.followUpQuick1, quick.followUpQuick2, quick.followUpQuick3];
 
   const handleDraftChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setDraft(withoutDashes(event.target.value));
@@ -233,13 +256,13 @@ export default function FollowUp(props: {
       {error && <p className="field-error">{error}</p>}
 
       <div className="quick-asks">
-        {[quick.followUpQuick1, quick.followUpQuick2, quick.followUpQuick3].map((question) => (
+        {quickAsks.map((question) => (
           <button
             key={question}
             type="button"
             className="text-action tiny"
             disabled={live !== null}
-            onClick={() => void ask(question)}
+            onClick={() => void ask(question, 'tag')}
           >
             {question}
           </button>
@@ -250,7 +273,7 @@ export default function FollowUp(props: {
         className="followup-composer"
         onSubmit={(event) => {
           event.preventDefault();
-          void ask(draft);
+          void ask(draft, 'typed');
         }}
       >
         <textarea
@@ -261,7 +284,7 @@ export default function FollowUp(props: {
           onKeyDown={(event) => {
             if (event.key === 'Enter' && !event.shiftKey) {
               event.preventDefault();
-              void ask(draft);
+              void ask(draft, 'typed');
             }
           }}
           placeholder={live !== null ? t('followUpAnswering') : t('followUpPlaceholder')}

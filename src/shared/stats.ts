@@ -83,6 +83,9 @@ export const METRICS = [
   // 再求一籤 on a result page: whether the reading had been on screen by then.
   'reading:again-seen',
   'reading:again-unseen',
+  // A further question on a result page: tapped from a tag, or typed.
+  'reading:ask-tag',
+  'reading:ask-typed',
   ...WAIT_BUCKETS.map((bucket) => `wait:${bucket}` as const),
 ] as const;
 export type Metric = (typeof METRICS)[number];

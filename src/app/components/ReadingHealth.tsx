@@ -27,9 +27,11 @@ const REPLIES = REPLY_BUCKETS.map((bucket) => `interpret:${bucket}` as const);
 const SHOWN: Metric[] = ['reading:shown-ai', 'reading:shown-fallback'];
 
 const AGAIN: Metric[] = ['reading:again-seen', 'reading:again-unseen'];
+const ASKED: Metric[] = ['reading:ask-tag', 'reading:ask-typed'];
 
 const shown: Read = (row) => sum(row, SHOWN);
 const again: Read = (row) => sum(row, AGAIN);
+const asked: Read = (row) => sum(row, ASKED);
 const tarotDrew: Read = (row) => sum(row, TAROT_DRAWS);
 const triesOk = one('interpret:ok');
 const triesFellBack: Read = (row) => sum(row, FALLBACKS);
@@ -49,6 +51,8 @@ const GROUPS: Group[] = [
       { key: 'healthOfThemFallback', value: one('reading:shown-fallback') },
       { key: 'healthAgain', value: again },
       { key: 'healthAgainUnseen', value: one('reading:again-unseen') },
+      { key: 'healthAskTag', value: one('reading:ask-tag') },
+      { key: 'healthAskTyped', value: one('reading:ask-typed') },
     ],
   },
   {
@@ -92,6 +96,8 @@ export default function ReadingHealth(props: { days: DailyStats[]; rows: DailySt
   const firstCounted = since[since.length - 1]?.day;
   // 再求一籤 began to be counted later than the rest, so it keeps its own days.
   const againSince = days.filter((row) => again(row) > 0);
+  // So did further questions, and they divide by readings seen, not by draws.
+  const askedSince = days.filter((row) => asked(row) > 0);
   const of = (value: Read) => total(days, value);
   const metric = (m: Metric) => of(one(m));
   const tries = of(triesOk) + of(triesFellBack);
@@ -134,6 +140,16 @@ export default function ReadingHealth(props: { days: DailyStats[]; rows: DailySt
         n: total(againSince, again),
         draws: total(againSince, (row) => row.draws),
         unseen: total(againSince, one('reading:again-unseen')),
+      }),
+    },
+    {
+      label: 'healthAskCard',
+      value: percent(total(askedSince, asked), total(askedSince, shown)),
+      detail: t('healthAskDetail', {
+        n: total(askedSince, asked),
+        seen: total(askedSince, shown),
+        tag: total(askedSince, one('reading:ask-tag')),
+        typed: total(askedSince, one('reading:ask-typed')),
       }),
     },
     {

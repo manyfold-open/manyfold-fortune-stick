@@ -556,3 +556,40 @@ describe('日文、韩文的解签', () => {
     expect(buildInterpretPrompt('क्या करूँ?', low, 'hi')).toContain('कभी डराइए मत');
   });
 });
+
+describe('追问木牌（asks）', () => {
+  it('解签提示词在五种语言里都要 asks', () => {
+    for (const question of ['我该不该换工作？', 'Should I change jobs?', '転職すべきでしょうか？', '이직해야 할까요?', 'क्या मुझे नौकरी बदलनी चाहिए?']) {
+      expect(buildInterpretPrompt(question, stick, detectLanguage(question))).toContain('"asks":[');
+    }
+  });
+
+  it('解析出最多三句追问，去掉重复、太长和不是字符串的', () => {
+    const reply = JSON.stringify({
+      answer: '先把最要紧的一步分清楚。',
+      asks: ['什么时候开始比较好？', 42, '什么时候开始比较好？', '要先跟谁商量？', '这是一句写得太长太长太长太长太长太长太长的追问吗？', '钱的方面呢？', '第四句不要'],
+    });
+    expect(parseInterpretation(reply, stick, 'zh')?.asks).toEqual(['什么时候开始比较好？', '要先跟谁商量？', '钱的方面呢？']);
+  });
+
+  it('没有 asks 就是空的，界面自己落回固定的三句', () => {
+    expect(parseInterpretation('{"answer":"先把最要紧的一步分清楚。"}', stick, 'zh')?.asks).toEqual([]);
+  });
+
+  it('追问里的 dash 也被拿掉', () => {
+    const reply = '{"answer":"先看清楚。","asks":["Should I wait — or move?"]}';
+    expect(parseInterpretation(reply, stick, 'en')?.asks?.[0]).not.toMatch(/[—–-]/);
+  });
+
+  it('坏 JSON 的保底：action 不会把后面的 asks 吞进去', () => {
+    const reply = '{"answer":"先看清楚。","notice":"容易把"谨慎"当成拖延","action":"写下最不可逆的一步","asks":["然后呢？","要多久？"]}';
+    expect(parseInterpretation(reply, stick, 'zh')?.action).toBe('写下最不可逆的一步');
+  });
+
+  it('asks 碰不到签号、签诗和等级', () => {
+    const reply = '{"answer":"先看清楚。","asks":["然后呢？"],"stick_no":1,"level":"上上签"}';
+    const parsed = parseInterpretation(reply, stick, 'zh') as unknown as Record<string, unknown>;
+    expect(parsed.stick_no).toBeUndefined();
+    expect(parsed.level).toBeUndefined();
+  });
+});

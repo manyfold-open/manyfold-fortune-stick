@@ -95,6 +95,7 @@ function toReading(row: ReadingRow): Reading {
         answer: withoutDashes(parsed.answer ?? ''),
         notice: withoutDashes(parsed.notice ?? ''),
         action: withoutDashes(parsed.action ?? ''),
+        asks: cleanAsks(parsed.asks, ASK_LIMITS[detectLanguage(question)]),
       };
     } catch {
       interpretation = null;
@@ -200,7 +201,7 @@ export function fallbackInterpretation(stick: FortuneStick, language: Language):
   };
 }
 
-type FieldLimits = Record<keyof Omit<Interpretation, 'source' | 'language'>, number>;
+type FieldLimits = Record<keyof Omit<Interpretation, 'source' | 'language' | 'asks'>, number>;
 
 /**
  * 每个字段最多留多少个字符。按语言分开：提示词给英文的是词数（meaning 30 词以内），
@@ -215,6 +216,27 @@ const FIELD_LIMITS: Record<Language, FieldLimits> = {
   // 天城文一个字母常常是两三个码点（辅音加元音符号），同样的话比英文占的码点多
   hi: { meaning: 300, answer: 1400, notice: 320, action: 260 },
 };
+
+/**
+ * 追问木牌上一句最多几个字符。木牌一行放得下才像一块牌子，太长的不收短、直接不要 ——
+ * 一句切掉一半的问题点下去，问出去的就是半句话。
+ */
+const ASK_LIMITS: Record<Language, number> = { zh: 24, en: 80, ja: 32, ko: 40, hi: 90 };
+const MAX_ASKS = 3;
+
+/** agent 给的追问：只留字符串、去掉破折号、太长的和重复的丢掉，最多三句。 */
+export function cleanAsks(raw: unknown, limit: number): string[] {
+  if (!Array.isArray(raw)) return [];
+  const asks: string[] = [];
+  for (const item of raw) {
+    if (typeof item !== 'string') continue;
+    const ask = withoutDashes(item.trim()).replace(/\s+/g, ' ');
+    if (!ask || [...ask].length > limit || asks.includes(ask)) continue;
+    asks.push(ask);
+    if (asks.length === MAX_ASKS) break;
+  }
+  return asks;
+}
 
 /**
  * 超长时收短，但不从词中间断：英文、韩文退到最后一个空格，再补一个省略号。
@@ -265,6 +287,9 @@ function unescapeJsonish(raw: string): string {
  */
 function salvageFields(text: string): Record<string, unknown> | null {
   const anchor = new RegExp(`"(${SALVAGE_KEYS.join('|')})"\\s*:\\s*"`, 'g');
+  // 追问是数组，救不回来（界面落回固定的三句），但它的键得当边界 —— 不然排在它前面的
+  // action 会一路吞到结尾，把整串问题当成「可以做的一件小事」。
+  const stops = [...text.matchAll(/"(?:asks|questions)"\s*:\s*\[/g)].map((match) => match.index ?? text.length);
   const found: { key: string; at: number; from: number }[] = [];
   for (let match = anchor.exec(text); match; match = anchor.exec(text)) {
     found.push({ key: match[1], at: match.index, from: match.index + match[0].length });
@@ -274,7 +299,8 @@ function salvageFields(text: string): Record<string, unknown> | null {
   const salvaged: Record<string, unknown> = {};
   found.forEach((field, index) => {
     // 这个值一直延伸到下一个键为止，中间有多少引号都不管。
-    const end = found[index + 1]?.at ?? text.length;
+    const next = found[index + 1]?.at ?? text.length;
+    const end = Math.min(next, ...stops.filter((at) => at > field.from));
     const value = unescapeJsonish(
       text
         .slice(field.from, end)
@@ -391,6 +417,7 @@ export function parseInterpretation(
       notice: pick(value, ['notice', 'caveat', 'insight'], limits.notice),
       action:
         pick(value, ['action', 'suggestion', 'nextStep'], limits.action) || withoutDashes(preset.action),
+      asks: cleanAsks(value?.asks ?? value?.questions, ASK_LIMITS[language]),
       source: 'ai',
       language,
     };
@@ -527,8 +554,8 @@ ${stickBlock(stick, 'ja')}
 
 【出力形式】
 JSON オブジェクトを一つだけ出力し、ほかの文字は書かないこと。コードブロックで囲まないこと。
-文字列の中に半角のダブルクォートを入れないこと。引用したいときは「」を使う：
-{"meaning":"このおみくじがその人の問いにとって何を意味するか、やさしい言葉で一文、45 字以内","answer":"その人の問いに沿って、100 から 180 字","notice":"見落としているかもしれない一つの視点、45 字以内","action":"今日できる具体的な小さなこと一つ、35 字以内"}`;
+文字列の中に半角のダブルクォートを入れないこと。引用したいときは「」を使う。asks は、この読み解きを読んだその人が次にいちばん聞きたくなりそうな短い質問を三つ。その人自身の口調で、その人の問いとこのおみくじに沿って書き、answer ですでに答えたことは聞かない：
+{"meaning":"このおみくじがその人の問いにとって何を意味するか、やさしい言葉で一文、45 字以内","answer":"その人の問いに沿って、100 から 180 字","notice":"見落としているかもしれない一つの視点、45 字以内","action":"今日できる具体的な小さなこと一つ、35 字以内","asks":["次に聞きたいこと一つ目、20 字以内","二つ目","三つ目"]}`;
   }
 
   if (language === 'hi') {
@@ -550,8 +577,8 @@ ${stickBlock(stick, 'hi')}
 7. dash या hyphen जैसे कोई भी डैश चिह्न मत लगाइए। अल्पविराम, पूर्ण विराम «।» या कोष्ठक इस्तेमाल कीजिए।
 
 [आउटपुट]
-सिर्फ़ एक JSON object लिखिए, और कुछ नहीं। उसे code block में मत लपेटिए। किसी string के अंदर सीधे दोहरे उद्धरण चिह्न मत डालिए; कुछ उद्धृत करना हो तो «» इस्तेमाल कीजिए:
-{"meaning":"यह पर्ची उनके सवाल के लिए क्या कहती है, आसान शब्दों में एक वाक्य, 25 शब्दों के भीतर","answer":"उनके असली सवाल पर, 60 से 110 शब्द","notice":"एक बात जो शायद वे अनदेखा कर रहे हैं, 25 शब्दों के भीतर","action":"आज करने लायक एक ठोस छोटा काम, 20 शब्दों के भीतर"}`;
+सिर्फ़ एक JSON object लिखिए, और कुछ नहीं। उसे code block में मत लपेटिए। किसी string के अंदर सीधे दोहरे उद्धरण चिह्न मत डालिए; कुछ उद्धृत करना हो तो «» इस्तेमाल कीजिए। asks में तीन छोटे सवाल लिखिए जो यह अर्थ पढ़कर वे सबसे ज़्यादा आगे पूछना चाहेंगे, उन्हीं की आवाज़ में, उनके सवाल और इस पर्ची से जुड़े हुए, और जो answer में पहले ही बताया जा चुका है वह मत पूछिए:
+{"meaning":"यह पर्ची उनके सवाल के लिए क्या कहती है, आसान शब्दों में एक वाक्य, 25 शब्दों के भीतर","answer":"उनके असली सवाल पर, 60 से 110 शब्द","notice":"एक बात जो शायद वे अनदेखा कर रहे हैं, 25 शब्दों के भीतर","action":"आज करने लायक एक ठोस छोटा काम, 20 शब्दों के भीतर","asks":["पहला आगे का सवाल, 12 शब्दों के भीतर","दूसरा","तीसरा"]}`;
   }
 
   if (language === 'ko') {
@@ -574,8 +601,8 @@ ${stickBlock(stick, 'ko')}
 
 [출력 형식]
 JSON 객체 하나만 출력하고 다른 글자는 쓰지 마세요. 코드 블록으로 감싸지 마세요.
-문자열 안에 반각 큰따옴표를 넣지 마세요. 인용이 필요하면 작은따옴표를 쓰세요:
-{"meaning":"이 제비가 그 사람의 질문에 무엇을 뜻하는지 쉬운 말로 한 문장, 50자 이내","answer":"그 사람의 질문에 맞춰서 120자에서 220자","notice":"놓치고 있을지 모르는 관점 하나, 50자 이내","action":"오늘 할 수 있는 구체적인 작은 일 하나, 40자 이내"}`;
+문자열 안에 반각 큰따옴표를 넣지 마세요. 인용이 필요하면 작은따옴표를 쓰세요. asks에는 이 풀이를 읽은 그 사람이 다음에 가장 묻고 싶어 할 짧은 질문 세 개를 쓰세요. 그 사람 자신의 말투로, 그 사람의 질문과 이 제비에 맞춰 쓰고, answer에서 이미 답한 것은 묻지 마세요:
+{"meaning":"이 제비가 그 사람의 질문에 무엇을 뜻하는지 쉬운 말로 한 문장, 50자 이내","answer":"그 사람의 질문에 맞춰서 120자에서 220자","notice":"놓치고 있을지 모르는 관점 하나, 50자 이내","action":"오늘 할 수 있는 구체적인 작은 일 하나, 40자 이내","asks":["다음에 물을 질문 하나, 25자 이내","둘째","셋째"]}`;
   }
 
   if (language === 'en') {
@@ -598,8 +625,8 @@ ${stickBlock(stick, 'en')}
 
 [Output format]
 Output one JSON object and nothing else. Do not wrap it in a code block. Never put a raw
-double quote inside a string value. Use single quotes if you need to quote something:
-{"meaning":"one sentence on what this stick means for their question, plain words, under 30 words","answer":"written against their actual question, 60 to 110 words","notice":"one angle they may be overlooking, under 30 words","action":"one concrete thing they can do today, under 20 words"}`;
+double quote inside a string value. Use single quotes if you need to quote something. For asks, write the three short questions they are most likely to want to ask next after reading this, in their own voice, tied to their question and this stick, and never asking what the answer already covered:
+{"meaning":"one sentence on what this stick means for their question, plain words, under 30 words","answer":"written against their actual question, 60 to 110 words","notice":"one angle they may be overlooking, under 30 words","action":"one concrete thing they can do today, under 20 words","asks":["first question they might ask next, under 12 words","second","third"]}`;
   }
 
   return `你是「问一签」的解签人。用户刚刚求得一支签，请结合他的问题写一份解读。
@@ -620,8 +647,8 @@ ${stickBlock(stick, 'zh')}
 
 【输出格式】
 只输出一个 JSON 对象，不要输出任何其它文字，也不要用代码块包起来。字符串里不要出现
-半角双引号，要加引号就用「」：
-{"meaning":"一句话签意，用浅显的话说这支签对他这个问题意味着什么，40 字以内","answer":"结合他的问题展开，80 到 150 字","notice":"指出一个他可能忽略的角度，40 字以内","action":"一件具体的、今天就能做的小事，30 字以内"}`;
+半角双引号，要加引号就用「」。asks 写三个他读完这份解读后最可能想接着问的短问题，用他自己的口吻，紧扣他的问题和这支签，answer 里已经回答过的不要再问：
+{"meaning":"一句话签意，用浅显的话说这支签对他这个问题意味着什么，40 字以内","answer":"结合他的问题展开，80 到 150 字","notice":"指出一个他可能忽略的角度，40 字以内","action":"一件具体的、今天就能做的小事，30 字以内","asks":["他可能接着问的第一个问题，15 字以内","第二个","第三个"]}`;
 }
 
 export function buildFollowUpPrompt(

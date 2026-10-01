@@ -80,6 +80,7 @@ export const ko = {
   blockAnswer: '내 질문에 대한 답',
   blockNotice: '눈여겨볼 점',
   blockAction: '오늘 할 수 있는 작은 일',
+  blockAsks: '이어서 묻기',
   actionShare: '공유',
   actionFollowUp: '더 묻기',
   flipToReading: '풀이',
@@ -331,9 +332,13 @@ export const ko = {
   healthAgainDetail: '{draws}개 중 {n}번, 그중 풀이를 보기 전 {unseen}번',
   healthAgain: '다시 뽑음',
   healthAgainUnseen: '보기 전',
+  healthAskCard: '더 물어봄',
+  healthAskDetail: '풀이 {seen}개에 질문 {n}번, 그중 팻말 {tag}번, 직접 입력 {typed}번',
+  healthAskTag: '팻말',
+  healthAskTyped: '직접 입력',
   healthTriesWhy: '시도가 기본 풀이로 넘어간 이유: 읽을 수 없는 답 {unparseable}, 빈 답 {empty}, 시간 초과 {timeout}, Manyfold 장애나 거절 {manyfold}, 에이전트 미연결 {noAgent}, 기타 {other}.',
   healthFinalWhy: '기본 풀이로 끝난 이유: 읽을 수 없는 답 {unparseable}, 빈 답 {empty}, 시간 초과 {timeout}, Manyfold 장애나 거절 {manyfold}, 에이전트 미연결 {noAgent}, 기타 {other}.',
-  healthHowTo: '표시와 대기는 그 방문에서 새로 뽑은 제비만 세고, 기록에서 다시 연 것은 세지 않아요. 준비됨은 풀이 버튼을 눌렀을 때 이미 풀이가 와 있었다는 뜻이고, 떠남은 오기 전에 페이지를 닫거나 다시 뽑았다는 뜻이에요. 알리지 않는 기기도 있어 최소치예요. 시도는 에이전트에 한 번 묻는 것이고, 재시도는 지난번 기본 풀이로 끝난 제비에서 다시 하는 시도예요. 멈춤은 뽑은 지 2분이 넘도록 풀이가 없는 것으로, 대개 풀이가 오는 중에 페이지가 닫힌 경우예요. 재시도는 최종 결과를 덮어쓰므로 그쪽은 마지막 시도만 보여 줘요. 다시 뽑음은 결과 화면에서 다시 뽑기를 누를 때마다 세며, 세기 시작한 날부터 집계해요.',
+  healthHowTo: '표시와 대기는 그 방문에서 새로 뽑은 제비만 세고, 기록에서 다시 연 것은 세지 않아요. 준비됨은 풀이 버튼을 눌렀을 때 이미 풀이가 와 있었다는 뜻이고, 떠남은 오기 전에 페이지를 닫거나 다시 뽑았다는 뜻이에요. 알리지 않는 기기도 있어 최소치예요. 시도는 에이전트에 한 번 묻는 것이고, 재시도는 지난번 기본 풀이로 끝난 제비에서 다시 하는 시도예요. 멈춤은 뽑은 지 2분이 넘도록 풀이가 없는 것으로, 대개 풀이가 오는 중에 페이지가 닫힌 경우예요. 재시도는 최종 결과를 덮어쓰므로 그쪽은 마지막 시도만 보여 줘요. 다시 뽑음은 결과 화면에서 다시 뽑기를 누를 때마다 세며, 세기 시작한 날부터 집계해요. 더 물어봄은 결과 페이지에서 질문을 보낼 때마다 셉니다. 풀이 뒷면이나 질문 창의 팻말을 누른 것은 팻말로 세고, 세기 시작한 날부터 집계합니다.',
 
   /* ── the share experiment on #settings ── */
   shareExpTitle: '공유 실험',

@@ -100,6 +100,14 @@ export default function ReadingResult(props: {
   const [flipped, setFlipped] = useState(Boolean(interpretation));
   const [settled, setSettled] = useState(Boolean(interpretation));
   const [panel, setPanel] = useState<Panel>(null);
+  /** 在解籤背面點的那塊追問木牌：追問那張紙打開就替他問出去 */
+  const [pendingAsk, setPendingAsk] = useState<string | null>(null);
+  /**
+   * 解籤攤在眼前過了沒。沒看過之前，正面只有「解签」一個去處，「再求一签」要等看過才出現 ——
+   * 以前三成多的籤沒被看到，大多是解籤還沒翻就被重抽掉了（#settings 的「没看解签」）。
+   * 重新整理、從記錄打開的已經解好，一開始就算看過。點 logo 回首頁照樣能重來。
+   */
+  const [seenOnce, setSeenOnce] = useState(Boolean(interpretation));
   const [tarotBridgePending, setTarotBridgePending] = useState(false);
   const emaRef = useRef<HTMLDivElement | null>(null);
   /** 只看第一次掛上來時有沒有 —— 之後解籤、翻面重渲染都不能再滑一次。 */
@@ -168,7 +176,9 @@ export default function ReadingResult(props: {
 
   const { onSeen } = props;
   useEffect(() => {
-    if (showBack && interpretation) onSeen?.();
+    if (!showBack || !interpretation) return;
+    setSeenOnce(true);
+    onSeen?.();
   }, [showBack, interpretation, onSeen]);
 
   // 按了解籤、還沒等到就走了：關掉分頁，或在這一頁上再求一籤、回首頁（這一頁被拆掉）
@@ -281,8 +291,20 @@ export default function ReadingResult(props: {
 
   const togglePanel = (next: Exclude<Panel, null>) => {
     if (next === 'share' && panel !== 'share') recordShareOpened(extreme);
+    setPendingAsk(null);
     setPanel((open) => (open === next ? null : next));
   };
+
+  /** 點一塊追問木牌：打開追問那張紙，替他把這一句問出去 */
+  const askFromTag = (question: string) => {
+    setPendingAsk(question);
+    setPanel('followup');
+  };
+
+  /** agent 替這一支寫的追問；通用解釋、舊記錄沒有，就掛固定的三句（跟紙的語言走） */
+  const asks = interpretation?.asks?.length
+    ? interpretation.asks
+    : [sheet.followUpQuick1, sheet.followUpQuick2, sheet.followUpQuick3];
 
   /**
    * Tarot opens in a new tab, so this stick and its reading stay put. The tab
@@ -356,6 +378,19 @@ export default function ReadingResult(props: {
             </section>
           )}
         </div>
+      )}
+
+      {!props.interpreting && (
+        <section className="sheet-block sheet-block-asks">
+          <h3>{sheet.blockAsks}</h3>
+          <div className="ask-tags">
+            {asks.map((question) => (
+              <button key={question} type="button" className="ask-tag" onClick={() => askFromTag(question)}>
+                {question}
+              </button>
+            ))}
+          </div>
+        </section>
       )}
 
       {props.interpreting && (
@@ -527,13 +562,22 @@ export default function ReadingResult(props: {
                         <>
                           <div className="share-head">
                             <strong>{t('actionFollowUp')}</strong>
-                            <button type="button" className="text-action tiny" onClick={() => setPanel(null)}>
+                            <button
+                              type="button"
+                              className="text-action tiny"
+                              onClick={() => {
+                                setPendingAsk(null);
+                                setPanel(null);
+                              }}
+                            >
                               {t('shareClose')}
                             </button>
                           </div>
                           <FollowUp
                             readingId={reading.id}
                             language={reading.language}
+                            asks={interpretation.asks}
+                            initialAsk={pendingAsk}
                             onMessages={props.onFollowUpMessages}
                           />
                         </>
@@ -561,11 +605,13 @@ export default function ReadingResult(props: {
                   {props.interpreting ? t('interpreting') : t('interpret')}
                 </button>
               )}
-              <div className="sheet-sub-actions">
-                <button type="button" className="text-action" onClick={props.onRestart}>
-                  {t('actionRestart')}
-                </button>
-              </div>
+              {(seenOnce || props.error) && (
+                <div className="sheet-sub-actions">
+                  <button type="button" className="text-action" onClick={props.onRestart}>
+                    {t('actionRestart')}
+                  </button>
+                </div>
+              )}
               {/* 領獎的第一步就是按「解籤」：從 Tarot 來的人在這裡先知道。排在木札那一行底下，不擠它 */}
               {rewardMode && <p className="tarot-reward-hint">{t('tarotRewardHint')}</p>}
               {props.error && <p className="fault">{props.error}</p>}
