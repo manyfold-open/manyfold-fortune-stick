@@ -7088,3 +7088,47 @@ html.knot-hover, html.knot-hover * { cursor: pointer !important; }
   .knot-slip { animation: none; }
 }
 .knot-slip.calm { animation: none; }
+
+/*
+ * 追問木牌：解籤最底下掛著的幾塊小木札，寫著他讀完最可能想接著問的話（agent 寫的，
+ * 沒有就是固定的三句）。點一塊就打開追問那張紙、替他問出去。是紙上的東西，不是輸入框（規則 7）。
+ */
+.result .sheet-block-asks {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--seal) 28%, transparent);
+}
+
+.result .ask-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.result .ask-tag {
+  padding: 5px 12px;
+  border: 0;
+  border-radius: 4px;
+  background: linear-gradient(180deg, var(--wood-hi), var(--wood));
+  box-shadow: inset 0 0 0 1px var(--wood-edge), 0 2px 4px rgba(92, 62, 32, 0.16);
+  color: var(--wood-ink);
+  font: 13.5px/1.45 var(--font-mincho);
+  letter-spacing: 0.04em;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.result .ask-tag:hover,
+.result .ask-tag:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: inset 0 0 0 1px var(--wood-edge), 0 4px 8px rgba(92, 62, 32, 0.2);
+}
+
+.result .ask-tag:active {
+  transform: scale(0.97);
+}
+
+.result .sheet[data-lang='en'] .ask-tag {
+  letter-spacing: 0;
+}

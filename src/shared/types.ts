@@ -74,7 +74,12 @@ export interface Interpretation {
   /** 可以做的一件小事 */
   action: string;
   /**
-   * 'ai'      — personalised, generated from the user's question
+   * 读完最可能想接着问的几句（最多三句，用问的人自己的口吻）。解签背面挂成木牌，一点就追问。
+   * 只是追问的引子：不碰签号、签诗、吉凶（规则 5）。通用解释和旧记录没有，界面落回固定的三句。
+   */
+  asks?: string[];
+  /**
+   * 'ai'    — personalised, generated from the user's question
    * 'fallback'— the stick's pre-written text, shown because generation failed
    */
   source: 'ai' | 'fallback';

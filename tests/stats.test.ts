@@ -220,7 +220,7 @@ describe('reading health', () => {
   });
 
   it('lets the page report what it saw and how long it waited, but never an interpretation', async () => {
-    for (const metric of ['reading:shown-ai', 'reading:shown-fallback', 'reading:again-seen', 'reading:again-unseen', 'wait:ready', 'wait:30plus', 'wait:left']) {
+    for (const metric of ['reading:shown-ai', 'reading:shown-fallback', 'reading:again-seen', 'reading:again-unseen', 'reading:ask-tag', 'reading:ask-typed', 'wait:ready', 'wait:30plus', 'wait:left']) {
       expect((await call(`/api/stats/${metric}`, { body: {} })).status).toBe(200);
       expect(count(metric)).toBeGreaterThan(0);
     }

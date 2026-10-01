@@ -93,6 +93,12 @@ export function recordWaitLeft(): void {
   count('wait:left', { keepalive: true });
 }
 
+/** A further question went out: from a wooden tag (the agent's suggested
+ *  asks, or the fixed three) or typed out by hand. */
+export function recordFollowUp(via: 'tag' | 'typed'): void {
+  count(`reading:ask-${via}`);
+}
+
 /** 再求一籤 was pressed on a result page (or the logo tapped there), and
  *  whether that stick's reading had been on screen before it. */
 export function recordDrawAgain(sawReading: boolean): void {
