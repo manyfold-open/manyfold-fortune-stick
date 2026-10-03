@@ -107,6 +107,17 @@ Rules for anyone — human or AI agent — iterating on it. These are the load-b
    - a fresh draw is interpreted in the background right away (`warmUp` in `FortuneGame.tsx`),
      so every drawn stick bills one turn whether or not 解签 is pressed. Pressing it while that
      request is in flight must reuse it, never send a second one for the same attempt.
+    - connect more than one agent (ideally one that runs somewhere else) and a turn that fails
+     moves on to the next (`src/worker/failover.ts`, `agent-health.ts`); readings are shared out
+     across the agents by reading id, and a failed agent waits at the back of the line for
+     `AGENT_COOLDOWN_MS`. Keep these true: failover only chooses who interprets (never the stick);
+     a reply that arrives but does not parse is **not** a failover case, because that agent has
+     already answered and billed; a follow-up only moves on before any text has reached the
+     visitor; an agent's `contextId` / `taskId` go back only to the agent that issued them
+     (`reading_agents`), and a different agent gets the grounded prompt without them; "recovered" is
+     announced only when no connected agent is still marked down. A turn that ends in
+     `failed` / `canceled` / `rejected` / `auth-required` is a failure even when it carries text
+     (`replyOrFailure`), or the agent's own error sentence is printed on the slip as the reading.
 15. **Keep new routes behind the admin gate.** Any route added under `/api/` is protected by
    the `ADMIN_PASSWORD` middleware automatically — do not add exceptions beyond `/api/health`
    and `/api/state` without a reason as good as theirs.

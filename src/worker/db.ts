@@ -90,6 +90,15 @@ CREATE TABLE IF NOT EXISTS reading_messages (
 
 CREATE INDEX IF NOT EXISTS idx_reading_messages ON reading_messages (reading_id, id);
 
+-- Which agent holds the context_id stored on a reading. A context belongs to one
+-- agent, so when more than one is connected a follow-up only sends it back to the
+-- agent that issued it (src/worker/failover.ts). A table of its own because there is
+-- no migration step to add a column to readings.
+CREATE TABLE IF NOT EXISTS reading_agents (
+  reading_id TEXT PRIMARY KEY,
+  agent_id   TEXT NOT NULL
+);
+
 -- A Tarot reward claim for a finished reading: a random code handed to Tarot in
 -- the link, which Tarot's Worker looks up here (over a service binding) before
 -- it grants anything. One code per reading, so drawing it twice cannot mint two.
