@@ -29,7 +29,7 @@ import {
 import { UNPARSEABLE } from '../shared/error-copy';
 import { withoutDashes } from '../shared/text';
 import { HttpError, type AgentCredential, type Env } from './types';
-import { A2AError, consumeA2AStream, safeErrorText } from './a2a';
+import { consumeA2AStream, replyOrFailure, safeErrorText } from './a2a';
 import { reportAgentFailure, reportAgentSuccess } from './alerts';
 import { credentialFor, listConnectedAgents } from './connect';
 import { now } from './db';
@@ -817,18 +817,7 @@ async function askAgent(
       },
       signal: controller.signal,
     });
-    const reply = snapshot.text.trim();
-    // agent 自己失败了（没配模型、额度用完、内部报错）和「回了内容但格式不对」是两回事。
-    // 不在这里分开，两种情况都会落到「解签内容没有按预期返回」，排查的人会被带去改提示词，
-    // 而真正的原因在 agent 那一侧。
-    if (!reply) {
-      throw new A2AError(
-        snapshot.state && snapshot.state !== 'completed'
-          ? `${cred.label} 在 ${snapshot.state} 状态下结束，没有返回任何内容。`
-          : `${cred.label} 没有返回任何内容。`,
-        true,
-      );
-    }
+    const reply = replyOrFailure(snapshot, cred.label);
     return { text: reply, contextId: snapshot.contextId, taskId: snapshot.taskId };
   } finally {
     clearTimeout(timer);
@@ -1043,15 +1032,7 @@ export async function handleFollowUp(options: {
         },
       });
 
-      const text = withoutDashes(snapshot.text.trim());
-      if (!text) {
-        throw new A2AError(
-          snapshot.state && snapshot.state !== 'completed'
-            ? `${cred.label} 在 ${snapshot.state} 状态下结束，没有返回任何内容。`
-            : `${cred.label} 没有返回任何内容。`,
-          true,
-        );
-      }
+      const text = withoutDashes(replyOrFailure(snapshot, cred.label));
       await insertFollowUp(env, readingId, { role: 'agent', content: text });
       await env.DB.prepare(
         'UPDATE readings SET context_id = ?, active_task_id = ?, updated_at = ? WHERE id = ?',

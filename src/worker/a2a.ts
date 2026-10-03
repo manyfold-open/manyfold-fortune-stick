@@ -176,7 +176,7 @@ export async function describeFromCard(cardUrl: string): Promise<string> {
 /* ───────── streaming ───────── */
 
 /** 终态里代表「这一轮没成」的那些。失败时才值得多等一帧错误说明。 */
-const FAILURE_STATES = new Set(['failed', 'canceled', 'rejected', 'auth-required']);
+export const FAILURE_STATES = new Set(['failed', 'canceled', 'rejected', 'auth-required']);
 
 /** 失败终态之后，最多再等多久去接那一帧说明原因的 JSON-RPC error。 */
 const ERROR_FRAME_GRACE_MS = 1_500;
@@ -189,6 +189,41 @@ export const TERMINAL_STATES = new Set([
   'input-required',
   'auth-required',
 ]);
+
+/**
+ * The reply text of a finished turn, or the reason it did not finish.
+ *
+ * A turn that ended in a failure state is a failure even when it carries text: an
+ * agent reports why it failed (「The agent's computer is unavailable」) in the status
+ * message, and the accumulator uses that as the reply when nothing else was said.
+ * Without this check the sentence is handed to the interpretation parser and, having
+ * no braces, is printed on the slip as if it were the reading.
+ */
+export function replyOrFailure(snapshot: StreamSnapshot, label: string): string {
+  const reply = snapshot.text.trim();
+  if (FAILURE_STATES.has(snapshot.state)) {
+    // 说得出原因就带上原因，排查的人要看的就是这一句。
+    throw new A2AError(
+      reply
+        ? `${label} 在 ${snapshot.state} 状态下结束：${reply}`
+        : `${label} 在 ${snapshot.state} 状态下结束，没有返回任何内容。`,
+      snapshot.state === 'failed' || snapshot.state === 'canceled',
+      snapshot.state === 'auth-required',
+    );
+  }
+  // agent 自己失败了（没配模型、额度用完、内部报错）和「回了内容但格式不对」是两回事：
+  // 不在这里分开，两种情况都会落到「解签内容没有按预期返回」，排查的人会被带去改提示词，
+  // 而真正的原因在 agent 那一侧。
+  if (!reply) {
+    throw new A2AError(
+      snapshot.state && snapshot.state !== 'completed'
+        ? `${label} 在 ${snapshot.state} 状态下结束，没有返回任何内容。`
+        : `${label} 没有返回任何内容。`,
+      true,
+    );
+  }
+  return reply;
+}
 
 export interface StreamSnapshot {
   taskId: string | null;

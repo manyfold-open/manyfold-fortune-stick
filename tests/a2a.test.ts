@@ -3,6 +3,7 @@ import {
   A2AError,
   consumeA2AStream,
   foldA2AResults,
+  replyOrFailure,
   safeErrorText,
   validateA2AUrl,
 } from '../src/worker/a2a';
@@ -211,5 +212,47 @@ describe('consumeA2AStream（SSE 读取）', () => {
       state: 'completed',
       terminal: true,
     });
+  });
+});
+
+describe('replyOrFailure（失败终态不是回复）', () => {
+  const reason = "The agent's computer is unavailable. Reconnect it and try again.";
+  const failedWithReason = () =>
+    foldA2AResults([
+      { kind: 'status-update', taskId: 't1', status: { state: 'failed', message: { parts: [{ text: reason }] } }, final: true },
+    ]);
+
+  it('failed 带着原因文字：抛错并保留原因，而不是把它当成解读', () => {
+    expect(() => replyOrFailure(failedWithReason(), 'Agent')).toThrow(A2AError);
+    expect(() => replyOrFailure(failedWithReason(), 'Agent')).toThrow(/failed 状态下结束：.*computer is unavailable/);
+  });
+
+  it('failed 什么都没说：照旧抛错', () => {
+    const snapshot = foldA2AResults([{ kind: 'status-update', taskId: 't1', status: { state: 'failed' }, final: true }]);
+    expect(() => replyOrFailure(snapshot, 'Agent')).toThrow(/没有返回任何内容/);
+  });
+
+  it('auth-required 要求刷新凭证，failed 可重试，rejected 不可重试', () => {
+    const thrown = (state: string) => {
+      try {
+        replyOrFailure(foldA2AResults([{ kind: 'status-update', taskId: 't', status: { state, message: { parts: [{ text: 'x' }] } }, final: true }]), 'Agent');
+      } catch (error) {
+        return error as A2AError;
+      }
+      throw new Error('did not throw');
+    };
+    expect(thrown('auth-required').refreshCredential).toBe(true);
+    expect(thrown('failed').retryable).toBe(true);
+    expect(thrown('rejected').retryable).toBe(false);
+  });
+
+  it('正常完成：原样返回文本；completed 但没文本：抛错', () => {
+    const ok = foldA2AResults([
+      { kind: 'artifact-update', taskId: 't', artifact: { artifactId: 'a', parts: [{ text: ' hello ' }] } },
+      { kind: 'status-update', taskId: 't', status: { state: 'completed' }, final: true },
+    ]);
+    expect(replyOrFailure(ok, 'Agent')).toBe('hello');
+    const empty = foldA2AResults([{ kind: 'status-update', taskId: 't', status: { state: 'completed' }, final: true }]);
+    expect(() => replyOrFailure(empty, 'Agent')).toThrow(/没有返回任何内容/);
   });
 });
