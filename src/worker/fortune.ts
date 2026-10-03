@@ -29,9 +29,10 @@ import {
 import { UNPARSEABLE } from '../shared/error-copy';
 import { withoutDashes } from '../shared/text';
 import { HttpError, type AgentCredential, type Env } from './types';
-import { A2AError, consumeA2AStream, safeErrorText } from './a2a';
-import { reportAgentFailure, reportAgentSuccess } from './alerts';
-import { credentialFor, listConnectedAgents } from './connect';
+import { FAILURE_STATES, consumeA2AStream, replyOrFailure, safeErrorText } from './a2a';
+import { reportAgentFailure } from './alerts';
+import { listConnectedAgents } from './connect';
+import { noteAgentOk, planAgents, withFailover } from './failover';
 import { now } from './db';
 import { bumpStatQuietly } from './stats';
 import { fallbackReason, replyBucket } from '../shared/stats';
@@ -42,6 +43,9 @@ const FOLLOW_UP_MAX_CHARS = 200;
 const FOLLOW_UP_HISTORY_LIMIT = 50;
 const INTERPRET_TIMEOUT_MS = 90_000;
 const FOLLOW_UP_TIMEOUT_MS = 90_000;
+/** Across every agent a turn is handed to; stays under STUCK_AFTER_MS (src/worker/stats.ts). */
+const INTERPRET_BUDGET_MS = 110_000;
+const FOLLOW_UP_BUDGET_MS = 110_000;
 const TEXT_EVENT_INTERVAL_MS = 150;
 
 /* ───────── 抽签 ───────── */
@@ -158,6 +162,7 @@ export async function getReading(env: Env, id: string): Promise<Reading> {
 export async function deleteReading(env: Env, id: string): Promise<void> {
   await env.DB.batch([
     env.DB.prepare('DELETE FROM reading_messages WHERE reading_id = ?').bind(id),
+    env.DB.prepare('DELETE FROM reading_agents WHERE reading_id = ?').bind(id),
     env.DB.prepare('DELETE FROM readings WHERE id = ?').bind(id),
   ]);
 }
@@ -767,22 +772,35 @@ const notExpired = (expiresAt: string | null): boolean =>
   !expiresAt || Date.parse(expiresAt) > Date.now();
 
 /**
- * 游戏界面上没有 agent 选择器（那是 settings 的事），所以这里替用户挑：
- * 优先已验证且未过期的，其次任何未过期的。
+ * 游戏界面上没有 agent 选择器（那是 settings 的事），所以这里替用户挑：谁来解、
+ * 失败了换谁，都在 src/worker/failover.ts。
+ *
+ * 一个 agent 的上下文（contextId / taskId）只属于签发它的那个 agent。记在
+ * reading_agents 里，追问和重试时只把它还给同一个 agent；换了 agent，上下文就丢掉，
+ * 靠提示词里原样带上的问题、签和解读接着答（AGENTS.md 第 4 条）。
  */
-export async function pickInterpreter(env: Env): Promise<AgentCredential> {
-  const agents = await listConnectedAgents(env);
-  const usable = agents.filter((agent) => notExpired(agent.expiresAt));
-  const chosen = usable.find((agent) => agent.verified) ?? usable[0];
-  if (!chosen) {
-    throw new HttpError(
-      503,
-      'no_interpreter',
-      '解签的 agent 还没连上。先到设置页连接一个 Manyfold agent。',
-    );
-  }
-  return credentialFor(env, chosen.agentId);
+async function contextOwner(env: Env, readingId: string): Promise<string | null> {
+  const row = await env.DB.prepare('SELECT agent_id FROM reading_agents WHERE reading_id = ?')
+    .bind(readingId)
+    .first<{ agent_id: string }>();
+  return row?.agent_id ?? null;
 }
+
+async function setContextOwner(env: Env, readingId: string, agentId: string): Promise<void> {
+  await env.DB.prepare(
+    `INSERT INTO reading_agents (reading_id, agent_id) VALUES (?, ?)
+     ON CONFLICT (reading_id) DO UPDATE SET agent_id = excluded.agent_id`,
+  )
+    .bind(readingId, agentId)
+    .run();
+}
+
+/**
+ * 这个 agent 能不能用这一行存下的上下文。没有记录的旧记录出自「只有一个 agent」的年代，
+ * 所以只有一个 agent 时照旧还给它；有多个就不确定是谁的，不带。
+ */
+const ownsContext = (owner: string | null, agentId: string, total: number): boolean =>
+  owner ? owner === agentId : total === 1;
 
 export async function interpreterReady(env: Env): Promise<boolean> {
   const agents = await listConnectedAgents(env);
@@ -817,18 +835,7 @@ async function askAgent(
       },
       signal: controller.signal,
     });
-    const reply = snapshot.text.trim();
-    // agent 自己失败了（没配模型、额度用完、内部报错）和「回了内容但格式不对」是两回事。
-    // 不在这里分开，两种情况都会落到「解签内容没有按预期返回」，排查的人会被带去改提示词，
-    // 而真正的原因在 agent 那一侧。
-    if (!reply) {
-      throw new A2AError(
-        snapshot.state && snapshot.state !== 'completed'
-          ? `${cred.label} 在 ${snapshot.state} 状态下结束，没有返回任何内容。`
-          : `${cred.label} 没有返回任何内容。`,
-        true,
-      );
-    }
+    const reply = replyOrFailure(snapshot, cred.label);
     return { text: reply, contextId: snapshot.contextId, taskId: snapshot.taskId };
   } finally {
     clearTimeout(timer);
@@ -869,20 +876,32 @@ export async function interpretReading(env: Env, id: string): Promise<Reading> {
   let contextId = row.context_id;
   let taskId = row.active_task_id;
   /** When the agent was asked; stays null if there was no agent to ask. */
-  let askedAt: number | null = null;
+  const asked: { at: number | null } = { at: null };
+  /** The agent that actually answered, when one did. */
+  let answeredBy: string | null = null;
 
   try {
-    const cred = await pickInterpreter(env);
-    askedAt = Date.now();
-    const answer = await askAgent(
-      cred,
-      // 由存储行推导，不用随机值 —— 连点两下是同一则消息，刻意的重试是新的一则。
-      interpretMessageId(reading.id, row.updated_at),
-      buildInterpretPrompt(reading.question, reading.stick, reading.language),
-      { contextId, taskId: null },
-      INTERPRET_TIMEOUT_MS,
-    );
-    contextId = answer.contextId ?? contextId;
+    const owner = await contextOwner(env, reading.id);
+    const agents = await planAgents(env, reading.id, owner);
+    const { value: answer, agent } = await withFailover(env, {
+      agents,
+      kind: 'interpret',
+      attemptMs: INTERPRET_TIMEOUT_MS,
+      budgetMs: INTERPRET_BUDGET_MS,
+      run: ({ agent: candidate, cred, timeoutMs, total }) => {
+        asked.at = Date.now();
+        return askAgent(
+          cred,
+          // 由存储行推导，不用随机值 —— 连点两下是同一则消息，刻意的重试是新的一则。
+          interpretMessageId(reading.id, row.updated_at),
+          buildInterpretPrompt(reading.question, reading.stick, reading.language),
+          { contextId: ownsContext(owner, candidate.agentId, total) ? contextId : null, taskId: null },
+          timeoutMs,
+        );
+      },
+    });
+    answeredBy = agent.agentId;
+    contextId = answer.contextId ?? (ownsContext(owner, agent.agentId, agents.length) ? contextId : null);
     taskId = null;
     const parsed = parseInterpretation(answer.text, reading.stick, reading.language);
     if (parsed) {
@@ -914,16 +933,17 @@ export async function interpretReading(env: Env, id: string): Promise<Reading> {
   )
     .bind(JSON.stringify(interpretation), status, error, contextId, taskId, now(), id)
     .run();
+  if (answeredBy) await setContextOwner(env, id, answeredBy);
 
   // One count per try, for #settings: how it went, whether it was a retry, and
   // how long the agent took. Totals only; nothing names this reading.
   await Promise.all([
     bumpStatQuietly(env, status === 'interpreted' ? 'interpret:ok' : `interpret:fallback-${fallbackReason(error)}`),
     row.status === 'failed' ? bumpStatQuietly(env, 'interpret:retry') : undefined,
-    askedAt === null ? undefined : bumpStatQuietly(env, `interpret:${replyBucket(Date.now() - askedAt)}`),
+    asked.at === null ? undefined : bumpStatQuietly(env, `interpret:${replyBucket(Date.now() - asked.at)}`),
     // The visitor still gets the stick's own text on a 200, so this is the
     // only place a failed interpretation gets noticed (src/worker/alerts.ts).
-    status === 'interpreted' ? reportAgentSuccess(env) : reportAgentFailure(env, 'interpret', error),
+    status === 'interpreted' && answeredBy ? noteAgentOk(env, answeredBy) : reportAgentFailure(env, 'interpret', error),
   ]);
 
   return toReading(await readRow(env, id));
@@ -993,7 +1013,8 @@ export async function handleFollowUp(options: {
   }
 
   // 会失败的事都放在开始流式之前，这样错误还能以正常的 JSON 状态码返回。
-  const cred = await pickInterpreter(env);
+  const owner = await contextOwner(env, readingId);
+  const agents = await planAgents(env, readingId, owner);
   const userMessageId = await insertFollowUp(env, readingId, { role: 'user', content: message });
   const prompt = buildFollowUpPrompt(reading, reading.interpretation, message, reading.language);
 
@@ -1013,53 +1034,67 @@ export async function handleFollowUp(options: {
   };
 
   const pump = async () => {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), FOLLOW_UP_TIMEOUT_MS);
     let lastTextSent = 0;
     let partial = '';
+    /** 一个字都还没送到浏览器，才能换 agent；送出去了再换，页面上就是两个 agent 拼起来的回答。 */
+    let sentText = false;
     try {
       await send({ type: 'status', state: 'submitted' });
-      const snapshot = await consumeA2AStream({
-        cred,
-        params: {
-          message: {
-            kind: 'message',
-            role: 'user',
-            messageId: `qianyi-${readingId}-${userMessageId}`,
-            ...(row.context_id ? { contextId: row.context_id } : {}),
-            ...(row.active_task_id ? { taskId: row.active_task_id } : {}),
-            parts: [{ kind: 'text', text: prompt }],
-          },
-          configuration: { acceptedOutputModes: ['text/plain'] },
-        },
-        signal: controller.signal,
-        onSnapshot: async (current) => {
-          partial = withoutDashes(current.text);
-          const timestamp = Date.now();
-          if (current.text && (timestamp - lastTextSent >= TEXT_EVENT_INTERVAL_MS || current.terminal)) {
-            lastTextSent = timestamp;
-            await send({ type: 'text', text: partial });
+      const { value, agent } = await withFailover(env, {
+        agents,
+        kind: 'follow-up',
+        attemptMs: FOLLOW_UP_TIMEOUT_MS,
+        budgetMs: FOLLOW_UP_BUDGET_MS,
+        canHandOn: () => !sentText,
+        run: async ({ agent: candidate, cred, timeoutMs, total }) => {
+          partial = '';
+          const keepContext = ownsContext(owner, candidate.agentId, total);
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), timeoutMs);
+          try {
+            const snapshot = await consumeA2AStream({
+              cred,
+              params: {
+                message: {
+                  kind: 'message',
+                  role: 'user',
+                  messageId: `qianyi-${readingId}-${userMessageId}`,
+                  ...(keepContext && row.context_id ? { contextId: row.context_id } : {}),
+                  ...(keepContext && row.active_task_id ? { taskId: row.active_task_id } : {}),
+                  parts: [{ kind: 'text', text: prompt }],
+                },
+                configuration: { acceptedOutputModes: ['text/plain'] },
+              },
+              signal: controller.signal,
+              onSnapshot: async (current) => {
+                // 失败终态里的文字是失败原因，不是回答：不往页面上送。
+                if (FAILURE_STATES.has(current.state)) return;
+                partial = withoutDashes(current.text);
+                const timestamp = Date.now();
+                if (current.text && (timestamp - lastTextSent >= TEXT_EVENT_INTERVAL_MS || current.terminal)) {
+                  lastTextSent = timestamp;
+                  sentText = true;
+                  await send({ type: 'text', text: partial });
+                }
+              },
+            });
+            return { snapshot, text: withoutDashes(replyOrFailure(snapshot, cred.label)), keepContext };
+          } finally {
+            clearTimeout(timer);
           }
         },
       });
 
-      const text = withoutDashes(snapshot.text.trim());
-      if (!text) {
-        throw new A2AError(
-          snapshot.state && snapshot.state !== 'completed'
-            ? `${cred.label} 在 ${snapshot.state} 状态下结束，没有返回任何内容。`
-            : `${cred.label} 没有返回任何内容。`,
-          true,
-        );
-      }
+      const { snapshot, text, keepContext } = value;
       await insertFollowUp(env, readingId, { role: 'agent', content: text });
       await env.DB.prepare(
         'UPDATE readings SET context_id = ?, active_task_id = ?, updated_at = ? WHERE id = ?',
       )
-        .bind(snapshot.contextId ?? row.context_id, null, now(), readingId)
+        .bind(snapshot.contextId ?? (keepContext ? row.context_id : null), null, now(), readingId)
         .run();
+      await setContextOwner(env, readingId, agent.agentId);
       await send({ type: 'done', text });
-      await reportAgentSuccess(env);
+      await noteAgentOk(env, agent.agentId);
     } catch (cause) {
       const detail = withoutDashes(
         cause instanceof Error ? safeErrorText(cause.message) : safeErrorText(cause),
@@ -1073,7 +1108,6 @@ export async function handleFollowUp(options: {
       });
       await send({ type: 'error', message: detail });
     } finally {
-      clearTimeout(timer);
       try {
         await writer.close();
       } catch {

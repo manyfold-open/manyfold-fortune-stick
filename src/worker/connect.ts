@@ -36,6 +36,7 @@ import {
   validateA2AUrl,
 } from './a2a';
 import { seal, unseal } from './crypto';
+import { markAgentUp } from './agent-health';
 import { now } from './db';
 
 const DEFAULT_API_BASE = 'https://api.manyfold.ai';
@@ -309,11 +310,18 @@ async function saveConnectedAgent(env: Env, entry: PollAgent): Promise<Connected
 
   // 换了 token 就等于在 agent 侧开了一个新会话：存在求签记录上的 contextId 属于旧凭证，
   // 留着只会让下一次追问带着一个对方不认识的上下文过去。签本身一个字都不动。
+  // 只清这个 agent 名下的（和还没记下归属的旧记录）：连上第二个 agent，不该抹掉第一个
+  // agent 手里仍然有效的上下文。
   await env.DB.prepare(
-    'UPDATE readings SET context_id = NULL, active_task_id = NULL, updated_at = ? WHERE context_id IS NOT NULL',
+    `UPDATE readings SET context_id = NULL, active_task_id = NULL, updated_at = ?
+     WHERE context_id IS NOT NULL
+       AND (id IN (SELECT reading_id FROM reading_agents WHERE agent_id = ?)
+            OR id NOT IN (SELECT reading_id FROM reading_agents))`,
   )
-    .bind(t)
+    .bind(t, entry.agentId)
     .run();
+  // 新 token 是新的开始：之前记下的失败不再说明什么。
+  await markAgentUp(env, entry.agentId);
 
   return {
     agentId: entry.agentId,
@@ -394,4 +402,5 @@ export async function verifyAgent(env: Env, agentId: string): Promise<ConnectedA
 export async function disconnectAgent(env: Env, agentId: string): Promise<void> {
   // 求签记录不挂在 agent 上：换一个解签 agent 不该抹掉用户抽过的签。
   await env.DB.prepare('DELETE FROM agents WHERE agent_id = ?').bind(agentId).run();
+  await markAgentUp(env, agentId);
 }
