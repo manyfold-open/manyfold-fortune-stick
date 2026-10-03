@@ -26,7 +26,7 @@
 
 import type { ConnectedAgent } from '../shared/types';
 import { reportAgentFailure, reportAgentSuccess, type FailureKind } from './alerts';
-import { markAgentDown, markAgentUp, orderAgents, readDownAgents } from './agent-health';
+import { markAgentDown, markAgentUp, orderAgents } from './agent-health';
 import { credentialFor, listConnectedAgents } from './connect';
 import { HttpError, type AgentCredential, type Env } from './types';
 
@@ -54,7 +54,9 @@ export async function planAgents(
       '解签的 agent 还没连上。先到设置页连接一个 Manyfold agent。',
     );
   }
-  return orderAgents(usable, await readDownAgents(env), seed, Date.now(), preferred);
+  const down = new Map<string, number>();
+  for (const agent of usable) if (agent.lastFailedAt) down.set(agent.agentId, Date.parse(agent.lastFailedAt));
+  return orderAgents(usable, down, seed, Date.now(), preferred);
 }
 
 export interface Attempt {
@@ -122,7 +124,6 @@ export async function withFailover<T>(
  */
 export async function noteAgentOk(env: Env, agentId: string): Promise<void> {
   await markAgentUp(env, agentId);
-  const connected = new Set((await listConnectedAgents(env)).map((agent) => agent.agentId));
-  const stillDown = [...(await readDownAgents(env)).keys()].some((id) => connected.has(id));
+  const stillDown = (await listConnectedAgents(env)).some((agent) => agent.lastFailedAt !== null);
   if (!stillDown) await reportAgentSuccess(env);
 }

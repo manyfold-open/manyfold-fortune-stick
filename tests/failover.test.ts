@@ -10,6 +10,7 @@ import { AGENT_COOLDOWN_MS, orderAgents } from '../src/worker/agent-health';
 import { saveDiscordWebhook, reportAgentFailure } from '../src/worker/alerts';
 import { seal } from '../src/worker/crypto';
 import { ensureSchema } from '../src/worker/db';
+import { listConnectedAgents } from '../src/worker/connect';
 import { noteAgentOk } from '../src/worker/failover';
 import { createReading, handleFollowUp, interpretReading } from '../src/worker/fortune';
 import type { ConnectedAgent } from '../src/shared/types';
@@ -291,6 +292,24 @@ describe('恢复通知', () => {
   });
 });
 
+describe('设置页看得见的失败标记', () => {
+  it('失败的 agent 带着 lastFailedAt，下一次成功就清掉；没失败过的是 null', async () => {
+    behaviour['a.test'] = 'runner-down';
+    const reading = await createReading(env, QUESTION);
+    preferAgent(reading.id, 'a');
+    await interpretReading(env, reading.id);
+
+    let agents = await listConnectedAgents(env);
+    const failed = agents.find((agent) => agent.agentId === 'a')!;
+    expect(Date.parse(failed.lastFailedAt!)).toBeGreaterThan(Date.now() - 60_000);
+    expect(agents.find((agent) => agent.agentId === 'b')!.lastFailedAt).toBeNull();
+
+    await noteAgentOk(env, 'a');
+    agents = await listConnectedAgents(env);
+    expect(agents.every((agent) => agent.lastFailedAt === null)).toBe(true);
+  });
+});
+
 describe('orderAgents', () => {
   const agent = (agentId: string, verified = true): ConnectedAgent => ({
     agentId,
@@ -301,6 +320,7 @@ describe('orderAgents', () => {
     verified,
     warning: null,
     connectedAt: '2026-10-01T00:00:00.000Z',
+    lastFailedAt: null,
   });
   const NOW = Date.UTC(2026, 9, 3, 12);
   const ids = (list: ConnectedAgent[]) => list.map((entry) => entry.agentId);

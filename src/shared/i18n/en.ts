@@ -224,7 +224,12 @@ export const en = {
   settingsNoAgents:
     'No agent connected yet. Once one is, readings can answer the actual question that was asked.',
   settingsMultiNote:
-    'With several connected, readings use the first one that is verified and unexpired.',
+    'With several connected, readings are shared out across them. If one fails, that turn goes to the next one and the visitor sees no error.',
+  settingsNoBackup:
+    'Only one agent is connected, so if it fails there is no backup and visitors will see an error. Connect a second one, ideally in a different sandbox.',
+  settingsOneLeft:
+    'Only {name} is working right now; the others have failed recently. If it fails too, visitors will see an error.',
+  settingsAgentFailed: 'Its last turn failed at {time} and it has not answered since.',
   settingsVerified: 'verified',
   settingsUnverified: 'unverified',
   settingsConnectedAt: '{host} · connected {time}',
