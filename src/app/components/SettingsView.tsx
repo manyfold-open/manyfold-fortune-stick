@@ -8,6 +8,7 @@
 
 import { useState } from 'react';
 import type { ConnectedAgent, ConnectSession } from '../../shared/types';
+import { backupHint } from '../../shared/agent-backup';
 import { withoutDashes } from '../../shared/text';
 import { api, errorMessage } from '../api';
 import { useT } from '../i18n';
@@ -52,6 +53,8 @@ export default function SettingsView(props: {
     }
   };
 
+  const hint = backupHint(props.agents);
+
   return (
     <section className="panel settings-page">
       <h2>{t('settingsTitle')}</h2>
@@ -60,6 +63,10 @@ export default function SettingsView(props: {
       <h3>{t('settingsAgentsTitle')}</h3>
       {props.agents.length === 0 && <p className="muted">{t('settingsNoAgents')}</p>}
       {props.agents.length > 1 && <p className="muted small">{t('settingsMultiNote')}</p>}
+      {hint.state === 'single' && <p className="warn small">⚠ {t('settingsNoBackup')}</p>}
+      {hint.state === 'one-left' && (
+        <p className="warn small">⚠ {t('settingsOneLeft', { name: withoutDashes(hint.workingName ?? '') })}</p>
+      )}
 
       <div className="agent-list">
         {props.agents.map((agent) => (
@@ -86,6 +93,11 @@ export default function SettingsView(props: {
                   : ''}
               </p>
               {agent.warning && <p className="warn small">⚠ {withoutDashes(agent.warning)}</p>}
+              {agent.lastFailedAt && (
+                <p className="warn small">
+                  ⚠ {t('settingsAgentFailed', { time: new Date(agent.lastFailedAt).toLocaleString() })}
+                </p>
+              )}
             </div>
             <div className="agent-card-actions">
               <button

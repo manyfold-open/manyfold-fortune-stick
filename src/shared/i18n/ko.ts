@@ -212,7 +212,13 @@ export const ko = {
   settingsUrlOnly: '이 페이지는 #settings 주소로만 들어올 수 있어요. 게임 화면에는 입구를 두지 않았어요.',
   settingsAgentsTitle: '풀이에 쓰는 agent',
   settingsNoAgents: '아직 연결된 agent가 없어요. 연결하면 풀이가 실제 질문에 답할 수 있어요.',
-  settingsMultiNote: '여러 개가 연결돼 있으면, 확인되고 만료되지 않은 첫 번째 agent를 써요.',
+  settingsMultiNote:
+    '여러 개가 연결돼 있으면 풀이가 나눠서 쓰여요. 하나가 실패하면 그 차례는 다음 agent로 넘어가고, 방문자에게는 오류가 보이지 않아요.',
+  settingsNoBackup:
+    '연결된 agent가 하나뿐이라, 실패하면 대신할 곳이 없고 방문자에게 오류가 보여요. 가능하면 다른 샌드박스에 있는 agent를 하나 더 연결하세요.',
+  settingsOneLeft:
+    '지금은 {name}만 쓸 수 있고, 나머지는 최근에 실패했어요. 이것도 실패하면 방문자에게 오류가 보여요.',
+  settingsAgentFailed: '마지막 실패는 {time}이고, 그 뒤로 아직 응답하지 않았어요.',
   settingsVerified: '확인됨',
   settingsUnverified: '미확인',
   settingsConnectedAt: '{host} · {time} 연결',

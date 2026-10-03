@@ -20,6 +20,12 @@ export interface ConnectedAgent {
   verified: boolean;
   warning: string | null;
   connectedAt: string;
+  /**
+   * When this agent's last turn failed, if it has not answered since. The
+   * `verified` badge is only the connect-time probe, so this is what shows an
+   * agent whose runner went down later (src/worker/agent-health.ts).
+   */
+  lastFailedAt: string | null;
 }
 
 /** An in-flight Manyfold authorization handshake, as exposed to the browser. */

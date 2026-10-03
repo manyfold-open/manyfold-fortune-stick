@@ -36,7 +36,7 @@ import {
   validateA2AUrl,
 } from './a2a';
 import { seal, unseal } from './crypto';
-import { markAgentUp } from './agent-health';
+import { markAgentUp, readDownAgents } from './agent-health';
 import { now } from './db';
 
 const DEFAULT_API_BASE = 'https://api.manyfold.ai';
@@ -332,6 +332,7 @@ async function saveConnectedAgent(env: Env, entry: PollAgent): Promise<Connected
     verified: verified === 1,
     warning,
     connectedAt: t,
+    lastFailedAt: null,
   };
 }
 
@@ -347,8 +348,17 @@ export async function listConnectedAgents(env: Env): Promise<ConnectedAgent[]> {
     `SELECT agent_id AS agentId, name, description, rpc_url AS rpcUrl, expires_at AS expiresAt,
             verified, warning, connected_at AS connectedAt
      FROM agents ORDER BY connected_at DESC, name`,
-  ).all<Omit<ConnectedAgent, 'verified'> & { verified: number }>();
-  return (results ?? []).map((row) => ({ ...row, verified: row.verified === 1 }));
+  ).all<Omit<ConnectedAgent, 'verified' | 'lastFailedAt'> & { verified: number }>();
+  const rows = results ?? [];
+  const down = rows.length > 0 ? await readDownAgents(env) : new Map<string, number>();
+  return rows.map((row) => {
+    const failedAt = down.get(row.agentId);
+    return {
+      ...row,
+      verified: row.verified === 1,
+      lastFailedAt: failedAt === undefined ? null : new Date(failedAt).toISOString(),
+    };
+  });
 }
 
 /** Decrypts one agent's credential for an actual A2A call. */

@@ -215,7 +215,13 @@ export const ja = {
   settingsUrlOnly: 'このページには #settings からしか入れません。ゲームの画面には入り口を置いていません。',
   settingsAgentsTitle: '読み解きに使う agent',
   settingsNoAgents: 'まだ agent が接続されていません。接続すると、お告げが実際の問いに答えられるようになります。',
-  settingsMultiNote: '複数接続しているときは、確認済みで期限内の最初の agent が使われます。',
+  settingsMultiNote:
+    '複数接続している場合、お告げはそれらに振り分けられます。1つが失敗すると、その回は次の agent に引き継がれ、訪問者にエラーは表示されません。',
+  settingsNoBackup:
+    '接続されている agent は1つだけです。これが失敗すると代わりがなく、訪問者にエラーが表示されます。できれば別のサンドボックスにある agent をもう1つ接続してください。',
+  settingsOneLeft:
+    '今使えるのは {name} だけで、ほかは最近失敗しています。これも失敗すると、訪問者にエラーが表示されます。',
+  settingsAgentFailed: '直近の失敗は {time} で、それ以降まだ応答していません。',
   settingsVerified: '確認済み',
   settingsUnverified: '未確認',
   settingsConnectedAt: '{host} · {time} に接続',
