@@ -121,6 +121,8 @@ export function fallbackReason(error: string | null | undefined): FallbackReason
   if (error === 'no_interpreter') return 'no-interpreter';
   if (error.startsWith('manyfold_')) return 'manyfold';
   if (/timed out|timeout/i.test(error)) return 'timeout';
+  // agent 的 tunnel / 平台挂了：跟「Manyfold 没回应」是同一类，不算「其他」。
+  if (/error[ -]?1033|tunnel_error|cloudflare tunnel|API Error: ?5\d\d|HTTP 5\d\d/i.test(error)) return 'manyfold';
   if (/没有返回任何内容|returned nothing|empty/i.test(error)) return 'empty';
   return 'other';
 }

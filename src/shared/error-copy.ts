@@ -5,8 +5,10 @@
  * 也要说话（readings.error）。表放 shared 是因为它认的是服务端的 code。
  *
  * 认不出来的那些不是码，是 agent 自己抛回来的句子（出 worker 前已经过 safeErrorText
- * 脱敏）。它必须原样显示：那是唯一一条说明这次到底怎么了的线索，换成一句通用的
- * 「出了点问题」，排查的人就只能去翻数据库。
+ * 脱敏），比如 Cloudflare Tunnel 断了时平台回的 `API Error: 530 {...}`。那是写给排查的人
+ * 看的，不是写给求签的人看的：原文留在 readings.error / agent_failures / Discord 里，
+ * 离开 worker 的只有 `publicError` 给出的码，浏览器看到不认得的一律说同一句人话
+ * （errManyfoldUnavailable）。
  */
 
 import type { Copy, Translate } from './i18n';
@@ -22,6 +24,7 @@ export const ERROR_KEYS: Record<string, keyof Copy> = {
   message_too_long: 'errMessageTooLong',
   manyfold_unavailable: 'errManyfoldUnavailable',
   manyfold_rejected: 'errManyfoldRejected',
+  agent_unavailable: 'errManyfoldUnavailable',
   admin_password_invalid: 'errAdminPasswordInvalid',
   internal: 'errInternal',
 };
@@ -31,6 +34,21 @@ export const ERROR_KEYS: Record<string, keyof Copy> = {
  * 那段原文不往纸上印，纸上只说人话。
  */
 export const UNPARSEABLE = 'unparseable';
+
+/** agent 那一侧出了任何事（没连上、超时、平台报错…）时，对浏览器说的那个码。 */
+export const AGENT_UNAVAILABLE = 'agent_unavailable';
+
+/**
+ * 存下来的那一条错误 → 允许离开 worker 的版本。
+ *
+ * 认得的码原样放行；解析失败只留码（后面跟的 agent 原文可能回显问题或解读）；
+ * 其余都是 agent / 平台说的话，统一换成 AGENT_UNAVAILABLE。库里仍是原文，排查看那边。
+ */
+export function publicError(error: string | null | undefined): string | null {
+  if (!error) return null;
+  if (error === UNPARSEABLE || error.startsWith(`${UNPARSEABLE}:`)) return UNPARSEABLE;
+  return error in ERROR_KEYS ? error : AGENT_UNAVAILABLE;
+}
 
 /** readings.error 里存的那一条 → 签纸上那一行字。 */
 export function storedErrorText(
@@ -42,6 +60,6 @@ export function storedErrorText(
   if (error === UNPARSEABLE || error.startsWith(`${UNPARSEABLE}:`)) {
     return t('fallbackUnparseable');
   }
-  const key = ERROR_KEYS[error];
-  return key ? t(key, vars) : error;
+  // 码查表；查不到的是 agent 的原话（旧记录里也有），不印出来。
+  return t(ERROR_KEYS[error] ?? 'errManyfoldUnavailable', vars);
 }
