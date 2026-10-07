@@ -167,7 +167,11 @@ describe('解签：一个 agent 挂了，另一个接手', () => {
 
     expect(result.status).toBe('failed');
     expect(result.interpretation?.source).toBe('fallback');
-    expect(result.error).toContain('computer is unavailable');
+    // 页面拿到的只有码；agent 的原话留在库里和失败记录里，给排查的人看。
+    expect(result.error).toBe('agent_unavailable');
+    expect((d1.query('SELECT error FROM readings WHERE id = ?', reading.id)[0] as any).error).toContain(
+      'computer is unavailable',
+    );
     expect(result.stick.no).toBe(reading.stick.no);
     expect(calls['a.test']).toHaveLength(1);
     expect(calls['b.test']).toHaveLength(1);
@@ -266,7 +270,10 @@ describe('追问：同样的备援', () => {
     await Promise.all(pending);
 
     expect(events.at(-1)).toMatchObject({ type: 'error' });
-    expect(String(events.at(-1).message)).toContain('computer is unavailable');
+    expect(events.at(-1)).toMatchObject({ code: 'agent_unavailable' });
+    expect(String(events.at(-1).message)).not.toContain('computer is unavailable');
+    const stored = d1.query("SELECT error FROM reading_messages WHERE role = 'agent'") as any[];
+    expect(stored[0].error).toContain('computer is unavailable');
     const rows = d1.query("SELECT status FROM reading_messages WHERE role = 'agent'") as any[];
     expect(rows.map((row) => row.status)).toEqual(['error']);
   });

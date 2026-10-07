@@ -26,7 +26,7 @@ import {
   stickText,
   type FortuneStick,
 } from '../shared/sticks';
-import { UNPARSEABLE } from '../shared/error-copy';
+import { AGENT_UNAVAILABLE, UNPARSEABLE, publicError } from '../shared/error-copy';
 import { withoutDashes } from '../shared/text';
 import { HttpError, type AgentCredential, type Env } from './types';
 import { FAILURE_STATES, consumeA2AStream, replyOrFailure, safeErrorText } from './a2a';
@@ -111,7 +111,8 @@ function toReading(row: ReadingRow): Reading {
     stick,
     status: (row.status as ReadingStatus) ?? 'drawn',
     interpretation,
-    error: row.error,
+    // 库里是 agent 的原话，出去的只有码：原文留给 #settings / Discord 排查。
+    error: publicError(row.error),
     language: detectLanguage(question),
     createdAt: row.created_at,
   };
@@ -177,6 +178,9 @@ const FALLBACK_NOTICE: Record<Language, string> = {
   ko: '이것은 이 제비의 일반 풀이로, 아직 질문에 맞추지 않았어요.',
   hi: 'यह इस पर्ची का सामान्य अर्थ है, अभी आपके सवाल से नहीं जोड़ा गया है।',
 };
+
+/** 给不认得 `code` 的旧客户端留的一句话；认得的浏览器会换成自己语言的那句。 */
+const AGENT_UNAVAILABLE_MESSAGE = '解签的 agent 这次没能回应，过一会儿再试。';
 
 /** 存进 readings.error 的 agent 原文最多留这么长：够看出它回了什么，又不至于占满一行。 */
 const UNPARSEABLE_SNIPPET_CHARS = 200;
@@ -964,7 +968,7 @@ export async function listFollowUps(env: Env, id: string): Promise<FollowUpMessa
   return (results ?? []).reverse().map((message) => ({
     ...message,
     content: withoutDashes(message.content),
-    error: message.error ? withoutDashes(message.error) : null,
+    error: publicError(message.error),
   }));
 }
 
@@ -1106,7 +1110,12 @@ export async function handleFollowUp(options: {
         status: 'error',
         error: detail,
       });
-      await send({ type: 'error', message: detail });
+      // 原文已经进了 reportAgentFailure 和 reading_messages；浏览器只拿码，用界面语言说话。
+      await send(
+        cause instanceof HttpError
+          ? { type: 'error', code: cause.code, message: cause.message }
+          : { type: 'error', code: AGENT_UNAVAILABLE, message: AGENT_UNAVAILABLE_MESSAGE },
+      );
     } finally {
       try {
         await writer.close();

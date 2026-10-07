@@ -138,7 +138,8 @@ export type FollowUpEvent =
   | { type: 'status'; state: string }
   | { type: 'text'; text: string }
   | { type: 'done'; text: string }
-  | { type: 'error'; message: string };
+  /** `code` 是浏览器能用自己的语言说出来的那个码（src/shared/error-copy.ts）；message 只给不认得码的旧客户端。 */
+  | { type: 'error'; code?: string; message: string };
 
 export interface ApiErrorBody {
   error: { code: string; message: string };

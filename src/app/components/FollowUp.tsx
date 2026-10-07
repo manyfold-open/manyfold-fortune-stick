@@ -11,7 +11,7 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import type { FollowUpMessage } from '../../shared/types';
 import { withoutDashes } from '../../shared/text';
-import { api, errorMessage } from '../api';
+import { api, errorMessage, storedErrorText } from '../api';
 import { FOLLOW_UP_MAX } from '../constants';
 import { copyFor, useT } from '../i18n';
 import { streamFollowUp } from '../sse';
@@ -65,7 +65,7 @@ export default function FollowUp(props: {
         const clean = body.messages.map((message) => ({
           ...message,
           content: withoutDashes(message.content),
-          error: message.error ? withoutDashes(message.error) : null,
+          error: message.error ? storedErrorText(message.error, t) : null,
         }));
         setMessages(clean);
         onMessages(clean);
@@ -148,7 +148,9 @@ export default function FollowUp(props: {
     try {
       await streamFollowUp(readingId, question, (event) => {
         if (event.type === 'text') setLive(withoutDashes(event.text));
-        if (event.type === 'error') setError(withoutDashes(event.message));
+        if (event.type === 'error') {
+          setError(event.code ? storedErrorText(event.code, t) : t('errManyfoldUnavailable'));
+        }
       });
     } catch (cause) {
       setError(errorMessage(cause, t));
@@ -160,7 +162,7 @@ export default function FollowUp(props: {
           const clean = body.messages.map((message) => ({
             ...message,
             content: withoutDashes(message.content),
-            error: message.error ? withoutDashes(message.error) : null,
+            error: message.error ? storedErrorText(message.error, t) : null,
           }));
           setMessages(clean);
           onMessages(clean);

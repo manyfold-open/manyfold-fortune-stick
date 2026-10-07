@@ -114,9 +114,11 @@ app.onError((error, c) => {
     return c.json({ error: { code: 'misconfigured', message: error.message } }, 400);
   }
   if (error instanceof A2AError) {
+    // 平台 / tunnel 说的原话只进日志，响应里是固定的一句；浏览器按 code 换成界面语言。
+    console.error('agent error', error.message);
     return error.retryable
-      ? c.json({ error: { code: 'manyfold_unavailable', message: error.message } }, 502)
-      : c.json({ error: { code: 'manyfold_rejected', message: error.message } }, 400);
+      ? c.json({ error: { code: 'manyfold_unavailable', message: 'The agent did not answer this time.' } }, 502)
+      : c.json({ error: { code: 'manyfold_rejected', message: 'The agent refused this request.' } }, 400);
   }
   console.error('unhandled', error);
   return c.json({ error: { code: 'internal', message: 'Something went wrong.' } }, 500);

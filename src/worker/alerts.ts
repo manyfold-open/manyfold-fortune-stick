@@ -143,7 +143,20 @@ const minutes = (ms: number) => Math.max(1, Math.round(ms / 60_000));
  */
 export function alertReason(error: unknown): string {
   const text = safeErrorText(error instanceof Error ? error.message : error);
-  return text === UNPARSEABLE || text.startsWith(`${UNPARSEABLE}:`) ? UNPARSEABLE : text;
+  if (text === UNPARSEABLE || text.startsWith(`${UNPARSEABLE}:`)) return UNPARSEABLE;
+  const cause = unreachableCause(text);
+  return cause ? `${cause} · ${text}` : text;
+}
+
+/**
+ * Visitors only see one generic line now, so the alert has to say what broke at a
+ * glance. A dead Cloudflare Tunnel (Error 1033 / 530) is the agent's runner being
+ * gone, which is fixed on the agent's side, not by changing the game.
+ */
+export function unreachableCause(text: string): string | null {
+  if (/error[ -]?1033|tunnel_error|cloudflare tunnel/i.test(text)) return '🚇 agent 的 Cloudflare Tunnel 断了（1033）';
+  if (/\bAPI Error: ?5\d\d\b|\bHTTP 5\d\d\b/i.test(text)) return '☁️ agent 平台回了 5xx';
+  return null;
 }
 
 async function recordFailure(env: Env, kind: FailureKind, reason: string, at: number): Promise<void> {
