@@ -1,0 +1,2160 @@
+{
+ "levels": {
+  "zh": {
+   "上上签": "上上签",
+   "上签": "上签",
+   "中签": "中签",
+   "下签": "下签"
+  },
+  "en": {
+   "上上签": "GREAT FORTUNE",
+   "上签": "GOOD FORTUNE",
+   "中签": "MIDDLING",
+   "下签": "POOR FORTUNE"
+  },
+  "ja": {
+   "上上签": "大吉",
+   "上签": "吉",
+   "中签": "末吉",
+   "下签": "凶"
+  },
+  "ko": {
+   "上上签": "대길",
+   "上签": "길",
+   "中签": "소길",
+   "下签": "흉"
+  },
+  "hi": {
+   "上上签": "परम शुभ",
+   "上签": "शुभ",
+   "中签": "सामान्य",
+   "下签": "अशुभ"
+  }
+ },
+ "sticks": [
+  {
+   "no": 1,
+   "level": "上上签",
+   "zh": {
+    "title": "云开月明",
+    "poem": [
+     "久阴忽散一天青",
+     "明月当空照旧盟"
+    ],
+    "meaning": "等了很久才看不清的事，现在开始有清楚的样子了。",
+    "general": "长期不明朗的局面正在松动，先前你自己的判断多半没有错，只是缺一个能看清的时机。这时候适合把想法往前推一步，而不是继续观望。顺势走，但仍按步骤来。",
+    "action": "把一直搁着没动的那件事，今天写下它的第一步。",
+    "luckyItem": "草莓大福"
+   },
+   "en": {
+    "title": "The Clouds Part",
+    "poem": [
+     "After long grey days the whole sky clears",
+     "The moon returns and keeps its old promise"
+    ],
+    "meaning": "A situation that has been unclear for a long time is finally coming into focus.",
+    "general": "A long period of uncertainty is starting to lift. The facts are easier to see now, and your earlier instinct may have been right; it simply had not been tested by clear evidence. This is a good time to take the idea one step further instead of watching from the sidelines. Move with the opening, but keep your process steady.",
+    "action": "Choose the thing you have been postponing and write down the first step.",
+    "luckyItem": "Strawberry Daifuku"
+   },
+   "ja": {
+    "title": "雲晴れて月",
+    "poem": [
+     "久しき雲は晴れ",
+     "月は約を照らす"
+    ],
+    "meaning": "長く曇っていたことが、形を見せ始めた。",
+    "general": "長く続いた先の見えない状況が、ゆるみ始めている。これまでの自分の見立ては、たぶん間違っていなかった。足りなかったのは、それを確かめられるタイミングだけ。今は様子見を続けるより、考えを一歩前に進めるとき。流れに乗りつつ、手順は崩さずに。",
+    "action": "ずっと手をつけずにいたことの、最初の一歩を今日書き出す。",
+    "luckyItem": "いちご大福"
+   },
+   "ko": {
+    "title": "구름 걷힌 달밤",
+    "poem": [
+     "오래 흐리던 하늘이 활짝 개고",
+     "밝은 달이 옛 약속을 비추네"
+    ],
+    "meaning": "오래 흐릿하던 일이 이제야 또렷한 모습을 드러내기 시작해요.",
+    "general": "오랫동안 불분명하던 상황이 풀리기 시작했어요. 예전의 내 판단은 아마 틀리지 않았고, 다만 그걸 확인할 때가 오지 않았을 뿐이에요. 지금은 더 지켜보기보다 생각을 한 걸음 앞으로 내디딜 때예요. 흐름을 타되, 순서는 지키세요.",
+    "action": "계속 미뤄 둔 그 일의 첫 단계를 오늘 적어 보세요.",
+    "luckyItem": "딸기 찹쌀떡"
+   },
+   "hi": {
+    "title": "बादल छँटे, चाँद निकला",
+    "poem": [
+     "लंबे अँधेरे के बाद आसमान साफ़ हुआ",
+     "चाँद फिर पुराना वादा निभाने आया"
+    ],
+    "meaning": "जो बात लंबे समय से धुँधली थी, अब साफ़ होने लगी है।",
+    "general": "लंबे समय से अटकी हुई स्थिति अब खुलने लगी है। आपका पहला अंदाज़ा शायद सही था, बस उसे परखने का सही समय नहीं आया था। अब इंतज़ार करने के बजाय अपने विचार को एक कदम आगे बढ़ाइए। बहाव के साथ चलिए, पर अपना तरीका न छोड़िए।",
+    "action": "जिस काम को आप टाल रहे हैं, आज उसका पहला कदम लिख लीजिए।",
+    "luckyItem": "स्ट्रॉबेरी मिठाई"
+   }
+  },
+  {
+   "no": 2,
+   "level": "上签",
+   "zh": {
+    "title": "春江舟轻",
+    "poem": [
+     "春江水暖舟自轻",
+     "两岸青山送一程"
+    ],
+    "meaning": "环境正在帮你，走起来会比你想的省力。",
+    "general": "外部条件比你估计的更友善，之前觉得费劲，多半是因为起步时用力过猛。现在可以少推一点、多借一点力，把节奏放回正常速度，反而走得更远。",
+    "action": "找一个已经在做类似事情的人，问他一个具体问题。",
+    "luckyItem": "热焙茶"
+   },
+   "en": {
+    "title": "A Light Boat in Spring",
+    "poem": [
+     "The spring river warms and the boat rides light",
+     "Green hills on both banks see you on your way"
+    ],
+    "meaning": "The conditions are more favourable than you expected, so you do not have to force this.",
+    "general": "The situation is kinder than it first appeared. If getting started felt hard, you may have been pushing against it instead of using the support already available. Ease off the effort that is not helping, accept help where it is offered, and let a steady pace do its work.",
+    "action": "Find someone already doing something similar and ask them one specific question.",
+    "luckyItem": "Hot Hojicha"
+   },
+   "ja": {
+    "title": "春川に舟軽し",
+    "poem": [
+     "春の川舟軽し",
+     "両岸の山見送る"
+    ],
+    "meaning": "まわりが味方。思うより楽に進める。",
+    "general": "外の条件は、あなたの見積もりよりずっと好意的だ。これまで重く感じたのは、出だしで力を入れすぎたせいかもしれない。押す力を少し抜いて、借りられる力を借り、ペースをふだんの速さに戻せば、かえって遠くまで行ける。",
+    "action": "似たことをすでにやっている人を見つけて、具体的な質問をひとつしてみる。",
+    "luckyItem": "温かいほうじ茶"
+   },
+   "ko": {
+    "title": "봄 강의 가벼운 배",
+    "poem": [
+     "봄 강물 따스하니 배는 절로 가볍고",
+     "양쪽 푸른 산이 먼 길을 배웅하네"
+    ],
+    "meaning": "주변이 나를 돕고 있어서, 생각보다 수월하게 나아갈 수 있어요.",
+    "general": "바깥 조건은 생각보다 훨씬 우호적이에요. 지금까지 버겁게 느껴졌던 건 처음에 힘을 너무 많이 줬기 때문일 거예요. 조금 덜 밀고 빌릴 수 있는 힘은 빌리면서, 속도를 평소대로 되돌리면 오히려 더 멀리 갈 수 있어요.",
+    "action": "비슷한 일을 이미 하고 있는 사람을 찾아 구체적인 질문 하나를 해 보세요.",
+    "luckyItem": "따뜻한 호지차"
+   },
+   "hi": {
+    "title": "बसंत की हल्की नाव",
+    "poem": [
+     "बसंत की नदी गुनगुनी, नाव हल्की चले",
+     "दोनों किनारों के हरे पहाड़ विदा करें"
+    ],
+    "meaning": "हालात आपका साथ दे रहे हैं, राह सोच से आसान होगी।",
+    "general": "बाहर की परिस्थितियाँ आपके अनुमान से कहीं ज़्यादा अनुकूल हैं। शुरुआत भारी लगी तो शायद इसलिए कि आपने ज़रूरत से ज़्यादा ज़ोर लगाया। थोड़ा कम धकेलिए, जो मदद मिल रही है उसे लीजिए, और अपनी सामान्य रफ़्तार पर लौट आइए। इसी तरह आप दूर तक पहुँचेंगे।",
+    "action": "कोई ऐसा व्यक्ति ढूँढिए जो यही काम कर चुका है, और उससे एक ठोस सवाल पूछिए।",
+    "luckyItem": "गरम भुनी चाय"
+   }
+  },
+  {
+   "no": 3,
+   "level": "上签",
+   "zh": {
+    "title": "枯木回春",
+    "poem": [
+     "老枝曾道无生意",
+     "一夜东风满树芽"
+    ],
+    "meaning": "你以为过去了的事，还留着可以接续的部分。",
+    "general": "被搁置或看似失败的东西没有完全作废，里面有一部分仍然有用。与其重头再来，不如先回去看看旧的材料、旧的关系、旧的经验，从中挑出还能用的那一块。",
+    "action": "翻回你三个月前的记录，挑出一条现在仍然成立的。",
+    "luckyItem": "手作御守"
+   },
+   "en": {
+    "title": "Old Wood, New Buds",
+    "poem": [
+     "They said the old branch had no life left in it",
+     "One night of east wind and the whole tree is in bud"
+    ],
+    "meaning": "Something you thought was over still contains a useful way forward.",
+    "general": "The project, relationship, or idea you put aside may still contain something useful. Starting again from zero would cost more than you think. Look through the old drafts, conversations, and lessons before you begin again, then keep the part that still works. Reusing good material is not living in the past; it is avoiding needless repetition.",
+    "action": "Open your notes from three months ago and pick out one line that is still true.",
+    "luckyItem": "Handmade Omamori"
+   },
+   "ja": {
+    "title": "枯木に春",
+    "poem": [
+     "枯枝と思いしに",
+     "東風に芽あふる"
+    ],
+    "meaning": "終わったことにも、つなげる部分が残る。",
+    "general": "棚上げにしたもの、失敗に見えたものも、すべてが無駄になったわけではない。その中にはまだ使える部分がある。一から始め直す前に、古い資料や古い縁、これまでの経験を見返して、今も役に立つひとかけらを拾い出そう。",
+    "action": "三か月前のメモを読み返して、今も通用するものをひとつ選ぶ。",
+    "luckyItem": "手作りのお守り"
+   },
+   "ko": {
+    "title": "마른 나무에 봄",
+    "poem": [
+     "늙은 가지 생기 없다 여겼더니",
+     "하룻밤 봄바람에 새싹이 가득하네"
+    ],
+    "meaning": "이미 지나갔다고 여긴 일에도 이어 갈 수 있는 부분이 남아 있어요.",
+    "general": "미뤄 두었거나 실패처럼 보였던 것도 완전히 버려진 건 아니에요. 그 안에는 아직 쓸 만한 부분이 있어요. 처음부터 다시 시작하기보다 예전 자료와 인연, 경험을 먼저 돌아보고 지금도 쓸 수 있는 한 조각을 골라내세요.",
+    "action": "석 달 전의 기록을 다시 펼쳐 지금도 유효한 것 하나를 골라 보세요.",
+    "luckyItem": "손수 만든 부적"
+   },
+   "hi": {
+    "title": "सूखी डाल पर बसंत",
+    "poem": [
+     "जिस पुरानी डाल को बेजान समझा था",
+     "एक रात की पुरवाई में कोंपलें भर आईं"
+    ],
+    "meaning": "जिसे आपने ख़त्म मान लिया था, उसमें अभी आगे बढ़ने लायक कुछ बाकी है।",
+    "general": "जो काम रुक गया या असफल लगा, वह पूरा बेकार नहीं हुआ। उसमें अब भी कुछ काम का हिस्सा बचा है। फिर से शुरू करने से पहले पुराने नोट्स, पुराने रिश्ते और पुराने अनुभव देखिए, और उनमें से वह टुकड़ा चुनिए जो आज भी काम आ सकता है।",
+    "action": "तीन महीने पुराने नोट्स पढ़िए और उनमें से एक बात चुनिए जो आज भी सही है।",
+    "luckyItem": "हाथ से बना ताबीज़"
+   }
+  },
+  {
+   "no": 4,
+   "level": "上签",
+   "zh": {
+    "title": "登高望远",
+    "poem": [
+     "拾级未觉山已高",
+     "回头方见路迢迢"
+    ],
+    "meaning": "你比自己以为的走得远，只是缺一次回头看。",
+    "general": "进展是有的，但因为一直埋头往前，感觉不到。现在适合停一下，把走过的路整理成看得见的东西，你会更清楚下一段该往哪个方向使劲。",
+    "action": "用十分钟列出今年已经完成的三件事。",
+    "luckyItem": "晨间散步"
+   },
+   "en": {
+    "title": "Higher Than You Thought",
+    "poem": [
+     "Step after step, you never felt the climb",
+     "Only when you turn round do you see how far you have come"
+    ],
+    "meaning": "You have made more progress than you can feel from inside it.",
+    "general": "You have been focused on the next task, so the distance already covered is easy to miss. Effort is loud; progress is often quiet. Pause long enough to make your work visible, and the next direction will be easier to choose.",
+    "action": "Spend ten minutes listing three things you have finished this year.",
+    "luckyItem": "Morning Walk"
+   },
+   "ja": {
+    "title": "高きに登りて",
+    "poem": [
+     "登れば山は高く",
+     "顧みれば道遥か"
+    ],
+    "meaning": "思うより遠くまで来た。一度振り返ろう。",
+    "general": "前進はしている。ただ、ずっと下を向いて進んできたから実感がない。今はいったん立ち止まり、歩いてきた道を目に見える形にまとめるとき。そうすれば、次にどちらへ力を注ぐべきかがはっきりする。",
+    "action": "十分だけ使って、今年すでにやり遂げたことを三つ書き出す。",
+    "luckyItem": "朝の散歩"
+   },
+   "ko": {
+    "title": "높이 올라 멀리 보다",
+    "poem": [
+     "계단 오를 땐 산 높은 줄 몰랐는데",
+     "돌아보니 걸어온 길이 아득하네"
+    ],
+    "meaning": "생각보다 멀리 왔어요. 한 번 돌아볼 시간만 없었을 뿐이에요.",
+    "general": "분명 나아가고 있지만 계속 앞만 보고 걸어서 실감이 나지 않아요. 지금은 잠시 멈춰서 걸어온 길을 눈에 보이게 정리해 볼 때예요. 그러면 다음 구간에서 어디에 힘을 써야 할지 더 분명해질 거예요.",
+    "action": "십 분 동안 올해 이미 해낸 일 세 가지를 적어 보세요.",
+    "luckyItem": "아침 산책"
+   },
+   "hi": {
+    "title": "ऊँचाई से दूर तक",
+    "poem": [
+     "सीढ़ियाँ चढ़ते ऊँचाई का पता न चला",
+     "मुड़कर देखा तो रास्ता बहुत लंबा था"
+    ],
+    "meaning": "आप जितना सोचते हैं उससे आगे आ चुके हैं, बस एक बार मुड़कर देखना बाकी है।",
+    "general": "प्रगति हो रही है, पर सिर झुकाकर चलते रहने से उसका एहसास नहीं होता। अभी थोड़ा रुकिए और तय किए रास्ते को ऐसे लिखिए कि वह दिखाई दे। तब साफ़ होगा कि अगले हिस्से में ताक़त कहाँ लगानी है।",
+    "action": "दस मिनट में इस साल पूरे किए तीन काम लिख डालिए।",
+    "luckyItem": "सुबह की सैर"
+   }
+  },
+  {
+   "no": 5,
+   "level": "中签",
+   "zh": {
+    "title": "静水深流",
+    "poem": [
+     "水面无风似不行",
+     "底下潜流自有程"
+    ],
+    "meaning": "表面看没动静，其实事情在底下走着。",
+    "general": "这段时间外在反馈少，容易让人怀疑方向。但沉默不等于停滞，很多变化要到后面才显形。此时不必急着换路，把注意力放回可以自己掌握的部分。",
+    "action": "给这件事定一个检查点：到某个日期再判断，不是今天。",
+    "luckyItem": "白桃煎茶"
+   },
+   "en": {
+    "title": "Still Water, Deep Current",
+    "poem": [
+     "No wind on the surface, and it seems to stand still",
+     "Underneath, the current keeps its own pace"
+    ],
+    "meaning": "It looks still, but important work may be happening out of sight.",
+    "general": "There is not much visible feedback right now, which can make you question the whole direction. But silence is not the same as failure, and some changes only show up later. Do not change course just to relieve the uncertainty. Focus on the parts you can still move.",
+    "action": "Set a checkpoint: pick a date to judge this by, and let today off the hook.",
+    "luckyItem": "Peach Sencha"
+   },
+   "ja": {
+    "title": "静かな水の底",
+    "poem": [
+     "水面は動かねど",
+     "底の流れは行く"
+    ],
+    "meaning": "表面は静かでも、物事は底で動いている。",
+    "general": "最近は外からの反応が少なく、方向を疑いたくなる。けれど静けさは停滞ではない。多くの変化は、あとになって姿を見せる。今は急いで道を変えず、自分で手の届く部分に意識を戻そう。",
+    "action": "このことに確認の日を決める。判断するのは今日ではなく、その日。",
+    "luckyItem": "白桃煎茶"
+   },
+   "ko": {
+    "title": "잔잔한 물, 깊은 흐름",
+    "poem": [
+     "바람 없는 수면은 멈춘 듯하나",
+     "그 아래 물길은 제 길을 가네"
+    ],
+    "meaning": "겉으로는 조용해도 일은 물밑에서 움직이고 있어요.",
+    "general": "요즘 바깥 반응이 적어서 방향을 의심하기 쉬워요. 하지만 조용하다고 멈춘 건 아니에요. 많은 변화는 나중에야 모습을 드러내요. 지금은 서둘러 길을 바꾸지 말고, 내가 직접 챙길 수 있는 부분에 다시 마음을 두세요.",
+    "action": "이 일에 점검할 날짜를 정하세요. 판단은 오늘이 아니라 그날 해요.",
+    "luckyItem": "복숭아 녹차"
+   },
+   "hi": {
+    "title": "शांत पानी, गहरी धारा",
+    "poem": [
+     "बिना हवा के पानी रुका सा लगे",
+     "पर नीचे की धारा अपनी राह चले"
+    ],
+    "meaning": "ऊपर से सब शांत है, पर बात भीतर ही भीतर आगे बढ़ रही है।",
+    "general": "इन दिनों बाहर से जवाब कम मिल रहे हैं, इसलिए दिशा पर शक होना स्वाभाविक है। पर चुप्पी का मतलब ठहराव नहीं है, कई बदलाव बाद में दिखते हैं। अभी रास्ता बदलने की जल्दी मत कीजिए, जो आपके हाथ में है उस पर ध्यान दीजिए।",
+    "action": "इस बात को परखने की एक तारीख़ तय कीजिए। फ़ैसला उस दिन, आज नहीं।",
+    "luckyItem": "आड़ू वाली हरी चाय"
+   }
+  },
+  {
+   "no": 6,
+   "level": "下签",
+   "zh": {
+    "title": "守株待兔",
+    "poem": [
+     "旧桩空守日又斜",
+     "兔子从来不再来"
+    ],
+    "meaning": "让你舒服的老办法，这次可能不管用了。",
+    "general": "你正在用过去成功过的方式应对一件已经变了的事。不必否定过去的经验，但它需要更新。放慢一点，先弄清楚现在的条件跟当初哪里不一样，再决定动作。",
+    "action": "写下这件事跟上一次相比，有哪一个条件已经变了。",
+    "luckyItem": "香氛蜡烛"
+   },
+   "en": {
+    "title": "Waiting by the Stump",
+    "poem": [
+     "Another day goes by beside the same old stump",
+     "The hare that ran into it once will not come again"
+    ],
+    "meaning": "The method that worked before may not fit the situation you have now.",
+    "general": "You are bringing an old solution to a new set of conditions. The experience is still useful, but it needs updating. Before you act, identify what has changed since the last time. Familiarity feels reassuring here, but it is not the same as fit.",
+    "action": "Write down one condition that has changed since the last time you did this.",
+    "luckyItem": "A Scented Candle"
+   },
+   "ja": {
+    "title": "株を守りて",
+    "poem": [
+     "株守りて日傾き",
+     "兎はまた来ず"
+    ],
+    "meaning": "慣れたやり方が、今回は通じないかも。",
+    "general": "過去にうまくいった方法で、もう変わってしまった物事に向き合っている。これまでの経験を否定する必要はないが、更新は必要だ。少しペースを落として、今の条件が当時とどこが違うのかを確かめてから動こう。",
+    "action": "前回と比べて、どの条件が変わったのかをひとつ書き出す。",
+    "luckyItem": "アロマキャンドル"
+   },
+   "ko": {
+    "title": "그루터기를 지키며",
+    "poem": [
+     "빈 그루터기 지키는 사이 해는 기울고",
+     "토끼는 다시 오지 않네"
+    ],
+    "meaning": "익숙하고 편한 옛 방식이 이번에는 통하지 않을 수도 있어요.",
+    "general": "예전에 성공했던 방법으로 이미 달라진 일을 대하고 있어요. 지난 경험을 부정할 필요는 없지만 새로 고칠 필요는 있어요. 속도를 조금 늦추고, 지금 조건이 그때와 무엇이 다른지 먼저 확인한 뒤에 움직이세요.",
+    "action": "지난번과 비교해 어떤 조건이 달라졌는지 하나 적어 보세요.",
+    "luckyItem": "향초"
+   },
+   "hi": {
+    "title": "ठूँठ के पास इंतज़ार",
+    "poem": [
+     "पुराने ठूँठ पर बैठे दिन ढल गया",
+     "खरगोश फिर कभी लौटकर न आया"
+    ],
+    "meaning": "जो पुराना तरीका आरामदेह लगता है, वह इस बार शायद काम न आए।",
+    "general": "आप एक बदल चुकी स्थिति को उसी तरीके से सँभाल रहे हैं जो पहले कामयाब रहा था। पुराने अनुभव को नकारने की ज़रूरत नहीं, पर उसे नया करना होगा। थोड़ा धीमे चलिए, पहले समझिए कि आज के हालात तब से कैसे अलग हैं, फिर कदम उठाइए।",
+    "action": "लिखिए कि पिछली बार के मुकाबले इस बार कौन सी एक शर्त बदल गई है।",
+    "luckyItem": "सुगंधित मोमबत्ती"
+   }
+  },
+  {
+   "no": 7,
+   "level": "中签",
+   "zh": {
+    "title": "雨后寻径",
+    "poem": [
+     "雨歇泥深路未干",
+     "缓行一步稳一步"
+    ],
+    "meaning": "事情刚过去，现在适合慢慢走。",
+    "general": "风波刚过，地面还软，这时候急着跑容易滑。眼下的重点不是做大决定，而是把状态和秩序先恢复过来。等站稳了，再考虑要不要加速。",
+    "action": "今天只做一件恢复性的小事：睡够、清桌面，或回一封欠着的信息。",
+    "luckyItem": "整理书桌"
+   },
+   "en": {
+    "title": "The Path After Rain",
+    "poem": [
+     "The rain has stopped, the mud is deep, the road still wet",
+     "Take one slow step, then another steady one"
+    ],
+    "meaning": "A difficult stretch has just passed. This is a time to move carefully, not quickly.",
+    "general": "The difficult part may be over, but you have not fully regained your footing. This is not the moment for a dramatic decision. Get your sleep, attention, and daily rhythm back first. Once you feel steady again, you can decide whether anything needs to move faster.",
+    "action": "Do one restorative small thing today: sleep enough, clear your desk, or answer one overdue message.",
+    "luckyItem": "A Tidy Desk"
+   },
+   "ja": {
+    "title": "雨上がりの道",
+    "poem": [
+     "雨やみて土深し",
+     "一歩ずつ確かに"
+    ],
+    "meaning": "騒ぎは過ぎた。今はゆっくり歩こう。",
+    "general": "嵐は過ぎたが、地面はまだやわらかい。ここで急いで走れば足をとられる。今大切なのは大きな決断ではなく、調子と暮らしの秩序を取り戻すこと。しっかり立てるようになってから、速度を上げるかどうかを考えよう。",
+    "action": "今日は回復のための小さなことをひとつだけ。よく眠る、机を片づける、返しそびれた連絡を返す。",
+    "luckyItem": "片づいた机"
+   },
+   "ko": {
+    "title": "비 갠 뒤의 길",
+    "poem": [
+     "비는 그쳤어도 진흙길은 마르지 않았으니",
+     "천천히 한 걸음씩 단단히 딛게"
+    ],
+    "meaning": "소란이 막 지나갔어요. 지금은 천천히 걷는 게 좋아요.",
+    "general": "풍파는 지났지만 땅은 아직 물러요. 이럴 때 서둘러 뛰면 미끄러지기 쉬워요. 지금 중요한 건 큰 결정이 아니라 컨디션과 일상의 질서를 먼저 되찾는 거예요. 제대로 선 다음에 속도를 낼지 생각해도 늦지 않아요.",
+    "action": "오늘은 회복을 위한 작은 일 하나만 하세요. 푹 자기, 책상 정리, 미뤄 둔 답장 중 하나요.",
+    "luckyItem": "정돈된 책상"
+   },
+   "hi": {
+    "title": "बारिश के बाद की राह",
+    "poem": [
+     "बारिश थमी पर कीचड़ अभी गीला है",
+     "धीरे चलो, हर कदम जमाकर रखो"
+    ],
+    "meaning": "तूफ़ान अभी गुज़रा है, इस समय धीरे चलना ही ठीक है।",
+    "general": "मुश्किल घड़ी बीत गई है, पर ज़मीन अभी नरम है। अभी दौड़ेंगे तो फिसल सकते हैं। इस वक़्त बड़े फ़ैसले नहीं, बल्कि अपनी सेहत और दिनचर्या को फिर से पटरी पर लाना ज़रूरी है। पैर जम जाएँ, तब रफ़्तार के बारे में सोचिए।",
+    "action": "आज बस एक छोटा सा सुधार कीजिए: पूरी नींद, साफ़ मेज़, या कोई रुका हुआ जवाब।",
+    "luckyItem": "साफ़ सुथरी मेज़"
+   }
+  },
+  {
+   "no": 8,
+   "level": "上签",
+   "zh": {
+    "title": "玉在石中",
+    "poem": [
+     "顽石未剖谁人识",
+     "一朝开处见玲珑"
+    ],
+    "meaning": "你手上有好东西，只是还没被人看见。",
+    "general": "价值已经存在，缺的是呈现。如果你觉得被低估，多半不是能力问题，而是别人没有机会看到全貌。与其继续打磨，不如先让它露出来一次。",
+    "action": "把你做的东西讲给一个还不了解它的人听，看他先问什么。",
+    "luckyItem": "抹茶拿铁"
+   },
+   "en": {
+    "title": "Jade in the Stone",
+    "poem": [
+     "Uncut, the rough stone shows no one what it holds",
+     "Split it open once and the jade shows through"
+    ],
+    "meaning": "There is real value in what you have made, but people have not seen it yet.",
+    "general": "The value may already be there; what is missing is a clear chance for someone else to see it. If you feel overlooked, more private polishing may not solve the problem. Share a real version, even if it is not perfect, and learn what people notice.",
+    "action": "Explain what you are making to someone who knows nothing about it and notice what they ask first.",
+    "luckyItem": "Matcha Latte"
+   },
+   "ja": {
+    "title": "石の中の玉",
+    "poem": [
+     "原石を誰が知る",
+     "割れば玉光る"
+    ],
+    "meaning": "良いものはある。まだ誰も見ていないだけ。",
+    "general": "価値はもうそこにある。足りないのは見せ方だ。過小評価されていると感じるなら、それは能力の問題ではなく、周りが全体を見る機会がなかったから。磨き続けるより、まず一度外に出してみよう。",
+    "action": "自分の作ったものを、まだそれを知らない人に話して、最初に何を聞かれるか見てみる。",
+    "luckyItem": "抹茶ラテ"
+   },
+   "ko": {
+    "title": "돌 속의 옥",
+    "poem": [
+     "쪼개지 않은 돌을 누가 알아보랴",
+     "한번 열리면 영롱한 빛이 드러나네"
+    ],
+    "meaning": "좋은 것을 이미 갖고 있어요. 아직 사람들 눈에 띄지 않았을 뿐이에요.",
+    "general": "가치는 이미 있어요. 부족한 건 보여 주는 방법이에요. 저평가받는다고 느낀다면 능력 문제가 아니라 다른 사람들이 전체를 볼 기회가 없었던 거예요. 계속 다듬기보다 먼저 한 번 드러내 보세요.",
+    "action": "내가 만든 것을 아직 모르는 사람에게 설명하고, 그 사람이 가장 먼저 무엇을 묻는지 보세요.",
+    "luckyItem": "말차 라테"
+   },
+   "hi": {
+    "title": "पत्थर में छिपा रत्न",
+    "poem": [
+     "बिना तराशे पत्थर को कौन पहचाने",
+     "खुलते ही भीतर की चमक दिख जाए"
+    ],
+    "meaning": "आपके पास कुछ अच्छा है, बस लोगों ने अभी उसे देखा नहीं।",
+    "general": "क़ीमत तो पहले से है, कमी उसे दिखाने की है। अगर आपको लगता है कि आपको कम आँका जा रहा है, तो यह क़ाबिलियत की बात नहीं, लोगों को पूरी तस्वीर देखने का मौका नहीं मिला। और घिसने के बजाय एक बार उसे सामने लाइए।",
+    "action": "अपना काम किसी ऐसे व्यक्ति को समझाइए जो उसे नहीं जानता, और देखिए वह पहले क्या पूछता है।",
+    "luckyItem": "मटचा लाटे"
+   }
+  },
+  {
+   "no": 9,
+   "level": "上上签",
+   "zh": {
+    "title": "水到渠成",
+    "poem": [
+     "沟渠久掘水未来",
+     "一雨盈盈自入怀"
+    ],
+    "meaning": "前面的准备够了，剩下的是等它自己发生。",
+    "general": "该铺的路你已经铺了，现在最容易犯的错是因为心急而再加一道动作，反而打乱节奏。保持现有的做法，把力气留给真正需要你出手的那一刻。",
+    "action": "今天什么都不追加，只把已经答应别人的事按时交出去。",
+    "luckyItem": "翻一本好书"
+   },
+   "en": {
+    "title": "The Channel Fills",
+    "poem": [
+     "The ditch was dug long ago and stayed dry",
+     "One good rain, and it fills to the brim on its own"
+    ],
+    "meaning": "The groundwork is in place. You may not need to do anything else right now.",
+    "general": "You have done the preparation, and impatience is now the main thing that could get in the way. Another move may only disturb a process that is already working. Keep doing what you said you would do, and save your energy for the moment that actually needs it.",
+    "action": "Add nothing today. Just deliver what you already promised, on time.",
+    "luckyItem": "Reading a Book"
+   },
+   "ja": {
+    "title": "溝に水満つ",
+    "poem": [
+     "掘れど水は来ず",
+     "一雨に満ち来る"
+    ],
+    "meaning": "準備は十分。あとは自然に任せよう。",
+    "general": "敷くべき道はもう敷いてある。今いちばん起こしやすい失敗は、気がはやってもう一手を加え、かえってリズムを崩すことだ。今のやり方を保ち、本当にあなたの出番が来たときのために力を残しておこう。",
+    "action": "今日は何も足さない。人と約束したことだけを、期限どおりに渡す。",
+    "luckyItem": "いい本を一冊"
+   },
+   "ko": {
+    "title": "물 차오른 도랑",
+    "poem": [
+     "오래 판 도랑에 물은 오지 않더니",
+     "비 한 줄기에 가득 차 흘러드네"
+    ],
+    "meaning": "준비는 충분해요. 이제는 저절로 이루어지길 기다리면 돼요.",
+    "general": "깔아야 할 길은 이미 다 깔았어요. 지금 가장 저지르기 쉬운 실수는 조급한 마음에 한 가지를 더 얹어 오히려 흐름을 깨는 거예요. 지금 방식을 유지하고, 정말 내가 나서야 할 순간을 위해 힘을 아껴 두세요.",
+    "action": "오늘은 아무것도 더하지 말고, 이미 약속한 일만 제때 넘기세요.",
+    "luckyItem": "좋은 책 한 권"
+   },
+   "hi": {
+    "title": "नहर भर आई",
+    "poem": [
+     "बरसों खोदी नहर में पानी न आया",
+     "एक बारिश में वह अपने आप भर आई"
+    ],
+    "meaning": "तैयारी पूरी है, अब बस उसे अपने आप होने दीजिए।",
+    "general": "जो रास्ता बनाना था, आप बना चुके हैं। अभी सबसे आम गलती यही होगी कि बेचैनी में एक और कदम जोड़ दें और लय बिगाड़ दें। अपना तरीका बनाए रखिए और अपनी ताक़त उस पल के लिए बचाइए जब सच में आपकी ज़रूरत हो।",
+    "action": "आज कुछ नया मत जोड़िए, बस जो वादा किया है उसे समय पर पूरा कीजिए।",
+    "luckyItem": "एक अच्छी किताब"
+   }
+  },
+  {
+   "no": 10,
+   "level": "中签",
+   "zh": {
+    "title": "寒梅待春",
+    "poem": [
+     "一树寒梅未肯开",
+     "不是无花是未时"
+    ],
+    "meaning": "不是不行，是还没到时候。",
+    "general": "你判断的方向大概率没问题，但时间点错了。这种时候勉强推进，代价会比等待高。把准备继续做下去，同时留意外部条件的变化，时机到了再全力出手。",
+    "action": "列出三个「等到什么就动手」的具体信号。",
+    "luckyItem": "温暖热汤"
+   },
+   "en": {
+    "title": "The Winter Plum Waits",
+    "poem": [
+     "The plum tree in the cold will not bloom yet",
+     "Not that it has no flowers, only that it is not yet time"
+    ],
+    "meaning": "The direction may be right, but the timing is not ready.",
+    "general": "Your sense of direction may be sound, but the conditions are not ready yet. Pushing now could cost more than waiting, especially if it makes you spend trust or credibility too early. Keep preparing, watch for the conditions to change, and commit when the opening is real.",
+    "action": "Write down three specific signals that would mean it is time to start.",
+    "luckyItem": "Warm Miso Soup"
+   },
+   "ja": {
+    "title": "春待つ寒梅",
+    "poem": [
+     "寒梅まだ咲かず",
+     "花なきにあらず"
+    ],
+    "meaning": "できないのではない。まだ時が来ないだけ。",
+    "general": "向かう方向はおそらく間違っていない。ずれているのはタイミングだ。こういうときに無理に進めると、待つよりも高くつく。準備は続けながら、外の条件の変化に目を配り、時が来たら全力で動こう。",
+    "action": "「これが起きたら動く」という具体的な合図を三つ書き出す。",
+    "luckyItem": "温かいみそ汁"
+   },
+   "ko": {
+    "title": "봄을 기다리는 매화",
+    "poem": [
+     "겨울 매화가 아직 피지 않는 건",
+     "꽃이 없어서가 아니라 때가 아니라서라네"
+    ],
+    "meaning": "안 되는 게 아니라 아직 때가 아닐 뿐이에요.",
+    "general": "방향은 아마 틀리지 않았어요. 어긋난 건 시점이에요. 이럴 때 억지로 밀어붙이면 기다리는 것보다 대가가 커요. 준비는 계속하면서 바깥 조건의 변화를 살피고, 때가 오면 온 힘을 다해 움직이세요.",
+    "action": "무엇이 오면 움직일지, 구체적인 신호 세 가지를 적어 보세요.",
+    "luckyItem": "따뜻한 된장국"
+   },
+   "hi": {
+    "title": "बसंत की राह देखता फूल",
+    "poem": [
+     "सर्दी का फूल अभी खिला नहीं",
+     "फूल की कमी नहीं, बस समय नहीं आया"
+    ],
+    "meaning": "बात नामुमकिन नहीं, बस अभी उसका समय नहीं आया।",
+    "general": "आपकी दिशा शायद सही है, समय ग़लत है। ऐसे में ज़बरदस्ती आगे बढ़ना इंतज़ार से महँगा पड़ता है। तैयारी जारी रखिए, बाहर के हालात पर नज़र रखिए, और जब समय आए तो पूरी ताक़त से कदम उठाइए।",
+    "action": "तीन ठोस संकेत लिखिए, जिनके दिखते ही आप काम शुरू करेंगे।",
+    "luckyItem": "गरम सूप"
+   }
+  },
+  {
+   "no": 11,
+   "level": "下签",
+   "zh": {
+    "title": "逆风行舟",
+    "poem": [
+     "帆满风来船反退",
+     "不如收篷候晚晴"
+    ],
+    "meaning": "现在用力越猛，消耗越大。",
+    "general": "阻力来自你控制不了的地方，硬顶只会耗掉你的余力。这不是要你放弃，而是把目标从「推进」换成「保存」：守住手上最重要的一件，其余先放。",
+    "action": "从现在的待办里划掉一件，今天就别做了。",
+    "luckyItem": "看天空云朵"
+   },
+   "en": {
+    "title": "Sailing into the Wind",
+    "poem": [
+     "Sails full, wind against you, and the boat slides back",
+     "Better to reef the sails and wait for a clear evening"
+    ],
+    "meaning": "Pushing harder right now will only use up more of your energy.",
+    "general": "The resistance is coming from somewhere you cannot control, and pushing against it will spend the energy you need later. This is not a call to give up. Change the goal from making progress to holding steady: protect what matters most and let the rest wait.",
+    "action": "Cross one item off your list and simply do not do it today.",
+    "luckyItem": "Cloud Watching"
+   },
+   "ja": {
+    "title": "向かい風の舟",
+    "poem": [
+     "帆張れど舟退く",
+     "帆畳み晴れ待て"
+    ],
+    "meaning": "今は力を入れるほど、消耗が大きくなる。",
+    "general": "抵抗はあなたにはどうにもできないところから来ている。力ずくで押し返しても、残りの力を削るだけ。あきらめろということではない。目標を「進める」から「守る」に切り替えて、手元でいちばん大事なひとつを守り、ほかはいったん置こう。",
+    "action": "今のやることリストからひとつ消す。今日はそれをやらない。",
+    "luckyItem": "空の雲を眺める"
+   },
+   "ko": {
+    "title": "맞바람 속의 배",
+    "poem": [
+     "돛에 바람 가득해도 배는 뒤로 밀리니",
+     "돛을 거두고 저녁 볕을 기다리게"
+    ],
+    "meaning": "지금은 힘을 줄수록 소모만 커져요.",
+    "general": "저항은 내가 어쩔 수 없는 곳에서 오고 있어요. 억지로 버티면 남은 힘만 닳아요. 포기하라는 게 아니라, 목표를 밀고 나가기에서 지키기로 바꾸라는 거예요. 가장 중요한 한 가지만 지키고 나머지는 잠시 내려놓으세요.",
+    "action": "지금 할 일 목록에서 하나를 지우고, 오늘은 하지 마세요.",
+    "luckyItem": "구름 바라보기"
+   },
+   "hi": {
+    "title": "उलटी हवा में नाव",
+    "poem": [
+     "पाल भरी हवा में नाव पीछे खिसके",
+     "पाल समेटो और साफ़ शाम की राह देखो"
+    ],
+    "meaning": "अभी जितना ज़ोर लगाएँगे, उतनी ही थकान बढ़ेगी।",
+    "general": "रुकावट ऐसी जगह से आ रही है जिस पर आपका बस नहीं। ज़िद करके टकराने से आपकी बची हुई ताक़त भी चली जाएगी। यह हार मानना नहीं है। लक्ष्य को आगे बढ़ाने से बदलकर बचाने पर लाइए: सबसे ज़रूरी एक चीज़ सँभालिए, बाकी को थोड़ी देर के लिए छोड़ दीजिए।",
+    "action": "आज की सूची से एक काम काट दीजिए और उसे आज मत कीजिए।",
+    "luckyItem": "बादलों को देखना"
+   }
+  },
+  {
+   "no": 12,
+   "level": "中签",
+   "zh": {
+    "title": "灯下寻针",
+    "poem": [
+     "灯前苦觅一针影",
+     "却在阶前草上明"
+    ],
+    "meaning": "你可能找错了地方，答案在旁边。",
+    "general": "力气花了不少，却没有结果，往往是因为问题被框在了一个太窄的范围里。换个角度看，会发现你要的东西一直在视线之外。先别加码，先换位置。",
+    "action": "把你的问题换一种问法重写一遍，看看还是不是同一件事。",
+    "luckyItem": "听一首慢歌"
+   },
+   "en": {
+    "title": "Searching under the Lamp",
+    "poem": [
+     "All evening hunting for one needle by the lamp",
+     "It was out on the step, glinting in the grass"
+    ],
+    "meaning": "You may be searching in the wrong place or asking the question too narrowly.",
+    "general": "A lot of effort with no result often means the question is too narrow, not that you have not tried hard enough. Step outside the usual frame and look again. The useful answer may be just beyond the area you have been searching. Change the angle before you add more effort.",
+    "action": "Rewrite your question a different way and see whether it is still the same question.",
+    "luckyItem": "A Soft Song"
+   },
+   "ja": {
+    "title": "灯の下の針",
+    "poem": [
+     "灯の前に針探す",
+     "針は階の草に"
+    ],
+    "meaning": "探す場所がずれている。答えはすぐ隣に。",
+    "general": "かなり力を使ったのに結果が出ないのは、問題を狭すぎる枠に閉じ込めているからかもしれない。見る角度を変えれば、探していたものがずっと視界の外にあったと気づく。力を足す前に、まず立つ場所を変えよう。",
+    "action": "自分の問いを別の聞き方で書き直して、それがまだ同じ問題か確かめる。",
+    "luckyItem": "ゆっくりした歌"
+   },
+   "ko": {
+    "title": "등불 아래 바늘 찾기",
+    "poem": [
+     "등불 앞에서 애써 바늘을 찾았건만",
+     "섬돌 앞 풀잎 위에서 반짝이네"
+    ],
+    "meaning": "엉뚱한 곳을 찾고 있을지도 몰라요. 답은 바로 옆에 있어요.",
+    "general": "힘은 많이 들였는데 결과가 없다면, 문제를 너무 좁은 틀에 가뒀기 때문일 때가 많아요. 보는 각도를 바꾸면 찾던 것이 줄곧 시야 밖에 있었다는 걸 알게 돼요. 힘을 더 쏟기 전에 먼저 자리를 바꿔 보세요.",
+    "action": "내 질문을 다른 방식으로 다시 써 보고, 여전히 같은 문제인지 확인해 보세요.",
+    "luckyItem": "느린 노래 한 곡"
+   },
+   "hi": {
+    "title": "दीये तले सुई की तलाश",
+    "poem": [
+     "दीये के पास सुई ढूँढते रहे",
+     "वह तो आँगन की घास पर चमक रही थी"
+    ],
+    "meaning": "शायद आप ग़लत जगह ढूँढ रहे हैं, जवाब पास ही है।",
+    "general": "बहुत मेहनत के बाद भी नतीजा न मिले तो अक्सर इसका मतलब है कि सवाल को बहुत छोटे दायरे में बाँध दिया गया है। नज़रिया बदलिए, जो चाहिए वह शायद हमेशा से नज़र के बाहर था। और ज़ोर लगाने से पहले अपनी जगह बदलिए।",
+    "action": "अपना सवाल किसी दूसरे तरीके से दोबारा लिखिए और देखिए कि क्या वह अब भी वही सवाल है।",
+    "luckyItem": "एक धीमा गीत"
+   }
+  },
+  {
+   "no": 13,
+   "level": "中签",
+   "zh": {
+    "title": "渡口候船",
+    "poem": [
+     "野渡无人舟自横",
+     "坐看江头几度潮"
+    ],
+    "meaning": "现在轮不到你决定，等也是一种做事。",
+    "general": "关键在别人那边，你能做的是把自己这边准备齐。等待容易让人焦躁，但真正消耗你的往往不是等待本身，而是反复设想各种结果。",
+    "action": "给等待设一个期限，到期还没消息就主动问一次。",
+    "luckyItem": "热柚子茶"
+   },
+   "en": {
+    "title": "Waiting at the Crossing",
+    "poem": [
+     "No ferryman at the lonely crossing, the boat drifts idle",
+     "Sit and watch the tide come in a few times"
+    ],
+    "meaning": "This decision is not yours to make yet. Waiting can still be useful.",
+    "general": "Someone else holds the decision for now. Your job is to keep your side ready and set a clear point at which you will check in. Waiting becomes exhausting when you rehearse every possible outcome. Give the uncertainty a boundary instead of letting it occupy the whole day.",
+    "action": "Put a deadline on the waiting, and if there is no word by then, ask once.",
+    "luckyItem": "Warm Yuzu Tea"
+   },
+   "ja": {
+    "title": "渡し場にて",
+    "poem": [
+     "渡しに舟ひとつ",
+     "座して潮を見る"
+    ],
+    "meaning": "今は決める番ではない。待つのも行動だ。",
+    "general": "鍵は相手の側にある。あなたにできるのは、自分の側の準備をそろえておくこと。待つのは苛立つものだが、本当に消耗させるのは待つことそのものより、いろいろな結果を何度も想像してしまうことだ。",
+    "action": "待つことに期限を決める。その日までに知らせがなければ、自分から一度聞いてみる。",
+    "luckyItem": "温かいゆず茶"
+   },
+   "ko": {
+    "title": "나루터의 기다림",
+    "poem": [
+     "인적 없는 나루에 배만 비껴 있고",
+     "앉아서 강물이 몇 번 차오르는지 보네"
+    ],
+    "meaning": "지금은 내가 정할 차례가 아니에요. 기다리는 것도 하나의 일이에요.",
+    "general": "열쇠는 상대 쪽에 있어요. 내가 할 수 있는 건 내 쪽 준비를 갖춰 두는 거예요. 기다림은 초조하게 만들지만, 정말 나를 지치게 하는 건 기다림 자체보다 여러 결과를 되풀이해 상상하는 일이에요.",
+    "action": "기다림에 기한을 정하고, 그때까지 소식이 없으면 먼저 한 번 물어보세요.",
+    "luckyItem": "따뜻한 유자차"
+   },
+   "hi": {
+    "title": "घाट पर नाव का इंतज़ार",
+    "poem": [
+     "सूने घाट पर नाव अकेली टिकी है",
+     "बैठकर नदी के ज्वार गिनते रहो"
+    ],
+    "meaning": "अभी फ़ैसला आपके हाथ में नहीं, इंतज़ार भी एक काम है।",
+    "general": "चाबी दूसरे के पास है। आप बस अपनी तरफ़ की तैयारी पूरी रख सकते हैं। इंतज़ार बेचैन करता है, पर असली थकान इंतज़ार से नहीं, बार बार हर नतीजे की कल्पना करने से आती है।",
+    "action": "इंतज़ार की एक सीमा तय कीजिए। तब तक ख़बर न मिले तो ख़ुद एक बार पूछ लीजिए।",
+    "luckyItem": "गरम नींबू शहद चाय"
+   }
+  },
+  {
+   "no": 14,
+   "level": "上签",
+   "zh": {
+    "title": "旧路新桥",
+    "poem": [
+     "溪断行人愁十载",
+     "今朝一桥度春秋"
+    ],
+    "meaning": "卡住很久的地方，出现了新的走法。",
+    "general": "原来绕不过去的障碍，现在多了一个解法，可能来自新的人、新的工具或新的规则。不必执着于当初的走法，能过去就是好路。",
+    "action": "把你当初放弃的理由拿出来，逐条检查它现在还成不成立。",
+    "luckyItem": "随手笔记"
+   },
+   "en": {
+    "title": "A New Bridge on an Old Road",
+    "poem": [
+     "For ten years a stream cut the road and travellers waited",
+     "Now a single bridge carries them across"
+    ],
+    "meaning": "A new way through an old problem is appearing.",
+    "general": "A problem that stayed stuck may now have another solution. It could come from a new person, a better tool, or a rule that changed while you were looking elsewhere. You do not have to use the route you first chose. The route that gets you through is the right one now.",
+    "action": "Dig out the reasons you gave up last time and check each one against today.",
+    "luckyItem": "A Few Lines of Journalling"
+   },
+   "ja": {
+    "title": "古道に新橋",
+    "poem": [
+     "谷川阻みて十年",
+     "今朝橋にて渡る"
+    ],
+    "meaning": "行き詰まった場所に、新しい道が現れた。",
+    "general": "越えられなかった障害に、新しい解き方が加わった。それは新しい人かもしれないし、新しい道具や新しいルールかもしれない。最初のやり方にこだわらなくていい。渡れるなら、それがいい道だ。",
+    "action": "あのとき諦めた理由を取り出して、今もそれが成り立つか一つずつ確かめる。",
+    "luckyItem": "思いつきメモ"
+   },
+   "ko": {
+    "title": "옛길의 새 다리",
+    "poem": [
+     "끊긴 개울 앞에서 십 년을 애태웠는데",
+     "오늘 아침 다리 하나로 건너가네"
+    ],
+    "meaning": "오래 막혀 있던 곳에 새로운 길이 생겼어요.",
+    "general": "넘을 수 없던 장애물에 새 해법이 생겼어요. 새로운 사람일 수도, 새로운 도구나 규칙일 수도 있어요. 처음의 방식에 매달릴 필요는 없어요. 건널 수 있다면 그게 좋은 길이에요.",
+    "action": "그때 포기했던 이유들을 꺼내서 지금도 유효한지 하나씩 따져 보세요.",
+    "luckyItem": "짧은 메모"
+   },
+   "hi": {
+    "title": "पुरानी राह, नया पुल",
+    "poem": [
+     "टूटी धारा ने दस बरस राह रोकी",
+     "आज सुबह एक पुल ने पार करा दिया"
+    ],
+    "meaning": "जहाँ आप लंबे समय से अटके थे, वहाँ अब एक नया रास्ता खुल गया है।",
+    "general": "जिस रुकावट को पार नहीं कर पा रहे थे, उसका अब एक नया हल है। वह कोई नया व्यक्ति, नया औज़ार या नया नियम हो सकता है। पुराने तरीके से चिपके रहने की ज़रूरत नहीं। जो पार करा दे, वही अच्छी राह है।",
+    "action": "जिन वजहों से आपने तब हार मानी थी, उन्हें एक एक करके देखिए कि क्या वे आज भी सच हैं।",
+    "luckyItem": "छोटी सी डायरी"
+   }
+  },
+  {
+   "no": 15,
+   "level": "中签",
+   "zh": {
+    "title": "沙中淘金",
+    "poem": [
+     "十斗黄沙淘一粒",
+     "手酸终见寸光来"
+    ],
+    "meaning": "有收获，但需要你愿意筛。",
+    "general": "机会是有的，只是混在大量无效信息和无效尝试里。这个阶段拼的不是聪明，而是耐心和筛选标准。标准越清楚，浪费的力气越少。",
+    "action": "写下一条筛选标准，用它过滤掉今天一半的选项。",
+    "luckyItem": "晒晒太阳"
+   },
+   "en": {
+    "title": "Gold in the Sand",
+    "poem": [
+     "Pan ten measures of sand to find a single grain",
+     "Your arms ache, and then the glint appears"
+    ],
+    "meaning": "There may be value here, but you will have to separate it from the noise.",
+    "general": "There is a real opportunity here, but it is mixed in with noise and options that will not lead anywhere. This stage rewards patience and clear criteria more than cleverness. Decide what qualifies before you start sorting, or every option will keep demanding your attention.",
+    "action": "Write down one filtering rule and use it to cut half of your options today.",
+    "luckyItem": "Warm Sunshine"
+   },
+   "ja": {
+    "title": "砂の中の金",
+    "poem": [
+     "十斗の砂に一粒",
+     "手痺れて光見る"
+    ],
+    "meaning": "実りはある。ふるいにかける覚悟を。",
+    "general": "チャンスはある。ただ、大量の無駄な情報や無駄な試みに混じっている。この段階で問われるのは頭の良さではなく、根気と選ぶ基準だ。基準がはっきりするほど、無駄な力は減っていく。",
+    "action": "選ぶ基準をひとつ書き、それで今日の選択肢の半分をふるい落とす。",
+    "luckyItem": "ひなたぼっこ"
+   },
+   "ko": {
+    "title": "모래 속의 금",
+    "poem": [
+     "누런 모래 열 말에서 한 알을 거르니",
+     "팔이 저릴 즈음 작은 빛이 보이네"
+    ],
+    "meaning": "얻을 것은 있어요. 다만 걸러 낼 각오가 필요해요.",
+    "general": "기회는 있어요. 다만 쓸모없는 정보와 시도 속에 섞여 있어요. 이 단계에서 필요한 건 똑똑함이 아니라 인내와 고르는 기준이에요. 기준이 분명할수록 헛된 힘이 줄어요.",
+    "action": "고르는 기준 하나를 적고, 그걸로 오늘의 선택지 절반을 걸러 내세요.",
+    "luckyItem": "햇볕 쬐기"
+   },
+   "hi": {
+    "title": "रेत में सोना",
+    "poem": [
+     "दस टोकरी रेत में से एक दाना छाना",
+     "हाथ थके तब जाकर चमक दिखाई दी"
+    ],
+    "meaning": "फल मिलेगा, पर उसके लिए छानने को तैयार रहना होगा।",
+    "general": "मौके हैं, पर वे बहुत सारी बेकार जानकारी और कोशिशों में मिले हुए हैं। इस दौर में होशियारी से ज़्यादा धैर्य और चुनने का पैमाना काम आता है। पैमाना जितना साफ़ होगा, उतनी कम मेहनत बर्बाद होगी।",
+    "action": "चुनने का एक पैमाना लिखिए और उससे आज के आधे विकल्प हटा दीजिए।",
+    "luckyItem": "धूप सेंकना"
+   }
+  },
+  {
+   "no": 16,
+   "level": "中签",
+   "zh": {
+    "title": "风中执灯",
+    "poem": [
+     "夜行手上一星火",
+     "护得住时路自明"
+    ],
+    "meaning": "你需要保护的是自己的状态，不是速度。",
+    "general": "外界的干扰比平时多，这种时候能不能走下去，取决于你还剩多少心力。减少同时进行的事情，把注意力收回到一两件上，比咬牙全扛更稳。",
+    "action": "今晚关掉一个持续消耗你注意力的来源。",
+    "luckyItem": "一杯温水"
+   },
+   "en": {
+    "title": "A Flame in the Wind",
+    "poem": [
+     "Walking at night with one small flame in your hand",
+     "Keep it alight and the road will show itself"
+    ],
+    "meaning": "Protect your energy before you worry about your speed.",
+    "general": "There is more competing for your attention than usual. Whether you can keep going depends less on determination than on how much energy you have left. Reduce the number of things running at once and give your focus to one or two. That will carry you further than forcing everything through.",
+    "action": "Switch off one thing tonight that has been steadily draining your attention.",
+    "luckyItem": "A Cup of Warm Water"
+   },
+   "ja": {
+    "title": "風の中の灯",
+    "poem": [
+     "夜道に灯ひとつ",
+     "守れば道明るし"
+    ],
+    "meaning": "守るべきは速さではなく、自分の調子だ。",
+    "general": "いつもより外からの邪魔が多い。こういうときに歩き続けられるかどうかは、心の余力がどれだけ残っているかで決まる。同時に進めることを減らし、意識を一つか二つに戻すほうが、歯を食いしばって全部背負うより安定する。",
+    "action": "今夜、注意をすり減らし続けているものをひとつ閉じる。",
+    "luckyItem": "一杯の白湯"
+   },
+   "ko": {
+    "title": "바람 속의 등불",
+    "poem": [
+     "밤길에 손에 든 작은 불씨 하나",
+     "지켜 내면 길은 절로 밝아지네"
+    ],
+    "meaning": "지켜야 할 건 속도가 아니라 내 상태예요.",
+    "general": "평소보다 바깥의 방해가 많아요. 이럴 때 계속 걸어갈 수 있을지는 마음의 여력이 얼마나 남았는지에 달려 있어요. 동시에 하는 일을 줄이고 한두 가지에 집중하는 편이, 이를 악물고 전부 떠안는 것보다 안정적이에요.",
+    "action": "오늘 밤, 계속 주의를 빼앗는 것 하나를 꺼 두세요.",
+    "luckyItem": "따뜻한 물 한 잔"
+   },
+   "hi": {
+    "title": "हवा में जलता दीया",
+    "poem": [
+     "रात की राह में हाथ में एक लौ",
+     "उसे बचा लिया तो राह रोशन रहेगी"
+    ],
+    "meaning": "आपको रफ़्तार नहीं, अपना मन सँभालना है।",
+    "general": "इन दिनों बाहर से ध्यान भटकाने वाली चीज़ें ज़्यादा हैं। आप आगे चल पाएँगे या नहीं, यह इस पर निर्भर है कि मन में कितनी ऊर्जा बची है। एक साथ कम काम कीजिए और ध्यान एक दो बातों पर लौटाइए। दाँत भींचकर सब उठाने से यह ज़्यादा टिकाऊ है।",
+    "action": "आज रात ध्यान खींचने वाली एक चीज़ को बंद कर दीजिए।",
+    "luckyItem": "एक गिलास गुनगुना पानी"
+   }
+  },
+  {
+   "no": 17,
+   "level": "上签",
+   "zh": {
+    "title": "囊中之锥",
+    "poem": [
+     "锥处囊中尖自出",
+     "不须高唱已惊人"
+    ],
+    "meaning": "做得好会被看见，不用急着争。",
+    "general": "你担心自己被忽略，但现在真正起作用的是作品本身而不是声量。与其把力气花在解释和比较上，不如把手上这件做到别人无法忽视。",
+    "action": "挑出你最拿得出手的一件事，今天把它再往前推一点。",
+    "luckyItem": "伸个懒腰"
+   },
+   "en": {
+    "title": "The Point Shows Through",
+    "poem": [
+     "An awl in a cloth bag soon pokes its way through",
+     "It never had to raise its voice to be noticed"
+    ],
+    "meaning": "Good work can speak for itself. You do not have to fight to be noticed.",
+    "general": "You are worried about being overlooked, but the work itself matters more than the noise around it. Time spent explaining and comparing yourself is time taken away from making the work stronger. Put that energy into one piece that is clear enough to speak for itself.",
+    "action": "Pick the piece of work you are proudest of and push it one step further today.",
+    "luckyItem": "Gentle Stretch"
+   },
+   "ja": {
+    "title": "嚢中の錐",
+    "poem": [
+     "嚢の錐は先出づ",
+     "叫ばずとも知る"
+    ],
+    "meaning": "いい仕事は伝わる。張り合わなくていい。",
+    "general": "見過ごされるのが心配かもしれないが、今効いているのは声の大きさではなく作品そのものだ。説明や比較に力を使うより、手元のこれを誰も無視できないところまで仕上げよう。",
+    "action": "いちばん自信のあることをひとつ選び、今日それを少しだけ前に進める。",
+    "luckyItem": "大きく伸びをする"
+   },
+   "ko": {
+    "title": "주머니 속의 송곳",
+    "poem": [
+     "주머니 속 송곳은 끝이 절로 드러나니",
+     "크게 외치지 않아도 모두가 놀라네"
+    ],
+    "meaning": "잘하면 보이게 돼 있어요. 서둘러 다툴 필요 없어요.",
+    "general": "묻힐까 걱정되겠지만, 지금 효과를 내는 건 목소리가 아니라 결과물 그 자체예요. 설명하고 비교하는 데 힘을 쓰기보다 지금 손에 든 일을 누구도 무시할 수 없을 만큼 해내세요.",
+    "action": "가장 자신 있는 일 하나를 골라 오늘 조금 더 앞으로 밀어 보세요.",
+    "luckyItem": "기지개 켜기"
+   },
+   "hi": {
+    "title": "थैली में सुई की नोक",
+    "poem": [
+     "थैली में रखी सुई की नोक बाहर झाँके",
+     "बिना ढोल बजाए सब चौंक जाएँ"
+    ],
+    "meaning": "अच्छा काम दिख ही जाता है, होड़ करने की जल्दी नहीं।",
+    "general": "आपको डर है कि आपको अनदेखा किया जाएगा, पर अभी असर आवाज़ से नहीं, काम से पड़ रहा है। सफ़ाई देने और तुलना करने में ताक़त लगाने के बजाय हाथ के काम को इतना अच्छा बनाइए कि उसे कोई अनदेखा न कर सके।",
+    "action": "अपना सबसे अच्छा एक काम चुनिए और आज उसे थोड़ा और आगे बढ़ाइए।",
+    "luckyItem": "लंबी अँगड़ाई"
+   }
+  },
+  {
+   "no": 18,
+   "level": "下签",
+   "zh": {
+    "title": "石上栽花",
+    "poem": [
+     "移花来种青石上",
+     "朝朝浇水不生根"
+    ],
+    "meaning": "力气没白费，但用错了地方。",
+    "general": "你的投入是真的，只是这块土壤接不住。继续加码不会改变结果。现在最有价值的判断是分清哪些是你能改的，哪些从一开始就不属于你能改的范围。",
+    "action": "诚实写下一句：这件事里，哪一部分不取决于我？",
+    "luckyItem": "买一朵花"
+   },
+   "en": {
+    "title": "Planting on Stone",
+    "poem": [
+     "You moved the flower and planted it on bare rock",
+     "Watered every morning, it still will not take root"
+    ],
+    "meaning": "Your effort is real, but this situation may not be able to make use of it.",
+    "general": "Your effort is genuine, but this situation may not have the conditions needed for it to take root. Adding more effort will not fix a mismatch in the ground. Work out which parts you can change and which parts were never yours to control.",
+    "action": "Write one honest sentence: which part of this does not depend on me?",
+    "luckyItem": "A Fresh Flower"
+   },
+   "ja": {
+    "title": "石に植えた花",
+    "poem": [
+     "石の上に花植え",
+     "水やるも根なし"
+    ],
+    "meaning": "力は無駄ではない。注ぐ場所が違っただけ。",
+    "general": "あなたの注いだものは本物だ。ただ、この土はそれを受け止められない。さらに注ぎ込んでも結果は変わらない。今いちばん価値のある判断は、自分で変えられることと、最初から自分には変えられない範囲にあることを見分けることだ。",
+    "action": "正直に一行書く。このことで、自分次第ではない部分はどこか。",
+    "luckyItem": "花を一輪買う"
+   },
+   "ko": {
+    "title": "돌 위에 심은 꽃",
+    "poem": [
+     "꽃을 옮겨 푸른 돌 위에 심고",
+     "아침마다 물을 줘도 뿌리내리지 않네"
+    ],
+    "meaning": "애쓴 건 헛되지 않았지만, 쓰는 곳이 잘못됐어요.",
+    "general": "쏟은 노력은 진짜예요. 다만 이 땅이 그걸 받아 주지 못해요. 더 쏟아부어도 결과는 바뀌지 않아요. 지금 가장 가치 있는 판단은 내가 바꿀 수 있는 것과 처음부터 내 힘이 닿지 않는 것을 구분하는 거예요.",
+    "action": "솔직하게 한 줄 적어 보세요. 이 일에서 나에게 달려 있지 않은 부분은 무엇인가요?",
+    "luckyItem": "꽃 한 송이"
+   },
+   "hi": {
+    "title": "पत्थर पर लगाया फूल",
+    "poem": [
+     "फूल उठाकर पत्थर पर रोप दिया",
+     "रोज़ सींचा पर जड़ न जमी"
+    ],
+    "meaning": "मेहनत बेकार नहीं गई, बस ग़लत जगह लगी।",
+    "general": "आपकी लगन सच्ची है, पर यह ज़मीन उसे थाम नहीं सकती। और झोंकने से नतीजा नहीं बदलेगा। अभी सबसे काम का फ़ैसला यह है कि पहचानें कौन सी बात आप बदल सकते हैं और कौन सी शुरू से आपके बस में नहीं थी।",
+    "action": "ईमानदारी से एक पंक्ति लिखिए: इस मामले में कौन सा हिस्सा मुझ पर निर्भर नहीं है?",
+    "luckyItem": "एक ताज़ा फूल"
+   }
+  },
+  {
+   "no": 19,
+   "level": "上上签",
+   "zh": {
+    "title": "开门见山",
+    "poem": [
+     "推窗便是好山色",
+     "何须迂回问旁人"
+    ],
+    "meaning": "答案比你想的直接，你其实已经知道了。",
+    "general": "你反复权衡，多半不是因为信息不够，而是因为不想承认自己已经有了倾向。把那个倾向说出来，很多复杂的比较会立刻失去意义。",
+    "action": "对一个信得过的人，一句话说出你真正想选的那个。",
+    "luckyItem": "清爽深呼吸"
+   },
+   "en": {
+    "title": "The Answer in Plain Sight",
+    "poem": [
+     "Open the window and the fine hills are right there",
+     "Why take the long way round, asking everyone else"
+    ],
+    "meaning": "The answer may be simpler than you are allowing it to be. You probably already know what you want.",
+    "general": "You keep weighing the options, but the problem may not be a lack of information. You may simply be reluctant to admit that you already lean one way. Say that preference out loud and notice what remains. The difficult part here is accepting the answer, not finding it.",
+    "action": "Tell one person you trust, in a single sentence, which one you actually want.",
+    "luckyItem": "Deep Breaths"
+   },
+   "ja": {
+    "title": "窓開けば山",
+    "poem": [
+     "窓押せば山の色",
+     "回り道は要らず"
+    ],
+    "meaning": "答えは素直だ。本当はもう分かっている。",
+    "general": "何度も天秤にかけてしまうのは、情報が足りないからではなく、自分にもう傾きがあると認めたくないからだろう。その傾きを口に出せば、込み入った比較の多くはすぐに意味を失う。",
+    "action": "信頼できる人に、本当に選びたいほうを一言で伝える。",
+    "luckyItem": "すっきり深呼吸"
+   },
+   "ko": {
+    "title": "문을 열면 산",
+    "poem": [
+     "창을 밀면 바로 고운 산빛이거늘",
+     "어찌 돌아가며 남에게 묻는가"
+    ],
+    "meaning": "답은 생각보다 단순해요. 사실 이미 알고 있어요.",
+    "general": "계속 저울질하는 건 정보가 부족해서가 아니라, 이미 마음이 기울었다는 걸 인정하고 싶지 않아서일 거예요. 그 마음을 입 밖에 내면 복잡한 비교들은 금세 의미를 잃어요.",
+    "action": "믿을 만한 사람에게 정말 고르고 싶은 쪽을 한마디로 말해 보세요.",
+    "luckyItem": "상쾌한 심호흡"
+   },
+   "hi": {
+    "title": "दरवाज़ा खोलो, पहाड़ सामने",
+    "poem": [
+     "खिड़की खोलते ही सुंदर पहाड़ दिखे",
+     "फिर घुमा फिराकर दूसरों से क्यों पूछें"
+    ],
+    "meaning": "जवाब आपकी सोच से सीधा है, और आप उसे पहले से जानते हैं।",
+    "general": "आप बार बार तौल रहे हैं, इसलिए नहीं कि जानकारी कम है, बल्कि इसलिए कि मान नहीं रहे कि मन पहले ही एक तरफ़ झुक चुका है। उस झुकाव को कह दीजिए, तो कई उलझी तुलनाएँ अपने आप बेमानी हो जाएँगी।",
+    "action": "किसी भरोसेमंद व्यक्ति से एक वाक्य में कहिए कि आप सच में क्या चुनना चाहते हैं।",
+    "luckyItem": "गहरी साँस"
+   }
+  },
+  {
+   "no": 20,
+   "level": "下签",
+   "zh": {
+    "title": "井中观天",
+    "poem": [
+     "坐井长看一片云",
+     "误将寸碧作乾坤"
+    ],
+    "meaning": "现在看到的，可能只是很小的一块。",
+    "general": "手上的信息不足以支撑一个大决定，但焦虑会让人急着下结论。这时候最该做的不是决定，而是把视野扩大一点：多问一个人，多看一个例子。",
+    "action": "今天找一个和你立场不同的人，听他怎么看这件事。",
+    "luckyItem": "吃一颗糖"
+   },
+   "en": {
+    "title": "Sky from a Well",
+    "poem": [
+     "Sitting in a well, watching one cloud drift past",
+     "And taking that scrap of blue for the whole sky"
+    ],
+    "meaning": "You are seeing only part of the picture.",
+    "general": "You do not yet have enough information for a decision this large, but anxiety makes a quick conclusion feel safer. Widen the picture instead. Ask one more person, look at one more example, or test one more assumption. A little more context may change the shape of the whole problem.",
+    "action": "Find someone today whose position differs from yours and hear how they see it.",
+    "luckyItem": "Boiled Sweets"
+   },
+   "ja": {
+    "title": "井の中の空",
+    "poem": [
+     "井より雲を見て",
+     "小さき青を天と"
+    ],
+    "meaning": "見えているのは、ほんの一部かもしれない。",
+    "general": "手元の情報は大きな決断を支えるには足りない。けれど不安は結論を急がせる。今すべきは決めることではなく、視野を少し広げること。もう一人に聞き、もう一つ例を見てみよう。",
+    "action": "今日、立場の違う人を一人見つけて、このことをどう見るか聞いてみる。",
+    "luckyItem": "飴をひとつ"
+   },
+   "ko": {
+    "title": "우물 속에서 본 하늘",
+    "poem": [
+     "우물에 앉아 한 조각 구름만 보고",
+     "손바닥만 한 하늘을 온 세상인 줄 아네"
+    ],
+    "meaning": "지금 보이는 건 아주 작은 한 조각일 수도 있어요.",
+    "general": "지금 가진 정보로는 큰 결정을 내리기에 부족해요. 그런데 불안은 결론을 서두르게 만들어요. 지금 할 일은 결정이 아니라 시야를 조금 넓히는 거예요. 한 사람에게 더 물어보고, 사례 하나를 더 살펴보세요.",
+    "action": "오늘 나와 입장이 다른 사람을 찾아, 이 일을 어떻게 보는지 들어 보세요.",
+    "luckyItem": "사탕 한 알"
+   },
+   "hi": {
+    "title": "कुएँ से दिखता आसमान",
+    "poem": [
+     "कुएँ में बैठकर बादल का टुकड़ा देखा",
+     "उस छोटे नीले को ही सारा आसमान मान लिया"
+    ],
+    "meaning": "जो अभी दिख रहा है, वह शायद पूरी तस्वीर का छोटा सा हिस्सा है।",
+    "general": "हाथ में जो जानकारी है वह बड़े फ़ैसले के लिए काफ़ी नहीं, पर घबराहट जल्दी नतीजे पर पहुँचाती है। अभी फ़ैसला नहीं, नज़र थोड़ी बड़ी करने का समय है। एक और व्यक्ति से पूछिए, एक और उदाहरण देखिए।",
+    "action": "आज किसी अलग राय वाले व्यक्ति से पूछिए कि वह इस बात को कैसे देखता है।",
+    "luckyItem": "एक टॉफ़ी"
+   }
+  },
+  {
+   "no": 21,
+   "level": "中签",
+   "zh": {
+    "title": "结网临渊",
+    "poem": [
+     "临渊羡鱼终无获",
+     "退而结网未为迟"
+    ],
+    "meaning": "想要的东西没错，缺的是工具。",
+    "general": "你盯着结果看得很清楚，却还没有准备好拿到它的手段。现在退一步做准备，不是放弃，而是把成功率从碰运气换成可重复。",
+    "action": "列出拿到它必须具备的三样东西，先补最缺的那样。",
+    "luckyItem": "写下感恩"
+   },
+   "en": {
+    "title": "Go Back and Weave a Net",
+    "poem": [
+     "Stand at the water envying the fish and you catch nothing",
+     "Step back and weave a net, it is not too late"
+    ],
+    "meaning": "The goal is not the problem. You are missing one of the tools or skills needed to reach it.",
+    "general": "You can see what you want, but wanting it clearly is not the same as being ready to reach it. Step back and build the missing capability. That is not retreating from the goal; it is turning luck into a process you can repeat.",
+    "action": "List the three things you would need in order to get it, and start on the one you lack most.",
+    "luckyItem": "Gratitude Note"
+   },
+   "ja": {
+    "title": "網を編む",
+    "poem": [
+     "淵に臨み魚羨む",
+     "退き網を編め"
+    ],
+    "meaning": "望みは正しい。足りないのは道具だ。",
+    "general": "結果ははっきり見えているのに、それを手に入れる手段がまだ整っていない。今一歩下がって準備するのは、諦めではない。成功を運任せから、繰り返せるものに変えることだ。",
+    "action": "それを手にするのに必要なものを三つ書き出し、いちばん足りないものから補う。",
+    "luckyItem": "感謝を書きとめる"
+   },
+   "ko": {
+    "title": "그물을 짜러 가다",
+    "poem": [
+     "물가에서 물고기만 부러워해선 얻는 게 없으니",
+     "물러나 그물을 짜도 늦지 않네"
+    ],
+    "meaning": "원하는 건 틀리지 않았어요. 부족한 건 도구예요.",
+    "general": "결과는 또렷이 보이는데, 그걸 얻을 수단은 아직 준비되지 않았어요. 지금 한발 물러나 준비하는 건 포기가 아니라, 성공을 운에서 되풀이할 수 있는 것으로 바꾸는 일이에요.",
+    "action": "그걸 얻는 데 꼭 필요한 세 가지를 적고, 가장 부족한 것부터 채우세요.",
+    "luckyItem": "감사 일기"
+   },
+   "hi": {
+    "title": "लौटकर जाल बुनो",
+    "poem": [
+     "किनारे खड़े होकर मछली को तरसते रहे",
+     "लौटकर जाल बुनना अब भी देर नहीं"
+    ],
+    "meaning": "आप जो चाहते हैं वह सही है, कमी बस औज़ार की है।",
+    "general": "आपको नतीजा साफ़ दिख रहा है, पर उसे पाने का साधन अभी तैयार नहीं। एक कदम पीछे हटकर तैयारी करना हार नहीं, बल्कि कामयाबी को क़िस्मत के भरोसे से हटाकर दोहराने लायक बनाना है।",
+    "action": "उसे पाने के लिए ज़रूरी तीन चीज़ें लिखिए और सबसे कमज़ोर वाली से शुरू कीजिए।",
+    "luckyItem": "शुक्रिया की डायरी"
+   }
+  },
+  {
+   "no": 22,
+   "level": "上签",
+   "zh": {
+    "title": "夜航见灯",
+    "poem": [
+     "四野茫茫不辨程",
+     "忽逢塔火一点明"
+    ],
+    "meaning": "会有一个人或一条信息，帮你把方向定下来。",
+    "general": "迷茫是真的，但这段时间里你会遇到一个有用的参照，可能是一次谈话、一份资料、一个先走过的人。留意它，不要因为忙而错过。",
+    "action": "主动联系一个走过类似路的人，约十五分钟。",
+    "luckyItem": "整理相册"
+   },
+   "en": {
+    "title": "A Light at Night",
+    "poem": [
+     "Dark on every side, with no way to judge the distance",
+     "Then a lighthouse, one steady point of light"
+    ],
+    "meaning": "A person, conversation, or piece of information may help you find your bearings.",
+    "general": "Feeling lost does not mean you are failing. A useful reference point may be closer than it seems: a conversation, a document, or someone who has already taken a similar path. These clues are easy to miss when you are waiting for a dramatic answer, so pay attention to the quieter ones.",
+    "action": "Reach out to someone who has walked a similar road and ask for fifteen minutes.",
+    "luckyItem": "Organising Photos"
+   },
+   "ja": {
+    "title": "夜航に灯",
+    "poem": [
+     "四方茫々として",
+     "ふと塔の灯明し"
+    ],
+    "meaning": "ある人か知らせが、方向を定めてくれる。",
+    "general": "迷いは本物だ。でもこの時期、役に立つ手がかりに出会う。それは一度の会話かもしれないし、一つの資料、先にその道を歩いた人かもしれない。忙しさに紛れて見逃さないように。",
+    "action": "似た道を歩いた人に自分から連絡して、十五分だけ時間をもらう。",
+    "luckyItem": "アルバムの整理"
+   },
+   "ko": {
+    "title": "밤바다의 등불",
+    "poem": [
+     "사방이 아득해 길을 분간 못 하다가",
+     "문득 등대 불빛 하나를 만나네"
+    ],
+    "meaning": "누군가 혹은 어떤 정보가 방향을 정하도록 도와줄 거예요.",
+    "general": "막막한 건 사실이에요. 하지만 이 시기에 쓸모 있는 기준점을 만나게 돼요. 한 번의 대화일 수도, 자료 하나일 수도, 먼저 그 길을 걸어간 사람일 수도 있어요. 바쁘다는 이유로 놓치지 마세요.",
+    "action": "비슷한 길을 먼저 걸어 본 사람에게 연락해서 십오 분만 시간을 내 달라고 해 보세요.",
+    "luckyItem": "사진첩 정리"
+   },
+   "hi": {
+    "title": "रात के सफ़र में रोशनी",
+    "poem": [
+     "चारों ओर धुंध, राह का पता नहीं",
+     "अचानक दूर एक दीपस्तंभ जल उठा"
+    ],
+    "meaning": "कोई व्यक्ति या कोई जानकारी आपकी दिशा तय करने में मदद करेगी।",
+    "general": "उलझन सच्ची है, पर इस दौर में आपको एक काम का सहारा मिलेगा। वह एक बातचीत, कोई लेख, या कोई ऐसा व्यक्ति हो सकता है जो यह राह पहले चल चुका है। व्यस्तता में उसे चूकने मत दीजिए।",
+    "action": "ऐसी राह पर चल चुके किसी व्यक्ति से ख़ुद संपर्क कीजिए और पंद्रह मिनट माँगिए।",
+    "luckyItem": "पुरानी तस्वीरें सहेजना"
+   }
+  },
+  {
+   "no": 23,
+   "level": "下签",
+   "zh": {
+    "title": "闭门造车",
+    "poem": [
+     "闭户三年成一器",
+     "推门方知辙不同"
+    ],
+    "meaning": "做得很认真，但缺少外面的反馈。",
+    "general": "你把标准定在自己心里，时间一长就容易偏。现在的风险不是不努力，而是努力的方向没有被校准过。越早拿出去，修正的成本越低。",
+    "action": "把半成品拿给一个真实用户或同行看，只问一句哪里不对。",
+    "luckyItem": "品一口咖啡"
+   },
+   "en": {
+    "title": "Building Behind Closed Doors",
+    "poem": [
+     "Three years behind a shut door and the cart is finished",
+     "Open the door and the ruts outside are a different width"
+    ],
+    "meaning": "You have worked seriously, but not enough outside feedback has reached the work.",
+    "general": "You have been judging the work by a standard that exists only in your own head. That standard can drift without you noticing. The risk is not a lack of effort; it is a lack of outside feedback. Show an unfinished version sooner, while changes are still cheap.",
+    "action": "Show the unfinished thing to one real user or peer and ask only what is wrong with it.",
+    "luckyItem": "A Sip of Coffee"
+   },
+   "ja": {
+    "title": "戸を閉ざして",
+    "poem": [
+     "三年籠り器成る",
+     "門出て轍違う"
+    ],
+    "meaning": "真剣に作ったが、外の声が足りない。",
+    "general": "基準を自分の心の中だけに置いていると、時間とともにずれていく。今の危うさは努力が足りないことではなく、努力の方向が一度も調整されていないことだ。早く外に出すほど、直す手間は小さくなる。",
+    "action": "作りかけのものを実際の利用者か同業の人に見せて、どこがおかしいかだけを聞く。",
+    "luckyItem": "コーヒーをひと口"
+   },
+   "ko": {
+    "title": "문 닫고 만든 수레",
+    "poem": [
+     "문 닫고 삼 년 만에 수레 하나 만들었는데",
+     "문을 여니 바퀴 자국이 다르더라"
+    ],
+    "meaning": "성실하게 만들었지만 바깥의 피드백이 부족해요.",
+    "general": "기준을 내 마음속에만 두면 시간이 지나며 어긋나기 쉬워요. 지금의 위험은 노력이 부족한 게 아니라, 노력의 방향이 한 번도 점검되지 않았다는 거예요. 빨리 내보일수록 고치는 비용이 줄어요.",
+    "action": "만들다 만 것을 실제 사용자나 동료에게 보여 주고, 어디가 이상한지만 물어보세요.",
+    "luckyItem": "커피 한 모금"
+   },
+   "hi": {
+    "title": "बंद कमरे में बनी गाड़ी",
+    "poem": [
+     "तीन बरस दरवाज़ा बंद कर गाड़ी गढ़ी",
+     "बाहर निकले तो पहियों की लीक अलग थी"
+    ],
+    "meaning": "आपने लगन से बनाया, पर बाहर की राय अभी नहीं मिली।",
+    "general": "जब पैमाना सिर्फ़ अपने मन में होता है, तो समय के साथ वह भटक जाता है। ख़तरा मेहनत की कमी नहीं, बल्कि यह है कि मेहनत की दिशा कभी परखी नहीं गई। जितनी जल्दी आप उसे बाहर दिखाएँगे, सुधार उतना सस्ता पड़ेगा।",
+    "action": "अधूरा काम किसी असली उपयोगकर्ता या साथी को दिखाइए और बस इतना पूछिए कि कहाँ गड़बड़ है।",
+    "luckyItem": "कॉफ़ी की एक चुस्की"
+   }
+  },
+  {
+   "no": 24,
+   "level": "中签",
+   "zh": {
+    "title": "竹节缓生",
+    "poem": [
+     "一节一节向上长",
+     "看似迟迟实有章"
+    ],
+    "meaning": "慢是它本来的速度，不是你出了问题。",
+    "general": "这类事情本身就需要时间累积，中间还会有看起来毫无进展的停顿。把评价标准从「今天有没有变化」换成「这个月有没有推进」，你会好过很多。",
+    "action": "设一个每周固定的小复盘，只记录做了什么。",
+    "luckyItem": "换上干净被单"
+   },
+   "en": {
+    "title": "Bamboo, Joint by Joint",
+    "poem": [
+     "It grows as bamboo grows, one joint at a time",
+     "It looks slow, but it keeps its own order"
+    ],
+    "meaning": "This is moving slowly because slow is the nature of the work, not because you are failing.",
+    "general": "This kind of work grows through accumulation, with pauses where nothing visible seems to happen. Those pauses are part of the process, not evidence that it is broken. Measure the month instead of judging every day, and the same progress will feel less like failure.",
+    "action": "Set a short weekly review whose only job is recording what you did.",
+    "luckyItem": "Fresh Bedding"
+   },
+   "ja": {
+    "title": "竹の節",
+    "poem": [
+     "ひと節また一節",
+     "遅くも筋道あり"
+    ],
+    "meaning": "ゆっくりが本来の速さ。問題はない。",
+    "general": "この種のことは、そもそも時間の積み重ねが必要で、途中にはまったく進んでいないように見える足踏みもある。評価の基準を「今日変化があったか」から「今月進んだか」に変えれば、ずっと楽になる。",
+    "action": "毎週決まった時間に小さな振り返りをして、やったことだけを記録する。",
+    "luckyItem": "洗いたてのシーツ"
+   },
+   "ko": {
+    "title": "마디마디 자라는 대나무",
+    "poem": [
+     "한 마디 또 한 마디 위로 자라니",
+     "더뎌 보여도 실은 차례가 있네"
+    ],
+    "meaning": "느린 게 원래 속도예요. 내가 잘못한 게 아니에요.",
+    "general": "이런 일은 원래 시간이 쌓여야 하고, 중간에는 전혀 나아가지 않는 것 같은 멈춤도 있어요. 평가 기준을 오늘 변화가 있었나에서 이번 달에 나아갔나로 바꾸면 훨씬 편해질 거예요.",
+    "action": "매주 정해진 시간에 작은 돌아보기를 하고, 한 일만 기록하세요.",
+    "luckyItem": "깨끗한 이불"
+   },
+   "hi": {
+    "title": "गाँठ दर गाँठ बाँस",
+    "poem": [
+     "एक एक गाँठ करके ऊपर बढ़ता है",
+     "धीमा दिखे पर उसका अपना क्रम है"
+    ],
+    "meaning": "धीमापन इसकी अपनी रफ़्तार है, इसमें आपकी कोई ग़लती नहीं।",
+    "general": "ऐसी बातें समय के साथ जुड़ती हैं, और बीच में ऐसे ठहराव आते हैं जब कुछ बढ़ता नहीं दिखता। परखने का पैमाना आज कुछ बदला या नहीं से बदलकर इस महीने कुछ आगे बढ़ा या नहीं कर दीजिए, मन बहुत हल्का हो जाएगा।",
+    "action": "हर हफ़्ते एक तय समय पर छोटा सा हिसाब कीजिए और बस लिखिए कि क्या किया।",
+    "luckyItem": "धुली हुई चादर"
+   }
+  },
+  {
+   "no": 25,
+   "level": "中签",
+   "zh": {
+    "title": "良田待雨",
+    "poem": [
+     "田畴整整种已齐",
+     "只欠天边一片云"
+    ],
+    "meaning": "你能做的都做了，剩下的看条件。",
+    "general": "准备是到位的，结果却取决于你控制不了的那部分。这不是坏事，说明你已经走到了努力的边界。接下来要练的是允许一部分事情不由自己决定。",
+    "action": "把「等待中」的事单独列一张表，不再天天翻。",
+    "luckyItem": "漫步树荫下"
+   },
+   "en": {
+    "title": "A Good Field Waits for Rain",
+    "poem": [
+     "The field is level, the rows are in, the sowing done",
+     "All it lacks is one cloud at the edge of the sky"
+    ],
+    "meaning": "You have done what you can. The rest depends on conditions outside your control.",
+    "general": "The preparation is sound, and the outcome now depends on something outside your control. That is not a failure of effort; it is simply the point where effort stops being the deciding factor. Keep the waiting contained, and let the next condition arrive in its own time.",
+    "action": "Put everything you are waiting on into its own list, and stop checking it daily.",
+    "luckyItem": "A Walk in the Shade"
+   },
+   "ja": {
+    "title": "雨を待つ田",
+    "poem": [
+     "田整い種揃う",
+     "待つは雲ひとつ"
+    ],
+    "meaning": "やれることはやった。あとは条件次第。",
+    "general": "準備は整っているのに、結果はあなたにはどうにもできない部分にかかっている。悪いことではない。努力の境目まで来たということだ。これから練習するのは、一部のことを自分で決めなくていいと許すこと。",
+    "action": "「待っていること」だけを別の一覧にして、毎日めくるのをやめる。",
+    "luckyItem": "木陰の散歩"
+   },
+   "ko": {
+    "title": "비를 기다리는 밭",
+    "poem": [
+     "밭고랑 가지런히 씨앗도 다 뿌렸으니",
+     "하늘가 구름 한 조각만 모자라네"
+    ],
+    "meaning": "할 수 있는 건 다 했어요. 나머지는 조건에 달렸어요.",
+    "general": "준비는 다 됐지만, 결과는 내가 어쩔 수 없는 부분에 달려 있어요. 나쁜 일이 아니에요. 노력의 경계까지 왔다는 뜻이니까요. 이제 연습할 건 어떤 일은 내가 정하지 않아도 된다고 허락하는 거예요.",
+    "action": "기다리는 중인 일만 따로 목록으로 만들고, 매일 들여다보지 마세요.",
+    "luckyItem": "나무 그늘 산책"
+   },
+   "hi": {
+    "title": "बारिश की राह देखता खेत",
+    "poem": [
+     "खेत की क्यारियाँ तैयार, बीज बो दिए",
+     "बस आसमान में एक बादल की कमी है"
+    ],
+    "meaning": "जो आप कर सकते थे, कर चुके हैं। बाकी हालात पर है।",
+    "general": "तैयारी पूरी है, पर नतीजा उस हिस्से पर टिका है जो आपके बस में नहीं। यह बुरी बात नहीं, इसका मतलब है आप मेहनत की सीमा तक पहुँच गए हैं। अब यह सीखना है कि कुछ बातें आपके फ़ैसले के बिना भी हो सकती हैं।",
+    "action": "इंतज़ार वाली बातों की अलग सूची बनाइए और उसे रोज़ मत खोलिए।",
+    "luckyItem": "पेड़ों की छाँव में सैर"
+   }
+  },
+  {
+   "no": 26,
+   "level": "上签",
+   "zh": {
+    "title": "破茧",
+    "poem": [
+     "茧薄何须人代剖",
+     "挣开方得两翅轻"
+    ],
+    "meaning": "难受的部分是过程本身，不是出错了。",
+    "general": "眼下的吃力来自转变，而不是失败。如果这时候有人替你把所有阻力拿掉，你反而会少掉一部分需要长出来的能力。撑住这一段，别急着找捷径。",
+    "action": "把你最想逃开的那一步，今天先做十分钟。",
+    "luckyItem": "欣赏落日"
+   },
+   "en": {
+    "title": "Out of the Cocoon",
+    "poem": [
+     "The cocoon is thin, and no one should cut it open for you",
+     "Struggling free is what makes the wings strong"
+    ],
+    "meaning": "The discomfort is part of the change, not proof that you are on the wrong path.",
+    "general": "What feels hard may be the strain of changing, not a sign that you are failing. Some of the ability you need is built by working through this awkward stage. Stay with it a little longer, and look for support without demanding that the whole process become easy.",
+    "action": "Take the step you most want to avoid and give it ten minutes today.",
+    "luckyItem": "Sunset Glow"
+   },
+   "ja": {
+    "title": "繭を破る",
+    "poem": [
+     "繭は自ら破れ",
+     "されば翅は軽し"
+    ],
+    "meaning": "つらいのは過程そのもの。間違いではない。",
+    "general": "今の苦しさは失敗ではなく変わり目から来ている。ここで誰かが抵抗をすべて取り除いてくれたら、かえって育つべき力の一部を失ってしまう。この一区切りを踏ん張って、近道を急がないで。",
+    "action": "いちばん逃げたい一歩を、今日まず十分だけやってみる。",
+    "luckyItem": "夕日を眺める"
+   },
+   "ko": {
+    "title": "고치를 뚫고",
+    "poem": [
+     "얇은 고치를 남이 대신 찢어 줄 필요 없으니",
+     "스스로 뚫고 나와야 날개가 가볍네"
+    ],
+    "meaning": "힘든 건 과정 자체예요. 뭔가 잘못된 게 아니에요.",
+    "general": "지금의 버거움은 실패가 아니라 변화에서 와요. 이때 누군가 모든 저항을 대신 치워 주면, 오히려 자라야 할 능력 일부를 잃게 돼요. 이 구간을 버티고, 지름길을 서두르지 마세요.",
+    "action": "가장 피하고 싶은 그 한 걸음을 오늘 먼저 십 분만 해 보세요.",
+    "luckyItem": "노을 바라보기"
+   },
+   "hi": {
+    "title": "कोकून से बाहर",
+    "poem": [
+     "पतले कोकून को कोई और क्यों चीरे",
+     "ख़ुद निकलकर ही पंख हल्के होते हैं"
+    ],
+    "meaning": "जो कठिन लग रहा है वह इस सफ़र का हिस्सा है, आपसे कोई ग़लती नहीं हुई।",
+    "general": "अभी की मुश्किल असफलता से नहीं, बदलाव से आ रही है। अगर कोई अभी सारी रुकावटें हटा दे, तो आप वह ताक़त खो देंगे जिसे इसी समय बनना है। इस दौर को सह लीजिए, छोटा रास्ता ढूँढने की जल्दी मत कीजिए।",
+    "action": "जिस कदम से आप सबसे ज़्यादा बचना चाहते हैं, आज उसे दस मिनट कीजिए।",
+    "luckyItem": "डूबता सूरज देखना"
+   }
+  },
+  {
+   "no": 27,
+   "level": "中签",
+   "zh": {
+    "title": "逢桥下马",
+    "poem": [
+     "过桥不必急着行",
+     "下马徐徐路自平"
+    ],
+    "meaning": "到了关键的一小段，值得放慢。",
+    "general": "整件事里有一两个节点特别要紧，其他部分其实没那么敏感。分清楚这个差别，把谨慎留给真正重要的地方，别把力气平均花掉。",
+    "action": "指出这件事中最不可逆的一步，为它多留一天时间。",
+    "luckyItem": "床头小夜灯"
+   },
+   "en": {
+    "title": "Dismount at the Bridge",
+    "poem": [
+     "A bridge is no place to hurry across",
+     "Get down, walk slowly, and the road stays level"
+    ],
+    "meaning": "You have reached a point where slowing down will protect what matters.",
+    "general": "One or two points carry most of the risk, while the rest is more forgiving than it feels. Do not spend the same amount of caution everywhere. Find the step that cannot easily be undone, and give that step the time and care it deserves.",
+    "action": "Name the least reversible step in this and give it one extra day.",
+    "luckyItem": "A Warm Bedside Lamp"
+   },
+   "ja": {
+    "title": "橋で馬を降り",
+    "poem": [
+     "橋に急ぐなかれ",
+     "馬降りて道平ら"
+    ],
+    "meaning": "肝心なところに来た。ここはゆっくりと。",
+    "general": "このことの中には特に大事な節目が一つか二つあり、それ以外は実はそれほど敏感ではない。その違いを見分けて、慎重さは本当に大事なところに取っておこう。力を均等にばらまかないこと。",
+    "action": "このことでいちばん取り返しのつかない一歩を挙げて、そのために一日余分に取る。",
+    "luckyItem": "枕元の小さな灯り"
+   },
+   "ko": {
+    "title": "다리에선 말에서 내려",
+    "poem": [
+     "다리를 건널 땐 서둘러 가지 말고",
+     "말에서 내려 천천히 가면 길이 평탄하네"
+    ],
+    "meaning": "중요한 짧은 구간에 왔어요. 여기서는 천천히 가도 돼요.",
+    "general": "이 일에는 특히 중요한 고비가 한두 군데 있고, 나머지는 사실 그리 민감하지 않아요. 그 차이를 구분해서 신중함은 정말 중요한 곳에 아껴 두세요. 힘을 골고루 나눠 쓰지 마세요.",
+    "action": "이 일에서 가장 되돌리기 어려운 단계를 짚고, 그 단계에 하루를 더 주세요.",
+    "luckyItem": "머리맡 작은 조명"
+   },
+   "hi": {
+    "title": "पुल पर घोड़े से उतरो",
+    "poem": [
+     "पुल पार करते समय जल्दी मत करो",
+     "घोड़े से उतरकर चलो तो राह समतल है"
+    ],
+    "meaning": "आप एक ज़रूरी मोड़ पर हैं, यहाँ धीमे चलना ठीक है।",
+    "general": "इस पूरे मामले में एक दो पड़ाव बहुत अहम हैं, बाकी उतने नाज़ुक नहीं। यह फ़र्क़ पहचानिए और सावधानी उन्हीं जगहों के लिए बचाइए जो सच में मायने रखती हैं। अपनी ताक़त हर जगह बराबर मत बाँटिए।",
+    "action": "इस मामले का वह कदम पहचानिए जिसे पलटा नहीं जा सकता, और उसके लिए एक दिन और रखिए।",
+    "luckyItem": "सिरहाने की छोटी बत्ती"
+   }
+  },
+  {
+   "no": 28,
+   "level": "下签",
+   "zh": {
+    "title": "火中取栗",
+    "poem": [
+     "炉中栗子香扑鼻",
+     "伸手才知火未消"
+    ],
+    "meaning": "看着划算的那件事，代价藏在后面。",
+    "general": "眼前的机会确实诱人，但你可能只算了收益没算成本，尤其是时间、关系和退出的难度。不必立刻拒绝，先把代价写清楚再决定。",
+    "action": "写下如果这件事不成，你会损失什么、能不能承受。",
+    "luckyItem": "给植物浇水"
+   },
+   "en": {
+    "title": "Chestnuts in the Fire",
+    "poem": [
+     "The chestnuts in the fire smell good enough to reach for",
+     "Your hand goes in and finds the embers still alight"
+    ],
+    "meaning": "The upside is obvious, but some of the cost is still hidden.",
+    "general": "The opportunity is genuinely attractive, but you may have counted the upside without counting the cost. Include the time, relationships, and difficulty of getting out if it goes badly. You do not have to reject it; just make the decision with both sides visible.",
+    "action": "Write down what you would lose if this did not work, and whether you could absorb it.",
+    "luckyItem": "Watering Plants"
+   },
+   "ja": {
+    "title": "火中の栗",
+    "poem": [
+     "炉の栗の香高し",
+     "手出せば火熱し"
+    ],
+    "meaning": "得に見える話ほど、代償が後ろに隠れる。",
+    "general": "目の前のチャンスは確かに魅力的だ。けれど利益だけを数えて、コストを数えていないかもしれない。とくに時間、人間関係、そして抜け出す難しさ。すぐに断る必要はない。まず代償をはっきり書き出してから決めよう。",
+    "action": "うまくいかなかったら何を失うか、それに耐えられるかを書き出す。",
+    "luckyItem": "植物に水をやる"
+   },
+   "ko": {
+    "title": "불 속의 밤",
+    "poem": [
+     "화로 속 밤 냄새가 코끝을 찌르나",
+     "손을 뻗어 보니 불이 아직 살아 있네"
+    ],
+    "meaning": "이득처럼 보이는 그 일에는 대가가 뒤에 숨어 있어요.",
+    "general": "눈앞의 기회는 분명 매력적이에요. 하지만 이익만 계산하고 비용은 계산하지 않았을지도 몰라요. 특히 시간, 관계, 그리고 빠져나오기 어려운 정도요. 당장 거절할 필요는 없어요. 대가를 먼저 분명히 적어 본 뒤에 결정하세요.",
+    "action": "이 일이 잘 안 되면 무엇을 잃는지, 감당할 수 있는지 적어 보세요.",
+    "luckyItem": "화분에 물 주기"
+   },
+   "hi": {
+    "title": "आग में से चेस्टनट",
+    "poem": [
+     "भट्ठी के चेस्टनट की ख़ुशबू ललचाए",
+     "हाथ बढ़ाया तो पता चला आग अभी बुझी नहीं"
+    ],
+    "meaning": "जो सौदा फ़ायदे का दिखता है, उसकी क़ीमत पीछे छिपी है।",
+    "general": "सामने का मौका सच में लुभावना है, पर शायद आपने सिर्फ़ फ़ायदा गिना है, क़ीमत नहीं। ख़ासकर समय, रिश्ते और बाहर निकलने की मुश्किल। तुरंत मना करने की ज़रूरत नहीं, पहले क़ीमत साफ़ लिख लीजिए, फिर तय कीजिए।",
+    "action": "लिखिए कि अगर यह न चला तो आप क्या खोएँगे, और क्या आप उसे सह सकते हैं।",
+    "luckyItem": "पौधों को पानी देना"
+   }
+  },
+  {
+   "no": 29,
+   "level": "上上签",
+   "zh": {
+    "title": "顺流千里",
+    "poem": [
+     "轻舟已过重山外",
+     "一日千帆水自东"
+    ],
+    "meaning": "方向对了，速度会自己跟上来。",
+    "general": "难的部分已经过去，现在的顺利不是运气，是前面积累的结果。此时可以放心地把摊子铺开一点，同时留意别在顺境里丢掉当初让你走到这里的习惯。",
+    "action": "写下一条你不想因为变顺利而丢掉的习惯，贴在看得见的地方。",
+    "luckyItem": "煎一颗荷包蛋"
+   },
+   "en": {
+    "title": "A Thousand Miles Downstream",
+    "poem": [
+     "The light boat has already passed the far mountains",
+     "A thousand sails in a day, and the river runs east"
+    ],
+    "meaning": "The direction is right, and momentum will build without being forced.",
+    "general": "The hard part is behind you, and the ease you feel now is the result of earlier work. You can expand with some confidence, but keep the habits that made this possible. Success often makes those habits feel optional just when they matter most.",
+    "action": "Write down one habit you do not want to lose now things are easier, and put it somewhere visible.",
+    "luckyItem": "Fried Egg"
+   },
+   "ja": {
+    "title": "千里の流れ",
+    "poem": [
+     "軽舟山々を過ぎ",
+     "千帆東へ流る"
+    ],
+    "meaning": "方向が合えば、速さはあとからついてくる。",
+    "general": "難しいところはもう過ぎた。今の順調さは運ではなく、これまで積み重ねてきたものの結果だ。安心して少し手を広げていい。ただ、順風の中で、ここまで連れてきてくれた習慣を手放さないように。",
+    "action": "順調になっても手放したくない習慣をひとつ書き、目に入る場所に貼る。",
+    "luckyItem": "目玉焼きを焼く"
+   },
+   "ko": {
+    "title": "물길 따라 천 리",
+    "poem": [
+     "가벼운 배는 이미 첩첩산중을 지나",
+     "하루에 천 척의 돛이 동으로 흐르네"
+    ],
+    "meaning": "방향이 맞으면 속도는 저절로 따라와요.",
+    "general": "어려운 부분은 이미 지났어요. 지금의 순조로움은 운이 아니라 그동안 쌓아 온 결과예요. 안심하고 판을 조금 넓혀도 좋아요. 다만 순풍 속에서, 나를 여기까지 데려온 습관을 잃지 않도록 조심하세요.",
+    "action": "일이 잘 풀려도 놓치고 싶지 않은 습관 하나를 적어서 잘 보이는 곳에 붙여 두세요.",
+    "luckyItem": "달걀 프라이"
+   },
+   "hi": {
+    "title": "धारा के साथ हज़ार कोस",
+    "poem": [
+     "हल्की नाव कई पहाड़ पीछे छोड़ चुकी",
+     "एक दिन में हज़ार पाल पूरब को बहें"
+    ],
+    "meaning": "दिशा सही हो तो रफ़्तार अपने आप आ जाती है।",
+    "general": "मुश्किल हिस्सा बीत चुका है। अभी की आसानी क़िस्मत नहीं, पहले की मेहनत का फल है। अब आप बेझिझक अपना दायरा थोड़ा बढ़ा सकते हैं, बस ध्यान रखिए कि अच्छे दिनों में वे आदतें न छूटें जो आपको यहाँ तक लाईं।",
+    "action": "एक आदत लिखिए जिसे आप अच्छे दिनों में भी नहीं छोड़ना चाहते, और उसे सामने चिपका दीजिए।",
+    "luckyItem": "एक आमलेट बनाना"
+   }
+  },
+  {
+   "no": 30,
+   "level": "中签",
+   "zh": {
+    "title": "早行遇雾",
+    "poem": [
+     "晓发轻雾满前村",
+     "日出时分自见门"
+    ],
+    "meaning": "现在看不清是暂时的，别在雾里做大决定。",
+    "general": "信息还在变动，此刻做的判断很可能过几天就要推翻。与其反复纠结，不如做些不管结果如何都有用的事，把决定留到能看清的时候。",
+    "action": "今天只做一件无论结果如何都不会白费的事。",
+    "luckyItem": "吹吹傍晚的风"
+   },
+   "en": {
+    "title": "Early Road, Morning Fog",
+    "poem": [
+     "Setting out at dawn, light fog over the village ahead",
+     "By sunrise the gate appears without any searching"
+    ],
+    "meaning": "The lack of clarity is temporary. Do not make a major decision before the fog lifts.",
+    "general": "The facts are still changing, so a decision made today may need to be reversed soon. More anxious thinking will not make the picture clearer. Work on something useful either way, and return to the decision when the important details have settled.",
+    "action": "Do one thing today that will not be wasted no matter how this turns out.",
+    "luckyItem": "Evening Breeze"
+   },
+   "ja": {
+    "title": "朝の霧",
+    "poem": [
+     "暁に発てば霧",
+     "日出でて門見ゆ"
+    ],
+    "meaning": "見えないのは一時的。霧の中で決めないで。",
+    "general": "情報はまだ動いていて、今の判断は数日後にはくつがえるかもしれない。何度も迷うより、結果がどうあれ役に立つことをして、決断ははっきり見えるときまで取っておこう。",
+    "action": "今日は、結果がどうなっても無駄にならないことをひとつだけやる。",
+    "luckyItem": "夕方の風"
+   },
+   "ko": {
+    "title": "이른 길의 안개",
+    "poem": [
+     "새벽에 길을 나서니 마을이 안개로 가득",
+     "해가 뜨면 문이 절로 보이리"
+    ],
+    "meaning": "지금 안 보이는 건 잠시예요. 안개 속에서 큰 결정은 하지 마세요.",
+    "general": "정보가 아직 바뀌는 중이라, 지금 내린 판단은 며칠 뒤 뒤집힐 가능성이 커요. 계속 고민하기보다 결과가 어떻든 쓸모 있는 일을 하고, 결정은 또렷이 보일 때로 미루세요.",
+    "action": "오늘은 결과가 어떻든 헛되지 않을 일 하나만 하세요.",
+    "luckyItem": "저녁 바람 쐬기"
+   },
+   "hi": {
+    "title": "सुबह के सफ़र में कोहरा",
+    "poem": [
+     "भोर में निकले तो गाँव कोहरे में डूबा",
+     "सूरज उगते ही दरवाज़ा अपने आप दिखेगा"
+    ],
+    "meaning": "अभी साफ़ न दिखना थोड़ी देर की बात है, कोहरे में बड़े फ़ैसले मत कीजिए।",
+    "general": "जानकारी अभी बदल रही है, आज का फ़ैसला कुछ दिन में पलटना पड़ सकता है। बार बार उलझने के बजाय ऐसे काम कीजिए जो हर हाल में काम आएँ, और फ़ैसला तब कीजिए जब साफ़ दिखने लगे।",
+    "action": "आज बस एक ऐसा काम कीजिए जो नतीजा कुछ भी हो, बेकार नहीं जाएगा।",
+    "luckyItem": "शाम की हवा"
+   }
+  },
+  {
+   "no": 31,
+   "level": "上签",
+   "zh": {
+    "title": "剪枝得果",
+    "poem": [
+     "繁枝剪去三分绿",
+     "来岁枝头果自稠"
+    ],
+    "meaning": "舍掉一些，剩下的才长得好。",
+    "general": "你手上同时进行的事太多，每一件都还不错，所以难以取舍。但资源是有限的，现在减少数量不是损失，而是让重要的那几件真正长出来。",
+    "action": "从正在做的事里选一件今天暂停，并告诉相关的人。",
+    "luckyItem": "对镜子笑笑"
+   },
+   "en": {
+    "title": "Prune for Fruit",
+    "poem": [
+     "Cut back a third of the green from the crowded branch",
+     "Next year the fruit will hang thick on the bough"
+    ],
+    "meaning": "Letting go of a few things will give the important ones room to grow.",
+    "general": "You have too many worthwhile things running at once, which is why choosing feels so difficult. Nothing needs to be a failure before you pause it. Your time and attention are limited, and reducing the list is how the few that matter get enough room to become real.",
+    "action": "Pick one thing you are doing, pause it today, and tell the people it affects.",
+    "luckyItem": "A Smile in the Mirror"
+   },
+   "ja": {
+    "title": "剪定の実り",
+    "poem": [
+     "繁枝三分を剪り",
+     "来年実はたわわ"
+    ],
+    "meaning": "いくつか手放せば、残ったものがよく育つ。",
+    "general": "同時に進めていることが多すぎる。どれもそれなりにうまくいっているから、選べない。けれど資源には限りがある。今数を減らすのは損ではなく、大事ないくつかを本当に育てるためだ。",
+    "action": "今やっていることからひとつを選んで今日から休み、関係する人にそう伝える。",
+    "luckyItem": "鏡に笑いかける"
+   },
+   "ko": {
+    "title": "가지를 쳐야 열매가",
+    "poem": [
+     "무성한 가지를 삼 할쯤 쳐내면",
+     "이듬해 가지마다 열매가 가득하리"
+    ],
+    "meaning": "몇 가지를 내려놓아야 남은 것이 잘 자라요.",
+    "general": "동시에 하는 일이 너무 많아요. 하나하나가 다 괜찮아서 고르기 어려워요. 하지만 자원은 한정돼 있어요. 지금 개수를 줄이는 건 손해가 아니라, 중요한 몇 가지가 제대로 자라게 하는 일이에요.",
+    "action": "하고 있는 일 중 하나를 골라 오늘부터 멈추고, 관련된 사람에게 알려 주세요.",
+    "luckyItem": "거울 보고 웃기"
+   },
+   "hi": {
+    "title": "छँटाई से फल",
+    "poem": [
+     "घनी डालों में से तिहाई काट दो",
+     "अगले बरस हर डाल फलों से लदेगी"
+    ],
+    "meaning": "कुछ छोड़ेंगे, तभी बाकी अच्छी तरह बढ़ेगा।",
+    "general": "आप एक साथ बहुत सारे काम कर रहे हैं, और हर एक ठीक चल रहा है, इसलिए चुनना कठिन है। पर संसाधन सीमित हैं। अभी गिनती कम करना नुकसान नहीं, बल्कि ज़रूरी कामों को सच में बढ़ने देना है।",
+    "action": "चल रहे कामों में से एक को आज रोकिए और जुड़े लोगों को बता दीजिए।",
+    "luckyItem": "आईने में मुस्कुराना"
+   }
+  },
+  {
+   "no": 32,
+   "level": "上签",
+   "zh": {
+    "title": "借力过山",
+    "poem": [
+     "独行山高步步难",
+     "结伴翻岭不觉长"
+    ],
+    "meaning": "这件事不必你一个人扛。",
+    "general": "你习惯自己解决，所以没想过开口。但这件事里有一部分，别人做起来比你快得多。把它交出去，不会显得你不行，反而让整件事更快落地。",
+    "action": "挑一件你不擅长的小事，今天请一个人帮忙。",
+    "luckyItem": "泡个热水澡"
+   },
+   "en": {
+    "title": "Over the Ridge Together",
+    "poem": [
+     "Alone, the mountain is high and every step is hard",
+     "With company, you are over the ridge before you know it"
+    ],
+    "meaning": "You do not have to carry this alone.",
+    "general": "You are used to solving things alone, so asking for help may not feel like a real option. But someone else could handle one part of this much faster than you can. Sharing the load is not an admission that you are incapable; it is a way to get the whole thing moving sooner.",
+    "action": "Pick one small task you are bad at and ask someone for help with it today.",
+    "luckyItem": "Warm Bath"
+   },
+   "ja": {
+    "title": "共に越える山",
+    "poem": [
+     "独り山路は難く",
+     "連れ立てば短し"
+    ],
+    "meaning": "このことは、一人で背負わなくていい。",
+    "general": "自分で解決するのに慣れているから、頼むことを考えもしなかった。けれどこのことの一部は、ほかの人のほうがずっと速くできる。任せても、あなたができない人に見えるわけではない。むしろ全体が早く形になる。",
+    "action": "苦手な小さなことをひとつ選び、今日だれかに手伝いを頼む。",
+    "luckyItem": "温かいお風呂"
+   },
+   "ko": {
+    "title": "함께 넘는 산",
+    "poem": [
+     "홀로 가는 산은 걸음마다 험하나",
+     "벗과 함께 고개를 넘으니 길지 않네"
+    ],
+    "meaning": "이 일은 혼자 다 짊어지지 않아도 돼요.",
+    "general": "혼자 해결하는 데 익숙해서 부탁할 생각을 못 했을 거예요. 하지만 이 일의 일부는 다른 사람이 훨씬 빨리 할 수 있어요. 맡긴다고 내가 무능해 보이는 게 아니라, 오히려 일이 더 빨리 마무리돼요.",
+    "action": "서툰 작은 일 하나를 골라 오늘 누군가에게 도움을 청해 보세요.",
+    "luckyItem": "따뜻한 목욕"
+   },
+   "hi": {
+    "title": "साथ मिलकर पहाड़ पार",
+    "poem": [
+     "अकेले पहाड़ पर हर कदम भारी",
+     "साथी मिले तो चढ़ाई लंबी न लगे"
+    ],
+    "meaning": "यह बोझ आपको अकेले नहीं उठाना है।",
+    "general": "आपको ख़ुद सब सुलझाने की आदत है, इसलिए मदद माँगने का ख़याल ही नहीं आया। पर इस काम का एक हिस्सा कोई और आपसे कहीं जल्दी कर सकता है। उसे सौंप देने से आप कमज़ोर नहीं दिखेंगे, बल्कि पूरा काम जल्दी पूरा होगा।",
+    "action": "कोई छोटा काम चुनिए जिसमें आप अच्छे नहीं, और आज किसी से मदद माँगिए।",
+    "luckyItem": "गरम पानी से स्नान"
+   }
+  },
+  {
+   "no": 33,
+   "level": "中签",
+   "zh": {
+    "title": "种豆得豆",
+    "poem": [
+     "春日种豆秋得豆",
+     "不种黄粱莫问收"
+    ],
+    "meaning": "结果会如实反映你投入的东西。",
+    "general": "没有意外之喜，也不会有无故的损失。如果对现在的结果不满意，往回看投入的方向比往前看运气更有用。调整种什么，比调整怎么等更要紧。",
+    "action": "算一算过去一个月，时间实际花在了哪三件事上。",
+    "luckyItem": "听窗外雨声"
+   },
+   "en": {
+    "title": "You Reap What You Sow",
+    "poem": [
+     "Plant beans in spring and in autumn you harvest beans",
+     "Sow no millet, and there is no millet to reap"
+    ],
+    "meaning": "The results will reflect what you have actually invested.",
+    "general": "There is no sudden windfall here, but there is no mystery either. If you dislike the result, look at what you have actually been feeding the situation. Changing the input will matter more than waiting more patiently for a different outcome.",
+    "action": "Work out which three things actually took your time over the past month.",
+    "luckyItem": "Sound of Rain"
+   },
+   "ja": {
+    "title": "豆を蒔けば豆",
+    "poem": [
+     "春蒔く豆は秋に",
+     "蒔かねば実らず"
+    ],
+    "meaning": "結果は、注いだものをそのまま映す。",
+    "general": "思いがけない幸運もなければ、理由のない損もない。今の結果に満足できないなら、先の運を見るより、これまで何に注いできたかを振り返るほうが役に立つ。どう待つかより、何を蒔くかを変えるほうが大事だ。",
+    "action": "この一か月、時間が実際に使われた三つのことを数えてみる。",
+    "luckyItem": "窓の外の雨音"
+   },
+   "ko": {
+    "title": "콩 심은 데 콩 난다",
+    "poem": [
+     "봄에 콩을 심으면 가을에 콩을 거두니",
+     "심지 않은 곡식에 수확을 묻지 마라"
+    ],
+    "meaning": "결과는 내가 쏟은 만큼 그대로 보여 줘요.",
+    "general": "뜻밖의 행운도 없고, 이유 없는 손해도 없어요. 지금 결과가 마음에 들지 않는다면, 앞으로의 운을 보기보다 지금까지 무엇에 힘을 쏟았는지 돌아보는 게 더 도움이 돼요. 어떻게 기다릴지보다 무엇을 심을지를 바꾸는 게 더 중요해요.",
+    "action": "지난 한 달 동안 시간이 실제로 어떤 세 가지 일에 쓰였는지 헤아려 보세요.",
+    "luckyItem": "창밖 빗소리"
+   },
+   "hi": {
+    "title": "जैसा बोओगे वैसा काटोगे",
+    "poem": [
+     "बसंत में बोया बीज पतझड़ में फल दे",
+     "जो बोया ही नहीं उसकी फ़सल मत पूछो"
+    ],
+    "meaning": "नतीजा ठीक वैसा ही होगा जैसा आपने उसमें लगाया है।",
+    "general": "न कोई अचानक का तोहफ़ा है, न बेवजह का नुकसान। अगर आज के नतीजे से संतोष नहीं, तो आगे की क़िस्मत देखने से ज़्यादा काम का है पीछे देखना कि मेहनत कहाँ लगी। कैसे इंतज़ार करें से ज़्यादा ज़रूरी है कि क्या बोएँ।",
+    "action": "हिसाब लगाइए कि पिछले महीने आपका समय असल में किन तीन कामों में गया।",
+    "luckyItem": "खिड़की पर बारिश की आवाज़"
+   }
+  },
+  {
+   "no": 34,
+   "level": "中签",
+   "zh": {
+    "title": "回头是岸",
+    "poem": [
+     "行到水穷疑无路",
+     "回身一步是平川"
+    ],
+    "meaning": "退回去一点不是失败，是找到路的方式。",
+    "general": "你可能在一条走不通的路上投入太多，因此不愿回头。但沉没的部分已经沉没了，继续往前的代价通常比退回一步大。改主意是能力，不是认输。",
+    "action": "把「如果现在重新开始，我还会这么选吗」老实回答一遍。",
+    "luckyItem": "仰望夜空微星"
+   },
+   "en": {
+    "title": "The Shore Is Behind You",
+    "poem": [
+     "You walk to where the water ends and see no road ahead",
+     "Turn round, take one step, and the open plain is there"
+    ],
+    "meaning": "Stepping back is not failure. It may be how you find a better route.",
+    "general": "You may have invested too much in a route that is not taking you where you need to go, which is why turning back feels so difficult. The past cost cannot be recovered by spending more. Changing your mind is not giving in; it is using new information.",
+    "action": "Answer this honestly: if I were starting fresh today, would I still choose this?",
+    "luckyItem": "Stargazing"
+   },
+   "ja": {
+    "title": "振り向けば岸",
+    "poem": [
+     "水尽き道なしと",
+     "振り向けば平野"
+    ],
+    "meaning": "引き返すのは失敗ではない。道の探し方だ。",
+    "general": "通れない道にたくさん注ぎ込んでしまったから、引き返したくないのかもしれない。けれど沈んだものはもう沈んでいる。先へ進み続ける代償は、たいてい一歩戻るより大きい。考えを変えるのは力であって、負けではない。",
+    "action": "「今もう一度始めるとしても、同じものを選ぶか」に正直に答えてみる。",
+    "luckyItem": "夜空の星"
+   },
+   "ko": {
+    "title": "돌아보면 기슭",
+    "poem": [
+     "물 끝에 닿아 길이 없는 줄 알았는데",
+     "몸을 돌려 한 걸음이면 너른 들판이네"
+    ],
+    "meaning": "조금 되돌아가는 건 실패가 아니라 길을 찾는 방법이에요.",
+    "general": "막힌 길에 너무 많이 쏟아서 돌아서기 싫을지도 몰라요. 하지만 가라앉은 건 이미 가라앉았어요. 계속 앞으로 가는 대가는 보통 한 걸음 물러서는 것보다 커요. 마음을 바꾸는 건 능력이지 패배가 아니에요.",
+    "action": "지금 다시 시작한다면 나는 또 이걸 고를까? 이 질문에 솔직하게 답해 보세요.",
+    "luckyItem": "밤하늘 별 보기"
+   },
+   "hi": {
+    "title": "मुड़कर देखो, किनारा वहीं",
+    "poem": [
+     "पानी के छोर पर लगा राह ख़त्म हुई",
+     "एक कदम मुड़े तो सामने खुला मैदान"
+    ],
+    "meaning": "थोड़ा पीछे लौटना हार नहीं, राह खोजने का तरीका है।",
+    "general": "आपने शायद एक बंद राह में इतना लगा दिया है कि अब लौटना अच्छा नहीं लगता। पर जो डूब गया, वह डूब चुका। आगे बढ़ते रहने की क़ीमत अक्सर एक कदम पीछे आने से ज़्यादा होती है। मन बदलना क़ाबिलियत है, हार नहीं।",
+    "action": "ईमानदारी से जवाब दीजिए: अगर आज फिर से शुरू करूँ, तो क्या यही चुनूँगा?",
+    "luckyItem": "रात में तारे देखना"
+   }
+  },
+  {
+   "no": 35,
+   "level": "下签",
+   "zh": {
+    "title": "独木过溪",
+    "poem": [
+     "一木横溪水正急",
+     "不如绕行三里桥"
+    ],
+    "meaning": "有更稳的走法，只是要多花点时间。",
+    "general": "当下这条路可行但风险偏高，一旦失手代价不小。多绕一段看起来慢，实际上更可能到。判断的关键是：万一出问题，你还有没有第二次机会。",
+    "action": "为这件事准备一个退路，写下它具体是什么。",
+    "luckyItem": "收拾随身包"
+   },
+   "en": {
+    "title": "One Log across the Stream",
+    "poem": [
+     "One log across the stream, and the water running fast",
+     "Better to walk three miles round to the bridge"
+    ],
+    "meaning": "A safer route may take longer, but it gives you a better chance of getting there.",
+    "general": "The direct route may work, but the downside is larger than it first appears. A slower route may give you a much better chance of finishing safely. Ask yourself one practical question: if this goes wrong, will you get another chance?",
+    "action": "Prepare a fallback for this and write down specifically what it is.",
+    "luckyItem": "Tidying Your Bag"
+   },
+   "ja": {
+    "title": "一本橋",
+    "poem": [
+     "一木の橋水急ぐ",
+     "三里回りて行け"
+    ],
+    "meaning": "確かな道がある。少し時間がかかるだけ。",
+    "general": "今の道は通れなくはないが、危うさが大きく、しくじれば代償も小さくない。遠回りは遅く見えて、実際はたどり着ける見込みが高い。判断の鍵は、もし何かあったとき、二度目の機会があるかどうかだ。",
+    "action": "このことに逃げ道をひとつ用意して、それが具体的に何かを書き出す。",
+    "luckyItem": "かばんの整理"
+   },
+   "ko": {
+    "title": "외나무다리",
+    "poem": [
+     "외나무 걸친 개울에 물살이 거세니",
+     "삼 리 돌아 다리로 가느니만 못하네"
+    ],
+    "meaning": "더 안전한 길이 있어요. 시간이 조금 더 걸릴 뿐이에요.",
+    "general": "지금 길은 갈 수는 있지만 위험이 크고, 실수하면 대가도 작지 않아요. 돌아가는 길은 느려 보여도 실제로는 도착할 가능성이 더 높아요. 판단의 핵심은, 만약 문제가 생겼을 때 두 번째 기회가 있느냐예요.",
+    "action": "이 일에 대비책 하나를 마련하고, 그게 구체적으로 무엇인지 적어 보세요.",
+    "luckyItem": "가방 정리"
+   },
+   "hi": {
+    "title": "एक लकड़ी का पुल",
+    "poem": [
+     "धारा तेज़ है, बस एक लट्ठा पड़ा है",
+     "तीन कोस घूमकर पक्के पुल से जाओ"
+    ],
+    "meaning": "एक ज़्यादा सुरक्षित राह है, बस उसमें थोड़ा समय ज़्यादा लगेगा।",
+    "general": "यह राह चल तो सकती है, पर ख़तरा ज़्यादा है और चूक हुई तो नुकसान बड़ा होगा। घूमकर जाना धीमा दिखता है, पर वहाँ पहुँचने की संभावना ज़्यादा है। असली सवाल यह है कि अगर कुछ गड़बड़ हुई, तो क्या आपको दूसरा मौका मिलेगा।",
+    "action": "इस मामले के लिए एक पीछे हटने का रास्ता तैयार कीजिए और लिखिए कि वह ठीक ठीक क्या है।",
+    "luckyItem": "अपना बैग सहेजना"
+   }
+  },
+  {
+   "no": 36,
+   "level": "中签",
+   "zh": {
+    "title": "守拙藏锋",
+    "poem": [
+     "锋芒敛处身自安",
+     "不争此时争岁长"
+    ],
+    "meaning": "这一阵先稳住，不必急着表态。",
+    "general": "周围的节奏比较乱，现在冒头容易被卷进不属于你的争执里。把重心放回自己的事情上，少解释、少站队，时间会替你说明很多东西。",
+    "action": "今天有一场不必参与的讨论，就安静地不参与。",
+    "luckyItem": "说声辛苦了"
+   },
+   "en": {
+    "title": "Keep the Blade Sheathed",
+    "poem": [
+     "Keep the blade covered and you stay safe",
+     "Do not fight for this moment, play for the long years"
+    ],
+    "meaning": "Keep your position for now. You do not need to declare yourself yet.",
+    "general": "The people around you may be reacting quickly, and speaking up now could pull you into a dispute that is not yours. Put your attention back on your own work, explain less, and avoid taking sides before you need to. Time may settle more of this than an immediate statement would.",
+    "action": "There is a discussion today you do not need to join. Quietly do not join it.",
+    "luckyItem": "An Early Night"
+   },
+   "ja": {
+    "title": "刃を鞘に",
+    "poem": [
+     "鋒収めて身安し",
+     "争わず歳月待つ"
+    ],
+    "meaning": "今は落ち着いて。態度は急がなくていい。",
+    "general": "まわりのリズムが乱れていて、今顔を出すと自分に関係のない争いに巻き込まれやすい。重心を自分のことに戻し、説明も味方選びも控えめに。時間が多くのことを代わりに語ってくれる。",
+    "action": "今日、加わらなくていい議論があれば、静かに加わらずにいる。",
+    "luckyItem": "おつかれさまの一言"
+   },
+   "ko": {
+    "title": "칼끝을 감추고",
+    "poem": [
+     "날을 거두면 몸이 절로 편안하니",
+     "지금 다투지 말고 세월로 다투게"
+    ],
+    "meaning": "당분간은 차분히 버티세요. 서둘러 입장을 밝힐 필요 없어요.",
+    "general": "주변의 흐름이 어수선해서, 지금 나서면 내 것이 아닌 다툼에 휘말리기 쉬워요. 중심을 내 일로 되돌리고, 해명과 편 가르기는 줄이세요. 시간이 많은 걸 대신 말해 줄 거예요.",
+    "action": "오늘 끼지 않아도 되는 논쟁이 있다면 조용히 빠져 있으세요.",
+    "luckyItem": "수고했다는 한마디"
+   },
+   "hi": {
+    "title": "धार को म्यान में रखो",
+    "poem": [
+     "धार छिपाकर रखो, तो तन सुरक्षित",
+     "आज की होड़ छोड़ो, बरसों की सोचो"
+    ],
+    "meaning": "अभी शांत रहिए, राय देने की जल्दी नहीं है।",
+    "general": "आसपास का माहौल उलझा हुआ है, अभी आगे आए तो ऐसे झगड़े में फँस सकते हैं जो आपका नहीं। ध्यान अपने काम पर लौटाइए, कम सफ़ाई दीजिए, किसी का पक्ष लेने से बचिए। समय आपकी ओर से बहुत कुछ कह देगा।",
+    "action": "आज कोई ऐसी बहस हो जिसमें शामिल होना ज़रूरी नहीं, तो चुपचाप उससे दूर रहिए।",
+    "luckyItem": "शाबाश कहना"
+   }
+  }
+ ]
+}
