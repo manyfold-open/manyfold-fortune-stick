@@ -19,6 +19,7 @@
  *   GET    /api/alerts                       admin  failure alerts: webhook status + recent failures
  *   PUT    /api/alerts/discord               admin  store the Discord webhook (sealed) and ping it
  *   DELETE /api/alerts/discord               admin  forget it
+ *   GET    /api/gateway/status               admin  Narra Messenger gateway status (redacted)
  *
  * "admin" routes require the x-admin-password header when the ADMIN_PASSWORD
  * secret is set. The game stays public; the password only protects the settings
@@ -47,6 +48,15 @@ import {
   startConnect,
   verifyAgent,
 } from './connect';
+import {
+  BaseNarraMatrixSync,
+  BaseNarraRoomCoordinator,
+} from '@manyfold/narra-agent-kit/worker';
+import {
+  getFortuneNarraGatewayStatus,
+  kickFortuneNarraGateway,
+  narraGatewayConfig,
+} from './narra/gateway';
 import {
   createReading,
   deleteReading,
@@ -94,11 +104,22 @@ const adminHeaderOk = (c: { env: Env; req: { header: (name: string) => string | 
   return safeEqual(c.req.header('x-admin-password') ?? '', required);
 };
 
+// Fail-closed gate for Narra gateway status: ALWAYS requires ADMIN_PASSWORD to be set & matched.
+const gatewayAdminOk = (c: { env: Env; req: { header: (name: string) => string | undefined } }): boolean => {
+  const required = adminPassword(c.env);
+  if (!required) return false;
+  return safeEqual(c.req.header('x-admin-password') ?? '', required);
+};
+
 // The game is public. Only the agent-management API behind /settings is gated,
 // so visitors can play while the deployment owner keeps the Manyfold connection private.
 app.use('/api/*', async (c, next) => {
   const path = new URL(c.req.url).pathname;
-  if (isSettingsApiPath(path) && !adminHeaderOk(c)) {
+  if (path === '/api/gateway/status' || path.startsWith('/api/gateway/')) {
+    if (!gatewayAdminOk(c)) {
+      throw new HttpError(401, 'admin_password_invalid', 'This deployment requires the admin password.');
+    }
+  } else if (isSettingsApiPath(path) && !adminHeaderOk(c)) {
     throw new HttpError(401, 'admin_password_invalid', 'This deployment requires the admin password.');
   }
   await next();
@@ -281,6 +302,8 @@ app.delete('/api/alerts/discord', async (c) => {
   return c.json({ alerts: await alertsView(c.env) });
 });
 
+app.get('/api/gateway/status', async (c) => c.json(await getFortuneNarraGatewayStatus(c.env)));
+
 app.all('/api/*', () => {
   throw new HttpError(404, 'not_found', 'No such API route.');
 });
@@ -303,6 +326,18 @@ app.all('*', async (c) =>
 // BASE_PATH are served as if they had arrived at the root; root-relative
 // redirects coming back out get the prefix put back on.
 const mountPath = (env: Env): string => (env.BASE_PATH ?? '').trim().replace(/\/+$/, '');
+
+export class NarraMatrixSync extends BaseNarraMatrixSync<Env> {
+  constructor(ctx: DurableObjectState, env: Env) {
+    super(ctx, env, narraGatewayConfig);
+  }
+}
+
+export class NarraRoomCoordinator extends BaseNarraRoomCoordinator<Env> {
+  constructor(ctx: DurableObjectState, env: Env) {
+    super(ctx, env, narraGatewayConfig);
+  }
+}
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -327,5 +362,8 @@ export default {
     const redirected = new Response(response.body, response);
     redirected.headers.set('location', base + location);
     return redirected;
+  },
+  async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    ctx.waitUntil(kickFortuneNarraGateway(env));
   },
 } satisfies ExportedHandler<Env>;

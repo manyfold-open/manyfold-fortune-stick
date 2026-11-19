@@ -41,6 +41,27 @@
       "database_id": "911ece11-605c-4090-8610-f80c77841efd"
     }
   ],
+  "triggers": {
+    "crons": ["*/5 * * * *"]
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "NARRA_SYNC_DO",
+        "class_name": "NarraMatrixSync"
+      },
+      {
+        "name": "NARRA_ROOM_DO",
+        "class_name": "NarraRoomCoordinator"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["NarraMatrixSync", "NarraRoomCoordinator"]
+    }
+  ],
   "vars": {
     // Manyfold API base. Point at https://api-staging.manyfold.ai via .dev.vars for local dev.
     "MANYFOLD_API_BASE_URL": "https://api.manyfold.ai",
@@ -55,7 +76,12 @@
     // GA4 measurement id for app.manyfold.ai/fortune-stick. Forks: clear it (or put your
     // own id here); empty means no analytics is served at all. Consent Mode v2 defaults
     // ship with the tag (src/worker/analytics.ts).
-    "GA_MEASUREMENT_ID": "G-86RWKZYYJB"
+    "GA_MEASUREMENT_ID": "G-86RWKZYYJB",
+    // Narra Messenger gateway flags (fail-closed OFF until secrets are provisioned).
+    "NARRA_GATEWAY_ENABLED": "off",
+    "NARRA_SYNC": "off",
+    "NARRA_AGENT_ID": "agt_agqvtekvjbzldl5u2jczbc5equ",
+    "NARRA_MATRIX_ID": "@agent-81cb5c84:matrix.netmind.chat"
   }
   // Optional hardening, neither is required to deploy:
   //   npx wrangler secret put ADMIN_PASSWORD          # protects agent management in /settings

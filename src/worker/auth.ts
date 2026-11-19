@@ -10,4 +10,6 @@ export const isSettingsApiPath = (path: string): boolean =>
   path === '/api/agents' ||
   path.startsWith('/api/agents/') ||
   path === '/api/alerts' ||
-  path.startsWith('/api/alerts/');
+  path.startsWith('/api/alerts/') ||
+  path === '/api/gateway/status' ||
+  path.startsWith('/api/gateway/');

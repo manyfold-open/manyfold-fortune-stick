@@ -9,6 +9,7 @@ describe('settings API access policy', () => {
     expect(isSettingsApiPath('/api/agents/agent-123/verify')).toBe(true);
     expect(isSettingsApiPath('/api/alerts')).toBe(true);
     expect(isSettingsApiPath('/api/alerts/discord')).toBe(true);
+    expect(isSettingsApiPath('/api/gateway/status')).toBe(true);
   });
 
   it('leaves the game and health endpoints public', () => {
