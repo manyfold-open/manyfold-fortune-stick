@@ -77,11 +77,11 @@
     // own id here); empty means no analytics is served at all. Consent Mode v2 defaults
     // ship with the tag (src/worker/analytics.ts).
     "GA_MEASUREMENT_ID": "G-86RWKZYYJB",
-    // Narra Messenger gateway flags (fail-closed OFF until secrets are provisioned).
-    "NARRA_GATEWAY_ENABLED": "off",
-    "NARRA_SYNC": "off",
+    // Narra Messenger gateway flags (enabled with bound Direct Matrix identity).
+    "NARRA_GATEWAY_ENABLED": "on",
+    "NARRA_SYNC": "on",
     "NARRA_AGENT_ID": "agt_agqvtekvjbzldl5u2jczbc5equ",
-    "NARRA_MATRIX_ID": "@agent-81cb5c84:matrix.netmind.chat"
+    "NARRA_MATRIX_ID": "@agent-bc3282c7:matrix.netmind.chat"
   }
   // Optional hardening, neither is required to deploy:
   //   npx wrangler secret put ADMIN_PASSWORD          # protects agent management in /settings

@@ -36,14 +36,14 @@ import { toZhHant } from './zh-hant';
 
 export const FORTUNE_STICK_AGENT_ID = 'fortune-stick';
 export const FORTUNE_STICK_DEFAULT_AGENT_RECORD_ID = 'agt_agqvtekvjbzldl5u2jczbc5equ';
-export const FORTUNE_STICK_DEFAULT_MATRIX_ID = '@agent-81cb5c84:matrix.netmind.chat';
+export const FORTUNE_STICK_DEFAULT_MATRIX_ID = '@agent-bc3282c7:matrix.netmind.chat';
 export const FORTUNE_STICK_SITE_URL = 'https://app.manyfold.ai/fortune-stick/';
 
 export const FORTUNE_STICK_AGENT_SPEC: AgentSpec = {
   id: FORTUNE_STICK_AGENT_ID,
   matrixId: FORTUNE_STICK_DEFAULT_MATRIX_ID,
   name: 'AI Fortune Stick',
-  aliases: ['fortune-stick', 'wenyiqian', '解籤師', '解签师'],
+  aliases: ['fortune-stick', 'wenyiqian', '問一籤', '问一签', '解籤師', '解签师'],
   domainDescription:
     'Chinese fortune stick draws (問一籤 / 问一签), poetic couplets, fortune levels, and grounded next-step reflections in zh-Hant, zh-Hans, and en.',
   domainKeywords: [
@@ -184,6 +184,8 @@ const OPT_IN_WEEKLY_RE =
   /^(?:訂閱每週|订阅每周|開啟每週|开启每周|opt[- ]?in\s+weekly|subscribe\s+weekly)\b/i;
 const OPT_OUT_WEEKLY_RE =
   /^(?:取消每週|取消每周|關閉每週|关闭每周|停止每週|停止每周|opt[- ]?out\s+weekly|unsubscribe\s+weekly)\b/i;
+const DM_GREETING_RE =
+  /^(?:hi|hello|hey|yo|morning|good\s+(?:morning|afternoon|evening)|你好|您好|哈囉|哈啰|嗨|安安|早安|午安|晚安|在嗎|在吗|有人嗎|有人吗)$/i;
 
 function stripMentionsAndPunct(text: string): string {
   return (text ?? '')
@@ -540,6 +542,16 @@ export async function fortuneFastRespond(
     !hasAnyDomainKeyword(stripped)
   ) {
     return '[NO_REPLY]';
+  }
+
+  if ((event.chatType === 'dm' || decision.reason === 'explicit_mention') && DM_GREETING_RE.test(stripped)) {
+    if (lang === 'zh-Hant') {
+      return '嗨！我是問一籤 🎋 想求支籤看看方向嗎？直接跟我說「求籤」、「搖一籤」、「看第8籤」，或把心裡想問的事告訴我就可以開始。';
+    }
+    if (lang === 'zh-Hans') {
+      return '嗨！我是问一签 🎋 想求支签看看方向吗？直接跟我说“求签”、“摇一签”、“看第8签”，或把心里想问的事告诉我就可以开始。';
+    }
+    return 'Hi! I am AI Fortune Stick 🎋 Say "draw a stick", "stick 8", or tell me what is on your mind whenever you are ready.';
   }
 
   const lookupMatch = STICK_LOOKUP_RE.exec(stripped);
