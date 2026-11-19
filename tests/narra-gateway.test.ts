@@ -458,12 +458,92 @@ describe('fastRespond crisis safety, CSPRNG draw & pure zh-Hant/zh-Hans/en', () 
         FORTUNE_STICK_AGENT_SPEC,
       );
       const reply = await fortuneFastRespond(baseEnv, ev, dec, emptyMem);
+      expect(dec.reason).toBe('dm');
       expect(dec.detectedLang).toBe(expectedLang);
       expect(reply).not.toBeNull();
       expect(reply).not.toMatch(dashPattern);
       expect(reply).toContain(expectedSub);
       checkFn(reply!);
     }
+  });
+
+  it('strips Chinese/sibling @mentions before script detection and handles DM greeting', async () => {
+    const dashPattern = /[\u2010-\u2015\u2212]|[ \t]+-+[ \t]+|--/;
+    const emptyMem = { userMemories: [], roomMemories: [], promptSafeLines: [] };
+    const storedHantMem = {
+      userMemories: [
+        {
+          id: 'mem_hant_stick',
+          scope: 'user' as const,
+          agentId: FORTUNE_STICK_AGENT_ID,
+          userId: '@alice:matrix.netmind.chat',
+          originChatType: 'group' as const,
+          kind: 'language' as const,
+          key: 'lang',
+          value: 'zh-Hant',
+          createdAt: '2026-11-19T00:00:00.000Z',
+          updatedAt: '2026-11-19T00:00:00.000Z',
+        },
+      ],
+      roomMemories: [],
+      promptSafeLines: [],
+    };
+    const groupCtx: RoomContext = {
+      roomId: '!grp_stick:matrix.netmind.chat',
+      chatType: 'group',
+      userLanguageHint: 'zh-Hant',
+      members: [
+        { matrixId: '@alice:matrix.netmind.chat', displayName: 'Alice', isAgent: false },
+        { matrixId: FORTUNE_STICK_DEFAULT_MATRIX_ID, displayName: 'AI Fortune Stick', isAgent: true },
+      ],
+      recentHistory: [],
+    };
+
+    // 1. @問一籤 帮我求一签 with userHint: 'zh-Hant' / stored 'zh-Hant' -> pure zh-Hans (第 ... 签)
+    const hansMentionEv = makeInboundEvent({ text: '@問一籤 帮我求一签' });
+    const hansMentionDec = await routeEvent(hansMentionEv, groupCtx, FORTUNE_STICK_AGENT_SPEC);
+    expect(hansMentionDec.shouldReply).toBe(true);
+    expect(hansMentionDec.detectedLang).toBe('zh-Hans');
+    const hansMentionReply = await fortuneFastRespond(
+      baseEnv,
+      hansMentionEv,
+      { ...hansMentionDec, detectedLang: 'zh-Hant' },
+      storedHantMem,
+    );
+    expect(hansMentionReply).not.toBeNull();
+    expect(hansMentionReply).toMatch(/^第 \d+ 签/);
+    expect(hansMentionReply).not.toMatch(dashPattern);
+    assertPureZhHans(hansMentionReply!);
+
+    // 2. @問一籤 draw a fortune stick with userHint: 'zh-Hant' / stored 'zh-Hant' -> pure English
+    const enMentionEv = makeInboundEvent({ text: '@問一籤 draw a fortune stick' });
+    const enMentionDec = await routeEvent(enMentionEv, groupCtx, FORTUNE_STICK_AGENT_SPEC);
+    expect(enMentionDec.shouldReply).toBe(true);
+    expect(enMentionDec.detectedLang).toBe('en');
+    const enMentionReply = await fortuneFastRespond(
+      baseEnv,
+      enMentionEv,
+      { ...enMentionDec, detectedLang: 'zh-Hant' },
+      storedHantMem,
+    );
+    expect(enMentionReply).not.toBeNull();
+    expect(enMentionReply).toMatch(/^Stick \d+ of \d+/);
+    expect(enMentionReply).not.toMatch(/[\u4e00-\u9fff]/);
+    expect(enMentionReply).not.toMatch(dashPattern);
+
+    // 3. DM bare 你好 (chatType: 'dm', decision.reason: 'dm') -> instant zh-Hant DM greeting
+    const dmHiEv = makeInboundEvent({ chatType: 'dm', text: '你好' });
+    const dmHiDec = await routeEvent(
+      dmHiEv,
+      { roomId: dmHiEv.roomId, chatType: 'dm', members: [], recentHistory: [] },
+      FORTUNE_STICK_AGENT_SPEC,
+    );
+    expect(dmHiDec.reason).toBe('dm');
+    const dmHiReply = await fortuneFastRespond(baseEnv, dmHiEv, dmHiDec, emptyMem);
+    expect(dmHiReply).not.toBeNull();
+    expect(dmHiReply).toContain('我是問一籤');
+    expect(dmHiReply).not.toMatch(dashPattern);
+    assertPureZhHant(dmHiReply!);
   });
 
   it('executes local CSPRNG draw inside NarraRoomCoordinator DO and falls back to A2A for follow-ups', async () => {
