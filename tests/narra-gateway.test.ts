@@ -179,7 +179,7 @@ const execCtx = {
 } as unknown as ExecutionContext;
 
 describe('wrangler.jsonc & fail-closed safety invariants', () => {
-  it('keeps database_id, routes, BASE_PATH intact and defaults gateway flags OFF', () => {
+  it('keeps database_id, routes, BASE_PATH intact and enables bound Narra gateway', () => {
     const raw = new TextDecoder().decode(
       readFileSync(fileURLToPath(new URL('../wrangler.jsonc', import.meta.url))),
     );
@@ -196,10 +196,10 @@ describe('wrangler.jsonc & fail-closed safety invariants', () => {
     expect(parsed.d1_databases[0].database_id).toBe('911ece11-605c-4090-8610-f80c77841efd');
     expect(parsed.routes.map((r) => r.pattern)).toEqual(['app.manyfold.ai/fortune-stick*']);
     expect(parsed.vars.BASE_PATH).toBe('/fortune-stick');
-    expect(parsed.vars.NARRA_GATEWAY_ENABLED).toBe('off');
-    expect(parsed.vars.NARRA_SYNC).toBe('off');
+    expect(parsed.vars.NARRA_GATEWAY_ENABLED).toBe('on');
+    expect(parsed.vars.NARRA_SYNC).toBe('on');
     expect(parsed.vars.NARRA_AGENT_ID).toBe('agt_agqvtekvjbzldl5u2jczbc5equ');
-    expect(parsed.vars.NARRA_MATRIX_ID).toBe('@agent-81cb5c84:matrix.netmind.chat');
+    expect(parsed.vars.NARRA_MATRIX_ID).toBe('@agent-bc3282c7:matrix.netmind.chat');
     expect(parsed.triggers.crons).toEqual(['*/5 * * * *']);
     expect(parsed.durable_objects.bindings).toEqual([
       { name: 'NARRA_SYNC_DO', class_name: 'NarraMatrixSync' },
@@ -441,6 +441,29 @@ describe('fastRespond crisis safety, CSPRNG draw & pure zh-Hant/zh-Hans/en', () 
     const drawnHans = formatLocalStickDraw('zh-Hans', { randomByte: () => 0 });
     assertPureZhHans(drawnHans);
     expect(drawnHans).toContain('第 1 签');
+  });
+
+  it('replies immediately to DM greetings in pure matching script with zero dashes', async () => {
+    const dashPattern = /[\u2010-\u2015\u2212]|[ \t]+-+[ \t]+|--/;
+    const emptyMem = { userMemories: [], roomMemories: [], promptSafeLines: [] };
+    for (const [text, expectedLang, checkFn, expectedSub] of [
+      ['你好', 'zh-Hant', assertPureZhHant, '求籤'],
+      ['嗨', 'zh-Hant', assertPureZhHant, '問一籤'],
+      ['hello', 'en', (s: string) => expect(s).not.toMatch(/[\u4e00-\u9fff]/), 'AI Fortune Stick'],
+    ] as const) {
+      const ev = makeInboundEvent({ chatType: 'dm', text });
+      const dec = await routeEvent(
+        ev,
+        { roomId: ev.roomId, chatType: 'dm', members: [], recentHistory: [] },
+        FORTUNE_STICK_AGENT_SPEC,
+      );
+      const reply = await fortuneFastRespond(baseEnv, ev, dec, emptyMem);
+      expect(dec.detectedLang).toBe(expectedLang);
+      expect(reply).not.toBeNull();
+      expect(reply).not.toMatch(dashPattern);
+      expect(reply).toContain(expectedSub);
+      checkFn(reply!);
+    }
   });
 
   it('executes local CSPRNG draw inside NarraRoomCoordinator DO and falls back to A2A for follow-ups', async () => {
