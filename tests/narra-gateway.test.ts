@@ -20,6 +20,7 @@ import {
   fortuneFastRespond,
   getSolarTermForDate,
   kickFortuneNarraGateway,
+  resolveStickLang,
 } from '../src/worker/narra/gateway';
 import type { Env } from '../src/worker/types';
 import { createD1, type FakeD1 } from './support/d1';
@@ -926,5 +927,101 @@ describe('fastRespond crisis safety, CSPRNG draw & pure zh-Hant/zh-Hans/en', () 
     const ordinaryDay = new Date('2026-11-19T04:00:00.000Z');
     expect(getSolarTermForDate(ordinaryDay)).toBeNull();
     expect(await fetchFortuneUpdates(enabledEnv, new Date().toISOString(), ordinaryDay)).toEqual([]);
+  });
+
+  it('T11/T8: supports cross-script language switching and instant stick lookup for 幫我看第8籤', async () => {
+    expect(resolveStickLang('請用簡體', 'zh-Hant')).toBe('zh-Hans');
+    expect(resolveStickLang('请用繁体', 'zh-Hans')).toBe('zh-Hant');
+    expect(resolveStickLang('用英文', 'zh-Hant')).toBe('en');
+    expect(resolveStickLang('speak English', 'zh-Hant')).toBe('en');
+
+    const mem = new MemoryStore(d1.db, FORTUNE_STICK_AGENT_ID);
+    await mem.ensureSchema();
+    const senderId = '@stick_lang_switch:matrix.netmind.chat';
+    const roomId = '!grp_stick_lang:matrix.netmind.chat';
+    const emptyMem = { userMemories: [], roomMemories: [], promptSafeLines: [] };
+    const makeSwitchDecision = (detectedLang: 'zh-Hant' | 'zh-Hans' | 'en') => ({
+      shouldReply: true,
+      tier: 0 as const,
+      reason: 'explicit_mention',
+      confidence: 1,
+      detectedLang,
+      shouldQuote: false,
+    });
+
+    const toHansReply = await fortuneFastRespond(
+      baseEnv,
+      makeInboundEvent({ roomId, senderId, chatType: 'group', text: '@AI Fortune Stick 請用簡體' }),
+      makeSwitchDecision('zh-Hant'),
+      emptyMem,
+    );
+    expect(toHansReply).toContain('简体中文');
+    assertPureZhHans(toHansReply!);
+    expect(await mem.getPreferredLang(senderId, 'group')).toBe('zh-Hans');
+
+    const toHantReply = await fortuneFastRespond(
+      baseEnv,
+      makeInboundEvent({ roomId, senderId, chatType: 'group', text: '@AI Fortune Stick 请用繁体' }),
+      makeSwitchDecision('zh-Hans'),
+      emptyMem,
+    );
+    expect(toHantReply).toContain('繁體中文');
+    assertPureZhHant(toHantReply!);
+    expect(await mem.getPreferredLang(senderId, 'group')).toBe('zh-Hant');
+
+    const toEnReply = await fortuneFastRespond(
+      baseEnv,
+      makeInboundEvent({ roomId, senderId, chatType: 'group', text: '@AI Fortune Stick 用英文' }),
+      makeSwitchDecision('zh-Hant'),
+      emptyMem,
+    );
+    expect(toEnReply).toContain('English');
+    expect(toEnReply).not.toMatch(/[\u4e00-\u9fff]/);
+    expect(await mem.getPreferredLang(senderId, 'group')).toBe('en');
+
+    // T8: Stick 8 lookup phrases ("幫我看第8籤", "帮我看第8签", "please check stick #8")
+    const groupCtx: RoomContext = {
+      roomId: '!grp_stick_lookup:matrix.netmind.chat',
+      chatType: 'group',
+      members: [
+        { matrixId: '@alice:matrix.netmind.chat', displayName: 'Alice', isAgent: false },
+        { matrixId: FORTUNE_STICK_DEFAULT_MATRIX_ID, displayName: 'AI Fortune Stick', isAgent: true },
+      ],
+      recentHistory: [],
+    };
+    for (const text of ['幫我看第8籤', '@AI Fortune Stick 幫我看第8籤']) {
+      const ev = makeInboundEvent({ text });
+      const dec = await routeEvent(ev, groupCtx, FORTUNE_STICK_AGENT_SPEC);
+      expect(dec.shouldReply, text).toBe(true);
+      const reply = await fortuneFastRespond(baseEnv, ev, dec, emptyMem);
+      expect(reply, text).toContain('第 8 籤');
+      expect(reply, text).toContain('玉在石中');
+      expect(reply, text).toContain('頑石未剖誰人識');
+      expect(reply, text).toContain('一朝開處見玲瓏');
+      assertPureZhHant(reply!);
+    }
+
+    const hansLookupEv = makeInboundEvent({ chatType: 'dm', text: '帮我看第8签' });
+    const hansLookupDec = await routeEvent(
+      hansLookupEv,
+      { roomId: hansLookupEv.roomId, chatType: 'dm', members: [], recentHistory: [] },
+      FORTUNE_STICK_AGENT_SPEC,
+    );
+    const hansLookupReply = await fortuneFastRespond(baseEnv, hansLookupEv, hansLookupDec, emptyMem);
+    expect(hansLookupReply).toContain('第 8 签');
+    expect(hansLookupReply).toContain('玉在石中');
+    expect(hansLookupReply).toContain('顽石未剖谁人识');
+    assertPureZhHans(hansLookupReply!);
+
+    const enLookupEv = makeInboundEvent({ chatType: 'dm', text: 'please check stick #8' });
+    const enLookupDec = await routeEvent(
+      enLookupEv,
+      { roomId: enLookupEv.roomId, chatType: 'dm', members: [], recentHistory: [] },
+      FORTUNE_STICK_AGENT_SPEC,
+    );
+    const enLookupReply = await fortuneFastRespond(baseEnv, enLookupEv, enLookupDec, emptyMem);
+    expect(enLookupReply).toContain('Stick 8 of 36');
+    expect(enLookupReply).toContain('Jade in the Stone');
+    expect(enLookupReply).not.toMatch(/[\u4e00-\u9fff]/);
   });
 });

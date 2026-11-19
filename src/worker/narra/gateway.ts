@@ -9,6 +9,7 @@
 
 import {
   MemoryStore,
+  detectExplicitLangSwitch,
   detectLang,
   isNarraGatewayEnabled,
   stripAgentMentions,
@@ -220,7 +221,8 @@ const BARE_DRAW_TRIGGER_RE =
 const SESSION_CONFIRM_RE = /^(?:ok|okay|go|ready|yes|好|好的|可以|來吧|来吧|開始|开始|請|请)$/i;
 const EXPLICIT_DRAW_PHRASE_RE =
   /(?:搖一籤|摇一签|求一籤|求一签|求籤|求签|抽一支籤|抽一支签|抽籤|抽签|問一籤|问一签|draw\s+(?:me\s+)?(?:a\s+)?(?:fortune\s+)?stick|shake\s+(?:a\s+)?(?:fortune\s+)?stick)/i;
-const STICK_LOOKUP_RE = /^(?:看)?第?\s*(\d{1,2})\s*[籤签]|^stick\s*#?(\d{1,2})$/i;
+const STICK_LOOKUP_RE =
+  /^(?:請|请)?(?:幫我|帮我)?(?:查詢?|查询?|看看?)?\s*第?\s*(\d{1,2})\s*[籤签]|^(?:please\s+)?(?:check\s+|show\s+|look\s+up\s+)?stick\s*#?(\d{1,2})$/i;
 
 const OPT_IN_SOLAR_RE =
   /^(?:訂閱節氣|订阅节气|開啟節氣|开启节气|打開節氣|打开节气|opt[- ]?in\s+solar[- ]?term|subscribe\s+solar[- ]?term)\b/i;
@@ -260,9 +262,8 @@ export function resolveStickLang(
   memories?: RecallTurnResult,
 ): LangCode {
   const clean = stripMentionsAndPunct(text);
-  if (/用繁體|繁體中文|正體中文/i.test(clean)) return 'zh-Hant';
-  if (/用简体|简体中文/i.test(clean)) return 'zh-Hans';
-  if (/\b(?:in\s+english|speak\s+english|english\s+please)\b/i.test(clean)) return 'en';
+  const explicitSwitch = detectExplicitLangSwitch(clean);
+  if (explicitSwitch) return explicitSwitch;
 
   const hasHant = HANT_SIGNAL_RE.test(clean);
   const hasHans = HANS_SIGNAL_RE.test(clean);
@@ -499,48 +500,25 @@ export async function fortuneFastRespond(
   const stripped = stripMentionsAndPunct(event.text);
 
   // Explicit language switch persistence
-  if (/^(?:用繁體|請用繁體|請用繁體中文|用正體中文|繁體中文)$/i.test(stripped)) {
+  const explicitLangSwitch = detectExplicitLangSwitch(stripped);
+  if (explicitLangSwitch) {
     if (env.DB) {
       await new MemoryStore(env.DB, FORTUNE_STICK_AGENT_ID)
         .rememberUser({
           userId: event.senderId,
           key: 'lang',
-          value: 'zh-Hant',
+          value: explicitLangSwitch,
           kind: 'language',
           originChatType: event.chatType,
           originRoomId: event.roomId,
         })
         .catch(() => undefined);
     }
-    return '好的，接下來我會用繁體中文為你解籤。心裡有想問的事，隨時寫下來。';
-  }
-  if (/^(?:用简体|请用简体|请用简体中文|简体中文)$/i.test(stripped)) {
-    if (env.DB) {
-      await new MemoryStore(env.DB, FORTUNE_STICK_AGENT_ID)
-        .rememberUser({
-          userId: event.senderId,
-          key: 'lang',
-          value: 'zh-Hans',
-          kind: 'language',
-          originChatType: event.chatType,
-          originRoomId: event.roomId,
-        })
-        .catch(() => undefined);
+    if (explicitLangSwitch === 'zh-Hant') {
+      return '好的，接下來我會用繁體中文為你解籤。心裡有想問的事，隨時寫下來。';
     }
-    return '好的，接下来我会用简体中文为你解签。心里有想问的事，随时写下来。';
-  }
-  if (/^(?:in\s+english|speak\s+english|english\s+please|english)$/i.test(stripped)) {
-    if (env.DB) {
-      await new MemoryStore(env.DB, FORTUNE_STICK_AGENT_ID)
-        .rememberUser({
-          userId: event.senderId,
-          key: 'lang',
-          value: 'en',
-          kind: 'language',
-          originChatType: event.chatType,
-          originRoomId: event.roomId,
-        })
-        .catch(() => undefined);
+    if (explicitLangSwitch === 'zh-Hans') {
+      return '好的，接下来我会用简体中文为你解签。心里有想问的事，随时写下来。';
     }
     return 'Of course, I will answer in English from here. Tell me what is on your mind when you are ready to draw a stick.';
   }
