@@ -47,7 +47,7 @@ export const FORTUNE_STICK_AGENT_SPEC: AgentSpec = {
   name: 'AI Fortune Stick',
   aliases: ['fortune-stick', 'wenyiqian', '問一籤', '问一签', '解籤師', '解签师'],
   domainDescription:
-    'Chinese fortune stick draws (問一籤 / 问一签), poetic couplets, fortune levels, and grounded next-step reflections in zh-Hant, zh-Hans, and en.',
+    'Traditional Chinese fortune stick draws (問一籤 / 問一簽 / 问一签 / 求籤 / 求签), poetic couplets, fortune levels, and grounded next-step reflections for decisions and crossroads in zh-Hant, zh-Hans, and en.',
   domainKeywords: [
     'fortune stick',
     'fortune sticks',
