@@ -371,7 +371,7 @@ describe('AgentSpec routing, 3-min active session & antiKeywords', () => {
     };
     expect(FORTUNE_STICK_AGENT_SPEC.sessionWindowMs).toBe(180_000);
 
-    for (const trigger of ['搖', '摇', 'draw']) {
+    for (const trigger of ['搖', '摇', 'draw', '再抽一支', '那這支籤呢？']) {
       const dec = await routeEvent(
         makeInboundEvent({ text: trigger, timestampMs: nowMs }),
         activeCtx,
@@ -380,6 +380,20 @@ describe('AgentSpec routing, 3-min active session & antiKeywords', () => {
       );
       expect(dec.shouldReply, trigger).toBe(true);
       expect(dec.reason, trigger).toBe('active_session');
+    }
+
+    for (const chatter of [
+      '今天天氣真不錯，晚上想早點休息',
+      '好喔謝謝，我先去忙一下',
+      'Any good ramen restaurant in Soho?',
+    ]) {
+      const dec = await routeEvent(
+        makeInboundEvent({ text: chatter, timestampMs: nowMs }),
+        activeCtx,
+        FORTUNE_STICK_AGENT_SPEC,
+        { nowMs },
+      );
+      expect(dec.shouldReply, chatter).toBe(false);
     }
   });
 
@@ -694,10 +708,191 @@ describe('fastRespond crisis safety, CSPRNG draw & pure zh-Hant/zh-Hans/en', () 
       expect(posted).toHaveLength(2);
       expect(posted[1]).toMatch(/第 \d+ 签/);
       assertPureZhHans(posted[1]);
+
+      // 3. Valid active-session follow-up without @ works cleanly (local redraw + nuanced question)
+      nowMs += 20_000;
+      vi.setSystemTime(nowMs);
+      await roomDo.fetch(
+        new Request('https://narra-room/events', {
+          method: 'POST',
+          body: JSON.stringify({
+            roomId,
+            events: [
+              {
+                event_id: '$s3',
+                sender: '@alice:matrix.netmind.chat',
+                type: 'm.room.message',
+                origin_server_ts: nowMs,
+                content: { msgtype: 'm.text', body: '再抽一支' },
+              },
+            ],
+          }),
+        }),
+      );
+      vi.setSystemTime(nowMs + 2_000);
+      await roomDo.alarm();
+      expect(a2aCalled).toBe(1);
+      expect(posted).toHaveLength(3);
+      expect(posted[2]).toMatch(/第 \d+ 签/);
+      assertPureZhHans(posted[2]);
+
+      nowMs += 20_000;
+      vi.setSystemTime(nowMs);
+      await roomDo.fetch(
+        new Request('https://narra-room/events', {
+          method: 'POST',
+          body: JSON.stringify({
+            roomId,
+            events: [
+              {
+                event_id: '$s4',
+                sender: '@alice:matrix.netmind.chat',
+                type: 'm.room.message',
+                origin_server_ts: nowMs,
+                content: { msgtype: 'm.text', body: '這支籤的工作面怎麼解？' },
+              },
+            ],
+          }),
+        }),
+      );
+      vi.setSystemTime(nowMs + 2_000);
+      await roomDo.alarm();
+      expect(a2aCalled).toBe(2);
+      expect(posted).toHaveLength(4);
+
+      // 4. Unmentioned casual chatter in active session stays silent (no A2A, no Matrix send)
+      nowMs += 20_000;
+      vi.setSystemTime(nowMs);
+      await roomDo.fetch(
+        new Request('https://narra-room/events', {
+          method: 'POST',
+          body: JSON.stringify({
+            roomId,
+            events: [
+              {
+                event_id: '$s5',
+                sender: '@alice:matrix.netmind.chat',
+                type: 'm.room.message',
+                origin_server_ts: nowMs,
+                content: { msgtype: 'm.text', body: '好喔謝謝，我先去忙一下' },
+              },
+            ],
+          }),
+        }),
+      );
+      vi.setSystemTime(nowMs + 2_000);
+      await roomDo.alarm();
+      expect(a2aCalled).toBe(2);
+      expect(posted).toHaveLength(4);
     } finally {
       vi.useRealTimers();
       vi.unstubAllGlobals();
     }
+  });
+
+  it('silences unmentioned group off-topic and casual active_session chatter while keeping follow-ups intact', async () => {
+    const emptyMem = { userMemories: [], roomMemories: [], promptSafeLines: [] };
+    const makeDecision = (reason: string, detectedLang: 'zh-Hant' | 'zh-Hans' | 'en' = 'zh-Hant') => ({
+      shouldReply: true,
+      tier: 0 as const,
+      reason,
+      confidence: 0.9,
+      detectedLang,
+      shouldQuote: false,
+    });
+
+    // Any unmentioned group turn with antiKeywords and no domainKeywords -> [NO_REPLY]
+    for (const reason of ['active_session', 'domain_match', 'multi_mention_domain_match']) {
+      for (const offTopic of [
+        '搖一下飲料吧，哪家奶茶好喝',
+        '倫敦中國城有什麼好吃的拉麵餐廳？',
+        'Latest OpenAI AI news today',
+        '幫我抽三張塔羅牌占卜',
+      ]) {
+        const reply = await fortuneFastRespond(
+          baseEnv,
+          makeInboundEvent({ chatType: 'group', text: offTopic }),
+          makeDecision(reason),
+          emptyMem,
+        );
+        expect(reply, `${reason}: ${offTopic}`).toBe('[NO_REPLY]');
+      }
+    }
+
+    // Active-session casual greeting/closing/weather/thanks without stick/reading cue -> [NO_REPLY]
+    for (const [text, lang] of [
+      ['今天天氣真不錯，晚上想早點休息', 'zh-Hant'],
+      ['好喔謝謝，我先去忙一下', 'zh-Hant'],
+      ['你好', 'zh-Hant'],
+      ['嗨', 'zh-Hant'],
+      ['早安', 'zh-Hant'],
+      ['晚安', 'zh-Hant'],
+      ['謝謝', 'zh-Hant'],
+      ['好的，謝謝！', 'zh-Hant'],
+      ['感謝', 'zh-Hant'],
+      ['拜拜', 'zh-Hant'],
+      ['hello', 'en'],
+      ['thanks', 'en'],
+      ['ok thanks', 'en'],
+      ['goodnight, going to bed', 'en'],
+    ] as const) {
+      const reply = await fortuneFastRespond(
+        baseEnv,
+        makeInboundEvent({ chatType: 'group', text }),
+        makeDecision('active_session', lang),
+        emptyMem,
+      );
+      expect(reply, `active_session casual: ${text}`).toBe('[NO_REPLY]');
+    }
+
+    // Valid active-session follow-ups without @ MUST keep working
+    const drawReply = await fortuneFastRespond(
+      baseEnv,
+      makeInboundEvent({ chatType: 'group', text: '抽' }),
+      makeDecision('active_session', 'zh-Hant'),
+      emptyMem,
+    );
+    expect(drawReply).toMatch(/^第 \d+ 籤/);
+
+    const redrawReply = await fortuneFastRespond(
+      baseEnv,
+      makeInboundEvent({ chatType: 'group', text: '再抽一支' }),
+      makeDecision('active_session', 'zh-Hant'),
+      emptyMem,
+    );
+    expect(redrawReply).toMatch(/^第 \d+ 籤/);
+
+    const lookupReply = await fortuneFastRespond(
+      baseEnv,
+      makeInboundEvent({ chatType: 'group', text: '看第8籤' }),
+      makeDecision('active_session', 'zh-Hant'),
+      emptyMem,
+    );
+    expect(lookupReply).toContain('第 8 籤');
+
+    for (const [followUp, lang] of [
+      ['這支籤的工作面怎麼解？', 'zh-Hant'],
+      ['謝謝，那這支籤的意思呢？', 'zh-Hant'],
+      ['那第二句籤詩是什麼意思？', 'zh-Hant'],
+      ['Thanks! What does this stick mean for my career?', 'en'],
+    ] as const) {
+      const reply = await fortuneFastRespond(
+        baseEnv,
+        makeInboundEvent({ chatType: 'group', text: followUp }),
+        makeDecision('active_session', lang),
+        emptyMem,
+      );
+      expect(reply, `valid follow-up: ${followUp}`).toBeNull();
+    }
+
+    // Explicit @ mention greeting in group still replies
+    const explicitGreeting = await fortuneFastRespond(
+      baseEnv,
+      makeInboundEvent({ chatType: 'group', text: '@AI Fortune Stick 你好' }),
+      makeDecision('explicit_mention', 'zh-Hant'),
+      emptyMem,
+    );
+    expect(explicitGreeting).toContain('我是問一籤');
   });
 
   it('fetchFortuneUpdates returns [] by default and emits solar-term items only when opted in on a solar term day', async () => {
