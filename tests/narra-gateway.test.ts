@@ -382,6 +382,49 @@ describe('AgentSpec routing, 3-min active session & antiKeywords', () => {
       expect(dec.reason, trigger).toBe('active_session');
     }
   });
+
+  it('LGRP-14: disambiguates multi-@ prompts containing fortune-stick phrases like 求一籤', async () => {
+    const multiAgentContext: RoomContext = {
+      roomId: '!grp_lgrp14:matrix.netmind.chat',
+      chatType: 'group',
+      members: [
+        { matrixId: '@alice:matrix.netmind.chat', displayName: 'Alice', isAgent: false },
+        { matrixId: '@agent-b9908957:matrix.netmind.chat', displayName: 'Spotted London', isAgent: true },
+        { matrixId: FORTUNE_STICK_DEFAULT_MATRIX_ID, displayName: 'AI Fortune Stick', isAgent: true },
+      ],
+      recentHistory: [],
+    };
+
+    const lgrp14 = await routeEvent(
+      makeInboundEvent({
+        text: '@Spotted London @AI Fortune Stick 幫我求一籤',
+        mentions: ['@agent-b9908957:matrix.netmind.chat', FORTUNE_STICK_DEFAULT_MATRIX_ID],
+      }),
+      multiAgentContext,
+      FORTUNE_STICK_AGENT_SPEC,
+    );
+    expect(lgrp14.shouldReply).toBe(true);
+    expect(lgrp14.reason).toBe('multi_mention_domain_match');
+    expect(lgrp14.detectedLang).toBe('zh-Hant');
+
+    for (const text of [
+      '@Spotted London @AI Fortune Stick 幫我求一籤',
+      '@Spotted London @AI Fortune Stick 摇一签',
+      '@Spotted London @AI Fortune Stick 抽一支籤',
+      '@Spotted London @AI Fortune Stick 再抽一支',
+      '@Spotted London @AI Fortune Stick 來一籤',
+      '@Spotted London @AI Fortune Stick 看第18籤',
+      '@Spotted London @AI Fortune Stick stick #8',
+    ]) {
+      const dec = await routeEvent(
+        makeInboundEvent({ text }),
+        multiAgentContext,
+        FORTUNE_STICK_AGENT_SPEC,
+      );
+      expect(dec.shouldReply, text).toBe(true);
+      expect(dec.reason, text).toBe('multi_mention_domain_match');
+    }
+  });
 });
 
 describe('fastRespond crisis safety, CSPRNG draw & pure zh-Hant/zh-Hans/en', () => {
