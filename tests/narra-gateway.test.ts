@@ -1158,4 +1158,110 @@ describe('fastRespond crisis safety, CSPRNG draw & pure zh-Hant/zh-Hans/en', () 
       vi.unstubAllGlobals();
     }
   });
+
+  it('responds locally to bare @AI Fortune Stick in a group without hitting A2A', async () => {
+    const dashPattern = /[\u2010-\u2015\u2212]|[ \t]+-+[ \t]+|--/;
+    const emptyMem = { userMemories: [], roomMemories: [], promptSafeLines: [] };
+    const groupCtx: RoomContext = {
+      roomId: '!grp_stick_bare:matrix.netmind.chat',
+      chatType: 'group',
+      members: [
+        { matrixId: '@alice:matrix.netmind.chat', displayName: 'Alice', isAgent: false },
+        { matrixId: FORTUNE_STICK_DEFAULT_MATRIX_ID, displayName: 'AI Fortune Stick', isAgent: true },
+      ],
+      recentHistory: [],
+    };
+
+    for (const [mentionText, langHint, expectedSub, checkFn] of [
+      ['@AI Fortune Stick', 'en', 'Hi! I am AI Fortune Stick', (s: string) => expect(s).not.toMatch(/[\u4e00-\u9fff]/)],
+      ['@AI Fortune Stick', 'zh-Hant', '我是問一籤', assertPureZhHant],
+      ['@問一籤', 'zh-Hans', '我是问一签', assertPureZhHans],
+    ] as const) {
+      const ev = makeInboundEvent({
+        roomId: groupCtx.roomId,
+        chatType: 'group',
+        text: mentionText,
+        mentions: [FORTUNE_STICK_DEFAULT_MATRIX_ID],
+      });
+      const dec = await routeEvent(ev, { ...groupCtx, userLanguageHint: langHint }, FORTUNE_STICK_AGENT_SPEC);
+      expect(dec.shouldReply, `${mentionText} (${langHint})`).toBe(true);
+      expect(dec.reason, `${mentionText} (${langHint})`).toBe('explicit_mention');
+
+      const reply = await fortuneFastRespond(baseEnv, ev, dec, emptyMem);
+      expect(reply).not.toBeNull();
+      expect(reply).not.toBe('[NO_REPLY]');
+      expect(reply).toContain(expectedSub);
+      expect(reply).not.toMatch(dashPattern);
+      checkFn(reply!);
+    }
+
+    // Also verify end-to-end inside NarraRoomCoordinator DO (0 A2A calls)
+    let nowMs = 1_760_700_000_000;
+    vi.useFakeTimers();
+    vi.setSystemTime(nowMs);
+    const posted: string[] = [];
+    let a2aCalled = 0;
+
+    try {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+          const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+          if (url.endsWith('/api/agent-runtime/chat/send')) {
+            const body = JSON.parse(String(init?.body ?? '{}')) as { text: string };
+            posted.push(body.text);
+            return Response.json({ status: 'ok', data: { event_id: `$sent_bare_${posted.length}` } });
+          }
+          if (url === 'https://a2a.stick.test/rpc') {
+            a2aCalled++;
+            return new Response('{}', { status: 500 });
+          }
+          return new Response('not found', { status: 404 });
+        }),
+      );
+
+      const gwEnv = {
+        ...baseEnv,
+        NARRA_GATEWAY_ENABLED: 'on',
+        NARRA_SYNC: 'off',
+        NARRA_AGENT_TOKEN: 'narra_stick_bare_tok',
+        MANYFOLD_A2A_URL: 'https://a2a.stick.test/rpc',
+        MANYFOLD_A2A_TOKEN: 'a2a_stick_bare_tok',
+      } as Env;
+
+      const roomDo = new NarraRoomCoordinator(makeFakeDOState(), gwEnv);
+      await roomDo.fetch(
+        new Request('https://narra-room/events', {
+          method: 'POST',
+          body: JSON.stringify({
+            roomId: '!grp_stick_bare_do:matrix.netmind.chat',
+            chatType: 'group',
+            members: groupCtx.members,
+            events: [
+              {
+                event_id: '$bare_mention_1',
+                sender: '@alice:matrix.netmind.chat',
+                type: 'm.room.message',
+                origin_server_ts: nowMs,
+                content: {
+                  msgtype: 'm.text',
+                  body: '@AI Fortune Stick',
+                  'm.mentions': { user_ids: [FORTUNE_STICK_DEFAULT_MATRIX_ID] },
+                },
+              },
+            ],
+          }),
+        }),
+      );
+      vi.setSystemTime(nowMs + 2_000);
+      await roomDo.alarm();
+
+      expect(a2aCalled).toBe(0);
+      expect(posted).toHaveLength(1);
+      expect(posted[0]).toContain('AI Fortune Stick');
+    } finally {
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+    }
+  });
 });

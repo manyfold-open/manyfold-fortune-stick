@@ -612,7 +612,7 @@ export async function fortuneFastRespond(
 
   if (
     (event.chatType === 'dm' || decision.reason === 'dm' || decision.reason === 'explicit_mention') &&
-    DM_GREETING_RE.test(stripped)
+    (!stripped || DM_GREETING_RE.test(stripped))
   ) {
     if (lang === 'zh-Hant') {
       return '嗨！我是問一籤 🎋 想求支籤看看方向嗎？直接跟我說「求籤」、「搖一籤」、「看第8籤」，或把心裡想問的事告訴我就可以開始。';
