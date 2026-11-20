@@ -18,6 +18,7 @@ import {
   type InboundEvent,
   type LangCode,
   type RecallTurnResult,
+  type RoomContext,
   type TriageDecision,
 } from '@manyfold/narra-agent-kit';
 import {
@@ -776,11 +777,99 @@ export async function resolveFortuneA2ACredential(
   }
 }
 
+const STICK_NO_IN_TEXT_RE = /(?:第\s*(\d{1,2})\s*[籤签]|\bstick\s+(\d{1,2})\s+of\s+36\b)/i;
+const MAX_EXTRA_FIELD_CHARS = 1000;
+
+function extractStickNoFromText(text: string): number | null {
+  const match = STICK_NO_IN_TEXT_RE.exec(text ?? '');
+  if (!match) return null;
+  const parsed = Number(match[1] ?? match[2]);
+  return Number.isInteger(parsed) && parsed >= 1 && parsed <= STICK_COUNT ? parsed : null;
+}
+
+function formatStickContextSnippet(stick: FortuneStick, lang: LangCode): string {
+  const textLocale = lang === 'en' ? 'en' : 'zh';
+  const copy = stickText(stick, textLocale);
+  const loc = (s: string) => localizedStickText(s, lang);
+  const levelLabel = loc(LEVEL_LABEL[textLocale][stick.level]);
+  const title = loc(copy.title);
+  const poem0 = loc(copy.poem[0]);
+  const poem1 = loc(copy.poem[1]);
+  const meaning = loc(copy.meaning);
+  const general = loc(copy.general);
+
+  let formatted: string;
+  if (lang === 'zh-Hant') {
+    formatted = `第 ${stick.no} 籤 · ${levelLabel} · ${title} | 籤詩：${poem0}，${poem1} | 籤意：${meaning} | 解讀：${general}`;
+  } else if (lang === 'zh-Hans') {
+    formatted = `第 ${stick.no} 签 · ${levelLabel} · ${title} | 签诗：${poem0}，${poem1} | 签意：${meaning} | 解读：${general}`;
+  } else {
+    formatted = `Stick ${stick.no} of ${STICK_COUNT} · ${levelLabel} · ${title} | Couplet: ${poem0} / ${poem1} | Meaning: ${meaning} | Reading: ${general}`;
+  }
+  return formatted.length <= MAX_EXTRA_FIELD_CHARS
+    ? formatted
+    : `${formatted.slice(0, MAX_EXTRA_FIELD_CHARS - 1)}…`;
+}
+
+/** Progress status text shown if a directly addressed A2A fortune stick turn exceeds `thinkingDelayMs`. */
+export function fortuneThinkingMessage(lang: LangCode): string {
+  if (lang === 'zh-Hant') return '🎋 正在結合你的籤詩與處境解讀中，稍等一下…';
+  if (lang === 'zh-Hans') return '🎋 正在结合你的签诗与处境解读中，稍等一下…';
+  return '🎋 Reflecting on your fortune stick and question, one moment…';
+}
+
+/**
+ * Extracts the latest self-posted stick number from `replyToTarget` or `recentHistory`,
+ * looks up the full stick via `stickByNo`, and injects it into A2A envelope context.
+ */
+export async function buildFortuneExtraEnvelopeFields(
+  env: Env,
+  event: InboundEvent,
+  decision: TriageDecision,
+  memories: RecallTurnResult,
+  context: RoomContext,
+): Promise<Record<string, string> | null> {
+  const selfIds = new Set<string>([FORTUNE_STICK_DEFAULT_MATRIX_ID]);
+  const configuredId = (env.NARRA_MATRIX_ID ?? env.MATRIX_USER_ID ?? '').trim();
+  if (configuredId) selfIds.add(configuredId);
+
+  let stickNo: number | null = null;
+  const replyTarget = context.replyToTarget;
+  if (replyTarget && (replyTarget.isSelf || selfIds.has(replyTarget.senderId))) {
+    stickNo = extractStickNoFromText(replyTarget.text);
+  }
+
+  if (stickNo === null) {
+    const history = context.recentHistory ?? [];
+    for (let i = history.length - 1; i >= 0; i--) {
+      const turn = history[i];
+      if (!(turn.isSelf || selfIds.has(turn.senderId))) continue;
+      const foundNo = extractStickNoFromText(turn.text);
+      if (foundNo !== null) {
+        stickNo = foundNo;
+        break;
+      }
+    }
+  }
+
+  if (stickNo === null) return null;
+  const stick = stickByNo(stickNo);
+  if (!stick) return null;
+
+  const lang = resolveStickLang(event.text, decision.detectedLang, memories);
+  return {
+    last_drawn_fortune_stick: formatStickContextSnippet(stick, lang),
+  };
+}
+
 export const narraGatewayConfig: NarraGatewayConfig<Env> = {
   spec: FORTUNE_STICK_AGENT_SPEC,
   fastRespond: fortuneFastRespond,
   fetchUpdates: (env, sinceIso) => fetchFortuneUpdates(env, sinceIso),
   resolveA2ACredential: resolveFortuneA2ACredential,
+  enableA2AFailureReply: true,
+  thinkingMessage: (lang) => fortuneThinkingMessage(lang),
+  buildExtraEnvelopeFields: buildFortuneExtraEnvelopeFields,
 };
 
 export function kickFortuneNarraGateway(env: Env): Promise<NarraGatewayKickResult> {
