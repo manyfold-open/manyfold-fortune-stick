@@ -220,9 +220,9 @@ const BARE_DRAW_TRIGGER_RE =
   /^(?:搖|摇|搖籤|摇签|搖一籤|摇一签|抽|抽籤|抽签|抽一支|抽一支籤|抽一支签|求籤|求签|求一籤|求一签|問一籤|问一签|問籤|问签|來一籤|来一签|再抽一支|draw|draw\s+(?:a\s+)?(?:fortune\s+)?stick|shake(?:\s+(?:a\s+)?stick)?|pull\s+(?:a\s+)?stick|fortune\s*stick)$/i;
 const SESSION_CONFIRM_RE = /^(?:ok|okay|go|ready|yes|好|好的|可以|來吧|来吧|開始|开始|請|请)$/i;
 const EXPLICIT_DRAW_PHRASE_RE =
-  /(?:搖一籤|摇一签|求一籤|求一签|求籤|求签|抽一支籤|抽一支签|抽籤|抽签|問一籤|问一签|draw\s+(?:me\s+)?(?:a\s+)?(?:fortune\s+)?stick|shake\s+(?:a\s+)?(?:fortune\s+)?stick)/i;
+  /(?:搖一?支?籤|摇一?支?签|求一?支?籤|求一?支?签|求個?籤|求个?签|抽一?支?籤|抽一?支?签|抽個?籤|抽个?签|問一?支?籤|问一?支?签|來一?支?籤|来一?支?签|幫我求.{0,4}[籤签]|帮我求.{0,4}[籤签]|draw\s+(?:me\s+)?(?:a\s+)?(?:fortune\s+)?stick|shake\s+(?:a\s+)?(?:fortune\s+)?stick|pull\s+(?:a\s+)?(?:fortune\s+)?stick)/i;
 const STICK_LOOKUP_RE =
-  /^(?:請|请)?(?:幫我|帮我)?(?:查詢?|查询?|看看?)?\s*第?\s*(\d{1,2})\s*[籤签]|^(?:please\s+)?(?:check\s+|show\s+|look\s+up\s+)?stick\s*#?(\d{1,2})$/i;
+  /^(?:請|请)?(?:幫我|帮我)?(?:查(?:詢|询|一下|看)?|看(?:一下|一眼|看)?)?\s*第?\s*(\d{1,2})\s*[籤签]|^(?:please\s+)?(?:check\s+|show\s+(?:me\s+)?|look\s+up\s+)?stick\s*#?(\d{1,2})$/i;
 
 const OPT_IN_SOLAR_RE =
   /^(?:訂閱節氣|订阅节气|開啟節氣|开启节气|打開節氣|打开节气|opt[- ]?in\s+solar[- ]?term|subscribe\s+solar[- ]?term)\b/i;
@@ -234,6 +234,10 @@ const OPT_OUT_WEEKLY_RE =
   /^(?:取消每週|取消每周|關閉每週|关闭每周|停止每週|停止每周|opt[- ]?out\s+weekly|unsubscribe\s+weekly)\b/i;
 const DM_GREETING_RE =
   /^(?:hi|hello|hey|yo|morning|good\s+(?:morning|afternoon|evening)|你好|您好|哈囉|哈啰|嗨|安安|早安|午安|晚安|在嗎|在吗|有人嗎|有人吗)$/i;
+const DM_THANKS_RE =
+  /(?:謝謝|谢谢|感謝|感谢|多謝|多谢|謝啦|谢啦|\b(?:thanks?|thank\s+you|thx|tysm|cheers|appreciated)\b)/i;
+const CAPABILITY_RE =
+  /(?:你能(?:幫我|帮我)?(?:做|求|查|看)(?:什麼|什么|哪些)|你可以(?:幫我|帮我)?(?:做|求|查|看)(?:什麼|什么|哪些)|what\s+can\s+you\s+(?:do|help))/i;
 const CASUAL_SMALL_TALK_PHRASE_RE =
   /天氣|天气|下雨|下雪|晴天|陰天|阴天|出太陽|出太阳|刮風|刮风|降溫|降温|回暖|好冷|好熱|好热|早點休息|早点休息|早點睡|早点睡|去睡覺|去睡觉|睡覺了|睡觉了|想睡了|先休息|休息了|去休息|先去忙|去忙一下|先忙了|去忙了|晚點聊|晚点聊|晚點見|晚点见|下次聊|改天聊|回頭聊|回头聊|先這樣|先这样|先走了|先走囉|掰掰|拜拜|晚安|沒事了|没事了|不用了|先不用|下線了|下线了|(?:好[喔哦啊呀]?[，,\s]*)?(?:謝謝|谢谢|感謝|感谢|多謝|多谢)(?:你|您)?(?:啦|喔|哦|呀)?(?:[!！。.~～\s]*$|[，,\s]*(?:我先|先去|沒事|没事|先這樣|先这样|早點|早点|晚點|晚点|掰掰|拜拜|大家|各位|了))|\b(?:nice\s+weather|good\s+weather|bad\s+weather|weather\s+(?:is|today)|going\s+to\s+(?:bed|sleep)|go\s+to\s+(?:bed|sleep)|get\s+some\s+rest|heading\s+out|got\s+to\s+go|gotta\s+go|gtg|g2g|brb|ttyl|see\s+(?:you|ya)|bye(?:\s+bye)?|goodbye|good\s*night|goodnight|never\s*mind|nvm|talk\s+later)\b|\b(?:thanks?(?:\s+(?:a\s+lot|so\s+much))?|thank\s+you(?:\s+(?:so\s+much|very\s+much))?|thx|tysm|ty|cheers)\b(?:\s*[!！.。~～]*$|\s*,?\s*(?:i(?:'m|\s+am)?\s+(?:going|heading|off)|got\s+to\s+go|gotta\s+go|gtg|g2g|brb|ttyl|bye|see\s+(?:you|ya)|talk\s+later|good\s*night|goodnight))/i;
 const BARE_GREETING_OR_THANKS_RE =
@@ -610,17 +614,37 @@ export async function fortuneFastRespond(
     }
   }
 
+  const isDirectConversation =
+    event.chatType === 'dm' || decision.reason === 'dm' || decision.reason === 'explicit_mention';
+
   if (
-    (event.chatType === 'dm' || decision.reason === 'dm' || decision.reason === 'explicit_mention') &&
-    (!stripped || DM_GREETING_RE.test(stripped))
+    isDirectConversation &&
+    (!stripped || DM_GREETING_RE.test(stripped) || CAPABILITY_RE.test(stripped))
   ) {
     if (lang === 'zh-Hant') {
-      return '嗨！我是問一籤 🎋 想求支籤看看方向嗎？直接跟我說「求籤」、「搖一籤」、「看第8籤」，或把心裡想問的事告訴我就可以開始。';
+      return '嗨！我是問一籤（AI Fortune Stick）🎋 想求支籤看看方向嗎？直接跟我說「求籤」、「搖一籤」、「看第8籤」，或把心裡想問的事告訴我就可以開始。';
     }
     if (lang === 'zh-Hans') {
-      return '嗨！我是问一签 🎋 想求支签看看方向吗？直接跟我说“求签”、“摇一签”、“看第8签”，或把心里想问的事告诉我就可以开始。';
+      return '嗨！我是问一签（AI Fortune Stick）🎋 想求支签看看方向吗？直接跟我说“求签”、“摇一签”、“看第8签”，或把心里想问的事告诉我就可以开始。';
     }
     return 'Hi! I am AI Fortune Stick 🎋 Say "draw a stick", "stick 8", or tell me what is on your mind whenever you are ready.';
+  }
+
+  if (
+    isDirectConversation &&
+    DM_THANKS_RE.test(stripped) &&
+    !BARE_DRAW_TRIGGER_RE.test(stripped) &&
+    !EXPLICIT_DRAW_PHRASE_RE.test(stripped) &&
+    !STICK_LOOKUP_RE.test(stripped) &&
+    !/[?？]$/.test(event.text.trim())
+  ) {
+    if (lang === 'zh-Hant') {
+      return '不客氣 🎋 願這支籤帶給你一點平靜與方向！之後想再求籤或查籤詩，隨時來找我。';
+    }
+    if (lang === 'zh-Hans') {
+      return '不客气 🎋 愿这支签带给你一点平静与方向！之后想再求签或查签诗，随时来找我。';
+    }
+    return "You're very welcome 🎋 May that stick bring a little clarity and calm! Come back anytime you want to draw another stick or look one up.";
   }
 
   const lookupMatch = STICK_LOOKUP_RE.exec(stripped);

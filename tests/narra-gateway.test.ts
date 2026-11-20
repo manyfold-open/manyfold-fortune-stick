@@ -1264,4 +1264,140 @@ describe('fastRespond crisis safety, CSPRNG draw & pure zh-Hant/zh-Hans/en', () 
       vi.unstubAllGlobals();
     }
   });
+
+  it('handles 1v1 DM natural draw phrases, expanded stick lookups, gratitude, and capability intros locally while keeping unmentioned group active_session silent', async () => {
+    const dashPattern = /[\u2010-\u2015\u2212]|[ \t]+-+[ \t]+|--/;
+    const emptyMem = { userMemories: [], roomMemories: [], promptSafeLines: [] };
+    const dmCtx = (roomId: string): RoomContext => ({
+      roomId,
+      chatType: 'dm',
+      members: [],
+      recentHistory: [],
+    });
+
+    // 1. DM natural draw phrases draw a stick locally (NOT null)
+    for (const [text, expectedLang, expectedRegex, checkFn] of [
+      ['最近工作在考慮要不要換專案，幫我求一支籤', 'zh-Hant', /^第 \d+ 籤/, assertPureZhHant],
+      ['求支籤', 'zh-Hant', /^第 \d+ 籤/, assertPureZhHant],
+      ['搖一支籤', 'zh-Hant', /^第 \d+ 籤/, assertPureZhHant],
+      ['求個籤', 'zh-Hant', /^第 \d+ 籤/, assertPureZhHant],
+      ['最近工作在考虑要不要换项目，帮我求一支签', 'zh-Hans', /^第 \d+ 签/, assertPureZhHans],
+      ['draw a stick', 'en', /^Stick \d+ of \d+/, (s: string) => expect(s).not.toMatch(/[\u4e00-\u9fff]/)],
+    ] as const) {
+      const ev = makeInboundEvent({ chatType: 'dm', roomId: '!dm_stick_draw:matrix.netmind.chat', text });
+      const dec = await routeEvent(ev, dmCtx(ev.roomId), FORTUNE_STICK_AGENT_SPEC);
+      expect(dec.shouldReply, text).toBe(true);
+      expect(dec.reason, text).toBe('dm');
+      expect(dec.detectedLang, text).toBe(expectedLang);
+
+      const reply = await fortuneFastRespond(baseEnv, ev, dec, emptyMem);
+      expect(reply, text).not.toBeNull();
+      expect(reply, text).toMatch(expectedRegex);
+      expect(reply, text).not.toMatch(dashPattern);
+      checkFn(reply!);
+    }
+
+    // 2. Expanded STICK_LOOKUP_RE phrases return Stick #8 locally (NOT null)
+    for (const [text, expectedLang, expectedHeader, checkFn] of [
+      ['看一下第8籤', 'zh-Hant', '第 8 籤', assertPureZhHant],
+      ['幫我看一下第8籤', 'zh-Hant', '第 8 籤', assertPureZhHant],
+      ['查一下第8籤', 'zh-Hant', '第 8 籤', assertPureZhHant],
+      ['查看第8籤', 'zh-Hant', '第 8 籤', assertPureZhHant],
+      ['看一下第8签', 'zh-Hans', '第 8 签', assertPureZhHans],
+      ['show me stick 8', 'en', 'Stick 8 of 36', (s: string) => expect(s).not.toMatch(/[\u4e00-\u9fff]/)],
+    ] as const) {
+      const ev = makeInboundEvent({ chatType: 'dm', roomId: '!dm_stick_lookup:matrix.netmind.chat', text });
+      const dec = await routeEvent(ev, dmCtx(ev.roomId), FORTUNE_STICK_AGENT_SPEC);
+      expect(dec.shouldReply, text).toBe(true);
+      expect(dec.detectedLang, text).toBe(expectedLang);
+
+      const reply = await fortuneFastRespond(baseEnv, ev, dec, emptyMem);
+      expect(reply, text).not.toBeNull();
+      expect(reply, text).toContain(expectedHeader);
+      expect(reply, text).not.toMatch(dashPattern);
+      checkFn(reply!);
+    }
+
+    // 3. DM gratitude returns warm localized reply locally
+    for (const [text, expectedLang, expectedSub, checkFn] of [
+      ['謝謝你', 'zh-Hant', '不客氣 🎋', assertPureZhHant],
+      ['謝謝', 'zh-Hant', '不客氣 🎋', assertPureZhHant],
+      ['谢谢你', 'zh-Hans', '不客气 🎋', assertPureZhHans],
+      ['that was helpful, thanks', 'en', "You're very welcome 🎋", (s: string) => expect(s).not.toMatch(/[\u4e00-\u9fff]/)],
+    ] as const) {
+      const ev = makeInboundEvent({ chatType: 'dm', roomId: '!dm_stick_thanks:matrix.netmind.chat', text });
+      const dec = await routeEvent(ev, dmCtx(ev.roomId), FORTUNE_STICK_AGENT_SPEC);
+      expect(dec.shouldReply, text).toBe(true);
+      expect(dec.detectedLang, text).toBe(expectedLang);
+
+      const reply = await fortuneFastRespond(baseEnv, ev, dec, emptyMem);
+      expect(reply, text).not.toBeNull();
+      expect(reply, text).toContain(expectedSub);
+      expect(reply, text).not.toMatch(dashPattern);
+      checkFn(reply!);
+    }
+
+    // Gratitude combined with draw request or ending in a question MUST NOT return thanks
+    const thanksPlusDrawEv = makeInboundEvent({
+      chatType: 'dm',
+      roomId: '!dm_stick_thanks_draw:matrix.netmind.chat',
+      text: '謝謝，幫我求一支籤',
+    });
+    const thanksPlusDrawDec = await routeEvent(thanksPlusDrawEv, dmCtx(thanksPlusDrawEv.roomId), FORTUNE_STICK_AGENT_SPEC);
+    const thanksPlusDrawReply = await fortuneFastRespond(baseEnv, thanksPlusDrawEv, thanksPlusDrawDec, emptyMem);
+    expect(thanksPlusDrawReply).toMatch(/^第 \d+ 籤/);
+    expect(thanksPlusDrawReply).not.toContain('不客氣');
+
+    const thanksPlusQuestionEv = makeInboundEvent({
+      chatType: 'dm',
+      roomId: '!dm_stick_thanks_q:matrix.netmind.chat',
+      text: 'Thanks! What does this stick mean for my career?',
+    });
+    const thanksPlusQuestionDec = await routeEvent(
+      thanksPlusQuestionEv,
+      dmCtx(thanksPlusQuestionEv.roomId),
+      FORTUNE_STICK_AGENT_SPEC,
+    );
+    const thanksPlusQuestionReply = await fortuneFastRespond(
+      baseEnv,
+      thanksPlusQuestionEv,
+      thanksPlusQuestionDec,
+      emptyMem,
+    );
+    expect(thanksPlusQuestionReply).toBeNull();
+
+    // 4. DM capability questions return intro locally
+    for (const [text, expectedLang, expectedSub, checkFn] of [
+      ['你能幫我做什麼？', 'zh-Hant', '我是問一籤', assertPureZhHant],
+      ['你能帮我做什么？', 'zh-Hans', '我是问一签', assertPureZhHans],
+      ['what can you do?', 'en', 'Hi! I am AI Fortune Stick', (s: string) => expect(s).not.toMatch(/[\u4e00-\u9fff]/)],
+    ] as const) {
+      const ev = makeInboundEvent({ chatType: 'dm', roomId: '!dm_stick_cap:matrix.netmind.chat', text });
+      const dec = await routeEvent(ev, dmCtx(ev.roomId), FORTUNE_STICK_AGENT_SPEC);
+      expect(dec.shouldReply, text).toBe(true);
+      expect(dec.detectedLang, text).toBe(expectedLang);
+
+      const reply = await fortuneFastRespond(baseEnv, ev, dec, emptyMem);
+      expect(reply, text).not.toBeNull();
+      expect(reply, text).toContain(expectedSub);
+      expect(reply, text).not.toMatch(dashPattern);
+      checkFn(reply!);
+    }
+
+    // 5. Unmentioned group active_session "謝謝" STILL returns '[NO_REPLY]'
+    const unmentionedGroupThanks = await fortuneFastRespond(
+      baseEnv,
+      makeInboundEvent({ chatType: 'group', text: '謝謝' }),
+      {
+        shouldReply: true,
+        tier: 0,
+        reason: 'active_session',
+        confidence: 0.9,
+        detectedLang: 'zh-Hant',
+        shouldQuote: false,
+      },
+      emptyMem,
+    );
+    expect(unmentionedGroupThanks).toBe('[NO_REPLY]');
+  });
 });
