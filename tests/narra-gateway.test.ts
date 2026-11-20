@@ -446,6 +446,41 @@ describe('AgentSpec routing, 3-min active session & antiKeywords', () => {
       expect(dec.reason, text).toBe('multi_mention_domain_match');
     }
   });
+
+  it('matches natural 求一支籤/求一支签 group requests via domainKeywords and draws a stick in matching script', async () => {
+    const emptyMem = { userMemories: [], roomMemories: [], promptSafeLines: [] };
+    const cases = [
+      {
+        text: '最近工作有點卡關，幫我求一支籤吧',
+        expectedLang: 'zh-Hant' as const,
+        expectedStickRe: /^第 \d+ 籤/,
+        checkScript: assertPureZhHant,
+      },
+      {
+        text: '最近工作有点卡关，帮我求一支签吧',
+        expectedLang: 'zh-Hans' as const,
+        expectedStickRe: /^第 \d+ 签/,
+        checkScript: assertPureZhHans,
+      },
+    ];
+
+    for (const c of cases) {
+      const matchedDomainKeyword = (FORTUNE_STICK_AGENT_SPEC.domainKeywords ?? []).some((kw) =>
+        kw instanceof RegExp ? kw.test(c.text) : c.text.includes(kw),
+      );
+      expect(matchedDomainKeyword, c.text).toBe(true);
+
+      const ev = makeInboundEvent({ text: c.text });
+      const dec = await routeEvent(ev, baseContext, FORTUNE_STICK_AGENT_SPEC);
+      expect(dec.shouldReply, c.text).toBe(true);
+      expect(dec.detectedLang, c.text).toBe(c.expectedLang);
+
+      const reply = await fortuneFastRespond(baseEnv, ev, dec, emptyMem);
+      expect(reply, c.text).not.toBeNull();
+      expect(reply, c.text).toMatch(c.expectedStickRe);
+      c.checkScript(reply!);
+    }
+  });
 });
 
 describe('fastRespond crisis safety, CSPRNG draw & pure zh-Hant/zh-Hans/en', () => {
