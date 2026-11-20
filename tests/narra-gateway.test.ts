@@ -15,12 +15,15 @@ import {
   FORTUNE_STICK_AGENT_ID,
   FORTUNE_STICK_AGENT_SPEC,
   FORTUNE_STICK_DEFAULT_MATRIX_ID,
+  buildFortuneExtraEnvelopeFields,
   fetchFortuneUpdates,
   formatLocalStickDraw,
   formatStickReply,
   fortuneFastRespond,
+  fortuneThinkingMessage,
   getSolarTermForDate,
   kickFortuneNarraGateway,
+  narraGatewayConfig,
   resolveStickLang,
 } from '../src/worker/narra/gateway';
 import type { Env } from '../src/worker/types';
@@ -1399,5 +1402,341 @@ describe('fastRespond crisis safety, CSPRNG draw & pure zh-Hant/zh-Hans/en', () 
       emptyMem,
     );
     expect(unmentionedGroupThanks).toBe('[NO_REPLY]');
+  });
+});
+
+describe('Phase 1-4 UX & A2A context pre-fetch (thinkingMessage, enableA2AFailureReply, buildExtraEnvelopeFields)', () => {
+  const dashPattern = /[\u2010-\u2015\u2212]|[ \t]+-+[ \t]+|--/;
+  const emptyMem = { userMemories: [], roomMemories: [], promptSafeLines: [] };
+  const makeDecision = (detectedLang: 'zh-Hant' | 'zh-Hans' | 'en' = 'zh-Hant') => ({
+    shouldReply: true,
+    tier: 0 as const,
+    reason: 'explicit_mention',
+    confidence: 1,
+    detectedLang,
+    shouldQuote: false,
+  });
+
+  it('wires enableA2AFailureReply, thinkingMessage, and buildExtraEnvelopeFields in narraGatewayConfig', () => {
+    expect(narraGatewayConfig.enableA2AFailureReply).toBe(true);
+    expect(typeof narraGatewayConfig.thinkingMessage).toBe('function');
+    expect(typeof narraGatewayConfig.buildExtraEnvelopeFields).toBe('function');
+
+    const ev = makeInboundEvent({ text: '這支籤的工作面怎麼解？' });
+    const hantMsg = narraGatewayConfig.thinkingMessage!('zh-Hant', ev, makeDecision('zh-Hant'));
+    const hansMsg = narraGatewayConfig.thinkingMessage!('zh-Hans', ev, makeDecision('zh-Hans'));
+    const enMsg = narraGatewayConfig.thinkingMessage!('en', ev, makeDecision('en'));
+
+    expect(hantMsg).toBe('🎋 正在結合你的籤詩與處境解讀中，稍等一下…');
+    expect(hansMsg).toBe('🎋 正在结合你的签诗与处境解读中，稍等一下…');
+    expect(enMsg).toBe('🎋 Reflecting on your fortune stick and question, one moment…');
+    expect(fortuneThinkingMessage('zh-Hant')).toBe(hantMsg);
+    expect(fortuneThinkingMessage('zh-Hans')).toBe(hansMsg);
+    expect(fortuneThinkingMessage('en')).toBe(enMsg);
+    assertPureZhHant(hantMsg);
+    assertPureZhHans(hansMsg);
+    expect(enMsg).not.toMatch(/[\u4e00-\u9fff]/);
+    for (const msg of [hantMsg, hansMsg, enMsg]) {
+      expect(msg).not.toMatch(dashPattern);
+    }
+  });
+
+  it('extracts stick number from replyToTarget or recentHistory, looks up stickByNo, and formats <= 1000 chars in pure zh-Hant/zh-Hans/en', async () => {
+    const evHant = makeInboundEvent({ text: '這支籤對我換工作代表什麼？' });
+    const evHans = makeInboundEvent({ text: '这支签对我换工作代表什么？' });
+    const evEn = makeInboundEvent({ text: 'What does this stick mean for my career?' });
+
+    // 1. Prefers self replyToTarget over recentHistory (zh-Hant: 第 8 籤)
+    const fromReply = await buildFortuneExtraEnvelopeFields(
+      baseEnv,
+      evHant,
+      makeDecision('zh-Hant'),
+      emptyMem,
+      {
+        roomId: evHant.roomId,
+        chatType: 'group',
+        members: [],
+        replyToTarget: {
+          eventId: '$reply_s8',
+          senderId: FORTUNE_STICK_DEFAULT_MATRIX_ID,
+          isSelf: true,
+          isAgent: true,
+          text: '第 8 籤 · 上籤 · 玉在石中',
+        },
+        recentHistory: [
+          {
+            eventId: '$h_s1',
+            senderId: FORTUNE_STICK_DEFAULT_MATRIX_ID,
+            isSelf: true,
+            isAgent: true,
+            text: '第 1 籤 · 上上籤 · 雲開月明',
+            timestampMs: 1_000,
+          },
+        ],
+      },
+    );
+    expect(fromReply).not.toBeNull();
+    expect(fromReply!.last_drawn_fortune_stick).toContain('第 8 籤');
+    expect(fromReply!.last_drawn_fortune_stick).toContain('玉在石中');
+    expect(fromReply!.last_drawn_fortune_stick).toContain('頑石未剖誰人識');
+    expect(fromReply!.last_drawn_fortune_stick.length).toBeLessThanOrEqual(1000);
+    expect(fromReply!.last_drawn_fortune_stick).not.toMatch(dashPattern);
+    assertPureZhHant(fromReply!.last_drawn_fortune_stick);
+
+    // 2. Falls back to latest self turn in recentHistory (zh-Hans: 第 1 签) and ignores human messages
+    const fromHistoryHans = await buildFortuneExtraEnvelopeFields(
+      baseEnv,
+      evHans,
+      makeDecision('zh-Hans'),
+      emptyMem,
+      {
+        roomId: evHans.roomId,
+        chatType: 'group',
+        members: [],
+        replyToTarget: {
+          eventId: '$human_msg',
+          senderId: '@alice:matrix.netmind.chat',
+          isSelf: false,
+          isAgent: false,
+          text: '我上次抽到第 8 签',
+        },
+        recentHistory: [
+          {
+            eventId: '$h1',
+            senderId: FORTUNE_STICK_DEFAULT_MATRIX_ID,
+            isSelf: true,
+            isAgent: true,
+            text: '第 3 签 · 中签',
+            timestampMs: 1_000,
+          },
+          {
+            eventId: '$h2',
+            senderId: FORTUNE_STICK_DEFAULT_MATRIX_ID,
+            isAgent: true,
+            text: '第 1 签 · 上上签 · 云开月明',
+            timestampMs: 2_000,
+          },
+          {
+            eventId: '$h3',
+            senderId: FORTUNE_STICK_DEFAULT_MATRIX_ID,
+            isSelf: true,
+            isAgent: true,
+            text: '心里有想问的事随时告诉我。',
+            timestampMs: 3_000,
+          },
+        ],
+      },
+    );
+    expect(fromHistoryHans).not.toBeNull();
+    expect(fromHistoryHans!.last_drawn_fortune_stick).toContain('第 1 签');
+    expect(fromHistoryHans!.last_drawn_fortune_stick).toContain('云开月明');
+    expect(fromHistoryHans!.last_drawn_fortune_stick).toContain('久阴忽散一天青');
+    expect(fromHistoryHans!.last_drawn_fortune_stick.length).toBeLessThanOrEqual(1000);
+    expect(fromHistoryHans!.last_drawn_fortune_stick).not.toMatch(dashPattern);
+    assertPureZhHans(fromHistoryHans!.last_drawn_fortune_stick);
+
+    // 3. Matches English "Stick N of 36" format and formats full English stick context
+    const fromEn = await buildFortuneExtraEnvelopeFields(
+      baseEnv,
+      evEn,
+      makeDecision('en'),
+      emptyMem,
+      {
+        roomId: evEn.roomId,
+        chatType: 'dm',
+        members: [],
+        recentHistory: [
+          {
+            eventId: '$en1',
+            senderId: FORTUNE_STICK_DEFAULT_MATRIX_ID,
+            isSelf: true,
+            isAgent: true,
+            text: 'Stick 1 of 36 · GREAT FORTUNE · The Clouds Part',
+            timestampMs: 1_000,
+          },
+        ],
+      },
+    );
+    expect(fromEn).not.toBeNull();
+    expect(fromEn!.last_drawn_fortune_stick).toContain('Stick 1 of 36');
+    expect(fromEn!.last_drawn_fortune_stick).toContain('GREAT FORTUNE');
+    expect(fromEn!.last_drawn_fortune_stick).toContain('The Clouds Part');
+    expect(fromEn!.last_drawn_fortune_stick).toContain('After long grey days the whole sky clears');
+    expect(fromEn!.last_drawn_fortune_stick).not.toMatch(/[\u4e00-\u9fff]/);
+    expect(fromEn!.last_drawn_fortune_stick).not.toMatch(dashPattern);
+    expect(fromEn!.last_drawn_fortune_stick.length).toBeLessThanOrEqual(1000);
+
+    // 4. Exhaustively validates all 36 sticks stay <= 1000 chars and pure script
+    for (const stick of STICKS) {
+      for (const [lang, ev, checkFn] of [
+        ['zh-Hant', evHant, assertPureZhHant],
+        ['zh-Hans', evHans, assertPureZhHans],
+        ['en', evEn, (s: string) => expect(s).not.toMatch(/[\u4e00-\u9fff]/)],
+      ] as const) {
+        const res = await buildFortuneExtraEnvelopeFields(baseEnv, ev, makeDecision(lang), emptyMem, {
+          roomId: ev.roomId,
+          chatType: 'dm',
+          members: [],
+          recentHistory: [
+            {
+              eventId: `$s_${stick.no}`,
+              senderId: FORTUNE_STICK_DEFAULT_MATRIX_ID,
+              isSelf: true,
+              isAgent: true,
+              text: `第 ${stick.no} 籤`,
+              timestampMs: 1_000,
+            },
+          ],
+        });
+        expect(res).not.toBeNull();
+        expect(res!.last_drawn_fortune_stick.length).toBeLessThanOrEqual(1000);
+        expect(res!.last_drawn_fortune_stick).not.toMatch(dashPattern);
+        checkFn(res!.last_drawn_fortune_stick);
+      }
+    }
+
+    // 5. Returns null when no valid stick number is present in self turns (or out of range)
+    const none = await buildFortuneExtraEnvelopeFields(
+      baseEnv,
+      evHant,
+      makeDecision('zh-Hant'),
+      emptyMem,
+      {
+        roomId: evHant.roomId,
+        chatType: 'group',
+        members: [],
+        recentHistory: [
+          {
+            eventId: '$u1',
+            senderId: '@alice:matrix.netmind.chat',
+            isSelf: false,
+            isAgent: false,
+            text: '第 8 籤是什麼？',
+            timestampMs: 1_000,
+          },
+          {
+            eventId: '$s_bad',
+            senderId: FORTUNE_STICK_DEFAULT_MATRIX_ID,
+            isSelf: true,
+            isAgent: true,
+            text: '第 99 籤不存在',
+            timestampMs: 2_000,
+          },
+        ],
+      },
+    );
+    expect(none).toBeNull();
+  });
+
+  it('injects last_drawn_fortune_stick into the A2A envelope on follow-up inside NarraRoomCoordinator DO', async () => {
+    let nowMs = 1_760_800_000_000;
+    vi.useFakeTimers();
+    vi.setSystemTime(nowMs);
+    const posted: string[] = [];
+    const a2aEnvelopes: string[] = [];
+
+    try {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+          const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+          if (url.endsWith('/api/agent-runtime/chat/send')) {
+            const body = JSON.parse(String(init?.body ?? '{}')) as { text: string };
+            posted.push(body.text);
+            return Response.json({ status: 'ok', data: { event_id: `$stick_ctx_${posted.length}` } });
+          }
+          if (url === 'https://a2a.stick.test/rpc') {
+            const rpc = JSON.parse(String(init?.body ?? '{}')) as {
+              params?: { message?: { parts?: Array<{ text?: string }> } };
+            };
+            const text = rpc.params?.message?.parts?.map((p) => p.text ?? '').join('\n') ?? '';
+            a2aEnvelopes.push(text);
+            return new Response(
+              JSON.stringify({
+                jsonrpc: '2.0',
+                id: '1',
+                result: {
+                  kind: 'message',
+                  role: 'agent',
+                  parts: [{ kind: 'text', text: '結合剛剛這支籤，先穩住當下節奏再決定。' }],
+                },
+              }),
+              { status: 200, headers: { 'content-type': 'application/json' } },
+            );
+          }
+          return new Response('not found', { status: 404 });
+        }),
+      );
+
+      const gwEnv = {
+        ...baseEnv,
+        NARRA_GATEWAY_ENABLED: 'on',
+        NARRA_SYNC: 'off',
+        NARRA_AGENT_TOKEN: 'narra_stick_ctx_tok',
+        MANYFOLD_A2A_URL: 'https://a2a.stick.test/rpc',
+        MANYFOLD_A2A_TOKEN: 'a2a_stick_ctx_tok',
+      } as Env;
+
+      const roomDo = new NarraRoomCoordinator(makeFakeDOState(), gwEnv);
+      const roomId = '!dm_stick_ctx:matrix.netmind.chat';
+
+      // Step 1: Local stick lookup (#8) so we know the exact stick
+      await roomDo.fetch(
+        new Request('https://narra-room/events', {
+          method: 'POST',
+          body: JSON.stringify({
+            roomId,
+            chatType: 'dm',
+            events: [
+              {
+                event_id: '$lookup_8',
+                sender: '@alice:matrix.netmind.chat',
+                type: 'm.room.message',
+                origin_server_ts: nowMs,
+                content: { msgtype: 'm.text', body: '幫我看第8籤' },
+              },
+            ],
+          }),
+        }),
+      );
+      vi.setSystemTime(nowMs + 2_000);
+      await roomDo.alarm();
+      expect(posted).toHaveLength(1);
+      expect(posted[0]).toContain('第 8 籤');
+      expect(a2aEnvelopes).toHaveLength(0);
+
+      // Step 2: Follow-up without repeating stick number -> A2A receives full Stick 8 context
+      nowMs += 15_000;
+      vi.setSystemTime(nowMs);
+      await roomDo.fetch(
+        new Request('https://narra-room/events', {
+          method: 'POST',
+          body: JSON.stringify({
+            roomId,
+            chatType: 'dm',
+            events: [
+              {
+                event_id: '$followup_stick',
+                sender: '@alice:matrix.netmind.chat',
+                type: 'm.room.message',
+                origin_server_ts: nowMs,
+                content: { msgtype: 'm.text', body: '這支籤對我換工作代表什麼？' },
+              },
+            ],
+          }),
+        }),
+      );
+      vi.setSystemTime(nowMs + 2_000);
+      await roomDo.alarm();
+
+      expect(a2aEnvelopes).toHaveLength(1);
+      expect(a2aEnvelopes[0]).toContain('last_drawn_fortune_stick:');
+      expect(a2aEnvelopes[0]).toContain('第 8 籤');
+      expect(a2aEnvelopes[0]).toContain('玉在石中');
+      expect(posted).toHaveLength(2);
+    } finally {
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+    }
   });
 });
