@@ -1448,6 +1448,13 @@ describe('fastRespond crisis safety, CSPRNG draw & pure zh-Hant/zh-Hans/en', () 
     );
     expect(skippedStick).toBe('[NO_REPLY]');
 
+    expect(await fortuneFastRespond(
+      baseEnv,
+      makeInboundEvent({ chatType: 'group', text: '剛才那支籤先放著，換塔羅看同一場面試，抽一張就好。' }),
+      { shouldReply: true, tier: 0, reason: 'active_session', confidence: 0.9, detectedLang: 'zh-Hant', shouldQuote: false },
+      emptyMem,
+    )).toBe('[NO_REPLY]');
+
     // 5. Unmentioned group active_session "謝謝" STILL returns '[NO_REPLY]'
     const unmentionedGroupThanks = await fortuneFastRespond(
       baseEnv,
