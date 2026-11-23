@@ -229,6 +229,9 @@ const ALL_KNOWN_MENTION_NAMES = [
   '省錢小幫手',
 ];
 
+const SKIP_STICK_DRAW_RE =
+  /(?:先)?(?:不用|不要|別|别|不必|免了)\s*(?:抽|求|搖|摇)(?:一支)?[籤签]|(?:抽|求|搖|摇)(?:一支)?[籤签]\s*(?:先)?(?:不用|不要|免了|晚點|晚点)|\b(?:skip|no)\s+(?:the\s+)?fortune[- ]stick\b/i;
+
 const BARE_DRAW_TRIGGER_RE =
   /^(?:搖|摇|搖籤|摇签|搖一籤|摇一签|抽|抽籤|抽签|抽一支|抽一支籤|抽一支签|求籤|求签|求一籤|求一签|問一籤|问一签|問籤|问签|來一籤|来一签|再抽一支|draw|draw\s+(?:a\s+)?(?:fortune\s+)?stick|shake(?:\s+(?:a\s+)?stick)?|pull\s+(?:a\s+)?stick|fortune\s*stick)$/i;
 const SESSION_CONFIRM_RE = /^(?:ok|okay|go|ready|yes|好|好的|可以|來吧|来吧|開始|开始|請|请)$/i;
@@ -615,6 +618,7 @@ export async function fortuneFastRespond(
 
   // Keep unmentioned group turns silent on off-topic anti-keywords and casual active-session chatter
   if (isUnmentionedGroup) {
+    if (SKIP_STICK_DRAW_RE.test(stripped)) return '[NO_REPLY]';
     if (
       !BARE_DRAW_TRIGGER_RE.test(stripped) &&
       !SESSION_CONFIRM_RE.test(stripped) &&
