@@ -887,6 +887,17 @@ describe('fastRespond crisis safety, CSPRNG draw & pure zh-Hant/zh-Hans/en', () 
       expect(reply, `active_session casual: ${text}`).toBe('[NO_REPLY]');
     }
 
+    const jackpotQuestion = makeInboundEvent({
+      chatType: 'group',
+      text: '我今天會中 100 萬嗎？',
+      mentions: [FORTUNE_STICK_DEFAULT_MATRIX_ID],
+    });
+    const jackpotDecision = await routeEvent(jackpotQuestion, { roomId: jackpotQuestion.roomId, chatType: 'group', members: [], recentHistory: [] }, FORTUNE_STICK_AGENT_SPEC);
+    expect(jackpotDecision.reason).toBe('explicit_mention');
+    const jackpotReply = await fortuneFastRespond(baseEnv, jackpotQuestion, jackpotDecision, emptyMem);
+    expect(jackpotReply).toContain('開獎結果是隨機的');
+    expect(jackpotReply).toMatch(/第 \d+ 籤/);
+
     // Valid active-session follow-ups without @ MUST keep working
     const drawReply = await fortuneFastRespond(
       baseEnv,
@@ -1774,4 +1785,32 @@ describe('Phase 1-4 UX & A2A context pre-fetch (thinkingMessage, enableA2AFailur
       vi.unstubAllGlobals();
     }
   });
+});
+
+it('speaks only on its own topic in mixed group chatter', async () => {
+  const cases = [
+    '晚上能吃啥',
+    '我先去開個會',
+    '今晚倫敦有什麼市集',
+    '今天 AI 圈有啥新消息',
+    '能抽張塔羅看看工作嗎',
+    '幫我求一支籤',
+    '有英國簽證資料可以查嗎',
+    '晚餐 £80 我付的，四個人怎麼分',
+    'Boots 有折扣碼嗎',
+    '昨天吃火鍋超爽',
+  ];
+  const nowMs = Date.now();
+  const replies: string[] = [];
+  for (const text of cases) {
+    const event = makeInboundEvent({ text, timestampMs: nowMs, chatType: 'group', mentions: [] });
+    const context = { roomId: event.roomId, chatType: 'group' as const, members: [], recentHistory: [] };
+    if ((await routeEvent(event, context, FORTUNE_STICK_AGENT_SPEC, { nowMs })).shouldReply) replies.push(text);
+  }
+  expect(replies).toEqual(["幫我求一支籤"]);
+
+  const text = '幫我求一支籤';
+  const directedEvent = makeInboundEvent({ text: `@Ken ${text}`, timestampMs: nowMs, chatType: 'group', mentions: ['@ken:example.com'] });
+  const directedContext = { roomId: directedEvent.roomId, chatType: 'group' as const, members: [], recentHistory: [] };
+  expect((await routeEvent(directedEvent, directedContext, FORTUNE_STICK_AGENT_SPEC, { nowMs })).shouldReply).toBe(false);
 });

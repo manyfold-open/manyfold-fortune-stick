@@ -234,6 +234,8 @@ const BARE_DRAW_TRIGGER_RE =
 const SESSION_CONFIRM_RE = /^(?:ok|okay|go|ready|yes|好|好的|可以|來吧|来吧|開始|开始|請|请)$/i;
 const EXPLICIT_DRAW_PHRASE_RE =
   /(?:搖一?支?籤|摇一?支?签|求一?支?籤|求一?支?签|求個?籤|求个?签|抽一?支?籤|抽一?支?签|抽個?籤|抽个?签|問一?支?籤|问一?支?签|來一?支?籤|来一?支?签|幫我求.{0,4}[籤签]|帮我求.{0,4}[籤签]|draw\s+(?:me\s+)?(?:a\s+)?(?:fortune\s+)?stick|shake\s+(?:a\s+)?(?:fortune\s+)?stick|pull\s+(?:a\s+)?(?:fortune\s+)?stick)/i;
+const JACKPOT_QUESTION_RE =
+  /^(?:(?:我)?(?:今天|今晚|明天)?(?:會|会|能|可以)?(?:中(?:獎|奖|頭獎|头奖|大獎|大奖|\s*\d[\d,.]*\s*[萬万]?)|贏(?:得)?頭獎|赢(?:得)?头奖)[嗎吗]|(?:will|can)\s+i\s+win\s+(?:(?:the|a)\s+)?(?:lottery|jackpot)(?:\s+(?:today|tonight|tomorrow))?)$/i;
 const STICK_LOOKUP_RE =
   /^(?:請|请)?(?:幫我|帮我)?(?:查(?:詢|询|一下|看)?|看(?:一下|一眼|看)?)?\s*第?\s*(\d{1,2})\s*[籤签]|^(?:please\s+)?(?:check\s+|show\s+(?:me\s+)?|look\s+up\s+)?stick\s*#?(\d{1,2})$/i;
 
@@ -667,6 +669,15 @@ export async function fortuneFastRespond(
     if (found) {
       return formatStickReply(found, lang, { isVoice: event.isVoice === true });
     }
+  }
+
+  if ((isDirectConversation || decision.reason === 'reply_to_self') && JACKPOT_QUESTION_RE.test(stripped)) {
+    const framing = lang === 'zh-Hant'
+      ? '開獎結果是隨機的。這支籤可以當作今天的提醒。'
+      : lang === 'zh-Hans'
+        ? '开奖结果是随机的。这支签可以当作今天的提醒。'
+        : 'The draw is random. Here’s a fortune stick for reflection.';
+    return framing + '\n\n' + formatLocalStickDraw(lang, { isVoice: event.isVoice === true });
   }
 
   const isDirectDraw =
