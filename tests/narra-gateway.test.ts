@@ -1829,3 +1829,16 @@ it('speaks only on its own topic in mixed group chatter', async () => {
   const directedContext = { roomId: directedEvent.roomId, chatType: 'group' as const, members: [], recentHistory: [] };
   expect((await routeEvent(directedEvent, directedContext, FORTUNE_STICK_AGENT_SPEC, { nowMs })).shouldReply).toBe(false);
 });
+
+
+it('routes stick requests even when the user declines Tarot in the same message', async () => {
+  const nowMs = Date.now();
+  for (const text of [
+    '最近一直在想換工作。先不用塔羅，幫我抽一支籤看看方向就好。',
+    '這次先不看塔羅了，想請你抽一支籤，當作思考換工作的提示。',
+  ]) {
+    const event = makeInboundEvent({ text, timestampMs: nowMs, chatType: 'group', mentions: [] });
+    const context = { roomId: event.roomId, chatType: 'group' as const, members: [], recentHistory: [] };
+    expect((await routeEvent(event, context, FORTUNE_STICK_AGENT_SPEC, { nowMs })).shouldReply).toBe(true);
+  }
+});
