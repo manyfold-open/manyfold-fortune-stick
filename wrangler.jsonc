@@ -87,6 +87,9 @@
     // /sync around the clock (which Cloudflare bills as DO duration). Needs the
     // NARRA_PUSH_SECRET secret; without it the kit keeps long-polling.
     "NARRA_SYNC_MODE": "push",
+    // Group triage that works in any language, plus the elected fallback so a real question nobody
+    // claims still gets one answer (narra-agent-kit README, "Group triage ..."). Unset to go back.
+    "NARRA_GROUP_TRIAGE": "ask",
     // Synapse only accepts a pusher at exactly /_matrix/push/v1/notify, and app.manyfold.ai's
     // root belongs to other apps, so pushes come in on this Worker's own workers.dev hostname.
     "NARRA_PUSH_URL": "https://manyfold-fortune-stick.netmind-ai.workers.dev",
