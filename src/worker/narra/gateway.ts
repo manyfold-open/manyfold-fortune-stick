@@ -509,6 +509,7 @@ export async function fortuneFastRespond(
   event: InboundEvent,
   decision: TriageDecision,
   memories: RecallTurnResult,
+  context?: RoomContext,
 ): Promise<string | null> {
   const lang = resolveStickLang(event.text, decision.detectedLang, memories);
 
@@ -664,6 +665,15 @@ export async function fortuneFastRespond(
   }
 
   const lookupMatch = STICK_LOOKUP_RE.exec(stripped);
+  if (ORIGINAL_POEM_ONLY_RE.test(stripped)) {
+    const no = lookupMatch ? Number(lookupMatch[1] ?? lookupMatch[2])
+      : contextualStickNo(env, context);
+    const found = no === null ? null : stickByNo(no);
+    if (found) {
+      const { poem } = stickText(found, lang === 'en' ? 'en' : 'zh');
+      return poem.map((line) => localizedStickText(line, lang)).join(lang === 'en' ? ' / ' : '，');
+    }
+  }
   if (lookupMatch) {
     const no = Number(lookupMatch[1] ?? lookupMatch[2]);
     const found = stickByNo(no);
@@ -801,6 +811,8 @@ export async function resolveFortuneA2ACredential(
   }
 }
 
+const ORIGINAL_POEM_ONLY_RE =
+  /(?:只(?:要|需|[貼贴給给])(?:我)?\s*(?:原(?:文|本)的?)?\s*(?:原)?[籤签][詩诗]|(?:原)?[籤签][詩诗].{0,10}(?:不用|不要|不必)[解說说釋释讀读]+)|\b(?:just|only)\s+(?:the\s+)?(?:original\s+)?(?:poem|couplet|verse)\b/i;
 const STICK_NO_IN_TEXT_RE = /(?:第\s*(\d{1,2})\s*[籤签]|\bstick\s+(\d{1,2})\s+of\s+36\b)/i;
 const MAX_EXTRA_FIELD_CHARS = 1000;
 
@@ -842,29 +854,19 @@ export function fortuneThinkingMessage(lang: LangCode): string {
   return '🎋 Reflecting on your fortune stick and question, one moment…';
 }
 
-/**
- * Extracts the latest self-posted stick number from `replyToTarget` or `recentHistory`,
- * looks up the full stick via `stickByNo`, and injects it into A2A envelope context.
- */
-export async function buildFortuneExtraEnvelopeFields(
-  env: Env,
-  event: InboundEvent,
-  decision: TriageDecision,
-  memories: RecallTurnResult,
-  context: RoomContext,
-): Promise<Record<string, string> | null> {
+function contextualStickNo(env: Env, context?: RoomContext): number | null {
   const selfIds = new Set<string>([FORTUNE_STICK_DEFAULT_MATRIX_ID]);
   const configuredId = (env.NARRA_MATRIX_ID ?? env.MATRIX_USER_ID ?? '').trim();
   if (configuredId) selfIds.add(configuredId);
 
   let stickNo: number | null = null;
-  const replyTarget = context.replyToTarget;
+  const replyTarget = context?.replyToTarget;
   if (replyTarget && (replyTarget.isSelf || selfIds.has(replyTarget.senderId))) {
     stickNo = extractStickNoFromText(replyTarget.text);
   }
 
   if (stickNo === null) {
-    const history = context.recentHistory ?? [];
+    const history = context?.recentHistory ?? [];
     for (let i = history.length - 1; i >= 0; i--) {
       const turn = history[i];
       if (!(turn.isSelf || selfIds.has(turn.senderId))) continue;
@@ -876,6 +878,21 @@ export async function buildFortuneExtraEnvelopeFields(
     }
   }
 
+  return stickNo;
+}
+
+/**
+ * Extracts the latest self-posted stick number from `replyToTarget` or `recentHistory`,
+ * looks up the full stick via `stickByNo`, and injects it into A2A envelope context.
+ */
+export async function buildFortuneExtraEnvelopeFields(
+  env: Env,
+  event: InboundEvent,
+  decision: TriageDecision,
+  memories: RecallTurnResult,
+  context: RoomContext,
+): Promise<Record<string, string> | null> {
+  const stickNo = contextualStickNo(env, context);
   if (stickNo === null) return null;
   const stick = stickByNo(stickNo);
   if (!stick) return null;

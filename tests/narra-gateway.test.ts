@@ -1737,6 +1737,21 @@ describe('Phase 1-4 UX & A2A context pre-fetch (thinkingMessage, enableA2AFailur
     expect(none).toBeNull();
   });
 
+  it('returns only the stored stick poem for an explicit no-interpretation follow-up', async () => {
+    const event = makeInboundEvent({ text: '不用重抽，刚才那支只贴原签诗就好，不要解释。' });
+    const previous: RoomContext = {
+      roomId: event.roomId, chatType: 'group', members: [],
+      recentHistory: [{
+        eventId: '$prior-draw', senderId: FORTUNE_STICK_DEFAULT_MATRIX_ID,
+        isAgent: true, isSelf: true, timestampMs: event.timestampMs - 1000,
+        text: '第 22 籤 · 上籤 · 夜航見燈',
+      }],
+    };
+    const reply = await fortuneFastRespond(baseEnv, event, makeDecision('zh-Hans'),
+      { userMemories: [], roomMemories: [], promptSafeLines: [] }, previous);
+    expect(reply).toBe('四野茫茫不辨程，忽逢塔火一点明');
+  });
+
   it('injects last_drawn_fortune_stick into the A2A envelope on follow-up inside NarraRoomCoordinator DO', async () => {
     let nowMs = 1_760_800_000_000;
     vi.useFakeTimers();
