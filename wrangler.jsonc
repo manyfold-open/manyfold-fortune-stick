@@ -32,7 +32,7 @@
     // The API, plus the pages the Worker adds to on the way past: link previews
     // (src/worker/meta.ts) and the Google tag (src/worker/analytics.ts). Under
     // BASE_PATH everything wakes the Worker, because the prefix has to come off first.
-    "run_worker_first": ["/", "/privacy", "/api/*", "/fortune-stick", "/fortune-stick/*"]
+    "run_worker_first": ["/", "/privacy", "/api/*", "/_matrix/*", "/fortune-stick", "/fortune-stick/*"]
   },
   "d1_databases": [
     {
@@ -87,7 +87,9 @@
     // /sync around the clock (which Cloudflare bills as DO duration). Needs the
     // NARRA_PUSH_SECRET secret; without it the kit keeps long-polling.
     "NARRA_SYNC_MODE": "push",
-    "NARRA_PUSH_URL": "https://app.manyfold.ai/fortune-stick",
+    // Synapse only accepts a pusher at exactly /_matrix/push/v1/notify, and app.manyfold.ai's
+    // root belongs to other apps, so pushes come in on this Worker's own workers.dev hostname.
+    "NARRA_PUSH_URL": "https://manyfold-fortune-stick.netmind-ai.workers.dev",
     "NARRA_AGENT_ID": "agt_agqvtekvjbzldl5u2jczbc5equ",
     "NARRA_MATRIX_ID": "@agent-bc3282c7:matrix.netmind.chat"
   }
