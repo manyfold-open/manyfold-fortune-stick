@@ -9,6 +9,7 @@ import {
   type InboundEvent,
   type RoomContext,
 } from '@manyfold/narra-agent-kit';
+import { narraPushKey } from '@manyfold/narra-agent-kit/worker';
 import worker, { NarraMatrixSync, NarraRoomCoordinator } from '../src/worker/index';
 import { STICKS } from '../src/shared/sticks';
 import {
@@ -257,12 +258,12 @@ describe('wrangler.jsonc & fail-closed safety invariants', () => {
   });
 });
 
-describe('Narra push wake (POST /fortune-stick/narra/push/<secret>/_matrix/push/v1/notify)', () => {
+describe('Narra push wake (POST /_matrix/push/v1/notify)', () => {
   const PUSH_SECRET = 'stick_push_secret_0123456789';
-  const notify = (secret: string) =>
-    new Request(`${ORIGIN}/fortune-stick/narra/push/${secret}/_matrix/push/v1/notify`, {
+  const notify = (pushkey: string) =>
+    new Request(`${ORIGIN}/_matrix/push/v1/notify`, {
       method: 'POST',
-      body: JSON.stringify({ notification: { event_id: '$e', devices: [{ pushkey: 'pk1' }] } }),
+      body: JSON.stringify({ notification: { event_id: '$e', devices: [{ pushkey }] } }),
     });
 
   it('wakes the sync Durable Object before the base-path router sees the request', async () => {
@@ -273,7 +274,7 @@ describe('Narra push wake (POST /fortune-stick/narra/push/<secret>/_matrix/push/
       NARRA_SYNC: 'on',
       NARRA_AGENT_TOKEN: 'narra_tok_push_test',
       NARRA_SYNC_MODE: 'push',
-      NARRA_PUSH_URL: 'https://app.manyfold.ai/fortune-stick',
+      NARRA_PUSH_URL: 'https://manyfold-fortune-stick.netmind-ai.workers.dev',
       NARRA_PUSH_SECRET: PUSH_SECRET,
       NARRA_SYNC_DO: {
         idFromName: (name: string) => name,
@@ -286,13 +287,13 @@ describe('Narra push wake (POST /fortune-stick/narra/push/<secret>/_matrix/push/
       } as unknown as DurableObjectNamespace,
     } as Env;
 
-    const res = await worker.fetch(notify(PUSH_SECRET), env, execCtx);
+    const res = await worker.fetch(notify((await narraPushKey(env))!), env, execCtx);
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ rejected: [] });
     expect(doCalls).toEqual(['https://narra-sync/push']);
 
-    const wrong = await worker.fetch(notify('not_the_push_secret_xyz'), env, execCtx);
-    expect(await wrong.json()).toEqual({ rejected: ['pk1'] });
+    const wrong = await worker.fetch(notify('pk-not-ours'), env, execCtx);
+    expect(await wrong.json()).toEqual({ rejected: ['pk-not-ours'] });
     expect(doCalls).toHaveLength(1);
   });
 });
