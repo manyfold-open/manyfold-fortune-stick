@@ -51,6 +51,7 @@ import {
 import {
   BaseNarraMatrixSync,
   BaseNarraRoomCoordinator,
+  handleNarraPushRequest,
 } from '@manyfold/narra-agent-kit/worker';
 import {
   getFortuneNarraGatewayStatus,
@@ -341,6 +342,9 @@ export class NarraRoomCoordinator extends BaseNarraRoomCoordinator<Env> {
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    // Synapse wakes the Narra sync Durable Object here (push mode); null for anything else.
+    const pushed = await handleNarraPushRequest(request, env);
+    if (pushed) return pushed;
     const base = mountPath(env);
     const url = new URL(request.url);
     if (!base || (url.pathname !== base && !url.pathname.startsWith(`${base}/`))) {

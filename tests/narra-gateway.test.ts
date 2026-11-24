@@ -257,6 +257,46 @@ describe('wrangler.jsonc & fail-closed safety invariants', () => {
   });
 });
 
+describe('Narra push wake (POST /fortune-stick/narra/push/<secret>/_matrix/push/v1/notify)', () => {
+  const PUSH_SECRET = 'stick_push_secret_0123456789';
+  const notify = (secret: string) =>
+    new Request(`${ORIGIN}/fortune-stick/narra/push/${secret}/_matrix/push/v1/notify`, {
+      method: 'POST',
+      body: JSON.stringify({ notification: { event_id: '$e', devices: [{ pushkey: 'pk1' }] } }),
+    });
+
+  it('wakes the sync Durable Object before the base-path router sees the request', async () => {
+    const doCalls: string[] = [];
+    const env = {
+      ...baseEnv,
+      NARRA_GATEWAY_ENABLED: 'on',
+      NARRA_SYNC: 'on',
+      NARRA_AGENT_TOKEN: 'narra_tok_push_test',
+      NARRA_SYNC_MODE: 'push',
+      NARRA_PUSH_URL: 'https://app.manyfold.ai/fortune-stick',
+      NARRA_PUSH_SECRET: PUSH_SECRET,
+      NARRA_SYNC_DO: {
+        idFromName: (name: string) => name,
+        get: () => ({
+          fetch: async (url: string) => {
+            doCalls.push(url);
+            return Response.json({ ok: true, woke: true });
+          },
+        }),
+      } as unknown as DurableObjectNamespace,
+    } as Env;
+
+    const res = await worker.fetch(notify(PUSH_SECRET), env, execCtx);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ rejected: [] });
+    expect(doCalls).toEqual(['https://narra-sync/push']);
+
+    const wrong = await worker.fetch(notify('not_the_push_secret_xyz'), env, execCtx);
+    expect(await wrong.json()).toEqual({ rejected: ['pk1'] });
+    expect(doCalls).toHaveLength(1);
+  });
+});
+
 describe('admin-gated GET /api/gateway/status', () => {
   it('returns 401 when unauthenticated or when ADMIN_PASSWORD is unset', async () => {
     const resNoConfig = await worker.fetch(new Request(`${ORIGIN}/api/gateway/status`), baseEnv, execCtx);

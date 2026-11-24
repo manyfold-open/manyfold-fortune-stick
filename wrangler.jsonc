@@ -83,10 +83,17 @@
     // Narra Messenger gateway flags (enabled with bound Direct Matrix identity).
     "NARRA_GATEWAY_ENABLED": "on",
     "NARRA_SYNC": "on",
+    // Synapse pushes each new event here instead of the sync Durable Object long-polling
+    // /sync around the clock (which Cloudflare bills as DO duration). Needs the
+    // NARRA_PUSH_SECRET secret; without it the kit keeps long-polling.
+    "NARRA_SYNC_MODE": "push",
+    "NARRA_PUSH_URL": "https://app.manyfold.ai/fortune-stick",
     "NARRA_AGENT_ID": "agt_agqvtekvjbzldl5u2jczbc5equ",
     "NARRA_MATRIX_ID": "@agent-bc3282c7:matrix.netmind.chat"
   }
   // Optional hardening, neither is required to deploy:
   //   npx wrangler secret put ADMIN_PASSWORD          # protects agent management in /settings
   //   npx wrangler secret put CONFIG_ENCRYPTION_KEY   # >=32 chars; otherwise a key is generated and stored in D1
+  // Needed for Narra push mode (random, >=16 chars, e.g. `openssl rand -hex 24`):
+  //   npx wrangler secret put NARRA_PUSH_SECRET
 }
