@@ -1942,6 +1942,9 @@ describe('v2 (chat-native) pipeline: safetyReply and envelope data', () => {
     expect(examples.some((e) => /[籤運節]/.test(e))).toBe(true);
     expect(examples.some((e) => /[签运]/.test(e))).toBe(true);
     expect(examples.some((e) => /stick/i.test(e))).toBe(true);
+    const notExamples = narraGatewayConfig.v2?.notExamples ?? [];
+    expect(notExamples.some((e) => /塔羅|tarot|今日一牌/i.test(e))).toBe(true);
+    expect(notExamples.length).toBeGreaterThanOrEqual(5);
   });
 
   it('crisisReply answers crisis messages deterministically in the reply language, never with a draw', () => {
@@ -2007,12 +2010,13 @@ describe('v2 (chat-native) pipeline: safetyReply and envelope data', () => {
     const v2Room = '!ttLCzSZsdFiPSEPDyO:matrix.netmind.chat';
     const v2Env = { ...baseEnv, NARRA_PIPELINE: 'v2', NARRA_PIPELINE_ROOMS: v2Room } as Env;
     const ev = makeInboundEvent({ roomId: v2Room, text: '幫我求一支籤' });
-    const fields = await buildFortuneExtraEnvelopeFields(v2Env, ev, decision, emptyMem, v2Context(v2Room));
+    const fields = await buildFortuneExtraEnvelopeFields(v2Env, ev, decision, emptyMem, v2Context(v2Room), { pipeline: 'v2' });
     expect(fields?.local_draw).toMatch(/^第 \d{1,2} 籤 · /);
     assertPureZhHant(fields!.local_draw);
     expect(fields?.local_draw_note).toContain('fortune.py draw');
 
     const v1Ev = makeInboundEvent({ roomId: '!other:matrix.netmind.chat', text: '幫我求一支籤' });
+    expect(await buildFortuneExtraEnvelopeFields(v2Env, v1Ev, decision, emptyMem, v2Context(v1Ev.roomId), { pipeline: 'v1' })).toBeNull();
     expect(await buildFortuneExtraEnvelopeFields(v2Env, v1Ev, decision, emptyMem, v2Context(v1Ev.roomId))).toBeNull();
   });
 });

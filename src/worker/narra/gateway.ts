@@ -12,7 +12,6 @@ import {
   detectExplicitLangSwitch,
   detectLang,
   isNarraGatewayEnabled,
-  pipelineForRoom,
   stripAgentMentions,
   type AgentSpec,
   type AgentUpdateItem,
@@ -934,6 +933,7 @@ export async function buildFortuneExtraEnvelopeFields(
   decision: TriageDecision,
   memories: RecallTurnResult,
   context: RoomContext,
+  info?: { pipeline: 'v1' | 'v2' },
 ): Promise<Record<string, string> | null> {
   const lang = resolveStickLang(event.text, decision.detectedLang, memories);
   const fields: Record<string, string> = {};
@@ -954,7 +954,7 @@ export async function buildFortuneExtraEnvelopeFields(
 
   // v2 rooms: fastRespond no longer draws, so always carry one fresh secure-random stick. The brain
   // draws with its own fortune.py; this is the fallback that keeps a draw real if it cannot.
-  if (pipelineForRoom(env, event.roomId) === 'v2') {
+  if (info?.pipeline === 'v2') {
     const drawn = stickByNo(drawStickNo()) ?? stickByNo(1)!;
     fields.local_draw = formatStickContextSnippet(drawn, lang);
     fields.local_draw_note =
@@ -998,6 +998,15 @@ export const narraGatewayConfig: NarraGatewayConfig<Env> = {
       'Can you draw a fortune stick for me?',
       'What does stick 12 mean for my new job?',
       'Should I take this offer? Shake a stick for me',
+    ],
+    // Close topics that belong to other agents (tarot stays with AI Tarot): a message nearer to
+    // these than to the stick asks never wakes this agent.
+    notExamples: [
+      '幫我抽三張塔羅牌',
+      'Draw a tarot card for me',
+      '今日一牌',
+      '今天有什麼 AI 新聞？',
+      'Any good ramen restaurants in Chinatown?',
     ],
     crisisReply: fortuneCrisisReply,
     safetyReply: fortuneSafetyReply,
