@@ -21,6 +21,7 @@ import {
   formatLocalStickDraw,
   formatStickReply,
   fortuneFastRespond,
+  fortuneSafetyReply,
   fortuneThinkingMessage,
   getSolarTermForDate,
   kickFortuneNarraGateway,
@@ -208,6 +209,9 @@ describe('wrangler.jsonc & fail-closed safety invariants', () => {
     expect(parsed.vars.NARRA_SYNC).toBe('on');
     expect(parsed.vars.NARRA_AGENT_ID).toBe('agt_agqvtekvjbzldl5u2jczbc5equ');
     expect(parsed.vars.NARRA_MATRIX_ID).toBe('@agent-bc3282c7:matrix.netmind.chat');
+    // v2 (chat-native) only in the "zack test" room; every other room stays on v1.
+    expect(parsed.vars.NARRA_PIPELINE).toBe('v2');
+    expect(parsed.vars.NARRA_PIPELINE_ROOMS).toBe('!ttLCzSZsdFiPSEPDyO:matrix.netmind.chat');
     expect(parsed.triggers.crons).toEqual(['*/5 * * * *']);
     expect(parsed.durable_objects.bindings).toEqual([
       { name: 'NARRA_SYNC_DO', class_name: 'NarraMatrixSync' },
@@ -1904,4 +1908,88 @@ it('routes stick requests even when the user declines Tarot in the same message'
     const context = { roomId: event.roomId, chatType: 'group' as const, members: [], recentHistory: [] };
     expect((await routeEvent(event, context, FORTUNE_STICK_AGENT_SPEC, { nowMs })).shouldReply).toBe(true);
   }
+});
+
+describe('v2 (chat-native) pipeline: safetyReply and envelope data', () => {
+  const v2Context = (roomId: string): RoomContext => ({ roomId, chatType: 'group', members: [], recentHistory: [] });
+  const decision = {
+    shouldReply: true,
+    tier: 0 as const,
+    reason: 'explicit_mention',
+    confidence: 1,
+    detectedLang: 'zh-Hant' as const,
+    shouldQuote: false,
+  };
+  const emptyMem = { userMemories: [], roomMemories: [], promptSafeLines: [] };
+
+  async function roomPref(roomId: string, key: string): Promise<string | null> {
+    const row = await d1.db
+      .prepare(
+        'SELECT memory_value AS value FROM narra_room_memory WHERE agent_id = ? AND room_id = ? AND memory_key = ?',
+      )
+      .bind(FORTUNE_STICK_AGENT_ID, roomId, key)
+      .first<{ value: string }>();
+    return row?.value ?? null;
+  }
+
+  it('wires wakeExamples and safetyReply into narraGatewayConfig.v2 and keeps fastRespond for v1 rooms', () => {
+    expect(narraGatewayConfig.fastRespond).toBe(fortuneFastRespond);
+    expect(narraGatewayConfig.v2?.safetyReply).toBe(fortuneSafetyReply);
+    const examples = narraGatewayConfig.v2?.wakeExamples ?? [];
+    expect(examples.length).toBeGreaterThanOrEqual(10);
+    expect(examples.some((e) => /[籤運節]/.test(e))).toBe(true);
+    expect(examples.some((e) => /[签运]/.test(e))).toBe(true);
+    expect(examples.some((e) => /stick/i.test(e))).toBe(true);
+  });
+
+  it('answers crisis messages deterministically in the asker\'s script, never with a draw', async () => {
+    const room = '!v2_crisis:matrix.netmind.chat';
+    const hant = await fortuneSafetyReply(baseEnv, makeInboundEvent({ roomId: room, text: '@AI Fortune Stick 我真的不想活了，這麼累' }), v2Context(room));
+    const hans = await fortuneSafetyReply(baseEnv, makeInboundEvent({ roomId: room, text: '我想自杀，这样太累了' }), v2Context(room));
+    const en = await fortuneSafetyReply(baseEnv, makeInboundEvent({ roomId: room, text: 'I want to die' }), v2Context(room));
+    expect(hant).toContain('Samaritans 116 123');
+    assertPureZhHant(hant!);
+    expect(hans).toContain('12356');
+    assertPureZhHans(hans!);
+    expect(en).toContain('988');
+    for (const reply of [hant, hans, en]) expect(reply).not.toMatch(/第\s*\d+\s*[籤签]|Stick \d+ of/);
+  });
+
+  it('runs reminder opt-in / opt-out commands (including bare Chinese ones) and stores the room preference', async () => {
+    await new MemoryStore(d1.db, FORTUNE_STICK_AGENT_ID).ensureSchema();
+    const room = '!v2_reminders:matrix.netmind.chat';
+    const optIn = await fortuneSafetyReply(baseEnv, makeInboundEvent({ roomId: room, text: '訂閱節氣' }), v2Context(room));
+    expect(optIn).toContain('節氣求籤提醒');
+    expect(await roomPref(room, 'opt_in_solar_term')).toBe('true');
+
+    const weekly = await fortuneSafetyReply(baseEnv, makeInboundEvent({ roomId: room, text: '@AI Fortune Stick 订阅每周' }), v2Context(room));
+    expect(weekly).toContain('每周一签');
+    expect(await roomPref(room, 'opt_in_weekly')).toBe('true');
+
+    const optOut = await fortuneSafetyReply(baseEnv, makeInboundEvent({ roomId: room, text: 'unsubscribe solar term' }), v2Context(room));
+    expect(optOut).toBe('Got it, solar term reminders are turned off for this room.');
+    expect(await roomPref(room, 'opt_in_solar_term')).toBe('false');
+  });
+
+  it('leaves draws, lookups, greetings and thanks to the brain (null)', async () => {
+    const room = '!v2_brain:matrix.netmind.chat';
+    for (const text of ['求籤', 'draw a stick', '第 8 籤是什麼意思？', '你好', '謝謝', '今天運勢如何']) {
+      expect(await fortuneSafetyReply(baseEnv, makeInboundEvent({ roomId: room, text }), v2Context(room))).toBeNull();
+    }
+  });
+
+  it('hands the brain the exact text of a stick named by number', async () => {
+    const ev = makeInboundEvent({ text: '第 8 籤是什麼意思？' });
+    const fields = await buildFortuneExtraEnvelopeFields(baseEnv, ev, decision, emptyMem, v2Context(ev.roomId));
+    expect(fields?.requested_fortune_stick).toContain('第 8 籤');
+    expect(fields?.requested_fortune_stick).toContain('玉在石中');
+    expect(fields?.requested_fortune_stick_note).toContain('fortune.py stick');
+
+    const en = makeInboundEvent({ text: 'What does stick 12 mean for my new job?' });
+    const enFields = await buildFortuneExtraEnvelopeFields(baseEnv, en, { ...decision, detectedLang: 'en' }, emptyMem, v2Context(en.roomId));
+    expect(enFields?.requested_fortune_stick).toContain('Stick 12 of 36');
+
+    const none = makeInboundEvent({ text: '第 99 籤' });
+    expect(await buildFortuneExtraEnvelopeFields(baseEnv, none, decision, emptyMem, v2Context(none.roomId))).toBeNull();
+  });
 });
