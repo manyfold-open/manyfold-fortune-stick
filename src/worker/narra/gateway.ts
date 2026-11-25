@@ -12,6 +12,7 @@ import {
   detectExplicitLangSwitch,
   detectLang,
   isNarraGatewayEnabled,
+  replyLanguageFor,
   stripAgentMentions,
   type AgentSpec,
   type AgentUpdateItem,
@@ -240,13 +241,13 @@ const STICK_LOOKUP_RE =
   /^(?:請|请)?(?:幫我|帮我)?(?:查(?:詢|询|一下|看)?|看(?:一下|一眼|看)?)?\s*第?\s*(\d{1,2})\s*[籤签]|^(?:please\s+)?(?:check\s+|show\s+(?:me\s+)?|look\s+up\s+)?stick\s*#?(\d{1,2})$/i;
 
 const OPT_IN_SOLAR_RE =
-  /^(?:訂閱節氣|订阅节气|開啟節氣|开启节气|打開節氣|打开节气|opt[- ]?in\s+solar[- ]?term|subscribe\s+solar[- ]?term)\b/i;
+  /^(?:訂閱節氣|订阅节气|開啟節氣|开启节气|打開節氣|打开节气|opt[- ]?in\s+solar[- ]?term|subscribe\s+solar[- ]?term)(?![a-z0-9])/i;
 const OPT_OUT_SOLAR_RE =
-  /^(?:取消節氣|取消节气|關閉節氣|关闭节气|停止節氣|停止节气|退訂節氣|退订节气|opt[- ]?out\s+solar[- ]?term|unsubscribe\s+solar[- ]?term)\b/i;
+  /^(?:取消節氣|取消节气|關閉節氣|关闭节气|停止節氣|停止节气|退訂節氣|退订节气|opt[- ]?out\s+solar[- ]?term|unsubscribe\s+solar[- ]?term)(?![a-z0-9])/i;
 const OPT_IN_WEEKLY_RE =
-  /^(?:訂閱每週|订阅每周|開啟每週|开启每周|opt[- ]?in\s+weekly|subscribe\s+weekly)\b/i;
+  /^(?:訂閱每週|订阅每周|開啟每週|开启每周|opt[- ]?in\s+weekly|subscribe\s+weekly)(?![a-z0-9])/i;
 const OPT_OUT_WEEKLY_RE =
-  /^(?:取消每週|取消每周|關閉每週|关闭每周|停止每週|停止每周|opt[- ]?out\s+weekly|unsubscribe\s+weekly)\b/i;
+  /^(?:取消每週|取消每周|關閉每週|关闭每周|停止每週|停止每周|opt[- ]?out\s+weekly|unsubscribe\s+weekly)(?![a-z0-9])/i;
 const DM_GREETING_RE =
   /^(?:hi|hello|hey|yo|morning|good\s+(?:morning|afternoon|evening)|你好|您好|哈囉|哈啰|嗨|安安|早安|午安|晚安|在嗎|在吗|有人嗎|有人吗)$/i;
 const DM_THANKS_RE =
@@ -496,6 +497,104 @@ function isCasualActiveSessionChatter(text: string): boolean {
   return CASUAL_SMALL_TALK_PHRASE_RE.test(text) || BARE_GREETING_OR_THANKS_RE.test(text);
 }
 
+type ReminderKey = 'opt_in_solar_term' | 'opt_in_weekly';
+
+const REMINDER_COMMANDS: ReadonlyArray<{
+  re: RegExp;
+  key: ReminderKey;
+  value: 'true' | 'false';
+  reply: Record<LangCode, string>;
+}> = [
+  {
+    re: OPT_IN_SOLAR_RE,
+    key: 'opt_in_solar_term',
+    value: 'true',
+    reply: {
+      'zh-Hant': '好的，已為這個房間開啟節氣求籤提醒。想隨時取消告訴我一聲即可。',
+      'zh-Hans': '好的，已为这个房间开启节气求签提醒。想随时取消告诉我一声即可。',
+      en: 'Done, solar term stick reminders are now enabled for this room. Let me know anytime if you want to turn them off.',
+    },
+  },
+  {
+    re: OPT_OUT_SOLAR_RE,
+    key: 'opt_in_solar_term',
+    value: 'false',
+    reply: {
+      'zh-Hant': '好的，已關閉這個房間的節氣提醒。',
+      'zh-Hans': '好的，已关闭这个房间的节气提醒。',
+      en: 'Got it, solar term reminders are turned off for this room.',
+    },
+  },
+  {
+    re: OPT_IN_WEEKLY_RE,
+    key: 'opt_in_weekly',
+    value: 'true',
+    reply: {
+      'zh-Hant': '好的，已為這個房間開啟每週一籤提醒。',
+      'zh-Hans': '好的，已为这个房间开启每周一签提醒。',
+      en: 'Done, weekly fortune stick reminders are now enabled for this room.',
+    },
+  },
+  {
+    re: OPT_OUT_WEEKLY_RE,
+    key: 'opt_in_weekly',
+    value: 'false',
+    reply: {
+      'zh-Hant': '好的，已關閉這個房間的每週提醒。',
+      'zh-Hans': '好的，已关闭这个房间的每周提醒。',
+      en: 'Got it, weekly fortune stick reminders are turned off for this room.',
+    },
+  },
+];
+
+/**
+ * Exact solar-term / weekly reminder commands: stores the room preference that
+ * `fetchFortuneUpdates` reads (D1 `narra_room_memory`) and returns the confirmation,
+ * or `null` when the message is not such a command.
+ */
+async function handleReminderCommand(
+  env: Env,
+  event: InboundEvent,
+  stripped: string,
+  lang: LangCode,
+): Promise<string | null> {
+  const command = REMINDER_COMMANDS.find((c) => c.re.test(stripped));
+  if (!command) return null;
+  if (env.DB) {
+    await new MemoryStore(env.DB, FORTUNE_STICK_AGENT_ID)
+      .rememberRoom({
+        roomId: event.roomId,
+        key: command.key,
+        value: command.value,
+        kind: 'preference',
+        updatedBy: event.senderId,
+      })
+      .catch(() => undefined);
+  }
+  return command.reply[lang] ?? command.reply.en;
+}
+
+/**
+ * v2 (chat-native) `safetyReply`: the deterministic replies that must not depend on the
+ * Manyfold brain. Crisis messages get the fixed crisis resources (never a draw), and the
+ * exact reminder opt-in / opt-out commands change the room preference the Worker's own
+ * broadcasts read. Everything else returns `null` and goes to the brain.
+ */
+export async function fortuneSafetyReply(
+  env: Env,
+  event: InboundEvent,
+  context: RoomContext,
+): Promise<string | null> {
+  const text = event.text ?? '';
+  const lang = replyLanguageFor(text, {
+    mentionNames: ALL_KNOWN_MENTION_NAMES,
+    ...(context?.userLanguageHint ? { userHint: context.userLanguageHint } : {}),
+    ...(context?.roomLanguageHint ? { roomHint: context.roomLanguageHint } : {}),
+  });
+  if (isCrisisMessage(text)) return crisisReply(lang);
+  return handleReminderCommand(env, event, stripMentionsAndPunct(text), lang);
+}
+
 /**
  * `fastRespond` handler for `fortune-stick`:
  * 1. Crisis safety check (always runs first, never draws a stick).
@@ -544,70 +643,8 @@ export async function fortuneFastRespond(
   }
 
   // Explicit opt-in / opt-out for solar-term or weekly broadcasts
-  if (OPT_IN_SOLAR_RE.test(stripped)) {
-    if (env.DB) {
-      await new MemoryStore(env.DB, FORTUNE_STICK_AGENT_ID)
-        .rememberRoom({
-          roomId: event.roomId,
-          key: 'opt_in_solar_term',
-          value: 'true',
-          kind: 'preference',
-          updatedBy: event.senderId,
-        })
-        .catch(() => undefined);
-    }
-    if (lang === 'zh-Hant') return '好的，已為這個房間開啟節氣求籤提醒。想隨時取消告訴我一聲即可。';
-    if (lang === 'zh-Hans') return '好的，已为这个房间开启节气求签提醒。想随时取消告诉我一声即可。';
-    return 'Done, solar term stick reminders are now enabled for this room. Let me know anytime if you want to turn them off.';
-  }
-  if (OPT_OUT_SOLAR_RE.test(stripped)) {
-    if (env.DB) {
-      await new MemoryStore(env.DB, FORTUNE_STICK_AGENT_ID)
-        .rememberRoom({
-          roomId: event.roomId,
-          key: 'opt_in_solar_term',
-          value: 'false',
-          kind: 'preference',
-          updatedBy: event.senderId,
-        })
-        .catch(() => undefined);
-    }
-    if (lang === 'zh-Hant') return '好的，已關閉這個房間的節氣提醒。';
-    if (lang === 'zh-Hans') return '好的，已关闭这个房间的节气提醒。';
-    return 'Got it, solar term reminders are turned off for this room.';
-  }
-  if (OPT_IN_WEEKLY_RE.test(stripped)) {
-    if (env.DB) {
-      await new MemoryStore(env.DB, FORTUNE_STICK_AGENT_ID)
-        .rememberRoom({
-          roomId: event.roomId,
-          key: 'opt_in_weekly',
-          value: 'true',
-          kind: 'preference',
-          updatedBy: event.senderId,
-        })
-        .catch(() => undefined);
-    }
-    if (lang === 'zh-Hant') return '好的，已為這個房間開啟每週一籤提醒。';
-    if (lang === 'zh-Hans') return '好的，已为这个房间开启每周一签提醒。';
-    return 'Done, weekly fortune stick reminders are now enabled for this room.';
-  }
-  if (OPT_OUT_WEEKLY_RE.test(stripped)) {
-    if (env.DB) {
-      await new MemoryStore(env.DB, FORTUNE_STICK_AGENT_ID)
-        .rememberRoom({
-          roomId: event.roomId,
-          key: 'opt_in_weekly',
-          value: 'false',
-          kind: 'preference',
-          updatedBy: event.senderId,
-        })
-        .catch(() => undefined);
-    }
-    if (lang === 'zh-Hant') return '好的，已關閉這個房間的每週提醒。';
-    if (lang === 'zh-Hans') return '好的，已关闭这个房间的每周提醒。';
-    return 'Got it, weekly fortune stick reminders are turned off for this room.';
-  }
+  const reminderReply = await handleReminderCommand(env, event, stripped, lang);
+  if (reminderReply) return reminderReply;
 
   const isUnmentionedGroup =
     event.chatType === 'group' &&
@@ -892,15 +929,33 @@ export async function buildFortuneExtraEnvelopeFields(
   memories: RecallTurnResult,
   context: RoomContext,
 ): Promise<Record<string, string> | null> {
-  const stickNo = contextualStickNo(env, context);
-  if (stickNo === null) return null;
-  const stick = stickByNo(stickNo);
-  if (!stick) return null;
-
   const lang = resolveStickLang(event.text, decision.detectedLang, memories);
-  return {
-    last_drawn_fortune_stick: formatStickContextSnippet(stick, lang),
-  };
+  const fields: Record<string, string> = {};
+
+  const stickNo = contextualStickNo(env, context);
+  const lastStick = stickNo === null ? null : stickByNo(stickNo);
+  if (lastStick) fields.last_drawn_fortune_stick = formatStickContextSnippet(lastStick, lang);
+
+  // The person names a stick ("第 8 籤是什麼意思", "stick 12"): hand the brain its exact text so
+  // the lookup never depends on the model remembering it.
+  const requestedNo = requestedStickNo(event.text);
+  const requested = requestedNo === null ? null : stickByNo(requestedNo);
+  if (requested) {
+    fields.requested_fortune_stick = formatStickContextSnippet(requested, lang);
+    fields.requested_fortune_stick_note =
+      'The current message names this stick by number. Its exact text is in requested_fortune_stick (the same text as `python3 fortune.py stick <no>`). Use it word for word; never change or invent a stick.';
+  }
+
+  return Object.keys(fields).length > 0 ? fields : null;
+}
+
+const REQUESTED_STICK_NO_RE = /第\s*(\d{1,2})\s*[籤签簽]|\bstick\s*(?:no\.?\s*|number\s*|#\s*)?(\d{1,2})\b/i;
+
+function requestedStickNo(text: string): number | null {
+  const match = REQUESTED_STICK_NO_RE.exec(stripMentionsAndPunct(text ?? ''));
+  if (!match) return null;
+  const parsed = Number(match[1] ?? match[2]);
+  return Number.isInteger(parsed) && parsed >= 1 && parsed <= STICK_COUNT ? parsed : null;
 }
 
 export const narraGatewayConfig: NarraGatewayConfig<Env> = {
@@ -911,6 +966,25 @@ export const narraGatewayConfig: NarraGatewayConfig<Env> = {
   enableA2AFailureReply: true,
   thinkingMessage: (lang) => fortuneThinkingMessage(lang),
   buildExtraEnvelopeFields: buildFortuneExtraEnvelopeFields,
+  // Chat-native pipeline (rooms in NARRA_PIPELINE_ROOMS). fastRespond is not called there: the
+  // Manyfold brain draws and looks up sticks with its own fortune.py, greets, and reacts to thanks.
+  // Only crisis replies and the reminder opt-in / opt-out commands stay deterministic.
+  v2: {
+    wakeExamples: [
+      '幫我求一支籤',
+      '我想抽籤問工作',
+      '第 8 籤是什麼意思？',
+      '今天運勢如何？',
+      '今天是節氣，想求一籤看看方向',
+      '帮我摇一签',
+      '这支签怎么解？',
+      '最近感情不顺，能求个签吗',
+      'Can you draw a fortune stick for me?',
+      'What does stick 12 mean for my new job?',
+      'Should I take this offer? Shake a stick for me',
+    ],
+    safetyReply: fortuneSafetyReply,
+  },
 };
 
 export function kickFortuneNarraGateway(env: Env): Promise<NarraGatewayKickResult> {

@@ -90,6 +90,10 @@
     // Group triage that works in any language, plus the elected fallback so a real question nobody
     // claims still gets one answer (narra-agent-kit README, "Group triage ..."). Unset to go back.
     "NARRA_GROUP_TRIAGE": "ask",
+    // Chat-native (v2) pipeline from narra-agent-kit, only in the rooms listed: "zack test".
+    // Every other room keeps the v1 pipeline. Set NARRA_PIPELINE to "v1" to switch it off.
+    "NARRA_PIPELINE": "v2",
+    "NARRA_PIPELINE_ROOMS": "!ttLCzSZsdFiPSEPDyO:matrix.netmind.chat",
     // Synapse only accepts a pusher at exactly /_matrix/push/v1/notify, and app.manyfold.ai's
     // root belongs to other apps, so pushes come in on this Worker's own workers.dev hostname.
     "NARRA_PUSH_URL": "https://manyfold-fortune-stick.netmind-ai.workers.dev",
