@@ -20,6 +20,7 @@ import {
   fetchFortuneUpdates,
   formatLocalStickDraw,
   formatStickReply,
+  fortuneCrisisReply,
   fortuneFastRespond,
   fortuneSafetyReply,
   fortuneThinkingMessage,
@@ -1935,6 +1936,7 @@ describe('v2 (chat-native) pipeline: safetyReply and envelope data', () => {
   it('wires wakeExamples and safetyReply into narraGatewayConfig.v2 and keeps fastRespond for v1 rooms', () => {
     expect(narraGatewayConfig.fastRespond).toBe(fortuneFastRespond);
     expect(narraGatewayConfig.v2?.safetyReply).toBe(fortuneSafetyReply);
+    expect(narraGatewayConfig.v2?.crisisReply).toBe(fortuneCrisisReply);
     const examples = narraGatewayConfig.v2?.wakeExamples ?? [];
     expect(examples.length).toBeGreaterThanOrEqual(10);
     expect(examples.some((e) => /[籤運節]/.test(e))).toBe(true);
@@ -1942,31 +1944,39 @@ describe('v2 (chat-native) pipeline: safetyReply and envelope data', () => {
     expect(examples.some((e) => /stick/i.test(e))).toBe(true);
   });
 
-  it('answers crisis messages deterministically in the asker\'s script, never with a draw', async () => {
+  it('crisisReply answers crisis messages deterministically in the reply language, never with a draw', () => {
     const room = '!v2_crisis:matrix.netmind.chat';
-    const hant = await fortuneSafetyReply(baseEnv, makeInboundEvent({ roomId: room, text: '@AI Fortune Stick 我真的不想活了，這麼累' }), v2Context(room));
-    const hans = await fortuneSafetyReply(baseEnv, makeInboundEvent({ roomId: room, text: '我想自杀，这样太累了' }), v2Context(room));
-    const en = await fortuneSafetyReply(baseEnv, makeInboundEvent({ roomId: room, text: 'I want to die' }), v2Context(room));
+    const hant = fortuneCrisisReply(baseEnv, makeInboundEvent({ roomId: room, text: '我真的不想活了，這麼累' }), v2Context(room), { replyLang: 'zh-Hant' });
+    const hans = fortuneCrisisReply(baseEnv, makeInboundEvent({ roomId: room, text: '我想自杀，这样太累了' }), v2Context(room), { replyLang: 'zh-Hans' });
+    const en = fortuneCrisisReply(baseEnv, makeInboundEvent({ roomId: room, text: 'I want to die' }), v2Context(room), { replyLang: 'en' });
     expect(hant).toContain('Samaritans 116 123');
     assertPureZhHant(hant!);
     expect(hans).toContain('12356');
     assertPureZhHans(hans!);
     expect(en).toContain('988');
     for (const reply of [hant, hans, en]) expect(reply).not.toMatch(/第\s*\d+\s*[籤签]|Stick \d+ of/);
+    for (const text of ['求籤', '訂閱節氣', '今天運勢如何']) {
+      expect(fortuneCrisisReply(baseEnv, makeInboundEvent({ roomId: room, text }), v2Context(room), { replyLang: 'zh-Hant' })).toBeNull();
+    }
+  });
+
+  it('safetyReply no longer handles crisis text (crisisReply does, before the wake gate)', async () => {
+    const room = '!v2_crisis_safety:matrix.netmind.chat';
+    expect(await fortuneSafetyReply(baseEnv, makeInboundEvent({ roomId: room, text: 'I want to die' }), v2Context(room), { replyLang: 'en' })).toBeNull();
   });
 
   it('runs reminder opt-in / opt-out commands (including bare Chinese ones) and stores the room preference', async () => {
     await new MemoryStore(d1.db, FORTUNE_STICK_AGENT_ID).ensureSchema();
     const room = '!v2_reminders:matrix.netmind.chat';
-    const optIn = await fortuneSafetyReply(baseEnv, makeInboundEvent({ roomId: room, text: '訂閱節氣' }), v2Context(room));
+    const optIn = await fortuneSafetyReply(baseEnv, makeInboundEvent({ roomId: room, text: '訂閱節氣' }), v2Context(room), { replyLang: 'zh-Hant' });
     expect(optIn).toContain('節氣求籤提醒');
     expect(await roomPref(room, 'opt_in_solar_term')).toBe('true');
 
-    const weekly = await fortuneSafetyReply(baseEnv, makeInboundEvent({ roomId: room, text: '@AI Fortune Stick 订阅每周' }), v2Context(room));
+    const weekly = await fortuneSafetyReply(baseEnv, makeInboundEvent({ roomId: room, text: '@AI Fortune Stick 订阅每周' }), v2Context(room), { replyLang: 'zh-Hans' });
     expect(weekly).toContain('每周一签');
     expect(await roomPref(room, 'opt_in_weekly')).toBe('true');
 
-    const optOut = await fortuneSafetyReply(baseEnv, makeInboundEvent({ roomId: room, text: 'unsubscribe solar term' }), v2Context(room));
+    const optOut = await fortuneSafetyReply(baseEnv, makeInboundEvent({ roomId: room, text: 'unsubscribe solar term' }), v2Context(room), { replyLang: 'en' });
     expect(optOut).toBe('Got it, solar term reminders are turned off for this room.');
     expect(await roomPref(room, 'opt_in_solar_term')).toBe('false');
   });
@@ -1974,7 +1984,7 @@ describe('v2 (chat-native) pipeline: safetyReply and envelope data', () => {
   it('leaves draws, lookups, greetings and thanks to the brain (null)', async () => {
     const room = '!v2_brain:matrix.netmind.chat';
     for (const text of ['求籤', 'draw a stick', '第 8 籤是什麼意思？', '你好', '謝謝', '今天運勢如何']) {
-      expect(await fortuneSafetyReply(baseEnv, makeInboundEvent({ roomId: room, text }), v2Context(room))).toBeNull();
+      expect(await fortuneSafetyReply(baseEnv, makeInboundEvent({ roomId: room, text }), v2Context(room), { replyLang: 'zh-Hant' })).toBeNull();
     }
   });
 
@@ -1991,5 +2001,18 @@ describe('v2 (chat-native) pipeline: safetyReply and envelope data', () => {
 
     const none = makeInboundEvent({ text: '第 99 籤' });
     expect(await buildFortuneExtraEnvelopeFields(baseEnv, none, decision, emptyMem, v2Context(none.roomId))).toBeNull();
+  });
+
+  it('attaches a fresh local_draw only in v2 rooms', async () => {
+    const v2Room = '!ttLCzSZsdFiPSEPDyO:matrix.netmind.chat';
+    const v2Env = { ...baseEnv, NARRA_PIPELINE: 'v2', NARRA_PIPELINE_ROOMS: v2Room } as Env;
+    const ev = makeInboundEvent({ roomId: v2Room, text: '幫我求一支籤' });
+    const fields = await buildFortuneExtraEnvelopeFields(v2Env, ev, decision, emptyMem, v2Context(v2Room));
+    expect(fields?.local_draw).toMatch(/^第 \d{1,2} 籤 · /);
+    assertPureZhHant(fields!.local_draw);
+    expect(fields?.local_draw_note).toContain('fortune.py draw');
+
+    const v1Ev = makeInboundEvent({ roomId: '!other:matrix.netmind.chat', text: '幫我求一支籤' });
+    expect(await buildFortuneExtraEnvelopeFields(v2Env, v1Ev, decision, emptyMem, v2Context(v1Ev.roomId))).toBeNull();
   });
 });

@@ -12,7 +12,7 @@ import {
   detectExplicitLangSwitch,
   detectLang,
   isNarraGatewayEnabled,
-  replyLanguageFor,
+  pipelineForRoom,
   stripAgentMentions,
   type AgentSpec,
   type AgentUpdateItem,
@@ -575,24 +575,30 @@ async function handleReminderCommand(
 }
 
 /**
- * v2 (chat-native) `safetyReply`: the deterministic replies that must not depend on the
- * Manyfold brain. Crisis messages get the fixed crisis resources (never a draw), and the
- * exact reminder opt-in / opt-out commands change the room preference the Worker's own
- * broadcasts read. Everything else returns `null` and goes to the brain.
+ * v2 (chat-native) `crisisReply`: the kit runs it on every human message before the wake gate,
+ * so a crisis message always gets the fixed crisis resources (never a draw), even unaddressed.
+ */
+export function fortuneCrisisReply(
+  _env: Env,
+  event: InboundEvent,
+  _context: RoomContext,
+  info: { replyLang: LangCode },
+): string | null {
+  return isCrisisMessage(event.text ?? '') ? crisisReply(info.replyLang) : null;
+}
+
+/**
+ * v2 (chat-native) `safetyReply`: the exact reminder opt-in / opt-out commands change the room
+ * preference the Worker's own broadcasts read, deterministically. Everything else returns `null`
+ * and goes to the Manyfold brain.
  */
 export async function fortuneSafetyReply(
   env: Env,
   event: InboundEvent,
-  context: RoomContext,
+  _context: RoomContext,
+  info: { replyLang: LangCode },
 ): Promise<string | null> {
-  const text = event.text ?? '';
-  const lang = replyLanguageFor(text, {
-    mentionNames: ALL_KNOWN_MENTION_NAMES,
-    ...(context?.userLanguageHint ? { userHint: context.userLanguageHint } : {}),
-    ...(context?.roomLanguageHint ? { roomHint: context.roomLanguageHint } : {}),
-  });
-  if (isCrisisMessage(text)) return crisisReply(lang);
-  return handleReminderCommand(env, event, stripMentionsAndPunct(text), lang);
+  return handleReminderCommand(env, event, stripMentionsAndPunct(event.text ?? ''), info.replyLang);
 }
 
 /**
@@ -946,6 +952,15 @@ export async function buildFortuneExtraEnvelopeFields(
       'The current message names this stick by number. Its exact text is in requested_fortune_stick (the same text as `python3 fortune.py stick <no>`). Use it word for word; never change or invent a stick.';
   }
 
+  // v2 rooms: fastRespond no longer draws, so always carry one fresh secure-random stick. The brain
+  // draws with its own fortune.py; this is the fallback that keeps a draw real if it cannot.
+  if (pipelineForRoom(env, event.roomId) === 'v2') {
+    const drawn = stickByNo(drawStickNo()) ?? stickByNo(1)!;
+    fields.local_draw = formatStickContextSnippet(drawn, lang);
+    fields.local_draw_note =
+      'local_draw is a fresh stick drawn with a secure random source for this message. Use it only when the person asks for a new draw and you cannot run `python3 fortune.py draw` yourself; then quote it word for word. Otherwise ignore it, and never use it for lookups or follow-ups.';
+  }
+
   return Object.keys(fields).length > 0 ? fields : null;
 }
 
@@ -968,7 +983,8 @@ export const narraGatewayConfig: NarraGatewayConfig<Env> = {
   buildExtraEnvelopeFields: buildFortuneExtraEnvelopeFields,
   // Chat-native pipeline (rooms in NARRA_PIPELINE_ROOMS). fastRespond is not called there: the
   // Manyfold brain draws and looks up sticks with its own fortune.py, greets, and reacts to thanks.
-  // Only crisis replies and the reminder opt-in / opt-out commands stay deterministic.
+  // Only crisis replies (crisisReply, before the wake gate) and the reminder opt-in / opt-out
+  // commands (safetyReply) stay deterministic. local_draw backs up the brain's own draw.
   v2: {
     wakeExamples: [
       '幫我求一支籤',
@@ -983,6 +999,7 @@ export const narraGatewayConfig: NarraGatewayConfig<Env> = {
       'What does stick 12 mean for my new job?',
       'Should I take this offer? Shake a stick for me',
     ],
+    crisisReply: fortuneCrisisReply,
     safetyReply: fortuneSafetyReply,
   },
 };
