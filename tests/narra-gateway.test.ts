@@ -212,7 +212,7 @@ describe('wrangler.jsonc & fail-closed safety invariants', () => {
     expect(parsed.vars.NARRA_MATRIX_ID).toBe('@agent-bc3282c7:matrix.netmind.chat');
     // v2 (chat-native) only in the "zack test" room; every other room stays on v1.
     expect(parsed.vars.NARRA_PIPELINE).toBe('v2');
-    expect(parsed.vars.NARRA_PIPELINE_ROOMS).toBe('!ttLCzSZsdFiPSEPDyO:matrix.netmind.chat');
+    expect(parsed.vars.NARRA_PIPELINE_ROOMS).toBe('!ttLCzSZsdFiPSEPDyO:matrix.netmind.chat,!IftiIDGVmOgoqhisoa:matrix.netmind.chat');
     expect(parsed.triggers.crons).toEqual(['*/5 * * * *']);
     expect(parsed.durable_objects.bindings).toEqual([
       { name: 'NARRA_SYNC_DO', class_name: 'NarraMatrixSync' },
